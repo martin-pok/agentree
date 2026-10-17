@@ -39,9 +39,7 @@ body { letter-spacing: -.012em; }
 .page-title { font-size: 36px; font-weight: 300; letter-spacing: -.035em; }
 .sec-head h2, .sec-head h3 { font-weight: 400; font-size: 20px; letter-spacing: -.025em; }
 .card { border: 1px solid var(--line-2); box-shadow: none; }
-.brand { gap: 10px; }
 .brand > span { font: 500 15px/1 var(--f-body); text-transform: uppercase; letter-spacing: .24em; }
-.brand .brand-mark { width: 34px; height: 34px; }
 .link { background: transparent; box-shadow: none; padding-inline: 4px; color: var(--mute); }
 .link:hover { color: var(--ink); background: var(--line-2); box-shadow: none; }
 .btn, .lchip, .chip, .seg button, .lselect { font-weight: 500; box-shadow: none; }
@@ -199,6 +197,10 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-history .ov { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 28px; }
 .home-history .ov-col { display: flex; flex-direction: column; gap: 28px; }
 .home-history .ov section { grid-area: auto; }
+/* Prázdný profil (overview.js): bez grafů a aktivity zbydou jen náklady – jeden sloupec, bez prázdné poloviny. */
+.home-history .ov.ov--prazdno { grid-template-columns: minmax(0, 1fr); }
+.home-history .ov.ov--prazdno > .bal-col:not(:has(> section:not([hidden]))) { display: none; }
+.home-history > [data-region="limits"] { margin-top: 28px; }
 @media (max-width: 1199px) { .home-workspace { gap: 32px; grid-template-columns: minmax(0, 1fr) 285px; } }
 @media (max-width: 1000px) { .home-workspace { grid-template-columns: minmax(0, 1fr); margin-top: 24px; } .home-live { padding-top: 24px; border-top: 1px solid var(--line); } .home-history .ov { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .home-intro h2 { font-size: 36px; } .home-history > summary span { display: none; } }

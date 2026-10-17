@@ -189,10 +189,10 @@ function mount(el, _params, query) {
   v.ceka = false;
   applyQuery(query);
   el.innerHTML = `
-    <div class="toolbar toolbar--filtry" data-enter style="--i:1">
+    <div class="toolbar toolbar--filtry" data-enter style="--i:1" data-jen-s-agenty>
       <div class="seg" role="group" aria-label="${tr('Filtrovat podle stavu')}" data-region="seg"></div>
     </div>
-    <div class="filtry card" data-enter style="--i:2">
+    <div class="filtry card" data-enter style="--i:2" data-jen-s-agenty>
       <div class="filtry-rada">
         <span class="filtry-popis" id="ag-f-zdroj">${tr('Zdroj')}</span>
         <div class="chips chips--rada" role="group" aria-labelledby="ag-f-zdroj" data-region="source"></div>
@@ -287,6 +287,8 @@ function update() {
   const el = v.el;
   if (!el) return;
   const all = agentsList();
+  // Filtry nad prázdným seznamem nemají co filtrovat – devět nul ve stavech by vypadalo jako data.
+  for (const n of el.querySelectorAll('[data-jen-s-agenty]')) n.hidden = !all.length;
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
   const q = norm(f.q.trim());
   // Zdroj, poskytovatel a hledání platí i pro počty u projektů – jsou to nadřazené filtry.
@@ -336,6 +338,7 @@ function update() {
   if (!all.length) {
     zivy(el, 'table', emptyState({
       title: tr('Zatím tu nejsou žádní agenti'),
+      text: esc(tr('Agenteeq je najde sám, jakmile na {0} poběží Claude Code, Codex nebo Cursor. Nebo spusť prvního rovnou odsud.', tomtoPocitaci())),
       action: `<div class="empty-actions"><button class="btn btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button><a class="btn" href="#/nastaveni" data-karta="connectors">${tr('Zkontrolovat zdroje dat')}</a></div>`,
     }));
   } else if (!list.length) {

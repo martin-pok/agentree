@@ -22,6 +22,15 @@ nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg
 binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
 zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
 
+**Značka v hlavičce (logo + nápis, issue #255).** Velikost loga se odvozuje z velikosti nápisu,
+nikdy se nezapisuje číslem: `--brand-word` (aplikace 20 px, rozšíření 16 px, web 19 px / na
+telefonu 17 px) × poměr varianty. Logo v dlaždici (aplikace, rozšíření, stránky se zásadami)
+má rámeček **1,9×** písmo (`--brand-mark-tile`): dlaždice ≈ 2,2× výška verzálek, hlava ≈ výška
+verzálek. Logo bez dlaždice (tmavá hlavička webu) má rámeček **2,1×** (`--brand-mark-clean`):
+hlava ≈ 1,05× verzálek, s anténou ≈ 1,4×. Mezera se měří od viditelného tvaru (ne od rámečku
+SVG) a je všude **0,55 em**. Logo je svisle na středu nápisu a nikdy se nedeformuje. Hlídá
+`test/znacka-hlavicka.test.mjs` a na vykreslené ploše `npm run qa:tvary`.
+
 ## Písmo Satoshi a licence
 
 Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).
@@ -145,6 +154,16 @@ značka“. Závazná podoba `extension/popup.html`:
   ověření selže = „Nepodařilo se ověřit spojení s Agenteeq“, nikdy „neběží“ ani „nespárováno“.
 - **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
   stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
+
+## Prázdné stavy (issue #255)
+
+Obrazovka bez dat ukáže **jeden** prázdný stav přes `emptyState()` (`public/js/ui.js`): robot,
+krátký nadpis, jedna věta, co tu bude, a jedna hlavní akce (kapsle `btn--primary`), která opravdu
+něco udělá. Ovládání, které nemá co ovládat (filtry s nulami, hledání, řazení, „Označit vše“),
+a dlaždice, grafy a mapy nad prázdnými daty se schovají – nula se ukazuje jen tam, kde je to
+skutečně změřená hodnota v období, ve kterém data jsou. Selhání zjišťování (výpis procesů,
+načtení historie, chyba sítě) prázdno netvrdí. Pokrytí měří `scripts/qa-prazdny-profil.mjs`
+v `qa:tvary` i `qa:contrast`.
 
 ## Kontrola
 
