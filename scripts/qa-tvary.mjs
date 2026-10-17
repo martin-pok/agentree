@@ -22,6 +22,7 @@ import { buildSite } from './build-site.mjs';
 import { staticServer } from './qa-server.mjs';
 import { STAVY_OKNA, otevriOkno } from './qa-rozsireni.mjs';
 import { pridejMnohoAgentu } from './qa-agenti.mjs';
+import { projdiPrazdnyProfil } from './qa-prazdny-profil.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -186,6 +187,12 @@ function vypis(kde, nalezy) {
 }
 const PARAM = { maxJednoradkovy: MAX_JEDNORADKOVY, radky: RADKY, stupnice: STUPNICE, vyjimky: VYJIMKY_APLIKACE };
 const PARAM_WEB = { ...PARAM, vyjimky: VYJIMKY_WEBU };
+// Kontrola prázdných stavů (scripts/qa-prazdny-profil.mjs) hlásí věty, ne prvky.
+function vypisPrazdno(kde, chyby) {
+  if (!chyby.length) return;
+  console.log(`  ${kde}: NEVYHOVUJE (${chyby.length})`);
+  for (const chyba of chyby) { console.log(`     ${chyba}`); problemy.push({ kde, chyba }); }
+}
 const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 
 /* ---------- Aplikace ---------- */
@@ -289,6 +296,11 @@ for (const sirka of SIRKY) {
   await page.close();
 }
 await app.close();
+
+/* ---------- Prázdný profil ---------- */
+// Čerstvá instalace bez agentů, projektů a zdrojů: prázdné stavy mají stejná pravidla tvaru.
+console.log('Aplikace – prázdný profil');
+await projdiPrazdnyProfil(browser, { sirky: SIRKY, mer: async (page, kde) => vypis(kde, await page.evaluate(zmer, PARAM)), chyby: vypisPrazdno });
 
 /* ---------- Web ---------- */
 console.log('Web');

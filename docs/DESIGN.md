@@ -155,6 +155,16 @@ značka“. Závazná podoba `extension/popup.html`:
 - **Pohyb:** stisk do 90 ms, nástup po částech, FLIP při filtru, podsvícení nové položky, záře mezi
   stavy přes `@property`. Smyčkou se smí hýbat jen tečka „pracuje“. `prefers-reduced-motion` vypne vše.
 
+## Prázdné stavy (issue #255)
+
+Obrazovka bez dat ukáže **jeden** prázdný stav přes `emptyState()` (`public/js/ui.js`): robot,
+krátký nadpis, jedna věta, co tu bude, a jedna hlavní akce (kapsle `btn--primary`), která opravdu
+něco udělá. Ovládání, které nemá co ovládat (filtry s nulami, hledání, řazení, „Označit vše“),
+a dlaždice, grafy a mapy nad prázdnými daty se schovají – nula se ukazuje jen tam, kde je to
+skutečně změřená hodnota v období, ve kterém data jsou. Selhání zjišťování (výpis procesů,
+načtení historie, chyba sítě) prázdno netvrdí. Pokrytí měří `scripts/qa-prazdny-profil.mjs`
+v `qa:tvary` i `qa:contrast`.
+
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
