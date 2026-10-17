@@ -493,8 +493,16 @@ function tick(hned = false) {
 
 /* ---------- Upozornění ---------- */
 
-function renderPopover() {
+// Stav, ze kterého se okno naposledy vykreslilo. Vykreslení celého shellu běží při každé změně dat
+// (spojení, agenti…), takže bez téhle kontroly se otevřený seznam pokaždé postavil znovu a jeho
+// posuvník skočil nahoru uprostřed rolování.
+let popKlic = '';
+function renderPopover({ vynutit = false } = {}) {
   const items = state.alerts.items.slice(0, 8);
+  const klic = JSON.stringify([state.alerts.unread, items.map((a) => [a.id, a.read, a.level, a.kind, a.title, a.body])]);
+  if (!vynutit && klic === popKlic && pop.querySelector('.pop-list')) return;
+  popKlic = klic;
+  const rolovani = pop.querySelector('.pop-list')?.scrollTop || 0;
   pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all>${tr('Označit vše jako přečtené')}</button>` : ''}</div>
     <ul class="pop-list">${items.length
       ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${esc(alertHref(a))}" data-alert-id="${esc(a.id)}"${a.kind === 'novy-nastroj' ? ' data-moje-nastroje' : ''}>
@@ -503,10 +511,12 @@ function renderPopover() {
         </a></li>`).join('')
       : `<li class="pop-empty">${tr('Zatím žádná upozornění.')}</li>`}</ul>
     <a class="pop-foot" href="#/upozorneni">${tr('Zobrazit všechna upozornění')}</a>`;
+  const seznam = pop.querySelector('.pop-list');
+  if (seznam) seznam.scrollTop = rolovani;
 }
 
 function openPopover() {
-  renderPopover();
+  renderPopover({ vynutit: true });
   pop.hidden = false;
   bell.setAttribute('aria-expanded', 'true');
 }
