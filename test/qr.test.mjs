@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { qrMatice, qrSvg, nejmensiVerze, parovaciAdresa } from '../public/js/qr.js';
+import { qrMatice, qrSvg, nejmensiVerze, parovaciAdresa, jeSmycka, cileParovani } from '../public/js/qr.js';
 
 // Výstup generátoru byl ověřen dekodérem Applu (Vision) na verzích 1 až 10 včetně české
 // diakritiky. Tyhle testy hlídají, aby se ta ověřená podoba tiše nezměnila – čtečka v telefonu
@@ -60,4 +60,23 @@ test('QR: adresa pro spárování nese kód a snese lomítko navíc', () => {
   // Kód z adresy musí projít i zpátky do čitelného QR.
   const adresa = parovaciAdresa('http://192.168.100.150:61580', '977911');
   assert.ok(qrMatice(adresa), 'adresa se vejde do QR');
+});
+
+test('QR párování: adresa na smyčce se nikdy nekreslí, z telefonu by vedla do telefonu samotného', () => {
+  for (const a of ['http://127.0.0.1:4620', 'http://localhost:4620', 'http://127.0.0.53:4620', 'http://[::1]:4620', 'http://0.0.0.0:4620', 'http://app.localhost:4620', '', 'nesmysl']) {
+    assert.equal(jeSmycka(a), true, a);
+    assert.equal(parovaciAdresa(a, '123456'), '', a);
+  }
+  for (const a of ['http://192.168.1.23:4620', 'http://mac-mini.tvuj-tailnet.ts.net:4620']) assert.equal(jeSmycka(a), false, a);
+  assert.equal(parovaciAdresa('http://192.168.1.23:4620/', '123 456'), 'http://192.168.1.23:4620/?p=123456');
+  assert.equal(parovaciAdresa('http://192.168.1.23:4620', ''), '', 'bez kódu není co kódovat');
+});
+
+test('QR párování: nabídne jen cesty, na kterých listener opravdu naslouchá', () => {
+  assert.deepEqual(cileParovani(null), []);
+  assert.deepEqual(cileParovani({ enabled: true, listening: false, url: 'http://192.168.1.23:4620' }), [], 'zapnuto, ale neposlouchá: QR by vedl do prázdna');
+  assert.deepEqual(cileParovani({ enabled: true, listening: true, url: 'http://127.0.0.1:4620' }), [], 'smyčka se nenabízí');
+  const obe = cileParovani({ enabled: true, listening: true, url: 'http://192.168.1.23:4620', tailscale: { enabled: true, listening: true, url: 'http://mac.ts.net:4620' } });
+  assert.deepEqual(obe.map((c) => c.id), ['lan', 'tailscale']);
+  assert.deepEqual(cileParovani({ enabled: false, tailscale: { enabled: true, listening: true, url: 'http://mac.ts.net:4620' } }).map((c) => c.id), ['tailscale'], 'Tailscale jde i bez domácí sítě');
 });

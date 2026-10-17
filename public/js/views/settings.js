@@ -153,7 +153,7 @@ function parovaciKod(cil, pin, cas) {
   return `<div class="pair-invite">
     ${kod ? `<div class="pair-qr">${kod}</div>` : ''}
     <div class="pair-invite-text">
-      ${kod ? `<b>${tr('Namiř na kód foťák telefonu')}</b><p class="muted small">${tr('Telefon otevře Agenteeq a spáruje se sám.')} ${sit}</p>` : `<p class="muted small">${sit}</p>`}
+      ${kod ? `<b>${tr('Namiř na kód foťák telefonu')}</b><p class="muted small">${tr('Otevře se Agenteeq a spáruje se samo.')} ${sit}</p>` : `<p class="muted small">${sit}</p>`}
       <div class="pin-box"><b aria-label="${esc(tr('Kód {0}', pin.code.split('').join(' ')))}">${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="small">${kod ? tr('Bez foťáku: na telefonu otevři') : tr('Na telefonu otevři')} <code class="pin-url">${esc(cil.url)}</code> ${tr('a zadej tenhle kód. Platí do {0} a jen na jedno spárování.', cas(pin.expiresAt))}</span></div>
     </div>
   </div>`;

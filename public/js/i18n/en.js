@@ -942,7 +942,7 @@ export default {
     "Vrať se sem, zapni přepínač a spáruj telefon kódem.": "Come back here, turn on the switch and pair your phone with a code.",
     "QR kód pro spárování telefonu. Vede na {0}": "QR code for pairing your phone. It leads to {0}",
     "Namiř na kód foťák telefonu": "Point your phone’s camera at the code",
-    "Telefon otevře Agenteeq a spáruje se sám.": "Your phone opens Agenteeq and pairs by itself.",
+    "Otevře se Agenteeq a spáruje se samo.": "Agenteeq opens and pairs by itself.",
     "Telefon musí mít zapnutý Tailscale se stejným účtem.": "Your phone needs Tailscale turned on with the same account.",
     "Telefon musí být ve stejné Wi‑Fi jako {0}.": "Your phone must be on the same Wi‑Fi as {0}.",
     "Kód {0}": "Code {0}",
