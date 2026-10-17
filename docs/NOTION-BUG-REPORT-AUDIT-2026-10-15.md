@@ -1,5 +1,7 @@
 # Notion bug report — ověřený stav 15. 10. 2026
 
+Původní znění celého reportu: [BUG-REPORT-2026-10-14.md](BUG-REPORT-2026-10-14.md).
+
 Zdroj: [uživatelský report v Notion](https://www.notion.so/3f90d7aa7efb80d5844df27263072276), [pracovní issue #255](https://github.com/martin-pok/agentree/issues/255). Původní kontrola proti `main` na `6afb409` (15. 10.); aktualizace zdrojového stavu 16. 10. na `cabf2bc`. „V kódu“ neznamená „v nainstalované aplikaci“; veřejné Preview je stále 0.46.12, Stable 0.46.0. Přílohy se screenshoty z Notion nebyly dostupné jako vykreslitelné obrazové soubory, takže nelze potvrdit pixelovou shodu s originálem.
 
 | Podnět | Aktuální stav | Zbývající důkaz/práce |
