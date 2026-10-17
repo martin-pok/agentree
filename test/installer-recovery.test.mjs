@@ -46,6 +46,12 @@ test('update and Quit never depend solely on AppKit termination', async () => {
   const bounded = swift.slice(swift.indexOf('func stopServerBounded('), swift.indexOf('func armExitWatchdog('));
   assert.match(bounded, /kill\(process\.processIdentifier, SIGKILL\)/);
   assert.doesNotMatch(bounded, /waitUntilExit/, 'bounded polling only; never an unbounded wait');
+  assert.match(bounded, /let gracefulDeadline = clock\.systemUptime \+ 3\.0/,
+    'graceful SIGTERM must use a monotonic three-second deadline');
+  assert.match(bounded, /let killDeadline = clock\.systemUptime \+ 2\.0/,
+    'SIGKILL reap grace must be monotonic, not a scheduling-dependent loop count');
+  assert.doesNotMatch(bounded, /waited\s*</,
+    'on busy macOS runners counted sleep cycles can overrun the native Quit watchdog');
   // Regression: 16 Oct main macOS qa:update passed real replacements but a
   // SIGSTOP backend triggered the 15s emergency _exit because main.sync
   // delayed the ordinary SIGTERM/SIGKILL path. This must remain nonblocking.
