@@ -125,8 +125,14 @@ export function plansHtml(sp) {
   </section>`;
 }
 
-export function providerAccountsHtml(sp) {
-  const accounts = sp.providerAccounts || [];
+// Zástupný řádek „Nelze ověřit“ patří jen nástroji, který na počítači je. U Claude Code nebo Codexu,
+// jejichž zdroj Agenteeq hledal a nenašel, by v prázdném profilu tvrdil účet, který uživatel nemá.
+const ZDROJ_UCTU = { anthropic: 'claude-code', openai: 'codex' };
+const zastupnyBezNastroje = (account, connectors) => !account.id && !account.active && account.state === 'unavailable'
+  && connectors.find((c) => c.id === ZDROJ_UCTU[account.provider])?.state === 'missing';
+
+export function providerAccountsHtml(sp, connectors = state.connectors || []) {
+  const accounts = (sp.providerAccounts || []).filter((a) => !zastupnyBezNastroje(a, connectors));
   if (!accounts.length) return '';
   const rows = accounts.map((account) => {
     const name = ({ anthropic: 'Claude Code', openai: 'Codex', google: 'Gemini', github: 'GitHub Copilot', openrouter: 'OpenRouter', mistral: 'Mistral', xai: 'Grok' })[account.provider] || account.provider || tr('Neznámá služba');
@@ -223,6 +229,8 @@ function update() {
   fill(el, 'month', esc(monthLabel(sp.monthKey)));
   el.querySelector('[data-region="hero"]').classList.toggle('is-unavailable', !billingConnected);
   el.querySelector('[data-region="budgets"]').hidden = !billingConnected;
+  // Rozpočet se počítá jen z připojeného API; bez něj by tlačítko otevřelo nastavení bez účinku.
+  el.querySelector('.toolbar [data-action="budgets"]').hidden = !billingConnected;
   el.querySelector('[data-region="analytics"]').hidden = !billingConnected;
   el.querySelector('[data-region="ledger-section"]').hidden = !billingConnected && !sp.ledger?.length && !sp.automatic?.length;
 
@@ -242,7 +250,7 @@ function update() {
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
       ${sp.ledger?.length ? `<p class="spend-note">${tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')}</p>` : ''}
-    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong></div><a class="btn" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
+    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
   fill(el, 'provider-accounts', providerAccountsHtml(sp));

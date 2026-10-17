@@ -199,6 +199,10 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-history .ov { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 28px; }
 .home-history .ov-col { display: flex; flex-direction: column; gap: 28px; }
 .home-history .ov section { grid-area: auto; }
+/* Prázdný profil (overview.js): bez grafů a aktivity zbydou jen náklady – jeden sloupec, bez prázdné poloviny. */
+.home-history .ov.ov--prazdno { grid-template-columns: minmax(0, 1fr); }
+.home-history .ov.ov--prazdno > .bal-col:not(:has(> section:not([hidden]))) { display: none; }
+.home-history > [data-region="limits"] { margin-top: 28px; }
 @media (max-width: 1199px) { .home-workspace { gap: 32px; grid-template-columns: minmax(0, 1fr) 285px; } }
 @media (max-width: 1000px) { .home-workspace { grid-template-columns: minmax(0, 1fr); margin-top: 24px; } .home-live { padding-top: 24px; border-top: 1px solid var(--line); } .home-history .ov { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .home-intro h2 { font-size: 36px; } .home-history > summary span { display: none; } }

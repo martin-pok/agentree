@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState } from '../ui.js';
 import { sessionTotal } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -122,7 +122,8 @@ async function load() {
     znovuOdpoved();
   } catch (err) {
     t.loaded = true;
-    t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
+    t.nenalezeno = err.status === 404;
+    t.error = t.nenalezeno ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);
@@ -209,6 +210,8 @@ function mount(el, [id]) {
     jump.hidden = true;
   });
   el.addEventListener('click', async (e) => {
+    const znovu = e.target.closest('[data-session-reload]');
+    if (znovu) { if (!v.loading) load(); return; }
     if (e.target.closest('[data-agent-appearance]')) {
       editAgentAppearance(v.id, { onSaved: update });
       return;
@@ -349,12 +352,19 @@ function update() {
     t.stale = false;
     load();
   }
+  el.querySelector('.session-grid').hidden = Boolean(!s && t?.error);
   if (!s) {
     if (t?.error) {
       const procesovyId = /:proces-\d+$/.test(v.id);
-      fill(el, 'head', `<h2 class="session-title">${procesovyId ? tr('Detekovaný proces už není aktivní') : tr('Agent nenalezen')}</h2><p class="muted">${esc(t.error)}</p>`);
-      // Jediná přesná věta stačí. Stejný důvod také v prázdném přepisu by zbytečně duplikoval stav.
-      fill(el, 'tr-empty', '');
+      // „Nenalezeno“ (404) a „nepodařilo se načíst“ (síť, server) jsou dvě různé věci. Prázdný
+      // přepis s přepínačem nástrojů pod tím nemá co ukázat, a tak se schová.
+      fill(el, 'head', `<div class="card">${emptyState({
+        title: !t.nenalezeno ? tr('Agenta se nepodařilo načíst') : procesovyId ? tr('Detekovaný proces už není aktivní') : tr('Agent nenalezen'),
+        text: esc(t.error),
+        action: t.nenalezeno
+          ? `<a class="btn btn--primary" href="#/agenti">${tr('Zobrazit všechny agenty')}</a>`
+          : `<button class="btn btn--primary" type="button" data-session-reload>${ICON.refresh}${tr('Zkusit znovu')}</button>`,
+      })}</div>`);
     }
     return;
   }

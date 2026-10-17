@@ -41,7 +41,7 @@ function dayLabel(ts) {
 function mount(el) {
   v.el = el;
   el.innerHTML = `
-    <div class="toolbar" data-enter style="--i:1">
+    <div class="toolbar" data-enter style="--i:1" data-region="toolbar">
       <div class="seg" role="group" aria-label="${tr('Filtrovat upozornění')}" data-region="filters"></div>
       <div class="toolbar-actions">
         <a class="btn" href="#/nastaveni" data-karta="notifications">${ICON.sliders}${tr('Nastavit upozornění')}</a>
@@ -63,13 +63,18 @@ function update() {
   const el = v.el;
   if (!el) return;
   const items = state.alerts.items;
+  // Bez jediného upozornění nemají filtry s nulami ani „Označit vše“ co dělat; nastavení upozornění
+  // se přesune do prázdného stavu jako jeho hlavní akce.
+  el.querySelector('[data-region="toolbar"]').hidden = !items.length;
   fill(el, 'filters', FILTERS.map(([k, l, pred]) => `<button type="button" data-filter="${k}" aria-pressed="${v.filter === k}">${l}<span class="count">${items.filter(pred).length}</span></button>`).join(''), { sloucit: true });
   const pred = FILTERS.find(([k]) => k === v.filter)[2];
   const list = items.filter(pred);
   if (!list.length) {
-    fill(el, 'list', emptyState({
-      title: v.filter === 'all' ? tr('Zatím žádná upozornění') : tr('Nic k zobrazení'),
-    }));
+    fill(el, 'list', emptyState(!items.length ? {
+      title: tr('Zatím žádná upozornění'),
+      text: tr('Agenteeq se ozve, až agent bude potřebovat tvoje rozhodnutí, narazí na limit nebo dokončí práci.'),
+      action: `<a class="btn btn--primary" href="#/nastaveni" data-karta="notifications">${ICON.sliders}${tr('Nastavit upozornění')}</a>`,
+    } : { title: tr('Nic k zobrazení') }));
     return;
   }
   let day = '';

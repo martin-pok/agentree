@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.15
+
+- **Čistá instalace vypadá záměrně, ne rozbitě.** Bez agentů, projektů a připojených zdrojů ukazuje každá obrazovka jeden prázdný stav s robotem, krátkou větou, co tu bude, a jednou hlavní akcí, která opravdu něco udělá (zkontrolovat zdroje dat, spustit agenta, založit projekt, nastavit upozornění, propojit API). Zmizely dlaždice s nulami a prázdná mapa aktivity ve Statistikách, „V pořádku, nikdo nepracuje“ se čtyřmi nulami na Přehledu, filtry s nulami nad prázdným seznamem Agentů a Upozornění a zdvojené „Nový projekt“. Útrata už neukazuje účty Claude Code a Codexu jako „Nelze ověřit“, když na počítači vůbec nejsou, a detail agenta rozliší „nenalezen“ od „nepodařilo se načíst“ s nabídkou zkusit znovu. Česky i anglicky; prázdný profil teď měří i `qa:tvary` a `qa:contrast` (issue #255).
+
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
 
 - **Všechna funkční vylepšení od veřejné 0.46.12 v jednom kandidátu.** Bezpečnější aktualizace a restart Apple Silicon aplikace (včetně zaseknuté služby, potvrzení před ukončením vlastních agentů, návratu původního balíčku při chybě), pravdivý průběh přenesených dat a fáze instalace. Běžný Quit a skutečná výměna balíčku mají nativní macOS regresní QA.

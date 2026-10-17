@@ -102,7 +102,7 @@ function mount(el, _params, query) {
   // Odkaz ze štítku v detailu projektu: #/projekty?stitek=klient
   if (query?.has('stitek')) { v.tag = query.get('stitek') || ''; v.tab = 'active'; }
   el.innerHTML = `
-    <div class="toolbar" data-enter style="--i:1">
+    <div class="toolbar" data-enter style="--i:1" data-region="toolbar">
       <div class="seg" role="group" aria-label="${tr('Zobrazit projekty')}" data-region="tabs"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat projekt')}</span><input type="search" data-q placeholder="${tr('Hledat projekt nebo složku…')}" autocomplete="off"></label>
       <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Nový projekt')}</button>
@@ -164,6 +164,8 @@ function update() {
   const active = items.filter((p) => !p.archived);
   const archived = items.filter((p) => p.archived);
   if (v.tab === 'archived' && !archived.length) v.tab = 'active';
+  // Bez projektu nejsou záložky, hledání ani druhé „Nový projekt“ k ničemu: hlavní akce je v prázdném stavu.
+  el.querySelector('[data-region="toolbar"]').hidden = !items.length;
   fill(el, 'tabs', [['active', tr('Aktivní'), active.length], ['archived', tr('Archiv'), archived.length]]
     .map(([k, label, n]) => `<button type="button" data-tab="${k}" aria-pressed="${v.tab === k}"${k === 'archived' && !n ? ' disabled' : ''}>${label}<span class="count">${n}</span></button>`).join(''));
 
@@ -187,16 +189,11 @@ function update() {
   const sugg = suggestions();
 
   if (!items.length) {
-    fill(el, 'grid', `<div class="card pintro">
-      <div class="pintro-text">
-        <span class="eyebrow">${tr('Projekty')}</span>
-        <h2>${tr('Práce agentů seřazená podle klientů a zakázek')}</h2>
-        <p>${tr('Založ projekt a Agenteeq do něj sám zařadí konverzace Claude Code, Codexu nebo Cursoru ze složky projektu. Chaty z ChatGPT, Claude.ai nebo Perplexity přidáš jedním kliknutím.')}</p>
-        <ul class="checklist"><li>${tr('Na jednom místě stav, tokeny a přepisy všech služeb pro daný projekt')}</li><li>${tr('Podklady projektu po ruce, když spouštíš dalšího agenta')}</li><li>${tr('Export do CSV jako podklad k vyúčtování klientovi')}</li></ul>
-        <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Vytvořit první projekt')}</button>
-      </div>
-      <div class="pintro-art" aria-hidden="true"><span style="--pc:#C2335A"></span><span style="--pc:#22A38C"></span><span style="--pc:#F2B824"></span></div>
-    </div>`);
+    fill(el, 'grid', `<div class="card">${emptyState({
+      title: tr('Zatím žádný projekt'),
+      text: tr('Projekt sdruží práci agentů pro jednoho klienta nebo zakázku. Konverzace ze složky projektu se do něj zařadí samy.'),
+      action: `<button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Vytvořit první projekt')}</button>`,
+    })}</div>`);
   } else if (!list.length) {
     fill(el, 'grid', `<div class="card">${emptyState({ title: q || v.tag ? tr('Žádný projekt neodpovídá hledání') : tr('V archivu nic není'), text: q || v.tag ? tr('Zkus jiný název, složku nebo štítek.') : '' })}</div>`);
   } else if (!v.reorder?.isDragging()) {
