@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravované změny po 0.46.15
+
+- **Pomocník odpovídá na 20 nejčastějších otázek k Agenteeq – česky i anglicky, i s překlepy a bez diakritiky.** Agenti, schvalování povolení, otevření konverzace, spuštění agenta, limity, útrata, rozpočet, projekty, dovednosti, rozšíření pro Chrome, telefon a QR kód, aktualizace Stabilní/Preview, účet a synchronizace, upozornění, hooky Claude Code, Codex, soukromí, vzhled, jazyk a chybějící zdroje agentů. Každá odpověď vede tlačítkem rovnou na správné místo v aplikaci a říká i to, co Agenteeq neumí (třeba schválit akci za tebe nebo přečíst limit aplikace ChatGPT). Dřív třeba „Jak připojím telefon?“ poslalo do Napojených modelů a „Jak se odhlásím?“ skončilo obecnou otázkou. Na otázky mimo aplikaci (počasí, psaní kódu, zdraví) Pomocník poctivě řekne, že s nimi neporadí, a nabídne další krok místo hledání v konverzacích. Všechno běží na tomto počítači bez placeného API.
+
 ## 0.46.15 – 2026-10-16 · Aktuální Preview kandidát se sjednoceným changelogem a distribucí
 
 - **Všechna funkční vylepšení od veřejné 0.46.12 v jednom kandidátu.** Bezpečnější aktualizace a restart Apple Silicon aplikace (včetně zaseknuté služby, potvrzení před ukončením vlastních agentů, návratu původního balíčku při chybě), pravdivý průběh přenesených dat a fáze instalace. Běžný Quit a skutečná výměna balíčku mají nativní macOS regresní QA.
