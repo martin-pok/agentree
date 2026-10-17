@@ -267,7 +267,7 @@ function potvrd(hodnota) {
   $('check-no').setAttribute('aria-pressed', String(hodnota === 'nesedi'));
   const msg = $('check-msg');
   msg.dataset.tone = '';
-  msg.textContent = sazba(tr(hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek, podle něj se rozpoznávání opraví.'));
+  msg.textContent = sazba(tr(hodnota === 'sedi' ? 'Díky. Ulož vzorek – poslouží jako test, že to tak zůstane.' : 'Díky. Ulož vzorek – pomůže rozpoznávání opravit.'));
 }
 
 $('check-yes').addEventListener('click', () => potvrd('sedi'));
@@ -530,7 +530,7 @@ function slideHtml(M) {
     const nadpis = nevim ? (M.neovereno ? tr('Nepodařilo se ověřit spojení s Agenteeq') : M.bezPrehledu ? tr('Přehled agentů se nepodařilo načíst') : tr('Nepodařilo se zjistit, co na počítači běží')) : tr('Všechno je v klidu');
     const text = nevim
       ? (M.neovereno ? tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.') : M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
-      : tr('Nikdo teď nepracuje a žádný agent nepotřebuje tvé rozhodnutí. Ozvu se, jakmile se to změní.');
+      : tr('Nikdo teď nepracuje a žádný agent nečeká na tvé rozhodnutí.');
     return `<div class="calm">
       <span class="calm-bot" data-s="tile"${nevim ? ' data-nevim' : ''}>${ROBOT}</span>
       <div data-s><h2>${esc(sazba(nadpis))}</h2><p>${esc(sazba(text))}</p></div>

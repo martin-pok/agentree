@@ -7,9 +7,9 @@ import { plural } from './format.js';
 
 /** Věta pod pozdravem „Co dnes posuneme dál?“. Počty nenese – ty patří dlaždicím. */
 export function vetaPozdravu({ cekaji = 0, pracuji = 0 } = {}) {
-  if (cekaji) return plural(cekaji, 'Nejdřív rozhodni, co agent potřebuje – pak může pokračovat.', 'Nejdřív rozhodni, co agenti potřebují – pak můžou pokračovat.', 'Nejdřív rozhodni, co agenti potřebují – pak můžou pokračovat.');
+  if (cekaji) return plural(cekaji, 'Nejdřív rozhodni, ať agent může pokračovat.', 'Nejdřív rozhodni, ať agenti můžou pokračovat.', 'Nejdřív rozhodni, ať agenti můžou pokračovat.');
   if (pracuji) return plural(pracuji, 'Další úkol můžeš zadat hned, nemusíš čekat, až agent doběhne.', 'Další úkol můžeš zadat hned, nemusíš čekat, až agenti doběhnou.', 'Další úkol můžeš zadat hned, nemusíš čekat, až agenti doběhnou.');
-  return tr('Zadej práci. Agenti se pustí do díla, ty máš prostor na to podstatné.');
+  return tr('Zadej agentovi úkol.');
 }
 
 /**
