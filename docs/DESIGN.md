@@ -22,6 +22,15 @@ nepoužívá. Oficiální SVG master pro Dock je `public/brand/agenteeq-dock.svg
 binární ikona `desktop/Agenteeq.icns`. Motiv trojzubce i fialová anténa jsou
 zakázané. Zdrojové logo zůstává oddělené pro malé plochy menu baru.
 
+**Značka v hlavičce (logo + nápis, issue #255).** Velikost loga se odvozuje z velikosti nápisu,
+nikdy se nezapisuje číslem: `--brand-word` (aplikace 20 px, rozšíření 16 px, web 19 px / na
+telefonu 17 px) × poměr varianty. Logo v dlaždici (aplikace, rozšíření, stránky se zásadami)
+má rámeček **1,9×** písmo (`--brand-mark-tile`): dlaždice ≈ 2,2× výška verzálek, hlava ≈ výška
+verzálek. Logo bez dlaždice (tmavá hlavička webu) má rámeček **2,1×** (`--brand-mark-clean`):
+hlava ≈ 1,05× verzálek, s anténou ≈ 1,4×. Mezera se měří od viditelného tvaru (ne od rámečku
+SVG) a je všude **0,55 em**. Logo je svisle na středu nápisu a nikdy se nedeformuje. Hlídá
+`test/znacka-hlavicka.test.mjs` a na vykreslené ploše `npm run qa:tvary`.
+
 ## Písmo Satoshi a licence
 
 Satoshi (Indian Type Foundry, ITF Free Font License 2.0) smí být vložené do aplikace, rozšíření a na vlastní web, ale nesmí ležet ve veřejném repozitáři (§ 02). Soubor proto stahuje `scripts/satoshi.mjs` z Fontshare při sestavení a ověří ho podle SHA-256; bez souboru se sází Onest a server pravidlo `@font-face` vůbec nepošle. Soubor se nesmí upravovat ani převádět (žádné subsetování).

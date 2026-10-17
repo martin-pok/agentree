@@ -117,7 +117,7 @@ export function cileHledani() {
 const slovaZ = (text) => norm(text).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 
 // Překlep o jeden znak (záměna, vynechání, přidání, přehozená dvojice) – Damerauova vzdálenost ≤ 1.
-function jedenPreklep(a, b) {
+export function jedenPreklep(a, b) {
   if (a === b) return true;
   const la = a.length;
   const lb = b.length;

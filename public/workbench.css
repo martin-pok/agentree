@@ -39,9 +39,7 @@ body { letter-spacing: -.012em; }
 .page-title { font-size: 36px; font-weight: 300; letter-spacing: -.035em; }
 .sec-head h2, .sec-head h3 { font-weight: 400; font-size: 20px; letter-spacing: -.025em; }
 .card { border: 1px solid var(--line-2); box-shadow: none; }
-.brand { gap: 10px; }
 .brand > span { font: 500 15px/1 var(--f-body); text-transform: uppercase; letter-spacing: .24em; }
-.brand .brand-mark { width: 34px; height: 34px; }
 .link { background: transparent; box-shadow: none; padding-inline: 4px; color: var(--mute); }
 .link:hover { color: var(--ink); background: var(--line-2); box-shadow: none; }
 .btn, .lchip, .chip, .seg button, .lselect { font-weight: 500; box-shadow: none; }

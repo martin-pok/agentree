@@ -122,8 +122,9 @@ async function load() {
     znovuOdpoved();
   } catch (err) {
     t.loaded = true;
-    t.nenalezeno = err.status === 404;
-    t.error = t.nenalezeno ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
+    // 404 = konverzace neexistuje, 410 = detekovaný proces skončil. Obojí je zjištěný stav, ne porucha.
+    t.nenalezeno = err.status === 404 || err.status === 410;
+    t.error = err.status === 404 ? tr('Konverzace je starší než 30 dní nebo byla smazána.') : err.message;
   } finally {
     v.loading = false;
     emit(`transcript:${id}`, `session:${id}`);

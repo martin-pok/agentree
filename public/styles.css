@@ -62,6 +62,11 @@
   --r-xs: 6px;
   --r-full: 999px;
   --r-logo: 28%;
+  /* Značka v hlavičce (docs/DESIGN.md, Značka v hlavičce): velikost loga se odvozuje z velikosti
+     nápisu, aby hlava robota optický ladila s verzálkami. Logo v dlaždici má rámeček 1,9× písmo
+     (dlaždice ≈ 2,2× výška verzálek, hlava ≈ výška verzálek), logo bez dlaždice na tmavém webu 2,1×. */
+  --brand-word: 20px;
+  --brand-mark-tile: 1.9;
   /* Karty leží v ploše, nevznášejí se. Místo měkkého stínu je drží vlasová linka: hrany jsou
      ostré, takže je vidět, že jsou zarovnané – a nic se nerozmazává do okolí. Skutečné vyzdvižení
      (--shadow-lg) zůstává jen tomu, co se nad stránku opravdu vysouvá: dialogy a nabídky. */
@@ -218,8 +223,8 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
    620–1200 px. Vodorovné odsazení nese `--sb-x`, aby se k němu dal přiložit pruh aktivní položky. */
 .sidebar { --sb-x: 24px; position: sticky; top: 24px; align-self: start; height: calc(100dvh - 48px); margin: 24px 0 24px 24px; padding: 32px var(--sb-x) 24px; background: var(--glass); border-radius: var(--r-lg); box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; z-index: 2; }
 .sidebar > .brand, .sidebar > .side-foot { flex: none; }
-.brand { display: inline-flex; align-items: center; gap: 8px; align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
-.brand-mark { width: 34px; height: 34px; flex: none; }
+.brand { --brand-mark: round(calc(var(--brand-word) * var(--brand-mark-tile)), 1px); display: inline-flex; align-items: center; gap: max(0px, calc(var(--brand-word) * .55 - var(--brand-mark) * .068)); align-self: center; text-decoration: none; font: 500 26px/1 var(--f-display); letter-spacing: -.01em; }
+.brand-mark { width: var(--brand-mark); height: var(--brand-mark); flex: none; }
 .brand-mark .bm-aerial { fill: none; stroke: var(--action); stroke-width: 3.5; stroke-linecap: round; }
 .brand-mark .bm-tip { fill: var(--action); }
 .brand-mark .bm-head { fill: var(--ink); }

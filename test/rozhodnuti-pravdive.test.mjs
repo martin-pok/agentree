@@ -182,9 +182,13 @@ test('Pomocník: nenačtený stav se nevydává za „nic nečeká“, nepotvrze
 });
 
 test('Pomocník se na čekání ptá živého stavu dřív, než začne hledat v přepisech', async () => {
+  // Rozhoduje odpovedPruvodce (public/js/assistant-guide.js); chování hlídá test/pomocnik-dotazy.test.mjs.
   const kod = await zdroj('public/js/robot-guide.js');
-  const otazka = kod.indexOf('jeOtazkaNaCekani(dotaz)');
+  const otazka = kod.indexOf('odpovedPruvodce(dotaz');
   assert.ok(otazka > 0 && otazka < kod.indexOf("request('POST', '/api/pomocnik'"));
-  assert.match(kod, /coNaMeCeka\(\{ agenti: agentsList\(\), nacteno: state\.loaded, spojeni: state\.connection \}\)/);
+  assert.match(kod, /odpovedPruvodce\(dotaz, \{[^}]*snapshot: state, agenti: agentsList \}\)/);
+  const pruvodce = await zdroj('public/js/assistant-guide.js');
+  assert.match(pruvodce, /jeOtazkaNaCekani\(dotaz\)/);
+  assert.match(pruvodce, /coNaMeCeka\(\{ agenti: seznam, nacteno: Boolean\(snapshot\?\.loaded\), spojeni: snapshot\?\.connection \}\)/);
   assert.match(kod, /tr\('Co na mě čeká\?'\)/, 'nabízí se i jako návrh');
 });
