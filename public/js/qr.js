@@ -252,10 +252,30 @@ export function qrSvg(text, { popis = tr('QR kód'), okraj = 4 } = {}) {
     + `<path d="${cesta.join('')}" fill="#16141D"/></svg>`;
 }
 
+// Adresa na smyčce (127.x, localhost, ::1) vede z telefonu do telefonu samotného, ne na tenhle
+// počítač. QR s takovou adresou by vypadal funkčně a nikdy by nefungoval – proto se nekreslí.
+export function jeSmycka(adresa) {
+  let host = '';
+  try { host = new URL(String(adresa)).hostname.toLowerCase(); } catch { return true; }
+  return host === 'localhost' || host.endsWith('.localhost') || /^127\./.test(host) || host === '[::1]' || host === '0.0.0.0';
+}
+
 /** Adresa, kterou QR nese: základ z aplikace plus jednorázový kód. Telefon ji otevře a spáruje se
-    sám; kód si aplikace z adresy hned smaže, aby nezůstal v historii prohlížeče. */
+    sám; kód si aplikace z adresy hned smaže, aby nezůstal v historii prohlížeče. Adresu na smyčce
+    nevrátí nikdy – z telefonu by nikam nevedla. */
 export function parovaciAdresa(zakladni, kod) {
   const cislo = String(kod || '').replace(/\D/g, '');
-  if (!zakladni || !cislo) return '';
+  if (!zakladni || !cislo || jeSmycka(zakladni)) return '';
   return `${String(zakladni).replace(/\/+$/, '')}/?p=${cislo}`;
+}
+
+/** Kudy se telefon k tomuhle počítači opravdu dostane: jen cesty, které jsou zapnuté a na kterých
+    listener skutečně naslouchá. Zapnutý přepínač s listenerem, který se nespustil (obsazený port,
+    žádná Wi‑Fi), sem nepatří – QR by vedl do prázdna. Prázdný seznam = poctivé „teď nikudy“. */
+export function cileParovani(lan) {
+  const out = [];
+  if (lan?.enabled && lan.listening && lan.url) out.push({ id: 'lan', url: lan.url });
+  const t = lan?.tailscale;
+  if (t?.enabled && t.listening && t.url) out.push({ id: 'tailscale', url: t.url });
+  return out.filter((c) => !jeSmycka(c.url));
 }

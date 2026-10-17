@@ -61,7 +61,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/lan/enable` \| `disable` | Přístup z domácí sítě → `{ lan: LanStatus }`; jen z tohoto Macu (403, viz níž), 422 bez privátní adresy, 502 když listener nelze otevřít |
 | POST | `/api/tailscale/enable` \| `disable` | Přístup z vlastní sítě Tailscale → `{ lan: LanStatus }`; jen z tohoto Macu (403 – loopback **a** `Host: 127.0.0.1`/`localhost`, bez stop po proxy), 422 když Tailscale neběží nebo Mac ještě nemá adresu v tailnetu, 502 když listener nelze otevřít |
 | POST | `/api/lan/pin` | `{ pin: { code, expiresAt } }`; jen z `127.0.0.1` (403), 409 s vypnutými oběma cestami |
-| POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel, 429 po pěti pokusech |
+| POST | `/api/lan/pair` | `{ pin, label? }` → token do `HttpOnly` cookie; 401 chybný kód, 410 vypršel nebo už jednou použitý (jiná hláška pro každý případ), 429 po pěti pokusech. QR v Nastavení nese `http(s)://<adresa v síti>:<port>/?p=<kód>`, nikdy adresu na smyčce; klient `p` z adresy smaže hned při startu |
 | DELETE | `/api/lan/devices/:id` | `{ lan: LanStatus }`; jen z `127.0.0.1` (403), 404 neznámé zařízení |
 | POST | `/api/pomocnik` | `{ dotaz }` → `{ zamer: 'hledat' \| 'jak', rozbor: { slova, vzory, aplikace, okno }, veta, vysledky: [{ sessionId, nazev, app, slozka, zacatek, konec, ukazka, pokracovat, shoda }], prohledano, nedokonceno, lokalne: { text, model } \| null, modelMimoPocitac }`; `vzory` = zdroje RegExp pro text bez diakritiky (skupina 1 = shoda) ke zvýraznění v ukázce, `modelMimoPocitac` = formulace odmítnutá, protože `AGENTEEQ_OLLAMA_URL` nevede na loopback; 400 prázdný dotaz. Z telefonu jen konverzace z přehledu, bez `ukazka` a `pokracovat` (`src/pomocnik.js`) |
 | GET | `/api/push` | `{ publicKey /* VAPID, base64url */, odbery: [{ id, nazev, zarizeni, vytvoreno, naposledyOk, chyba }] }`; telefon dostane jen své odběry. Adresa odběru ani klíče telefonu se nevrací nikdy |
@@ -121,6 +121,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | `napojeni` | `{ id, label, udalost: 'napojeno' \| 'vyprselo', plan?, uz? }` – jednorázová zpráva, žádný trvalý stav |
 | `ucet` | `UcetStatus` + `udalost?: 'prihlaseno' \| 'chyba' \| 'odhlaseno' \| 'smazano'` |
 | `usage` | `{ launches }` |
+| `lan` | `LanStatus` – po spárování, odpárování a vypnutí přístupu. **Jen na hostiteli** (nese jednorázový kód a seznam zařízení); spárovanému telefonu se neposílá |
 
 Každých 15 s komentář `: ping`.
 

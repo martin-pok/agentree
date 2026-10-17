@@ -983,6 +983,18 @@ function udalostUctu(u) {
 
 // Nespárovaný telefon nedostane ani stav, ani realtime stream – obsluha 401 uvnitř streamu by se
 // tedy nikdy nespustila. Autorizaci proto zkontrolujeme hned na začátku, ještě před připojením.
+// Jednorázový kód z QR (?p=…) se z adresy odstraní hned při startu – i na už spárovaném telefonu,
+// kde se párovací obrazovka vůbec neukáže. Jinak by kód zůstal v historii a v záložce na ploše.
+let kodZQr = '';
+{
+  const adresa = new URL(location.href);
+  if (adresa.searchParams.has('p')) {
+    kodZQr = String(adresa.searchParams.get('p') || '').replace(/\D/g, '').slice(0, 6);
+    adresa.searchParams.delete('p');
+    history.replaceState(history.state, '', adresa.pathname + adresa.search + adresa.hash);
+  }
+}
+
 const autorizace = api.state().then((snap) => {
   // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
   // proudu – když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
@@ -1082,12 +1094,11 @@ function parovaciObrazovka(zprava = '') {
       parovaciObrazovka(err.message);
     }
   });
-  // Kód z QR: spárujeme rovnou a hned ho smažeme z adresy, ať nezůstane v historii prohlížeče.
+  // Kód z QR (z adresy už smazaný při startu): spárujeme rovnou, jen jednou.
   // Při neúspěchu se obrazovka překreslí s hláškou a už bez kódu, takže se to nezacyklí.
-  const zAdresy = new URLSearchParams(location.search).get('p');
-  if (zAdresy && !zprava) {
-    input.value = zAdresy.replace(/\D/g, '');
-    history.replaceState(null, '', location.pathname + location.hash);
+  if (kodZQr && !zprava) {
+    input.value = kodZQr;
+    kodZQr = '';
     form.requestSubmit();
   }
 }

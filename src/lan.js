@@ -89,6 +89,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
   let handler = null;
   let boundPort = 0;
   let pin = null; // { code, expiresAt, tries }
+  let pouzityKod = ''; // hash posledního spotřebovaného kódu – jen kvůli pravdivé hlášce při druhém použití
   let pending = Promise.resolve();
   const serialize = (work) => {
     const next = pending.then(work);
@@ -174,6 +175,9 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
   // Spáruje telefon. Vrací token jen jednou – v datech zůstane pouze jeho hash.
   async function pair(code, label, now = Date.now()) {
     if (!lanOn() && !tailscaleOn()) return { status: 403, error: ui('Přístup z telefonu je vypnutý.') };
+    // Druhé otevření téže adresy z QR (jiný telefon, obnovená karta) nesmí tvrdit „vypršel“, když
+    // kód ve skutečnosti už jednou posloužil – uživatel by pak hledal chybu v hodinách.
+    if (!pin && pouzityKod && hash(code) === pouzityKod) return { status: 410, error: ui('Tenhle kód už jednou posloužil. Platí jen na jedno spárování – vytvoř {0} nový.', POCITAC.naHostiteli) };
     if (!pin || pin.expiresAt <= now) return { status: 410, error: ui('Kód vypršel. Vytvoř {0} nový.', POCITAC.naHostiteli) };
     if (pin.tries >= PIN_TRIES_MAX) {
       pin = null;
@@ -187,6 +191,7 @@ export function createLanAccess({ datastore, config, onListen = () => {}, onAuth
       return { status: 401, error: zbyva === 1 ? ui('Kód nesouhlasí. Zbývá poslední pokus.') : zbyva <= 4 ? ui('Kód nesouhlasí. Zbývají {0} pokusy.', zbyva) : ui('Kód nesouhlasí. Zbývá {0} pokusů.', zbyva) };
     }
     pin = null; // na jedno použití
+    pouzityKod = hash(code);
     const token = crypto.randomBytes(32).toString('base64url');
     const device = { id: crypto.randomUUID().slice(0, 8), label: String(label || 'Telefon').replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 40) || 'Telefon', hash: hash(token), at: now };
     devices().push(device);
