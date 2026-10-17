@@ -546,19 +546,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             _exit(0)
         }
     }
+    // Aplikace spuštěná rovnou z Downloads nebo z DMG běží z dočasné cesty jen ke čtení (macOS ji
+    // přesune do …/AppTranslocation/…). Do její složky se zapisovat nedá, a tak by aktualizace vždy
+    // skončila chybou. Nová verze se proto nainstaluje na stálé místo: /Applications, nebo
+    // ~/Applications. Aplikace ve složce, kam jde zapisovat, se vyměňuje na místě jako dřív.
+    func updateTarget(running: URL) -> (bundle: URL, folder: URL, relocated: Bool)? {
+        let fm = FileManager.default
+        let folder = running.deletingLastPathComponent()
+        if !running.path.contains("/AppTranslocation/") && fm.isWritableFile(atPath: folder.path) {
+            return (running, folder, false)
+        }
+        let candidates = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true),
+        ]
+        for dir in candidates {
+            if !fm.fileExists(atPath: dir.path) { try? fm.createDirectory(at: dir, withIntermediateDirectories: true) }
+            if fm.isWritableFile(atPath: dir.path) { return (dir.appendingPathComponent("Agenteeq.app"), dir, true) }
+        }
+        return nil
+    }
     func installUpdate(zip: String, version: String) {
         guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else {
             reportUpdateError("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.")
             return
         }
+        let running = Bundle.main.bundleURL.standardizedFileURL
+        guard let target = updateTarget(running: running) else {
+            reportUpdateError("Agenteeq nejde nainstalovat do složky Aplikace. Přetáhni ho tam ručně z DMG a spusť znovu.")
+            return
+        }
+        let current = target.bundle
+        let dest = target.folder
         installing = true
-        updateLog("aktualizace \(runningVersion) → \(version) začíná")
+        updateLog("aktualizace \(runningVersion) → \(version) začíná; cíl \(current.path)\(target.relocated ? " (aplikace běží z \(running.path))" : "")")
         // Feedback must start BEFORE extracting the downloaded archive. Otherwise
         // large ZIPs look like a frozen black screen until the last file is copied.
         showLoading()
-        setLoading("Připravujeme Agenteeq \(version)…", progress: true, value: 0.05)
-        let current = Bundle.main.bundleURL.standardizedFileURL
-        let dest = current.deletingLastPathComponent()
+        setLoading(target.relocated ? "Instalujeme Agenteeq \(version) do složky Aplikace…" : "Připravujeme Agenteeq \(version)…", progress: true, value: 0.05)
         let bundleID = Bundle.main.bundleIdentifier ?? "cz.agenteeq.desktop"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
@@ -594,7 +619,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             // (TERM, pak KILL) – aktualizace se nesmí zaseknout. Pak vymění balíčky, při chybě vrátí
             // původní aplikaci a v každém případě Agenteeq znovu otevře. Vše zapisuje do deníku.
             let script = """
-            pid="$1"; current="$2"; stage="$3"; work="$4"; backup="$5"; trash="$6"; log="$7"
+            pid="$1"; current="$2"; stage="$3"; work="$4"; backup="$5"; trash="$6"; log="$7"; origin="$8"
             say() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) [pomocnik] $*" >> "$log" 2>/dev/null || :; }
             # Jen proces Agenteeq: kdyby PID mezitím dostal jiný program, nikdy ho neukončíme. Porovnává se
             # konec cesty, ne celá cesta – /var a /private/var jsou na Macu totéž místo.
@@ -609,7 +634,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
               rm -rf "$work"
               exit 1
             fi
-            if mv "$current" "$backup"; then
+            # Na cílovém místě (třeba /Applications při spuštění z Downloads) žádná starší aplikace být nemusí.
+            if [ ! -e "$current" ] || mv "$current" "$backup"; then
               if mv "$stage" "$current"; then
                 rm -rf "$work"
                 xattr -dr com.apple.quarantine "$current" 2>/dev/null || :
@@ -617,25 +643,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                 # at least be opened; never trash the only recoverable bundle.
                 if open "$current"; then
                   say "nová verze spuštěna"
-                  [ -n "$trash" ] && mv "$backup" "$trash" 2>/dev/null || :
+                  [ -n "$trash" ] && [ -e "$backup" ] && mv "$backup" "$trash" 2>/dev/null || :
                   exit 0
                 fi
                 say "novou verzi nejde otevřít, vracím původní"
                 rm -rf "$current"
-                mv "$backup" "$current" || exit 1
+                if [ -e "$backup" ]; then mv "$backup" "$current" || exit 1; fi
+                [ -e "$current" ] || current="$origin"
                 open "$current" || :
                 exit 1
               fi
               say "výměna se nepovedla, vracím původní"
-              mv "$backup" "$current" || exit 1
+              if [ -e "$backup" ]; then mv "$backup" "$current" || exit 1; fi
             fi
             rm -rf "$work"
+            [ -e "$current" ] || current="$origin"
             open "$current" || :
             exit 1
             """
             step("Ukládáme data a restartujeme…", 0.75, "ukonceni")
             let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
-            helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, fresh.path, work.path, backup.path, trash?.path ?? "", self.updateLogPath]
+            helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, fresh.path, work.path, backup.path, trash?.path ?? "", self.updateLogPath, running.path]
             helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
             do { try helper.run() } catch { fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
             // Server se zastaví tady, s časovým limitem, ne až uvnitř ukončení AppKitu.

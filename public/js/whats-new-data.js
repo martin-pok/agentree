@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.17',
+    date: '2026-10-17',
+    title: 'Aktualizace funguje i z Downloads a z DMG',
+    items: [
+      'Když Agenteeq spustíš rovnou z Downloads nebo z DMG, aktualizace už nekončí hláškou „nejde zapisovat“: nová verze se nainstaluje do složky Aplikace a Agenteeq se z ní znovu otevře.',
+      'Kdyby se nová verze nedala otevřít, vrátí se ta původní. Poprvé z 0.46.16 na 0.46.17 ještě poběží starý aktualizátor, takže Agenteeq jednou přetáhni do složky Aplikace.',
+    ],
+    en: {
+      title: 'Updating works from Downloads and from the disk image',
+      items: [
+        'When you open Agenteeq straight from Downloads or the disk image, updating no longer fails with “cannot write to the folder”: the new version is installed into the Applications folder and Agenteeq reopens from there.',
+        'If the new version cannot be opened, the previous one is restored. The first update from 0.46.16 to 0.46.17 still uses the old updater, so drag Agenteeq into Applications once.',
+      ],
+    },
+  },
+  {
     version: '0.46.16',
     date: '2026-10-17',
     title: 'Nový vzhled agenta, klidná upozornění a pravdivější stavy',

@@ -19,7 +19,7 @@ test('native updater has bounded Quit, prevents permanent loading overlay and sh
     'respond to AppKit exactly once even when watchdog races child completion');
   assert.match(swift, /if baseURL != nil \{ hideLoading\(\) \}\s*else \{ setLoading\(message, retry: true\) \}/,
     'a failed pre-swap installer must return to usable existing app instead of blank loader');
-  assert.match(swift, /showLoading\(\)\s*setLoading\("Připravujeme Agenteeq \\\(version\)…", progress: true, value: 0\.05\)/,
+  assert.match(swift, /showLoading\(\)\s*setLoading\(target\.relocated \? "Instalujeme Agenteeq \\\(version\) do složky Aplikace…" : "Připravujeme Agenteeq \\\(version\)…", progress: true, value: 0\.05\)/,
     'stage indication must start before ZIP extraction');
   for (const stage of [
     'Rozbalujeme Agenteeq', 'Kontrolujeme podpis aplikace',
@@ -234,5 +234,76 @@ test('updater helper rolls back the previous app on failed relaunch (no black-sc
     await assert.rejects(fs.access(stage), { code: 'ENOENT' });
   } finally {
     await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+// Majitel 17. 10. 2026: po stažení aktualizace vyskočilo „Do složky …/AppTranslocation/… nejde
+// zapisovat“. Aplikace spuštěná rovnou z Downloads nebo z DMG běží z dočasné cesty jen ke čtení,
+// takže aktualizace nemohla nikdy projít. Teď se nová verze nainstaluje do Aplikací.
+test('native updater: aplikace z AppTranslocation se aktualizuje do složky Aplikace, ne chybou', async () => {
+  const swift = await fs.readFile(file('desktop/Agenteeq.swift'), 'utf8');
+  const target = swift.slice(swift.indexOf('func updateTarget('), swift.indexOf('func installUpdate('));
+  assert.match(target, /running\.path\.contains\("\/AppTranslocation\/"\)/, 'dočasná cesta se pozná');
+  assert.match(target, /fm\.isWritableFile\(atPath: folder\.path\)/, 'nezapisovatelná složka (třeba DMG) taky');
+  assert.match(target, /URL\(fileURLWithPath: "\/Applications"/);
+  assert.match(target, /homeDirectoryForCurrentUser\.appendingPathComponent\("Applications"/, 'bez práv do /Applications zbývá ~/Applications');
+  assert.match(target, /dir\.appendingPathComponent\("Agenteeq\.app"\)/);
+  assert.match(target, /return \(running, folder, false\)/, 'zapisovatelná složka se vyměňuje na místě jako dřív');
+  const install = swift.slice(swift.indexOf('func installUpdate('), swift.indexOf('// Status/notifications come from'));
+  assert.match(install, /guard let target = updateTarget\(running: running\) else/);
+  assert.match(install, /let current = target\.bundle/);
+  // Ve skriptu: na cílovém místě žádná stará aplikace být nemusí a po neúspěchu se otevře ta, ze které se jelo.
+  assert.match(install, /if \[ ! -e "\$current" \] \|\| mv "\$current" "\$backup"; then/);
+  assert.match(install, /origin="\$8"/);
+  assert.match(install, /\[ -e "\$current" \] \|\| current="\$origin"/);
+  assert.match(install, /self\.updateLogPath, running\.path\]/, 'původní cesta jde do pomocníka jako osmý argument');
+  assert.doesNotMatch(install, /\.app\/Contents\/MacOS\/Agenteeq.*AppTranslocation/s, 'proces se pořád pozná jen podle konce cesty');
+});
+
+test('native updater: skript výměny zvládne chybějící aplikaci na cíli a vrátí zálohu, když existovala', {
+  skip: process.platform === 'win32' && 'POSIX shell required'
+}, async () => {
+  const swift = await fs.readFile(file('desktop/Agenteeq.swift'), 'utf8');
+  const start = swift.indexOf('let script = """') + 'let script = """'.length;
+  const script = swift.slice(start, swift.indexOf('"""', start)).replace(/^ {12}/gm, '');
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'agenteeq-update-'));
+  try {
+    const run = async (hadOld, openOk = false) => {
+      const dir = await fs.mkdtemp(path.join(tmp, 'c-'));
+      const apps = path.join(dir, 'Applications');
+      const current = path.join(apps, 'Agenteeq.app');
+      const work = path.join(apps, '.agenteeq-update-x');
+      const stage = path.join(work, 'Agenteeq.app');
+      const backup = path.join(apps, '.agenteeq-previous-x.app');
+      const log = path.join(dir, 'log.txt');
+      const origin = path.join(dir, 'Downloads', 'Agenteeq.app');
+      await fs.mkdir(path.join(stage, 'Contents'), { recursive: true });
+      await fs.writeFile(path.join(stage, 'Contents', 'v'), 'nova');
+      if (hadOld) { await fs.mkdir(path.join(current, 'Contents'), { recursive: true }); await fs.writeFile(path.join(current, 'Contents', 'v'), 'stara'); }
+      // `open` a `xattr` jsou na Macu; tady je nahradí atrapy v PATH. `open` selže, ať se ověří i návrat zálohy.
+      const bin = path.join(dir, 'bin'); await fs.mkdir(bin);
+      await fs.writeFile(path.join(bin, 'open'), `#!/bin/sh\nexit ${openOk ? 0 : 1}\n`, { mode: 0o755 });
+      await fs.writeFile(path.join(bin, 'xattr'), '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+      const r = spawnSync('/bin/sh', ['-c', script, 'x', '999999999', current, stage, work, backup, '', log, origin], { env: { ...process.env, PATH: `${bin}:${process.env.PATH}` }, encoding: 'utf8' });
+      const exists = async (f) => fs.access(f).then(() => true, () => false);
+      return { status: r.status, current: await exists(current), backup: await exists(backup), v: await exists(path.join(current, 'Contents', 'v')) ? await fs.readFile(path.join(current, 'Contents', 'v'), 'utf8') : null, work: await exists(work) };
+    };
+    // Úspěšné otevření: aplikace z Downloads se nainstalovala do (dosud prázdných) Aplikací.
+    const nova = await run(false, true);
+    assert.equal(nova.status, 0);
+    assert.equal(nova.v, 'nova', 'nová verze je na cílovém místě');
+    assert.equal(nova.work, false);
+    // Bez staré aplikace: výměna proběhne; `open` v atrapě selže, takže se nová verze zahodí a nic nezůstane napůl.
+    const bez = await run(false);
+    assert.equal(bez.status, 1);
+    assert.equal(bez.current, false, 'nic nevisí napůl, když se nová verze nedá otevřít');
+    assert.equal(bez.work, false, 'pracovní složka se uklidí');
+    // Se starou aplikací: při neúspěšném otevření se vrátí původní, nikdy nezůstane jen záloha.
+    const se = await run(true);
+    assert.equal(se.status, 1);
+    assert.equal(se.v, 'stara', 'původní aplikace se vrátí');
+    assert.equal(se.backup, false);
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
   }
 });
