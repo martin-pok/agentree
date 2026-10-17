@@ -47,8 +47,8 @@ test('pozdrav na Přehledu radí, co dál – bez počtů a bez vysvětlování,
     assert.doesNotMatch(v, /\d/, `počty patří dlaždicím: „${v}“`);
     assert.doesNotMatch(v, /Najdeš|pod polem/, `bez vysvětlivek: „${v}“`);
   }
-  assert.match(vetaPozdravu({ cekaji: 1 }), /agent potřebuje/);
-  assert.match(vetaPozdravu({ cekaji: 2 }), /agenti potřebují/);
+  assert.match(vetaPozdravu({ cekaji: 1 }), /agent může/);
+  assert.match(vetaPozdravu({ cekaji: 2 }), /agenti můžou/);
   assert.match(vetaPozdravu({ pracuji: 1 }), /agent doběhne/);
   assert.match(vetaPozdravu({ pracuji: 2 }), /agenti doběhnou/);
   const studio = await zdroj('public/js/home-studio.js');

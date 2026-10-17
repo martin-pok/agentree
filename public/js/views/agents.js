@@ -77,7 +77,7 @@ function webBezRozsireniHtml() {
     <div class="runtime-main">
       <b id="rt-web-h">${tr('Konverzace v prohlížeči se nesledují')}</b>
       <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Chaty v Gemini, ChatGPT, Claude.ai, Perplexity, Groku, Microsoft Copilotu a Qwen Chatu sleduje rozšíření pro Chrome.')}</p>
+      <p class="small">${tr('Chaty z ChatGPT, Claude.ai, Gemini a dalších webových služeb sleduje rozšíření pro Chrome.')}</p>
       <a class="link-inline" href="#/nastaveni" data-karta="extension">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
     </div>
   </aside>`;
