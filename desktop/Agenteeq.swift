@@ -503,20 +503,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // Volá se mimo hlavní vlákno; nikdy nečeká déle než ~10 s.
     func stopServerBounded() {
         guard let process = child else { return }
-        // Do not synchronously hop to the AppKit thread here. Under a stalled
-        // WKWebView/runloop that hop can consume the entire 15-second Quit deadline
-        // before SIGTERM even reaches the child (observed in postmerge Mac CI).
-        // Shut down the child immediately from this worker; the callers already
-        // schedule the final NSApp.terminate on the main thread.
+        // The backend may be SIGSTOP'ed: SIGTERM cannot be processed until it
+        // runs again. Never depend on Process.isRunning polling iterations as
+        // a time limit; macOS runner scheduling can stretch 80 × 100ms past
+        // the 15-second native Quit watchdog.
         self.quitting = true
         process.terminationHandler = nil
         try? self.input?.fileHandleForWriting.close()
-        if process.isRunning { process.terminate() }
-        var waited = 0
-        while process.isRunning && waited < 80 { usleep(100_000); waited += 1 }
-        if process.isRunning { kill(process.processIdentifier, SIGKILL); updateLog("server neskončil do 8 s, ukončen násilně") }
-        waited = 0
-        while process.isRunning && waited < 20 { usleep(100_000); waited += 1 }
+        guard process.isRunning else { return }
+        process.terminate()
+        let clock = ProcessInfo.processInfo
+        let gracefulDeadline = clock.systemUptime + 3.0
+        while process.isRunning && clock.systemUptime < gracefulDeadline {
+            usleep(50_000)
+        }
+        if process.isRunning {
+            kill(process.processIdentifier, SIGKILL)
+            updateLog("server po 3 s nereagoval na SIGTERM; ukončen násilně")
+        }
+        // SIGKILL is asynchronous. Wait briefly for reaping, but never let
+        // a zombie or overloaded runner consume the app's Quit deadline.
+        let killDeadline = clock.systemUptime + 2.0
+        while process.isRunning && clock.systemUptime < killDeadline {
+            usleep(50_000)
+        }
+        if process.isRunning {
+            updateLog("server stále hlášen jako běžící po SIGKILL; dokončuji ukončení pláště")
+        }
     }
     // Poslední pojistka: když proces po žádosti o ukončení do `seconds` nezmizí (ztracená odpověď
     // AppKitu, zaseknuté hlavní vlákno), ukončí se sám. Server v tu chvíli už neběží nebo skončí
