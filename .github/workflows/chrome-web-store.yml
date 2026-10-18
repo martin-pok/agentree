@@ -1,0 +1,82 @@
+# Po zveřejnění vydání nahraje přesně ten ZIP rozšíření, který je v jeho přílohách (ověřený proti
+# SHA256SUMS.txt), do existující položky Chrome Web Store a odešle ho ke kontrole Googlu.
+# Přístup k Chrome Web Store API dávají tři tajné hodnoty repozitáře (docs/CHROME-WEB-STORE.md):
+# CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN. Bez nich úloha jen ohlásí, co chybí.
+name: Chrome Web Store
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Zveřejněné vydání, např. v0.46.20'
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: chrome-web-store
+  cancel-in-progress: false
+
+jobs:
+  nahrat:
+    name: nahrát rozšíření do obchodu
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      ITEM_ID: hocghhpigfilngdajmafkdcljdedanch
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Stáhnout a ověřit ZIP z vydání
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Neplatný tag vydání"; exit 1; }
+          VERZE="${TAG#v}"
+          ZIP="agenteeq-extension-$VERZE.zip"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/$REPO/releases/tags/$TAG" > vydani.json
+          [ "$(jq -r .draft vydani.json)" = "false" ] || { echo "::error::Vydání $TAG není zveřejněné"; exit 1; }
+          for jmeno in "$ZIP" SHA256SUMS.txt; do
+            id=$(jq -r --arg n "$jmeno" '.assets[] | select(.name == $n) | .id' vydani.json)
+            [ -n "$id" ] || { echo "::error::Ve vydání $TAG chybí $jmeno"; exit 1; }
+            curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/octet-stream' \
+              "https://api.github.com/repos/$REPO/releases/assets/$id" -o "$jmeno"
+          done
+          grep -F "  $ZIP" SHA256SUMS.txt | sha256sum --check -
+          unzip -p "$ZIP" manifest.json | jq -e --arg v "$VERZE" '.version == $v' > /dev/null \
+            || { echo "::error::Verze v manifestu nesouhlasí s $VERZE"; exit 1; }
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: Nahrát do Chrome Web Store a odeslat ke kontrole
+        env:
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CWS_CLIENT_ID" ] || [ -z "$CWS_CLIENT_SECRET" ] || [ -z "$CWS_REFRESH_TOKEN" ]; then
+            echo "::warning::Chybí CWS_CLIENT_ID, CWS_CLIENT_SECRET nebo CWS_REFRESH_TOKEN – $ZIP se do obchodu nenahrál (docs/CHROME-WEB-STORE.md)."
+            exit 0
+          fi
+          TOKEN=$(curl -fsS https://oauth2.googleapis.com/token \
+            --data-urlencode "client_id=$CWS_CLIENT_ID" --data-urlencode "client_secret=$CWS_CLIENT_SECRET" \
+            --data-urlencode "refresh_token=$CWS_REFRESH_TOKEN" --data-urlencode grant_type=refresh_token | jq -r .access_token)
+          [ -n "$TOKEN" ] && [ "$TOKEN" != null ] || { echo "::error::Google nevydal přístupový token"; exit 1; }
+          echo "::add-mask::$TOKEN"
+          curl -fsS -X PUT -H "Authorization: Bearer $TOKEN" -H 'x-goog-api-version: 2' -T "$ZIP" \
+            "https://www.googleapis.com/upload/chromewebstore/v1.1/items/$ITEM_ID" > nahrani.json
+          jq . nahrani.json
+          STAV=$(jq -r .uploadState nahrani.json)
+          [ "$STAV" = SUCCESS ] || [ "$STAV" = IN_PROGRESS ] || { echo "::error::Nahrání selhalo: $STAV"; exit 1; }
+          curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H 'x-goog-api-version: 2' -H 'Content-Length: 0' \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$ITEM_ID/publish" > zverejneni.json
+          jq . zverejneni.json
+          jq -e '.status | index("OK") or index("ITEM_PENDING_REVIEW")' zverejneni.json > /dev/null \
+            || { echo "::error::Odeslání ke kontrole selhalo"; exit 1; }
+          echo "::notice::$ZIP je nahraný a odeslaný ke kontrole Chrome Web Store."
