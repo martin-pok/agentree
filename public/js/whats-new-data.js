@@ -6,16 +6,20 @@ export const RELEASES = [
   {
     version: '0.46.20',
     date: '2026-10-18',
-    title: 'Pomocník v novém kabátě',
+    title: 'Pomocník v novém kabátě a různí roboti',
     items: [
       'Okno pomocníka je ve fialovém přechodu značky, stejně jako jeho tlačítko – s hlavou robota v hlavičce, odpověďmi na kartách a tvými zprávami v přechodu.',
       'Návrhy otázek jsou výrazné kapsle a pole pro dotaz se při psaní zvýrazní.',
+      'Profilové obrázky jsou opravdu různí roboti: kulatí, širocí, s obrazovkou nebo kopulí, s vizorem, jedním okem, hvězdičkami i srdíčkem.',
+      'U robota v seznamu agentů je dobře vidět, jestli běží na tomto počítači, nebo na webu.',
     ],
     en: {
-      title: 'The assistant gets a new look',
+      title: 'A new look for the assistant and distinct robots',
       items: [
         'The assistant window uses the brand purple gradient like its button – with the robot head in the header, answers on cards and your messages in the gradient.',
         'Suggested questions are clear capsules and the question field lights up while you type.',
+        'Profile pictures are truly different robots: round, wide, with a screen or a dome, with a visor, one eye, stars or a heart.',
+        'Each robot in the agent list clearly shows whether it runs on this computer or on the web.',
       ],
     },
   },

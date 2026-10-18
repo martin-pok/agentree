@@ -3,8 +3,8 @@ import { api } from './api.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
 
-// Profilové obrázky: anténa má vždy stejnou barvu jako hlava (žádný fialový akcent). Roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
-// anténa a oči. Liší se barvou, tvarem očí a anténou. Počet zůstává stejný jako u původních
+// Profilové obrázky: roboti Agenteeq ze stejného tvarosloví jako logo (public/brand/) – hlava,
+// anténa a oči. Liší se tvarem hlavy, očí a antény, ne jen barvou. Počet zůstává stejný jako u původních
 // abstraktních obrázků, takže uložená volba (settings.avatar = index) ukazuje dál na obrázek.
 const svg = (bg, body) => `<svg viewBox="0 0 80 80" role="img" aria-hidden="true" focusable="false"><rect width="80" height="80" fill="${bg}"/>${body}</svg>`;
 
@@ -27,54 +27,59 @@ const ANTENY = {
   usi: (c) => `<rect x="11" y="40" width="7" height="16" rx="3.5" fill="${c}"/><rect x="62" y="40" width="7" height="16" rx="3.5" fill="${c}"/><path d="M40 18v11" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>`,
   srdce: (c) => `<path d="M40 29v-8" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/><path d="M40 21c-4-5-10-1-6 4l6 5 6-5c4-5-2-9-6-4z" fill="${c}" transform="translate(0 -8)"/>`,
 };
-// Hlava: zaoblený obdélník jako v logu, případně širší nebo kulatější.
+// Hlava: zaoblený obdélník jako v logu, širší, kulatá, televize s obrazovkou nebo kopule.
 const HLAVY = {
   logo: (c) => `<rect x="17" y="29" width="46" height="38" rx="14" fill="${c}"/>`,
   siroka: (c) => `<rect x="13" y="31" width="54" height="34" rx="13" fill="${c}"/>`,
   kulata: (c) => `<rect x="18" y="27" width="44" height="42" rx="21" fill="${c}"/>`,
+  tv: (c, o) => `<rect x="15" y="28" width="50" height="40" rx="9" fill="${c}"/><rect x="21" y="34" width="38" height="28" rx="6" fill="${o}" opacity=".22"/>`,
+  kopule: (c) => `<path d="M17 50a23 23 0 0 1 46 0v10a8 8 0 0 1-8 8H25a8 8 0 0 1-8-8z" fill="${c}"/>`,
 };
 
-// Every profile robot uses the EXACT silhouette and eye placement of the official
-// public/brand/agenteeq-mark.svg. Only palette variants change; no second robot design.
-const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
-  svg(pozadi, `<g transform="scale(0.7407407407407407)">
+// Výchozí obrázek je přesně značka (public/brand/agenteeq-mark.svg). Ostatní skládají hlavu, oči
+// a anténu ze stejného tvarosloví, aby se od sebe lišily tvarem, ne jen barvou.
+const znacka = (pozadi, hlava, ocBarva) => svg(pozadi, `<g transform="scale(0.7407407407407407)">
     <path d="M54 25V34" stroke="${hlava}" stroke-width="5" stroke-linecap="round"/>
     <circle cx="54" cy="22" r="4" fill="${hlava}"/>
     <rect x="15" y="34" width="78" height="53" rx="20" fill="${hlava}"/>
     <rect x="36" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
     <rect x="64" y="52" width="8" height="16" rx="4" fill="${ocBarva}"/>
   </g>`);
+const robot = (pozadi, hlava, tvar, oci, ocBarva, antena, antBarva) =>
+  (tvar === 'logo' && oci === 'kapsle' && antena === 'kulicka')
+    ? znacka(pozadi, hlava, ocBarva)
+    : svg(pozadi, `${ANTENY[antena](antBarva)}${HLAVY[tvar](hlava, ocBarva)}${OCI[oci](ocBarva)}`);
 
 // Paleta značky: fialová, inkoust, papír, šalvěj, okr, růže a jejich světlé odstíny.
 const AVATARS = [
   robot('#5254D8', '#FAFAFA', 'logo', 'kapsle', '#17171D', 'kulicka', '#FAFAFA'),
   robot('#2C2C3A', '#FAFAFA', 'logo', 'kapsle', '#17171D', 'kulicka', '#8E90FF'),
-  robot('#EEEEFC', '#17171D', 'logo', 'kapsle', '#C8F0E6', 'kulicka', '#5254D8'),
+  robot('#EEEEFC', '#17171D', 'kulata', 'kapsle', '#C8F0E6', 'kulicka', '#5254D8'),
   robot('#C8F0E6', '#2B6B53', 'kulata', 'stastne', '#C8F0E6', 'dvojita', '#2B6B53'),
   robot('#F5EDDD', '#C99A3E', 'siroka', 'vizor', '#17171D', 'usi', '#83591A'),
   robot('#FBEAF0', '#B0284F', 'logo', 'kulate', '#FBEAF0', 'srdce', '#B0284F'),
   robot('#8E90FF', '#17171D', 'kulata', 'jedno', '#8E90FF', 'kulicka', '#17171D'),
   robot('#2B6B53', '#C8F0E6', 'logo', 'mrk', '#17171D', 'blesk', '#F5D78E'),
-  robot('#2C2C3A', '#5254D8', 'siroka', 'vizor', '#C8F0E6', 'dvojita', '#8E90FF'),
+  robot('#2C2C3A', '#5254D8', 'tv', 'vizor', '#C8F0E6', 'dvojita', '#8E90FF'),
   robot('#E4E4F0', '#17171D', 'kulata', 'stastne', '#FAFAFA', 'kulicka', '#B0284F'),
-  robot('#C99A3E', '#17171D', 'logo', 'hvezdy', '#F5D78E', 'blesk', '#17171D'),
-  robot('#DDE8F5', '#5254D8', 'logo', 'ospale', '#EEEEFC', 'usi', '#17171D'),
+  robot('#C99A3E', '#17171D', 'kopule', 'hvezdy', '#F5D78E', 'blesk', '#17171D'),
+  robot('#DDE8F5', '#5254D8', 'kopule', 'ospale', '#EEEEFC', 'usi', '#17171D'),
   robot('#B0284F', '#FBEAF0', 'kulata', 'kapsle', '#B0284F', 'kulicka', '#FBEAF0'),
   robot('#EEEEFC', '#8E90FF', 'siroka', 'stastne', '#17171D', 'srdce', '#5254D8'),
   robot('#2C2C3A', '#C8F0E6', 'logo', 'jedno', '#17171D', 'kulicka', '#43D1B1'),
   robot('#F5EDDD', '#17171D', 'kulata', 'mrk', '#F5D78E', 'dvojita', '#C99A3E'),
   robot('#5254D8', '#17171D', 'siroka', 'kulate', '#C8F0E6', 'usi', '#EEEEFC'),
-  robot('#C8F0E6', '#17171D', 'logo', 'hvezdy', '#43D1B1', 'kulicka', '#2B6B53'),
+  robot('#C8F0E6', '#17171D', 'tv', 'hvezdy', '#43D1B1', 'kulicka', '#2B6B53'),
   robot('#FBEAF0', '#17171D', 'logo', 'stastne', '#FFB3C7', 'dvojita', '#B0284F'),
   robot('#2F2F3A', '#8E90FF', 'kulata', 'vizor', '#17171D', 'blesk', '#F5D78E'),
-  robot('#E4E4F0', '#5254D8', 'logo', 'kapsle', '#FAFAFA', 'srdce', '#B0284F'),
+  robot('#E4E4F0', '#5254D8', 'kopule', 'kapsle', '#FAFAFA', 'srdce', '#B0284F'),
   robot('#8E90FF', '#FAFAFA', 'siroka', 'ospale', '#5254D8', 'kulicka', '#FAFAFA'),
-  robot('#2B6B53', '#17171D', 'logo', 'kulate', '#C8F0E6', 'usi', '#C8F0E6'),
+  robot('#2B6B53', '#17171D', 'tv', 'kulate', '#C8F0E6', 'usi', '#C8F0E6'),
   robot('#DDE8F5', '#17171D', 'kulata', 'kapsle', '#DDE8F5', 'dvojita', '#5254D8'),
-  robot('#C99A3E', '#F5EDDD', 'logo', 'stastne', '#83591A', 'kulicka', '#F5EDDD'),
+  robot('#C99A3E', '#F5EDDD', 'tv', 'stastne', '#83591A', 'kulicka', '#F5EDDD'),
   robot('#2C2C3A', '#FFB3C7', 'kulata', 'mrk', '#17171D', 'srdce', '#FFB3C7'),
   robot('#EEEEFC', '#2B6B53', 'siroka', 'hvezdy', '#C8F0E6', 'blesk', '#5254D8'),
-  robot('#B0284F', '#17171D', 'logo', 'vizor', '#FFB3C7', 'kulicka', '#FBEAF0'),
+  robot('#B0284F', '#17171D', 'kopule', 'vizor', '#FFB3C7', 'kulicka', '#FBEAF0'),
   robot('#5254D8', '#C8F0E6', 'kulata', 'jedno', '#17171D', 'dvojita', '#C8F0E6'),
 ];
 

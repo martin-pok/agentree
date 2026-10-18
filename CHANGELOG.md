@@ -1,7 +1,9 @@
 # Changelog
 
-## 0.46.20 – 2026-10-18 · Pomocník ve značkovém přechodu
+## 0.46.20 – 2026-10-18 · Pomocník ve značkovém přechodu, odlišné profilové obrázky
 
+- **Profilové obrázky se liší tvarem, ne jen barvou.** Kreslení ignorovalo připravené varianty a všech 29 obrázků bylo logo v jiných barvách. Teď se skládají z pěti hlav (logo, široká, kulatá, televize, kopule), osmi typů očí a pěti antén; první dva zůstávají přesně logem, uložená volba ukazuje na stejné místo.
+- **Kde agent běží je vidět.** Odznak tento počítač / web u robota v seznamu agentů má 28 px s ikonou 16 px (dřív 16 px s 10px ikonou) a popisek při najetí myší.
 - **Pomocník: otevřené okno ve značkovém fialovém přechodu.** Hlavička v přechodu jako plovoucí tlačítko, s hlavou ze značky v průsvitném kroužku; odpovědi na kartě s fialovým okrajem, moje zprávy v přechodu, návrhy otázek jako fialové kapsle, pole s fialovým prstencem a tlačítko Poslat ve stejném přechodu jako tlačítko pomocníka. Světlý i tmavý vzhled.
 
 ## 0.46.19 – 2026-10-18 · Útrata v užším okně, rychlejší první agent na Macu, kontroly přístupnosti

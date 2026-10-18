@@ -935,3 +935,10 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .pm-poslat:hover { transform: translateY(-1px); }
 .pm-poslat:active { transform: translateY(0) scale(.96); }
 @media (prefers-reduced-motion: reduce) { .pm-poslat, .pm-navrh, .pm-novy, .pm-zavrit { transition: none; } .pm-poslat:hover { transform: none; } }
+
+/* Kde agent běží (tento počítač / web) musí být u robota vidět na první pohled: 24–28 px odznak
+   s ikonou 14–16 px na ploše karty, ne 10 px tečka. */
+.agent-robot-tile .env-badge { width: 24px; height: 24px; right: -2px; bottom: 0; border: 0; background: var(--card); box-shadow: 0 0 0 2px var(--paper), 0 2px 6px -2px rgb(16 16 20 / .28); }
+.agent-robot-tile .env-badge .icon { width: 14px; height: 14px; stroke-width: 2; color: var(--ink); }
+.table.table--roboti .agent-robot-tile .env-badge, .session-kicker .agent-robot-tile .env-badge { width: 28px; height: 28px; right: -4px; }
+.table.table--roboti .agent-robot-tile .env-badge .icon, .session-kicker .agent-robot-tile .env-badge .icon { width: 16px; height: 16px; }
