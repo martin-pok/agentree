@@ -213,7 +213,7 @@ export class AlertEngine {
   // i víc upozornění na tentýž limit. Upozornění patří oknu: poskytovatel a minuta obnovy. Bez času
   // obnovy se zdroje spárovat nedají a platí jen vlastní klíč upozornění.
   vycerpano(provider, resetsAt, a) {
-    const okno = Number(resetsAt) > 0 ? `limit_okno:${provider || 'other'}:${Math.round(resetsAt / 60e3)}` : null;
+    const okno = Number(resetsAt) > 0 ? ['limit_okno', provider || 'other', Math.round(resetsAt / 60e3)].join(':') : null;
     const keys = this.datastore.data.alertKeys;
     if (okno && keys[okno]) return undefined;
     const raised = this.raise(a);
