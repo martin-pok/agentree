@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydáno
+
+- **Upozornění (toast) s přesnou geometrií.** Kapsle s plným zaoblením se u dvouřádkového textu rozevřela a ikona ležela u zakřivené hrany. Teď má roh 22 px = poloměr ikony 14 + odsazení 8 ze všech stran: jeden řádek je přesná kapsle 44 px, delší text zaoblený obdélník se soustřednou ikonou; ikona, odkaz i křížek stojí u prvního řádku.
+
 ## 0.46.20 – 2026-10-18 · Pomocník ve značkovém přechodu, odlišné profilové obrázky
 
 - **Profilové obrázky se liší tvarem, ne jen barvou.** Kreslení ignorovalo připravené varianty a všech 29 obrázků bylo logo v jiných barvách. Teď se skládají z pěti hlav (logo, široká, kulatá, televize, kopule), osmi typů očí a pěti antén; první dva zůstávají přesně logem, uložená volba ukazuje na stejné místo.
