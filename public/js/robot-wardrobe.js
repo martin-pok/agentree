@@ -14,7 +14,7 @@
 //
 // Barvy jdou přes třídy (workbench.css): rf-* výplň, rk-* čára, ro* obrys, rh světlo, rs stín. Díky
 // tomu se věrně přebarví podle --persona a fungují ve světlém i tmavém režimu.
-import { robot, fit, geometry } from './robot-svg.js';
+import { robot, fit, geometry, paze } from './robot-svg.js';
 import { tr } from './i18n.js';
 
 const c = (v) => Math.round(v * 100) / 100;
@@ -57,11 +57,7 @@ function pas(o, y1, y2, cls) {
 const pasTrupu = (g, f1, f2, cls) => pas(rozsir(g.torso), g.torso.top + f1 * g.torso.h, g.torso.top + f2 * g.torso.h, cls);
 const trup = (g, cls) => { const t = g.torso; return `<rect class="${cls}" x="${c(t.x)}" y="${c(t.top)}" width="${c(t.w)}" height="${c(t.h)}" rx="${c(t.r)}"/>`; };
 // Ruce a chodidla stejně jako v robot-svg.js#robot (konec paže, místo pro botu).
-const ruce = (g) => {
-  const t = g.torso;
-  const arm = g.legs === 'nubs' ? 5 : 9;
-  return [[t.x - 5 - arm * 0.78, t.top + 6 + arm], [t.x + t.w + 5 + arm * 0.78, t.top + 6 + arm]];
-};
+const ruce = (g) => { const { levo, pravo } = paze(g); return [levo.slice(2), pravo.slice(2)]; };
 const chodidla = (g) => {
   const t = g.torso;
   return [54 - t.w / 2 + Math.min(8, t.w / 4), 54 + t.w / 2 - Math.min(8, t.w / 4)];

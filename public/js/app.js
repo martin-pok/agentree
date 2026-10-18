@@ -39,6 +39,18 @@ import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } f
 import { cileHledani, hledejCile, skore } from './hledani.js';
 import { containPopoverWheel } from './scroll-containment.js';
 
+// Otevřené okno (hledání, upozornění, dialog) zamkne stránku přes overflow: hidden a posuvník zmizí.
+// Místo pro něj drží scrollbar-gutter (refinement.css); kde ho prohlížeč nezná, šířku posuvníku
+// si pamatujeme z odemčené stránky a zamčená stránka ji doplní odsazením – rozložení neposkočí.
+if (!globalThis.CSS?.supports?.('scrollbar-gutter', 'stable')) {
+  const zamceno = () => document.body.classList.contains('has-modal') || document.documentElement.classList.contains('notif-open');
+  const zmer = () => { if (!zamceno()) document.documentElement.style.setProperty('--posuvnik', `${Math.max(0, innerWidth - document.documentElement.clientWidth)}px`); };
+  addEventListener('resize', zmer);
+  addEventListener('load', zmer);
+  new MutationObserver(zmer).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  zmer();
+}
+
 for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app')?.setAttribute(attr, tr('Obnovit aktuální data'));
 
 initSelects();

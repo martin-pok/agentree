@@ -45,8 +45,8 @@ button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0;
    a ztlumené oči. Omezení pohybu (systém nebo přepínač) nechá jen klidové pózy bez animace. */
 .robot .robot-body, .robot .robot-head { animation: none; transform: none; }
 .robot :is(.robot-arm-left, .robot-arm-right, .robot-aerial, .robot-eyes) { transform-box: view-box; transition: transform var(--motion-enter) var(--ease), opacity var(--motion-enter) var(--ease); }
-.robot .robot-arm-left { transform-origin: 28px 75px; }
-.robot .robot-arm-right { transform-origin: 80px 75px; }
+.robot .robot-arm-left { transform-origin: 35px 74px; }
+.robot .robot-arm-right { transform-origin: 73px 74px; }
 .robot .robot-aerial { transform-origin: 54px 23px; }
 .robot .robot-eyes { transform-origin: 54px 47px; }
 :is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-aerial { animation: robot-signal 1.6s ease-in-out infinite; }
@@ -121,36 +121,63 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 .zdravi-pocty a[data-ton]:hover { filter: saturate(1.15) brightness(.98); }
 @media (max-width: 560px) { .zdravi-pocty span { font-size: var(--type-small); } }
 
-/* Pozdrav: zprava organický fialový přechod, který se pomalu přelévá (dvě rozmazané skvrny
-   jako ve Figmě, každá jiným tempem). Vpravo na nejsytější fialové stojí počty – bílá na
-   #474ae6 má kontrast přes 6:1; text vlevo zůstává na světlé ploše panelu. */
+/* Pozdrav: zprava jemný, živý fialový přechod (vlastník, 18. 10. 2026: „velmi subtilní“). Dvě
+   rozmazané skvrny se v sobě prolínají – pohyb je znát, barva jen naznačená, takže text všude
+   zůstává tmavý na světlé ploše a kontrast nezávisí na tom, kde skvrny zrovna jsou. Vpravo
+   dnešní den jako kalendářní značka a pod ním dnešní aktivita. */
 .home-desk .home-intro { position: relative; isolation: isolate; overflow: hidden; grid-template-columns: auto minmax(0, 1fr) auto; }
 .home-intro::before, .home-intro::after {
   content: ''; position: absolute; z-index: -1; pointer-events: none; border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%;
-  filter: blur(56px); will-change: transform;
+  filter: blur(48px); will-change: transform;
 }
-.home-intro::before { width: 66%; height: 190%; right: -26%; top: -45%; background: #6260d8; opacity: .62; animation: pozdrav-mesh-a 22s ease-in-out infinite alternate; }
-.home-intro::after { width: 50%; height: 170%; right: -18%; top: -30%; background: #474ae6; animation: pozdrav-mesh-b 28s ease-in-out infinite alternate; }
-@keyframes pozdrav-mesh-a { from { transform: translate(0, 0) rotate(0deg) scale(1); } to { transform: translate(-6%, 8%) rotate(14deg) scale(1.08); } }
-@keyframes pozdrav-mesh-b { from { transform: translate(0, 0) rotate(0deg) scale(1.04); } to { transform: translate(5%, -6%) rotate(-12deg) scale(.96); } }
-/* Pod počty leží vlastní sytá plocha, rozpitá stínem do přechodu: kontrast bílé je zaručený,
-   ať se skvrny zrovna posunuly kamkoli. */
-.home-pocty { display: flex; align-items: baseline; gap: 24px; margin: 0; padding: 6px 12px; list-style: none; color: #fff; white-space: nowrap; border-radius: var(--r-full); background: #474ae6; box-shadow: 0 0 36px 28px #474ae6; }
-.home-pocty li { display: flex; align-items: baseline; gap: 8px; }
-.home-pocty b { font: 400 48px/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums lining-nums; }
-.home-pocty span { font-size: 24px; line-height: 1; }
-.home-pocty:empty { display: none; }
+.home-intro::before { width: 46%; height: 160%; right: -10%; top: -40%; background: color-mix(in srgb, #6260d8 22%, transparent); animation: pozdrav-mesh-a 9s ease-in-out infinite alternate; }
+.home-intro::after { width: 38%; height: 150%; right: 8%; top: -10%; background: color-mix(in srgb, #8b7cf6 18%, transparent); animation: pozdrav-mesh-b 12s ease-in-out infinite alternate; }
+:root[data-theme='dark'] .home-intro::before { background: color-mix(in srgb, #6260d8 30%, transparent); }
+:root[data-theme='dark'] .home-intro::after { background: color-mix(in srgb, #8b7cf6 22%, transparent); }
+@keyframes pozdrav-mesh-a { 0% { transform: translate(0, 0) rotate(0deg) scale(1); } 50% { transform: translate(-14%, 10%) rotate(18deg) scale(1.12); } 100% { transform: translate(-4%, -8%) rotate(-10deg) scale(.94); } }
+@keyframes pozdrav-mesh-b { 0% { transform: translate(0, 0) rotate(0deg) scale(1.05); } 50% { transform: translate(16%, -12%) rotate(-16deg) scale(.92); } 100% { transform: translate(-8%, 10%) rotate(12deg) scale(1.1); } }
+.home-dnes { display: grid; justify-items: end; gap: 6px; margin-right: 4px; color: var(--ink); }
+.home-dnes:empty { display: none; }
+.home-desk .home-intro .home-dnes p { color: var(--ink); max-width: none; }
+.home-desk .home-intro .home-den { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 16px; }
+.home-den b { font: 300 56px/.9 var(--f-display); letter-spacing: -.04em; font-variant-numeric: lining-nums; color: var(--action); }
+.home-den > span { display: grid; gap: 2px; padding-left: 12px; border-left: 1px solid color-mix(in srgb, var(--action) 30%, transparent); line-height: 1.25; }
+.home-den > span > span:first-child { font-weight: 500; }
+.home-den > span > span:last-child { color: var(--ink-2); }
+.home-desk .home-intro .home-aktivita { margin: 0; font-size: 14px; line-height: 1.4; white-space: nowrap; color: var(--ink-2); }
 @media (prefers-reduced-motion: reduce) { .home-intro::before, .home-intro::after { animation: none; } }
 .mascot-motion-off .home-intro::before, .mascot-motion-off .home-intro::after { animation: none; }
-/* Užší okno: počty pod nadpis přes celou šířku, přechod se přesune do pravého dolního rohu. */
+/* Užší okno: den pod nadpis doprava, přechod do pravého dolního rohu. */
 @media (max-width: 1100px) {
   .home-desk .home-intro { grid-template-columns: auto minmax(0, 1fr); }
-  .home-pocty { grid-column: 1 / -1; justify-self: end; }
-  .home-intro::before { width: 90%; height: 120%; right: -30%; top: auto; bottom: -55%; }
-  .home-intro::after { width: 80%; height: 100%; right: -24%; top: auto; bottom: -45%; }
+  .home-dnes { grid-column: 1 / -1; justify-self: end; }
+  .home-intro::before { width: 80%; height: 110%; right: -20%; top: auto; bottom: -40%; }
+  .home-intro::after { width: 60%; height: 90%; right: 10%; top: auto; bottom: -40%; }
 }
 @media (max-width: 560px) {
-  .home-pocty { gap: 16px; }
-  .home-pocty b { font-size: 36px; }
-  .home-pocty span { font-size: 18px; }
+  .home-den b { font-size: 44px; }
+  .home-desk .home-intro .home-den { font-size: 14px; }
+  .home-desk .home-intro .home-aktivita { font-size: 12px; white-space: normal; text-align: right; }
 }
+
+/* Odsazení po stranách roste s výškou (vlastník, 18. 10. 2026): 44px tlačítko s 12–16 px po
+   stranách vypadá stlačeně. Na počítači má text 22 px od okraje, s ikonou na začátku 18 px
+   (ikona opticky vyplní kus prostoru), odkaz se šipkou 18/16 px. */
+@media (min-width: 721px) {
+  :is(.btn, .chip, .lchip):not(.btn--lg):not(.icon-btn) { padding-inline: 22px; font-size: 14px; }
+  :is(.btn, .chip, .lchip):not(.btn--lg):not(.icon-btn):has(> svg:first-child, > .icon:first-child, > .glyph:first-child, > .logo:first-child, > img:first-child) { padding-left: 18px; }
+  .link { padding-inline: 18px 16px; }
+}
+
+/* Posuvník: tenký a tichý, ať nepřebíjí obsah. Místo pro něj je vyhrazené vždy (scrollbar-gutter),
+   takže když otevřené okno stránku zamkne a posuvník zmizí, rozložení neposkočí ani se nepřeskládá.
+   Kde prohlížeč scrollbar-gutter nezná, doplní šířku app.js (--posuvnik). */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) {
+  html:has(body.has-modal), html.notif-open { padding-right: var(--posuvnik, 0px); }
+}
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 20%, transparent) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+*::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid transparent; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 18%, transparent); background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ink) 34%, transparent); background-clip: padding-box; }
