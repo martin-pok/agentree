@@ -1,5 +1,6 @@
 // Automatická kontrola WCAG 2.2 A/AA (axe-core) na všech obrazovkách aplikace: světlý i tmavý vzhled,
 // počítač i telefon. Selže na každém porušení – kontrast, názvy tlačítek, ARIA, popisky polí.
+// 320 × 256 CSS px je přiblížení 400 % (WCAG 1.4.10 Přeskládání): stránka nesmí jezdit do stran.
 // axe-core je jen nástroj QA (npm install --no-save), do aplikace ani package.json nepatří.
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -16,7 +17,7 @@ const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
 const nalezy = [];
 try {
   for (const vzhled of ['light', 'dark']) {
-    for (const [w, h] of [[1440, 900], [375, 812]]) {
+    for (const [w, h] of [[1440, 900], [375, 812], [320, 256]]) {
       // CSP aplikace zakazuje vložený skript – axe se smí vložit jen v tomto kontextu QA.
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', bypassCSP: true, reducedMotion: 'reduce' });
       const page = await ctx.newPage();
@@ -24,6 +25,8 @@ try {
         await page.goto(`${demo.url}/#/${trasa}`);
         await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, vzhled);
         await page.waitForTimeout(1200);
+        const preteka = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+        if (preteka > 0) nalezy.push(`${vzhled} ${w}px /${trasa}: stránka přetéká do strany o ${preteka} px (WCAG 1.4.10)`);
         await page.addScriptTag({ content: axe });
         const v = await page.evaluate(async () => (await globalThis.axe.run(document, {
           runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
@@ -38,4 +41,4 @@ try {
   await demo.close();
 }
 assert.deepEqual(nalezy, [], `porušení WCAG 2.2 A/AA:\n${nalezy.join('\n')}`);
-console.log(`WCAG 2.2 A/AA (axe): ${TRASY.length} obrazovek × světlý/tmavý × 1440/375 px bez porušení.`);
+console.log(`WCAG 2.2 A/AA (axe): ${TRASY.length} obrazovek × světlý/tmavý × 1440/375/320 px bez porušení a bez vodorovného posunu.`);
