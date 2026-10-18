@@ -11,7 +11,7 @@ import { applyClaudeLine, newFileState, createClaudeCodeConnector } from '../src
 import { createCodexConnector } from '../src/connectors/codex.js';
 import { applyRemoteSession } from '../src/connectors/claude-desktop-code.js';
 import { nesparovane } from '../src/bezici-agenti.js';
-import { installHooks, hooksStatus, hookCommand, HOOK_EVENTS, HOOK_EVENTS_ZAKLAD, HOOK_PATH } from '../src/hooks-installer.js';
+import { installHooks, hooksStatus, hookCommand, HOOK_EVENTS, HOOK_EVENTS_ZAKLAD } from '../src/hooks-installer.js';
 import { prehledProRozsireni } from '../src/prehled-rozsireni.js';
 import { selectAgents, pocetProListu } from '../public/js/agent-selection.js';
 import { tempDir, writeJsonl, fakeDatastore } from './helpers.mjs';
@@ -238,7 +238,8 @@ test('hooky: staré propojení bez událostí nástrojů funguje, ale nabídne o
   const vysledek = JSON.parse(await fs.readFile(file, 'utf8'));
   const prikaz = hookCommand(4620, headersFile);
   for (const ev of HOOK_EVENTS) {
-    const nase = vysledek.hooks[ev].filter((g) => g.hooks.some((h) => h.command.includes(HOOK_PATH)));
+    // Na Windows je příkaz zakódovaný (-EncodedCommand), adresa v něm doslova není: porovnává se celý příkaz.
+    const nase = vysledek.hooks[ev].filter((g) => g.hooks.some((h) => h.command === prikaz));
     assert.equal(nase.length, 1, `${ev}: jediný záznam i po opakované instalaci`);
     assert.equal(nase[0].hooks[0].command, prikaz);
     assert.equal(nase[0].matcher, ['PreToolUse', 'PostToolUse'].includes(ev) ? '*' : undefined);
