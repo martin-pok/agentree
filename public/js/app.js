@@ -110,6 +110,8 @@ for (const [nav, text] of Object.entries({ prehled: tr('Přehled'), upozorneni: 
 document.querySelector('[data-nav-action="launch"]').setAttribute('aria-label', tr('Spustit agenta'));
 document.querySelector('[data-nav-action="more"] span').textContent = tr('Více');
 document.querySelector('.search-btn span').textContent = tr('Hledat');
+// Na telefonu je vidět jen lupa – název tlačítka nesmí zmizet se skrytým popiskem.
+document.querySelector('.search-btn').setAttribute('aria-label', tr('Hledat'));
 // Zkratka hledání podle systému: ⌘K na Macu, Ctrl+K jinde (public/js/system.js).
 document.querySelector('.search-btn').setAttribute('aria-keyshortcuts', ariaZkratka('K'));
 titleEl.textContent = tr('Přehled');
