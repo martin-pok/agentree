@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 18. 10. 2026:** **0.46.18 Preview** (`v0.46.18`) je zveřejněné (první aktualizace přes opravený aktualizátor z 0.46.17 – čeká na potvrzení vlastníka na Macu). Další Preview ponese #284 a #285. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a Mac UAT. Vydané `v0.46.17` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
+**Aktuální release vlak 18. 10. 2026:** **0.46.19 Preview** (`v0.46.19`) nese #284–#290 (agent po startu do 2 s na macOS, Útrata v užším okně, kontroly WCAG 2.2 v CI); vlastník ho chce hned na Macu. Předchozí `v0.46.18` je zveřejněné. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a Mac UAT. Vydané `v0.46.17` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## Nevydáno
+## 0.46.19 – 2026-10-18 · Útrata v užším okně, rychlejší první agent na Macu, kontroly přístupnosti
 
 - **Útrata: tabulka nákladů se v užším okně už neposouvá do strany.** Vedle postranního panelu se tabulka (min. 640 px) nevešla v oknech zhruba 700–1100 px – datum a koš byly mimo kartu. O podobě teď rozhoduje šířka karty (container query): pod 656 px se výdaje ukážou jako karty, stejně jako na telefonu.
 - **Box se zkopírovatelnou cestou (Nastavení → Rozšíření) na telefonu:** dlouhá cesta už není natvrdo uříznutá pod tlačítkem Kopírovat – prolnutí u okraje ukazuje, že text pokračuje a jde posunout.
