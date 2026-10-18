@@ -79,6 +79,7 @@ jako tlačítko vedle nich.
 |---|---|---|---|
 | malé | 32 px | 13 px | lišty nad seznamy, ovládání pod polem pro zadání, `.btn--sm` |
 | základ | 40 px | 14 px | aplikace, rozšíření, pole a výběry |
+| počítač | 44 px | 14 px | na počítači (šířka nad 720 px) každá akce s vlastní plochou: tlačítka, segmentová volba (kapsle 44, tlačítka 40, rám 2), hledání, stav spojení, kulatá tlačítka lišty a pole hledání; prvky v jedné řadě jsou vždy stejně vysoké. `.btn--sm` (32 px) zůstává jen uvnitř seznamů a karet |
 | hlavní řada | 44 px | 14 px | ovládání spouštěče na počítači (výběr agenta, režim, projekt, složka, „Spustit“): cíl pro klik podle WCAG 2.2 (2.5.8) s rezervou, všechny prvky v řadě stejně vysoké; segmentová volba je 44 px (kapsle 44, tlačítka 40, rám 2) |
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |

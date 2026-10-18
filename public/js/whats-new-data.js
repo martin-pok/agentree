@@ -6,8 +6,10 @@ export const RELEASES = [
   {
     version: '0.46.18',
     date: '2026-10-18',
-    title: 'Vzhled agenta: devět postav, 16 barev a tlačítko zpět',
+    title: 'AI pomocník, devět postav, 16 barev a tlačítko zpět',
     items: [
+      'Pomocník vpravo dole odpovídá jako AI: vlastními slovy, jen o Agenteeq, a nabídne tlačítko přímo na správné místo. Použije Ollamu na tvém počítači, nebo Claude Code na tvoje předplatné. Vypneš ho v Nastavení.',
+      'Tlačítka a ovládání mají na počítači jednotnou výšku 44 px.',
       'Devět postav s vlastní stavbou těla: kulatý Orbit, hranatý Pixel, štíhlá Nova, robustní Bolt, baculatý Mochi, vysoký Echo s vizorem, Rover na pásech a Sprout s lístkem. Oblečení a převleky sedí na každou z nich.',
       'Šestnáct barev místo čtyř.',
       'Vedle nadpisu stránky je tlačítko zpět: vrátí tě na předchozí obrazovku, když se překlikneš.',
@@ -16,8 +18,10 @@ export const RELEASES = [
       'Okno Vzhled agenta se zavře kliknutím mimo něj.',
     ],
     en: {
-      title: 'Agent look: nine characters, 16 colours and a back button',
+      title: 'AI assistant, nine characters, 16 colours and a back button',
       items: [
+        'The assistant at the bottom right now answers as AI: in its own words, only about Agenteeq, with a button straight to the right place. It uses Ollama on your computer or Claude Code on your subscription. Turn it off in Settings.',
+        'Buttons and controls on the desktop share one height of 44 px.',
         'Nine characters with their own build: round Orbit, boxy Pixel, slim Nova, sturdy Bolt, chubby Mochi, tall Echo with a visor, Rover on tracks and Sprout with a leaf. Clothes and costumes fit every one of them.',
         'Sixteen colours instead of four.',
         'A back button next to the page title takes you to the previous screen when you click the wrong thing.',

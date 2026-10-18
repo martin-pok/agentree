@@ -135,7 +135,7 @@ test('HTTP: /api/pomocnik hledá na Macu v přepisech, telefonu přepisy nevydá
 
   assert.equal((await api(s.url).send('PUT', '/api/settings', { pomocnik: { zobrazit: 'ne' } })).status, 422);
   const ok = await api(s.url).send('PUT', '/api/settings', { pomocnik: { zobrazit: false } });
-  assert.deepEqual(ok.body.settings.pomocnik, { zobrazit: false, model: true });
+  assert.deepEqual(ok.body.settings.pomocnik, { zobrazit: false, model: true, ai: true });
 });
 
 test('pomocník: český tvar slova nevadí – „fakturaci“ najde faktury, „platby“ platbu; krátká slova nezaplaví', async () => {

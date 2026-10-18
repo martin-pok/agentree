@@ -32,7 +32,7 @@ import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { popisPoctu } from './stav-vety.js';
-import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
+import { modifikator, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
 import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
@@ -111,7 +111,6 @@ document.querySelector('[data-nav-action="launch"]').setAttribute('aria-label', 
 document.querySelector('[data-nav-action="more"] span').textContent = tr('Více');
 document.querySelector('.search-btn span').textContent = tr('Hledat');
 // Zkratka hledání podle systému: ⌘K na Macu, Ctrl+K jinde (public/js/system.js).
-document.querySelector('.search-btn kbd').textContent = zkratka('K');
 document.querySelector('.search-btn').setAttribute('aria-keyshortcuts', ariaZkratka('K'));
 titleEl.textContent = tr('Přehled');
 bell.setAttribute('aria-label', tr('Upozornění'));

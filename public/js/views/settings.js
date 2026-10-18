@@ -706,10 +706,10 @@ async function toggleSetting(sw) {
   const key = sw.dataset.setting;
   const next = sw.getAttribute('aria-checked') !== 'true';
   if (key === 'appearanceSystem') { await prepniVzhledSystem(next); return; }
-  if (key === 'pomocnikZobrazit' || key === 'pomocnikModel') {
+  if (key === 'pomocnikZobrazit' || key === 'pomocnikModel' || key === 'pomocnikAi') {
     sw.setAttribute('aria-checked', String(next));
     try {
-      state.settings = (await api.saveSettings({ pomocnik: { [key === 'pomocnikZobrazit' ? 'zobrazit' : 'model']: next } })).settings;
+      state.settings = (await api.saveSettings({ pomocnik: { [{ pomocnikZobrazit: 'zobrazit', pomocnikModel: 'model', pomocnikAi: 'ai' }[key]]: next } })).settings;
       document.dispatchEvent(new CustomEvent('agenteeq:pomocnik'));
       toast(key === 'pomocnikZobrazit' ? (next ? tr('Pomocník je zpět vpravo dole') : tr('Pomocník je skrytý. Zapneš ho tady.')) : tr('Uloženo'));
       update();
@@ -1059,7 +1059,8 @@ function update(topics) {
     </div>
     ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', podleSystemu())), checked: system })}
     <div class="set-divider"></div>
-    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko s robotem vpravo dole: najde dřívější konverzaci nebo poradí, kde co zapnout. Hledá jen na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
+    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
+    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), desc: tr('Odpovídá vlastními slovy jen z návodů k Agenteeq. Použije Ollamu na tomto počítači, jinak Claude Code na tvoje předplatné – pak otázka odejde do Anthropicu. Tvoje konverzace se nikam neposílají.'), checked: state.settings?.pomocnik?.ai !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
     ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), desc: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
     <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>

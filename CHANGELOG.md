@@ -1,7 +1,10 @@
 # Changelog
 
-## 0.46.18 – 2026-10-18 · Vzhled agenta: devět postav, 16 barev a tlačítko zpět
+## 0.46.18 – 2026-10-18 · AI pomocník, devět postav, 16 barev a tlačítko zpět
 
+- **Pomocník odpovídá jako AI.** Na otázky k aplikaci odpoví vlastními slovy, česky i anglicky a s ohledem na předchozí zprávy, jen ze znalostní báze Agenteeq (návody průvodce + popis stránek); pod odpovědí nabídne tlačítka na správné místo v aplikaci. Zdarma: použije Ollamu na tomto počítači, jinak Claude Code na předplatné uživatele (`claude -p` s modelem Haiku, bez nástrojů, bez MCP, bez hooků a bez uložení konverzace, v prázdné dočasné složce; dotaz se neobjeví mezi agenty). Konverzace uživatele do modelu nikdy nejdou. Pod odpovědí je napsané, kdo odpověděl. Vypíná se v Nastavení → Účet a vzhled → Pomocník odpovídá jako AI; z telefonu Claude Code nespustí. Bez AI na počítači odpovídá průvodce jako dřív. „Co na mě čeká?“ a hledání starého chatu zůstávají přesné (živý stav, přepisy na disku). `src/pomocnik-ai.js`, `test/pomocnik-ai.test.mjs`.
+- **Na počítači mají všechny akce 44 px a prvky v jedné řadě stejnou výšku.** Tlačítka, segmentové volby (kapsle 44, tlačítka 40), pole hledání, stav spojení i kulatá tlačítka horní lišty; dřív se v jedné řadě míchalo 40 a 44 px. Pravidlo je v `docs/DESIGN.md` a hlídá ho `qa:tvary`.
+- **Tlačítko Hledat bez klávesové zkratky.** Zkratka ⌘K funguje dál, jen se v liště nevypisuje.
 - **Devět postav s vlastní stavbou těla.** Scout, Orbit (velká kulatá hlava), Pixel (hranatý, čtvercové oči), Nova (štíhlá, dvě antény), Bolt (široký a robustní, blesk), Mochi (baculatý, tváře), Echo (vysoký, vizor), Rover (pásy místo nohou, periskop) a Sprout (lístek, tváře). Šatník je nakreslený jednou a na každou postavu se přenese podle její hlavy a trupu (`fit()` v `public/js/robot-svg.js`), brýle sedí na očích u všech. Agent bez vlastní volby si drží dosavadní výchozí vzhled.
 - **Šestnáct barev místo čtyř**, výraznější výplň robota ve světlém režimu.
 - **Obnova dat už neukazuje pruh ani systémový kurzor.** Ikona v tlačítku se na chvíli promění v hlavu robota ze značky, přes kterou přejede fialový odlesk (stejný motiv jako načítací scéna aplikace); plovoucí karta s pruhem zmizela, stav slyší jen čtečka obrazovky.
