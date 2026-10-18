@@ -192,7 +192,7 @@ function mount(el) {
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
   workspace.className = 'home-workspace';
-  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div><ul class="home-pocty" data-region="pozdrav-pocty" aria-label="${tr('Stav agentů')}"></ul></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
   // Rozhodnutí a stav agentů stojí vedle sebe: vlevo co čeká na tebe, vpravo jestli všechno běží.
@@ -356,12 +356,18 @@ function update(topics = new Set(['all'])) {
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
     const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, now });
+    // Barvu stavu dostane jen dlaždice, ve které něco je (refinement.css).
     const pocty = [
-      [working.length, popisPoctu('working', working.length), 'ok', '#/agenti?stav=working'],
+      [working.length, popisPoctu('working', working.length), working.length ? 'pracuje' : '', '#/agenti?stav=working'],
       [needs.length, popisPoctu('needs_input', needs.length), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
       [failed.length, popisPoctu('failed', failed.length), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
-      [limited.length, popisPoctu('limited', limited.length), limited.length ? 'problem' : '', '#/agenti?stav=limited'],
+      [limited.length, popisPoctu('limited', limited.length), limited.length ? 'limit' : '', '#/agenti?stav=limited'],
     ];
+    // Počty v pozdravu: kolik agentů pracuje a kolik stojí (čeká na tebe, selhalo nebo narazilo
+    // na limit). Když se nepodařilo zjistit, co běží, nebo není žádný agent, počty se neukazují –
+    // nula by vypadala jako změřený stav.
+    const stoji = needs.length + failed.length + limited.length;
+    zivy(el, 'pozdrav-pocty', stav === 'nevim' || !all.length ? '' : `<li><b>${working.length}</b><span>${esc(popisPoctu('working', working.length))}</span></li><li><b>${stoji}</b><span>${esc(popisPoctu('stoji', stoji))}</span></li>`);
     zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
       <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>${poznamka ? `<p class="zdravi-pozn">${esc(poznamka)}</p>` : ''}
       <ul class="zdravi-pocty">${pocty.map(([n, popis, ton, href]) => `<li><a href="${href}" data-ton="${ton}"><b>${n}</b><span>${esc(popis)}</span></a></li>`).join('')}</ul>

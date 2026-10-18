@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.25',
+    date: '2026-10-18',
+    title: 'Přehled podle Figmy',
+    items: [
+      'Každé tlačítko na počítači má aspoň 44 px – i v kartách a seznamech.',
+      'Pozdrav s pomalu se přelévajícím fialovým přechodem a počtem agentů, kteří pracují a stojí.',
+      'Dlaždice Stav agentů se obarví, jen když v nich něco je.',
+      'Větší nadpisy sekcí a čitelnější text v kartách.',
+    ],
+    en: {
+      title: 'Overview as designed in Figma',
+      items: [
+        'Every button on desktop is at least 44 px tall – in cards and lists too.',
+        'The greeting has a slowly flowing violet gradient with counts of agents working and stalled.',
+        'Agent status tiles take on colour only when they have something in them.',
+        'Larger section headings and more readable card text.',
+      ],
+    },
+  },
+  {
     version: '0.46.24',
     date: '2026-10-18',
     title: 'Šatník na míru a agenti v cloudu',

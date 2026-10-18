@@ -55,5 +55,7 @@ export function popisPoctu(stav, n) {
   if (stav === 'failed') return plural(n, 'selhal', 'selhali', 'selhalo');
   if (stav === 'waiting') return plural(n, 'čeká na zadání', 'čekají na zadání', 'čeká na zadání');
   if (stav === 'limited') return tr('na limitu');
+  // Stojí: čeká na tebe, selhal nebo narazil na limit (počty v pozdravu na Přehledu).
+  if (stav === 'stoji') return tr('stojí');
   return '';
 }

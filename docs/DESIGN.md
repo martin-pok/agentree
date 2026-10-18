@@ -79,7 +79,7 @@ jako tlačítko vedle nich.
 |---|---|---|---|
 | malé | 32 px | 13 px | lišty nad seznamy, ovládání pod polem pro zadání, `.btn--sm` |
 | základ | 40 px | 14 px | aplikace, rozšíření, pole a výběry |
-| počítač | 44 px | 14 px | na počítači (šířka nad 720 px) každá akce s vlastní plochou: tlačítka, segmentová volba (kapsle 44, tlačítka 40, rám 2), hledání, stav spojení, kulatá tlačítka lišty a pole hledání; prvky v jedné řadě jsou vždy stejně vysoké. `.btn--sm` (32 px) zůstává jen uvnitř seznamů a karet |
+| počítač | 44 px | 14 px | na počítači (šířka nad 720 px) každá akce s vlastní plochou: tlačítka, segmentová volba (kapsle 44, tlačítka 40, rám 2), hledání, stav spojení, kulatá tlačítka lišty a pole hledání; prvky v jedné řadě jsou vždy stejně vysoké. platí i pro `.btn--sm` v kartách a seznamech, čipy, odkazy-kapsle, položky menu, pole a položky palety (rozhodnutí vlastníka podle Figmy, 18. 10. 2026); 32 px zůstává jen na telefonu |
 | hlavní řada | 44 px | 14 px | ovládání spouštěče na počítači (výběr agenta, režim, projekt, složka, „Spustit“): cíl pro klik podle WCAG 2.2 (2.5.8) s rezervou, všechny prvky v řadě stejně vysoké; segmentová volba je 44 px (kapsle 44, tlačítka 40, rám 2) |
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |
@@ -171,7 +171,7 @@ v `qa:tvary` i `qa:contrast`.
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
   a upozornění), web a okno rozšíření a změří tvar každého ovládacího prvku. Stejným průchodem
-  změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 44 / 48 px;
+  změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 44 / 48 px, v aplikaci na počítači jen 44 / 48 px;
   výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
@@ -222,3 +222,14 @@ Editor je vlastní modální dialog, systémové `<select>` se v něm nepoužív
 Usazení šatníku na devět postav (rozhodnutí vlastníka 18. 10. 2026, po čepici „v půlce hlavy“): čepice leží na temeni a její lem končí nad horní hranou obličeje, nikdy přes ni; brýle a knír se kotví k linii očí a výškou se řídí výškou obličeje (u nízkého širokého obličeje Bolta, Mochi a Rovera by jinak přetékaly), vodorovně nejvýš o 10 % širší, aby skla zůstala kulatá a na očích. Kukla, přilba, kapuce, šátek a dres převleku se nekreslí pro Scouta a nepřeškálovávají, ale vznikají z `geometry()` dané postavy, takže kulatý Orbit dostane kulatou kuklu a hranatý Pixel hranatou. Hlídá to `test/satnik-kotvy.test.mjs` (obálka každé položky na každé postavě). Mřížky mají 15 čepic a po 11 položkách v ostatních skupinách, s volbou „bez“ tedy celé řady.
 
 **Stav:** šatník a dialog přepracované na zadání majitele z reportu (bod 10.5); čeká na ověření na Macu.
+
+## Přehled: pozdrav a Stav agentů (Figma, 18. 10. 2026)
+
+- Pozdrav má zprava organický fialový přechod (#6260d8 a #474ae6, rozmazané skvrny, které se
+  pomalu přelévají 22 s a 28 s; při omezení pohybu stojí). Vpravo bílé počty „N pracuje · N stojí“
+  (48/24 px) na vlastní syté ploše #474ae6, takže kontrast nezávisí na poloze skvrn. Stojí = čeká
+  na tebe + selhal + na limitu. Když se nepodařilo zjistit, co běží, nebo není žádný agent, počty
+  se neukazují.
+- Dlaždice Stav agentů: barva stavu (25 % odstínu na kartě) jen když je počet nenulový;
+  nula zůstává neutrální. Text dlaždice je vždy v barvě textu.
+- Nadpisy sekcí 24 px, odkazy u nich 16 px, text v kartách 16 px, druhý řádek 14 px.
