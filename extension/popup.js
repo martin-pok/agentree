@@ -417,8 +417,12 @@ function vetaZdravi(z) {
   }
   if (z.stav === 'pozor') return tvar(z.cekaNaTebe || 0, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů');
   if (z.stav === 'nevim') return tr('Nepodařilo se zjistit, co na počítači běží');
-  return z.pracuje ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje');
+  if (z.pracuje) return tr('Vše běží v pořádku');
+  return z.nejiste ? tvarNejiste(z.nejiste) : tr('V pořádku, nikdo nepracuje');
 }
+
+// Agenti, kterým chybí čerstvý stav (naposledy pracovali) – stejně jako „?“ v liště macOS.
+const tvarNejiste = (n) => mnozne(n, 'U {0} agenta chybí čerstvý stav', 'U {0} agentů chybí čerstvý stav', 'U {0} agentů chybí čerstvý stav').replace('{0}', n);
 
 // Souhrn pod nadpisem osy: věta o stavu a kolik agentů pracuje. Nezjištěný výpis procesů se nikdy
 // netváří jako „nic neběží“ a neopakuje se dvakrát; nedoručené hlášení má přednost.
@@ -428,6 +432,7 @@ function souhrnStavu(z, { selhaloHlaseni = false } = {}) {
   if (!z) return { ton: 'warn', text: [...casti, tr('Agenti na počítači: nezjištěno')].join(' · ') };
   casti.push(vetaZdravi(z));
   if (z.pracuje && z.stav !== 'ok') casti.push(`${z.pracuje} ${mnozne(z.pracuje, 'pracuje', 'pracují', 'pracuje')}`);
+  if (z.nejiste && (z.stav !== 'ok' || z.pracuje)) casti.push(tvarNejiste(z.nejiste));
   if (z.procesyNevim && z.stav !== 'nevim') casti.push(tr('Nepodařilo se zjistit, co na počítači běží'));
   return { ton: selhaloHlaseni || z.procesyNevim ? 'warn' : '', text: casti.join(' · ') };
 }

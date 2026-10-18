@@ -162,6 +162,7 @@
       'Problém má {0} agent|Problém mají {0} agenti|Problém má {0} agentů': ['{0} agent has a problem', '{0} agents have a problem'],
       'Potřebuje tě {0} agent|Potřebují tě {0} agenti|Potřebuje tě {0} agentů': ['{0} agent needs you', '{0} agents need you'],
       'pracuje|pracují|pracuje': ['working', 'working'],
+      'U {0} agenta chybí čerstvý stav|U {0} agentů chybí čerstvý stav|U {0} agentů chybí čerstvý stav': ['No fresh status for {0} agent', 'No fresh status for {0} agents'],
     },
   };
 

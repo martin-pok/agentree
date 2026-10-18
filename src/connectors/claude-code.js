@@ -299,6 +299,7 @@ function onUser(st, s, o, ts) {
   if (!text) return;
   if (/^\[Request interrupted/.test(text)) {
     s.running = false;
+    s.prerusenoAt = ts || Date.now();
     s.activity = '';
     s.pending = null;
     s.toolWaitSince = 0;
@@ -614,6 +615,7 @@ export function createClaudeCodeConnector(ctx) {
     if (f.parentLocalId) {
       const popis = subagentTitles.get(f.localId.replace(/^agent-/, ''));
       if (popis) s.title = popis;
+      if (lines.length) pomocnikPracoval(f.parentLocalId, lines);
     }
     // Pomocného agenta nelze samostatně obnovit – příkaz `claude --resume` platí jen pro rodiče.
     if (!f.parentLocalId) setResume(s, f.localId);
@@ -625,6 +627,35 @@ export function createClaudeCodeConnector(ctx) {
     f.mtimeMs = stat.mtimeMs;
     store.commit(s);
     bindFileAccount(file, f);
+  }
+
+  // Pomocný agent zapisuje do vlastního souboru (subagents/agent-*.jsonl), rodič mezitím jen čeká
+  // na výsledek nástroje Task. Bez tohohle by rodič po 30 minutách práce pomocníka přešel do
+  // „Delší dobu bez aktivity“. Hooky pomocníka navíc chodí pod session_id rodiče, takže žádost
+  // o povolení nástroje pomocníka visí na rodiči – výsledek nástroje v souboru pomocníka po ní
+  // znamená, že ji uživatel vyřídil.
+  function pomocnikPracoval(parentLocalId, lines) {
+    const rodic = store.get(`claude-code:${parentLocalId}`);
+    if (!rodic) return;
+    let posledni = 0;
+    let vysledek = 0;
+    for (const o of lines) {
+      const ts = toTs(o.timestamp);
+      if (!ts) continue;
+      if (ts > posledni) posledni = ts;
+      if (o.type === 'user' && Array.isArray(o.message?.content) && o.message.content.some((c) => c?.type === 'tool_result') && ts > vysledek) vysledek = ts;
+    }
+    let zmena = false;
+    if (rodic.pending?.kind === 'permission' && vysledek >= rodic.pending.at) {
+      rodic.pending = null;
+      zmena = true;
+    }
+    posledni = Math.min(posledni, Date.now());
+    if (rodic.running && posledni > (rodic.runningAt || 0) && posledni >= (rodic.stopAt || 0)) {
+      rodic.runningAt = posledni;
+      zmena = true;
+    }
+    if (zmena) store.commit(rodic);
   }
 
   // Pravidelný průchod je pojistka za sledování souborů. Soubor, do kterého se hodinu nezapsalo,
@@ -668,7 +699,7 @@ export function createClaudeCodeConnector(ctx) {
   async function ingestHook(p, now = Date.now()) {
     if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
     const event = String(p.hook_event_name || '');
-    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'].includes(event)) return { ok: false, error: ui('Neznámá událost.') };
+    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd', 'PreToolUse', 'PostToolUse'].includes(event)) return { ok: false, error: ui('Neznámá událost.') };
     // Hook zná přesnou cestu k přepisu. Leží-li mimo známé kořeny (CLAUDE_CONFIG_DIR, který aplikace
     // z Finderu nevidí), přidá se jeho kořen – jinak by agent s hooky byl vidět bez přepisu a tokenů.
     const koren = korenZPrepisu(p.transcript_path, p.session_id);
@@ -681,6 +712,7 @@ export function createClaudeCodeConnector(ctx) {
     lastHookAt = now;
     s.staleMs = 30 * MIN;
     if (event !== 'Notification') s.toolWaitSince = 0;
+    const toolUseId = typeof p.tool_use_id === 'string' ? p.tool_use_id.slice(0, 120) : '';
     if (typeof p.cwd === 'string' && p.cwd && !s.cwd) {
       s.cwd = p.cwd;
       setResume(s, p.session_id);
@@ -707,7 +739,9 @@ export function createClaudeCodeConnector(ctx) {
         const type = p.notification_type;
         const msg = clip(p.message || '', 200);
         if (type === 'permission_prompt' || (!type && /permission/i.test(msg))) {
-          s.pending = { kind: 'permission', text: msg || ui('Potřebuje povolení k akci'), at: now, source: 'hook' };
+          // Claude Code se na povolení ptá až po hooku PreToolUse, takže žádost patří poslednímu
+          // nástroji, který začal a ještě neskončil (Notification sama id nástroje nenese).
+          s.pending = { kind: 'permission', text: msg || ui('Potřebuje povolení k akci'), at: now, source: 'hook', toolUseId: s.hookTool || undefined };
         } else if (type === 'elicitation_dialog') {
           s.pending = { kind: 'question', text: msg || ui('Potřebuje doplnit údaje'), at: now, source: 'hook' };
         } else if (type === 'idle_prompt') {
@@ -716,6 +750,23 @@ export function createClaudeCodeConnector(ctx) {
         }
         break;
       }
+      // Žádost o povolení skončila (schválení ani zamítnutí Claude Code samo nehlásí): začal další
+      // nástroj, nebo doběhl ten, kvůli kterému se ptal. Doběhnutí souběžného nástroje (čtení během
+      // čekání na povolení) žádost neruší. Pomocný agent posílá hooky pod session_id rodiče.
+      case 'PreToolUse': {
+        const zadost = s.pending?.kind === 'permission' && s.pending.source === 'hook' ? s.pending : null;
+        if (zadost && now > zadost.at && toolUseId !== zadost.toolUseId) s.pending = null;
+        // Hook dorazil dřív než žádost, ale zpracoval se až po ní: žádost patří tomuto nástroji.
+        else if (zadost && now <= zadost.at && toolUseId) zadost.toolUseId = toolUseId;
+        if (toolUseId) s.hookTool = toolUseId;
+        if (s.running && now > s.runningAt) s.runningAt = now;
+        break;
+      }
+      case 'PostToolUse':
+        if (s.pending?.kind === 'permission' && s.pending.source === 'hook' && (!s.pending.toolUseId || s.pending.toolUseId === toolUseId)) s.pending = null;
+        if (toolUseId && s.hookTool === toolUseId) s.hookTool = '';
+        if (s.running && now > s.runningAt) s.runningAt = now;
+        break;
       case 'Stop':
         s.running = false;
         s.stopAt = now;

@@ -29,6 +29,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     runningAt: 0,
     procesSkoncil: 0,     // kdy výpis procesů potvrdil, že proces vedoucí tah skončil (src/konec-procesu.js)
     stopAt: 0,
+    prerusenoAt: 0,       // kdy byl tah přerušen (Esc v Claude Code, turn_aborted v Codexu) – přerušený tah není „hotovo“
     toolWaitSince: 0,
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
     permissionMode: '',   // režim oprávnění Claude Code, když ho přepis nese
@@ -42,6 +43,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     limit: null,
     ended: false,
     hookAt: 0,
+    hookTool: '',         // id nástroje z posledního hooku PreToolUse, který ještě nedoběhl (claude-code.js)
     failure: null,
     context: null,
     effort: '',
@@ -154,6 +156,12 @@ export function vetaLimitu(limit) {
   return ui('{0} vyčerpán', limit.label);
 }
 
+// Čekání a selhání, které zdroj jen převzal z cache (vzdálený Claude Code, `observedAt` = kdy ji
+// Claude Desktop uložil), platí k tomu okamžiku. Starší než `staleMs` se neschovává – rozhodnutí
+// i chyba se samy nevyřeší –, ale hlásí se jako nečerstvé a s časem, ke kterému platí.
+const zastarale = (x, s, now) => Boolean(x.observedAt && now - x.observedAt > s.staleMs);
+const hlaseniZ = (x, text, s, now) => (zastarale(x, s, now) ? ui('{0} · stav z {1}', text, CAS_OBNOVY(x.observedAt)) : text);
+
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
@@ -164,11 +172,13 @@ export function deriveStatus(s, now) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
     if (active) return { status: 'limited', reason: vetaLimitu(s.limit), stale: false };
   }
-  // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
-  if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {
-    return { status: 'failed', reason: s.failure.text || ui('Spuštění selhalo'), stale: false };
+  // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat
+  // nebo nezačne nový tah (zadání po selhání) – doběhlý tah po obnovení selhání překrývá.
+  const prekonano = (s.running && (s.runningAt || 0) > s.failure?.at) || (s.turnStartedAt || 0) > s.failure?.at;
+  if (s.failure && now - s.failure.at < DAY && !prekonano) {
+    return { status: 'failed', reason: hlaseniZ(s.failure, s.failure.text || ui('Spuštění selhalo'), s, now), stale: zastarale(s.failure, s, now) };
   }
-  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || ui('Potřebuje tvé rozhodnutí'), stale: false };
+  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: hlaseniZ(s.pending, s.pending.text || ui('Potřebuje tvé rozhodnutí'), s, now), stale: zastarale(s.pending, s, now) };
   // Proces bez přepisu není konverzace ani stav „čeká na zadání“. Víme pouze, že příslušný program
   // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
   if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
@@ -201,8 +211,9 @@ export function deriveStatus(s, now) {
   if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
-  const done = answered && !stale;
-  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  const preruseno = !s.running && s.prerusenoAt > 0 && s.prerusenoAt >= (s.turnStartedAt || 0);
+  const done = answered && !stale && !preruseno;
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : preruseno ? ui('Přerušeno, čeká na další zadání') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
   if (age < DAY) return { status: 'idle', reason: '', stale, done };
   return { status: 'archived', reason: '', stale, done };
 }

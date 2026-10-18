@@ -42,7 +42,9 @@ const stejnaSlozka = (a, b) => !a || !b || slozka(a) === slozka(b);
  * `procesy`: [{ pid, runtime, od, cwd }], `sessions`: modely session ze storu.
  */
 export function nesparovane(procesy, sessions) {
-  const volne = sessions.filter((s) => !s.proces);
+  // Pomocný agent běží uvnitř procesu rodiče – vlastní proces nemá, a kdyby si ho „vzal“,
+  // zůstal by další volný proces (třeba druhý Claude Code ve stejné složce) neviditelný.
+  const volne = sessions.filter((s) => !s.proces && !s.parentId);
   const zbyva = [];
   // Starší proces si vybírá první a bere nejstarší konverzaci, která od jeho startu žila. Novější
   // proces tak starší konverzaci nikdy nepřebere a spárování mezi průchody nepřeskakuje (záznam

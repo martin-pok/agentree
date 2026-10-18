@@ -2,7 +2,7 @@
 import { loadConfig, VERSION } from '../src/config.js';
 import { createApp } from '../src/app.js';
 import { createHttpServer } from '../src/http.js';
-import { pocetProListu } from '../public/js/agent-selection.js';
+import { pocetProListu, selectAgents } from '../public/js/agent-selection.js';
 import http from 'node:http';
 import { bindDesktop, alive } from './lifecycle.mjs';
 
@@ -50,7 +50,8 @@ try {
   let lastRunningKey = null;
   const badge = () => {
     const sessions = app.store.list();
-    const attention = sessions.filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length;
+    // Stejný výběr jako přehled: podřízený agent se nepočítá zvlášť, jeho stav nese rodič.
+    const attention = selectAgents(sessions).filter((s) => ['needs_input', 'limited', 'failed'].includes(s.status)).length;
     const { pracuje: running, nejiste } = pocetProListu(sessions);
     if (attention !== lastAttentionCount) {
       report({ type: 'badge', count: attention });

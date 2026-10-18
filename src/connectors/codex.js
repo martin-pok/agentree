@@ -338,6 +338,17 @@ export function createCodexConnector(ctx) {
             s.activity = '';
             touch(s, ts);
             return;
+          // Přerušený tah (Esc, nové zadání místo běžícího, konec revize) končí jako task_complete,
+          // jen se nehlásí jako „hotovo“. Název a důvody (`interrupted`, `replaced`, `review_ended`)
+          // podle zdroje openai/codex (protocol.rs, rollout/policy.rs – událost se do přepisu ukládá).
+          case 'turn_aborted':
+            s.running = false;
+            s.activity = '';
+            s.toolWaitSince = 0;
+            s.prerusenoAt = Math.min(ts || Date.now(), Date.now());
+            pushEntry(s, { at: ts, role: 'system', text: p.reason === 'interrupted' ? ui('Přerušeno uživatelem') : ui('Tah přerušen') });
+            touch(s, ts);
+            return;
           case 'token_count': {
             const t = p.info?.total_token_usage;
             if (t) {

@@ -87,8 +87,10 @@ Konektor nastavuje fakta, `deriveStatus()` z nich určí stav v tomto pořadí:
 | Priorita | Stav | Podmínka |
 |---|---|---|
 | 1 | `limited` | `limit.reached` a (čas obnovy v budoucnu, nebo bez času obnovy a < 5 h) |
-| 2 | `failed` | `failure` (spuštění skončilo chybou) mladší než 24 h, pokud agent od té doby znovu nezačal pracovat |
+| 2 | `failed` | `failure` (spuštění skončilo chybou) mladší než 24 h, pokud agent od té doby znovu nezačal pracovat ani nezačal nový tah (`turnStartedAt` > `failure.at`) |
 | 3 | `needs_input` | `pending` (povolení, otázka, plán) mladší než 12 h |
+
+U `failed` a `needs_input` převzatých z cache (`observedAt`, vzdálený Claude Code) starší než `staleMs` je výsledek `stale: true` a důvod nese „· stav z <čas načtení>“. Přerušený tah (`prerusenoAt` ≥ `turnStartedAt`) je `waiting` bez `done`. Výběr agentů (`public/js/agent-selection.js#selectAgents`) přenese nejnaléhavější stav skrytého pomocníka (`needs_input` > `failed` > `limited`) na viditelného rodiče – přehled, rozšíření i odznak v Docku pak počítají totéž.
 | 4 | `waiting` | `proces` – agent známý jen z běžícího procesu, zatím bez přepisu (`src/bezici-agenti.js`) |
 | 5 | `working` | `running` a poslední známka běhu mladší než `staleMs`, pokud mezitím neskončil proces, který tah vedl (`procesSkoncil` ≥ `runningAt`) |
 | 6 | `idle`/`archived` | `ended` (SessionEnd) |
