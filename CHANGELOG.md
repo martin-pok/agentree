@@ -1,5 +1,13 @@
 # Changelog
 
+## Nevydáno
+
+- **Oči vždy uprostřed obličeje.** Poloha očí se počítala jako u Scouta (24,5 bodu pod temenem × šířka hlavy), takže u postav s jiným poměrem hlavy vyjížděly z obličeje – Bolt je měl pod jeho spodním okrajem. Teď jsou ve středu tmavé plochy a jejich velikost nepřeroste výšku obličeje.
+- **Šatník sedí na každé postavě.** Čepice se kotví k temeni, brýle, monokl, knír a obličejové části převleků k linii očí – obojí stejným měřítkem v obou osách, nic se nenatahuje. Oblečení dál drží trup. Ověřeno na všech 9 postavách × 34 položkách.
+- **Přepracované postavy:** Orbit má kulatou hlavu a planetku s prstencem, Pixel ostré rohy a pixelový úsměv, Nova hvězdu na hrudi a hvězdičky na anténách, Bolt vyšší hlavu, Mochi je nově buchtička se šťastnýma očima ^^, ofinkou a tvářičkami.
+- **Šatník bez výrazných obrysů:** čáry kolem čepic a oblečení jsou jen jemné dotažení hrany, jako u robota samotného.
+- **Vzhled agenta se mění klepnutím na robota** v hlavičce detailu (odznak s tužkou), místo osamoceného tlačítka v řádku stavu.
+
 ## 0.46.20 – 2026-10-18 · Pomocník ve značkovém přechodu, odlišné profilové obrázky
 
 - **Profilové obrázky se liší tvarem, ne jen barvou.** Kreslení ignorovalo připravené varianty a všech 29 obrázků bylo logo v jiných barvách. Teď se skládají z pěti hlav (logo, široká, kulatá, televize, kopule), osmi typů očí a pěti antén; první dva zůstávají přesně logem, uložená volba ukazuje na stejné místo.

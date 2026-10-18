@@ -241,14 +241,14 @@ try {
       await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
       await dlg.locator('input[name="nickname"]').fill('Testovací agent');
       assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
-      await dlg.locator('.studio-preview .robot-wear--head').waitFor();
+      await dlg.locator('.studio-preview .robot-wear--hat').waitFor();
       // Čepice, obličej a oblečení se kombinují. Převlek je oblečení na celé tělo: nahradí jen oblečení,
       // čepice i doplněk na obličej na něm zůstanou.
       await dlg.locator('[data-tab="face"]').click();
       await dlg.locator('[data-pick="face"][data-value="sunglasses"]').click();
       await dlg.locator('[data-tab="outfit"]').click();
       await dlg.locator('[data-pick="outfit"][data-value="scarf"]').click();
-      assert.equal(await dlg.locator('.studio-preview .robot-wear').count(), 2, 'čepice + brýle sdílejí vrstvu hlavy, šála je další');
+      assert.equal(await dlg.locator('.studio-preview .robot-wear').count(), 3, 'čepice (kotva temeno), brýle (kotva oči) a šála (trup) – tři vrstvy');
       await dlg.locator('[data-tab="costume"]').click();
       await dlg.locator('[data-pick="costume"][data-value="astronaut"]').click();
       assert.equal(await dlg.locator('[data-pick="costume"][data-value="astronaut"]').getAttribute('aria-pressed'), 'true');
