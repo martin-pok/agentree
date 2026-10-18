@@ -862,7 +862,12 @@ function vykresli() {
   nastavZnacku(rezim !== 'offline');
   const out = $('outdated');
   out.hidden = !(pripojeno && seznam.zastarala);
-  if (!out.hidden) out.textContent = sazba(tr('Je k dispozici verze {0}. Chrome ji nainstaluje sám; hned ji získáš na stránce chrome://extensions tlačítkem Aktualizovat.', seznam.ocekavana));
+  // Z obchodu přijde nová verze, až ji Google zveřejní – to se nedá slíbit. Rozbalená kopie se jen
+  // znovu načte ze složky, kterou aplikace při aktualizaci přepíše.
+  const zObchodu = Boolean(chrome.runtime.getManifest().update_url);
+  if (!out.hidden) out.textContent = sazba(zObchodu
+    ? tr('Aplikace má novější rozšíření {0}, Chrome Web Store ho zatím nenabízí. Nainstaluješ ho v aplikaci: Nastavení → Propojení → Rozšíření pro Chrome.', seznam.ocekavana)
+    : tr('Je k dispozici verze {0}. Na stránce chrome://extensions u Agenteeq klikni na Znovu načíst.', seznam.ocekavana));
   vykresliOsu();
 }
 

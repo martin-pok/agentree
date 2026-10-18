@@ -2815,35 +2815,17 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .link[href]:hover::after { translate: none; }
 }
 
-/* Refresh: one-line status, a restrained activity dot and an honest indeterminate track.
-   Refresh never obscures or disables the rest of the application. */
-#refresh-app[aria-busy='true'] { cursor: progress; color: var(--ink); }
-#refresh-app.is-refreshing .icon { animation: none; }
-.refresh-status {
-  position: fixed; z-index: 110; top: 76px; right: 24px; width: min(274px, calc(100vw - 32px));
-  display: flex; gap: 10px; align-items: center; box-sizing: border-box;
-  padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 12px;
-  background: var(--surface, var(--bg)); color: var(--ink);
-  box-shadow: 0 8px 24px #00000012; pointer-events: none;
-}
-.refresh-status__indicator {
-  flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--action); animation: refresh-breathe 1.6s ease-in-out infinite;
-}
-.refresh-status__content { min-width: 0; flex: 1; display: grid; gap: 8px; }
-.refresh-status__content strong {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 13px; line-height: 1.3; font-weight: 600;
-}
-.refresh-status__track { overflow: hidden; height: 2px; border-radius: 2px; background: var(--line-2); }
-.refresh-status__track i {
-  display: block; width: 34%; height: 100%; border-radius: inherit;
-  background: var(--action); animation: refresh-scan 1.9s ease-in-out infinite alternate;
-}
-@keyframes refresh-scan { from { transform: translateX(-101%); } to { transform: translateX(295%); } }
-@keyframes refresh-breathe { 50% { opacity: .35; } }
-@media (max-width: 880px) { .refresh-status { top: 68px; right: 12px; } }
+/* Obnova: ikona se promění v hlavu robota ze značky s fialovým odleskem (motiv načítací scény). */
+#refresh-app { position: relative; }
+#refresh-app .refresh-robot { display: none; width: 22px; height: 22px; overflow: visible; }
+#refresh-app.is-refreshing .icon { display: none; }
+#refresh-app.is-refreshing .refresh-robot { display: block; animation: rr-nadech 1.1s cubic-bezier(.45, 0, .55, 1) infinite; }
+#refresh-app.is-refreshing { color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, #6260d8 45%, var(--line)); background: color-mix(in srgb, #6260d8 8%, var(--card)); }
+.rr-zaklad { fill: currentColor; opacity: .5; }
+.rr-lesk { animation: rr-lesk 1.1s cubic-bezier(.65, 0, .35, 1) infinite; }
+@keyframes rr-lesk { from { transform: translateX(0); } to { transform: translateX(78px); } }
+@keyframes rr-nadech { 50% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) {
-  .refresh-status__indicator, .refresh-status__track i { animation: none !important; }
-  .refresh-status__track i { width: 100%; opacity: .55; }
+  #refresh-app.is-refreshing .refresh-robot, .rr-lesk { animation: none; }
+  .rr-zaklad { opacity: .85; }
 }
