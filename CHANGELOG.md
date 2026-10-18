@@ -2,6 +2,7 @@
 
 ## Nevydáno
 
+- **Agent spuštěný hned po startu aplikace se ukáže do 2 s i na macOS.** FSEvents doručuje události až od rozběhu proudu, který na vytíženém Macu trvá i přes sekundu – zápis v té mezeře se dřív ukázal až při dalším opakování. Sledování existujícího kořene přepisů teď po prvním zapnutí jednou doskenuje (`src/watch.js`, test v `test/detekce-agentu.test.mjs`). Odhalil to hraniční běh testu „čas do přehledu“ v CI (#180).
 - **Automatická kontrola WCAG 2.2 A/AA (axe-core) v CI** (`npm run qa:axe`): všech 8 obrazovek ve světlém i tmavém vzhledu na počítači i telefonu, selže na každém porušení. Při prvním běhu našla tlačítko Hledat bez přístupného názvu na telefonu (vidět je jen lupa) – opraveno, má `aria-label`.
 
 ## 0.46.18 – 2026-10-18 · AI pomocník, devět postav, 16 barev a tlačítko zpět

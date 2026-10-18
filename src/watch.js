@@ -20,6 +20,7 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
   let kontrolaVzniku = null;
   let doskenNovehoKorene = null;
   let driveChybelKoren = false;
+  let prvniDosken = false;
   // The guard event can be lost on busy macOS runners or when a new folder is
   // created alongside its first JSONL. Check only the exact missing directory,
   // never scan the parent or a user's HOME; stop immediately after activation.
@@ -111,16 +112,22 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
       // Reconcile that one newly discovered root once more after the writer's
       // initial burst. Existing roots NEVER get this extra scan; no parent/HOME
       // directories are traversed and the timer is cleared with the watcher.
-      if (driveChybelKoren) {
+      // Totéž platí pro první zapnutí nad existujícím kořenem: macOS FSEvents doručuje události až
+      // od chvíle, kdy se proud skutečně rozběhne (na vytíženém stroji i přes sekundu po fs.watch).
+      // Zápis v té mezeře by se ukázal až při dalším opakování, ne do slíbených 2 s. Proto po prvním
+      // zapnutí ještě jeden dosken; při dalších zapnutích (po chybě watcheru) ne.
+      const dosken = driveChybelKoren ? ['new-root-rescan', 350] : pokusy === 1 && !prvniDosken ? ['start-rescan', 900] : null;
+      if (dosken) {
         driveChybelKoren = false;
+        prvniDosken = true;
         clearTimeout(doskenNovehoKorene);
         doskenNovehoKorene = setTimeout(() => {
           doskenNovehoKorene = null;
           if (!closed && watcher) {
-            trace('new-root-rescan');
+            trace(dosken[0]);
             onChange(null);
           }
-        }, 350);
+        }, dosken[1]);
         doskenNovehoKorene.unref?.();
       }
     } catch (err) {
