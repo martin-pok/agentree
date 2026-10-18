@@ -271,6 +271,6 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
     async start() { await queue.run(dir); watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 }); },
     scan: () => queue.run(dir),
     stop() { stopped = true; watcher?.close(); queue.clear(); }, idle: () => queue.idle(),
-    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? (seznamAt ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.', known.size, kdy(seznamAt)) : ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size)) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, watching: Boolean(watcher?.active), lastEventAt }),
+    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? (seznamAt ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.', known.size, kdy(seznamAt)) : ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size)) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, seznamAt, watching: Boolean(watcher?.active), lastEventAt }),
   };
 }

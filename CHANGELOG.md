@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.22 – 2026-10-18 · Vyžaduje pozornost k užitku, skutečná loga nástrojů
+
+- **Vyžaduje pozornost ukazuje, co se dá udělat hned.** Když nic neblokuje, místo prázdné karty „Momentálně bez upozornění“ jsou tu agenti, kteří za posledních 12 h dokončili práci a čekají na další krok (s tlačítkem Pokračovat), a limity od 80 %. Když není ani to, karta říká, co hlídá: žádosti o povolení (případně odkaz na zapnutí u Claude Code), selhání a nejvytíženější změřený limit – bez měření to přizná.
+- **Žádné „nikdo nepracuje“ bez dat o agentech v cloudu.** Vzdálené relace Claude Code (např. z claude.ai/code) Agenteeq vidí jen z cache Claude Desktopu a „pracuje“ z ní platí 2 minuty. Když je cache starší, Stav agentů říká „Na tomto počítači nikdo nepracuje“ a dodá, odkdy jsou údaje o agentech v cloudu, místo tvrzení, že nepracuje nikdo.
+- **Skutečná loga webových AI nástrojů.** Replit, Lovable, v0, DeepSeek, Google AI Studio, NotebookLM, Trae a Amp mají vlastní logo (LobeHub 1.95.0, Simple Icons 16.34.0) místo obecné ikony nebo loga Gemini. Stitch a Bolt vlastní logo v žádné sadě nemají, nesou logo autora (Google, StackBlitz). Test hlídá, že žádný rozpoznávaný nástroj nezůstane bez loga.
+
 ## 0.46.21 – 2026-10-18 · Postavy a šatník přesně, upozornění s čistou geometrií
 
 - **Rozšíření do Chrome Web Store se po zveřejnění vydání nahraje samo** (`.github/workflows/chrome-web-store.yml`), jakmile má repozitář přístup k API obchodu.

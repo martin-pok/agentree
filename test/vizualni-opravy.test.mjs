@@ -19,6 +19,12 @@ test('Stav agentů: jedna věta se správným tvarem podle počtu', async () => 
   assert.equal(stavAgentu({ selhalo: 3, limit: 2, cekaji: 4 }).stav, 'problem', 'problém má přednost před čekáním');
   assert.equal(stavAgentu({ pracuje: 2 }).veta, 'Vše běží v pořádku');
   assert.equal(stavAgentu({}).veta, 'V pořádku, nikdo nepracuje');
+  // Agenti v cloudu: stará cache Claude Desktopu o běhu nic neříká, „nikdo nepracuje“ by nebyla pravda.
+  const ted = Date.UTC(2026, 9, 18, 12, 0);
+  const stara = stavAgentu({ vzdaleneAt: ted - 25 * 60e3, now: ted });
+  assert.equal(stara.veta, 'Na tomto počítači nikdo nepracuje');
+  assert.match(stara.poznamka, /Claude Desktopu, naposledy/);
+  assert.equal(stavAgentu({ vzdaleneAt: ted - 30e3, now: ted }).veta, 'V pořádku, nikdo nepracuje', 'čerstvá cache platí');
   for (const s of [stavAgentu({ cekaji: 1 }), stavAgentu({ selhalo: 2 })]) assert.doesNotMatch(s.veta, /agentů: \d/, 'žádné „agentů: N“');
 });
 

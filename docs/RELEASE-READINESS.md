@@ -6,6 +6,7 @@
 
 ## Zdroj pravdy
 
+- **v0.46.22: Preview s užitečnou kartou Vyžaduje pozornost a skutečnými logy nástrojů.** Dokončení agenti a docházející limity místo prázdné karty, loga Replit, Lovable, v0, DeepSeek, AI Studio, NotebookLM, Trae a Amp. Vyžaduje nový neměnný tag, zelené PR i přesné `main` CI a osm nových příloh.
 - **v0.46.21: Preview s přesnými postavami a šatníkem.** Oči ve středu obličeje, šatník ukotvený k temeni, očím a trupu, přepracované postavy, vzhled přes robota v detailu, upozornění se soustřednou ikonou a automatické nahrávání do Chrome Web Store. Vyžaduje nový neměnný tag, zelené PR i přesné `main` CI a osm nových příloh.
 - **v0.46.20: Preview s novým oknem pomocníka.** Obsahuje vše z `v0.46.19` a okno pomocníka ve značkovém přechodu; vlastník ho chce v Macu. Draft `v0.46.19` zůstává nezveřejněný (nahrazený), nepřepisuje se. Vyžaduje nový neměnný tag, zelené PR i přesné `main` CI a osm nových příloh.
 - **v0.46.19: Preview s opravami po 0.46.18.** Agent spuštěný hned po startu aplikace je na macOS v přehledu do 2 s (#285), tabulka nákladů v užším okně jako karty (#290), kontroly WCAG 2.2 v CI (#284, #287–#289). Vlastník ho chce hned na Macu. Vyžaduje nový neměnný tag, zelené PR i přesné `main` CI a osm nových příloh; `v0.46.18` a historické tagy se nepřepisují.
@@ -65,7 +66,7 @@
 
 1. `v0.46.14` je poslední sestavený neveřejný Draft (8 příloh, nezávislý byte audit oddělený), nikoli veřejná aktualizace ani nejnovější zdroj. `v0.46.13` zůstává starším neveřejným Draftem. Historický `v0.46.11` zůstává kvůli nesouladu PWA/Apple ikon **zablokovaný pro publikaci**; Drafty 0.46.7–0.46.11 nikdy nepřepisovat ani postupně nepublikovat.
 2. Dokončit otevřené scénáře [#208](https://github.com/martin-pok/agentree/issues/208): čistá instalace a Gatekeeper/quarantine cesta, Google OAuth a fotografie včetně selhání, rollback, návrat do konkrétní relace, párované Chrome rozšíření stejné verze jako zkoušený release a reálný Windows beta smoke. Vizuální brand gate sleduje [#213](https://github.com/martin-pok/agentree/issues/213).
-3. Připravit `v0.46.21` jako Preview: po zeleném PR a přesném postmerge `main` CI nechat `prepare-preview-draft.yml` sestavit **nový, samostatně verzovaný neveřejný Draft** a nezávisle ověřit všech 8 příloh. Poté ručně spustit `publish.yml` pro **`v0.46.21` jako Preview**; na Macu ověřit **aktualizaci z `0.46.20` uvnitř aplikace**. Stabilní `Latest` zůstává `v0.46.0`.
+3. Připravit `v0.46.22` jako Preview: po zeleném PR a přesném postmerge `main` CI nechat `prepare-preview-draft.yml` sestavit **nový, samostatně verzovaný neveřejný Draft** a nezávisle ověřit všech 8 příloh. Poté ručně spustit `publish.yml` pro **`v0.46.22` jako Preview**; na Macu ověřit **aktualizaci z `0.46.21` uvnitř aplikace**. Stabilní `Latest` zůstává `v0.46.0`.
 4. `v0.46.12` jako Preview je zveřejněné (14. 10. 2026) bez dokončeného fyzického UAT. Další krok: na skutečném Macu z veřejného releasu ověřit instalaci, aktualizaci z 0.46.x, Gatekeeper/quarantine, Google přihlášení a živý stav vzdálených agentů Claude Code; výsledky zapsat sem a do #208. Nalezená závada = nová verze, zveřejněné přílohy se nepřepisují. Stabilní `Latest` zůstává `v0.46.0`; Chrome Web Store se aktualizuje samostatně.
 
 ## Co zůstává mimo automatickou garanci

@@ -535,7 +535,7 @@ export function decisionCard(s) {
 }
 
 // Tlačítka „Otevřít v aplikaci / Pokračovat v Terminálu / Otevřít složku“ – nabídku sestavuje server (session.open).
-export function openButtons(s, { small = false, max = 3 } = {}) {
+export function openButtons(s, { small = false, max = 3, primary = true } = {}) {
   const labels = {
     'Otevřít v Codexu': tr('Otevřít v Codexu'),
     'Otevřít Claude': tr('Otevřít Claude'),
@@ -551,8 +551,9 @@ export function openButtons(s, { small = false, max = 3 } = {}) {
     .map((t, i) => {
       const sourceLabel = String(t.label ?? '');
       const label = Object.hasOwn(labels, sourceLabel) ? labels[sourceLabel] : (sourceLabel.startsWith('Přepnout do ') ? tr('Přepnout do {0}', sourceLabel.slice(12)) : sourceLabel);
-      const icon = t.id === 'app' ? glyph(s, { onDark: i === 0 }) : icons[t.id] || ICON.open;
-      return `<button class="btn${small ? ' btn--sm' : ''}${i === 0 ? ' btn--primary' : ''}" type="button" data-open-target="${esc(t.id)}" data-session-id="${esc(s.id)}">${icon}${esc(label)}</button>`;
+      const hlavni = primary && i === 0;
+      const icon = t.id === 'app' ? glyph(s, { onDark: hlavni }) : icons[t.id] || ICON.open;
+      return `<button class="btn${small ? ' btn--sm' : ''}${hlavni ? ' btn--primary' : ''}" type="button" data-open-target="${esc(t.id)}" data-session-id="${esc(s.id)}">${icon}${esc(label)}</button>`;
     })
     .join('');
 }
