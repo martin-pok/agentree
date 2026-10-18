@@ -9,6 +9,7 @@
 //
 // Stejným průchodem hlídá dvě další pravidla z DESIGN.md:
 //   – výška jednořádkového ovládacího prvku s vlastní plochou je ze stupnice 32 / 40 / 44 / 48 px
+//     (v aplikaci na počítači jen 44 / 48 px)
 //     (vnitřní tlačítko malé segmentové volby 28 px a hlavní výzva webu 56 px jsou jediné výjimky),
 //   – řez písma se při výběru nemění: vybraná volba má stejnou váhu písma jako nevybraná vedle ní,
 //   – značka v hlavičce (logo + nápis) má všude stejný poměr: hlava robota ≈ výška verzálek nápisu
@@ -41,9 +42,14 @@ const RADKY = ['.choice', '.pick', '.theme-pick', '.site'];
 // přepínač jazyka `.lang`) a hlavní výzva webu `.btn--lg` (56 px).
 const STUPNICE = [32, 40, 44, 48];
 const VYJIMKY_APLIKACE = [{ vyber: '.seg--sm button', vyska: 28 }];
+// Aplikace na počítači (šířka nad 720 px): každý jednořádkový ovládací prvek s vlastní plochou má
+// aspoň 44 px (rozhodnutí vlastníka, Figma 18. 10. 2026). Uvnitř segmentové volby jsou tlačítka
+// 40 px v rámu 44 (malá volba 28 v rámu 32) – rám je ten prvek, na který se cílí.
+const POCITAC_APLIKACE = { od: 721, stupnice: [44, 48], vyjimky: [{ vyber: '.seg--sm button', vyska: 28 }, { vyber: '.seg button', vyska: 40 }] };
 const VYJIMKY_WEBU = [{ vyber: '.seg--sm button, .lang a', vyska: 28 }, { vyber: '.btn--lg', vyska: 56 }];
 
-function zmer({ maxJednoradkovy, radky, stupnice, vyjimky }) {
+function zmer({ maxJednoradkovy, radky, stupnice, vyjimky, pocitac }) {
+  if (pocitac && window.innerWidth >= pocitac.od) ({ stupnice, vyjimky } = pocitac);
   const OVLADACI = 'button, select, summary, input, textarea, a, label, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], [role="option"]';
   const pruhledne = (c) => !c || c === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(c);
   const nalezy = [];
@@ -185,8 +191,8 @@ function vypis(kde, nalezy) {
   console.log(`  ${kde}: NEVYHOVUJE (${nalezy.length})`);
   for (const n of nalezy) { console.log(`     ${n.chyba}: ${n.prvek} „${n.text}“ ${n.rozmer}, zaoblení ${n.zaobleni}`); problemy.push({ kde, ...n }); }
 }
-const PARAM = { maxJednoradkovy: MAX_JEDNORADKOVY, radky: RADKY, stupnice: STUPNICE, vyjimky: VYJIMKY_APLIKACE };
-const PARAM_WEB = { ...PARAM, vyjimky: VYJIMKY_WEBU };
+const PARAM = { maxJednoradkovy: MAX_JEDNORADKOVY, radky: RADKY, stupnice: STUPNICE, vyjimky: VYJIMKY_APLIKACE, pocitac: POCITAC_APLIKACE };
+const PARAM_WEB = { ...PARAM, vyjimky: VYJIMKY_WEBU, pocitac: null };
 // Kontrola prázdných stavů (scripts/qa-prazdny-profil.mjs) hlásí věty, ne prvky.
 function vypisPrazdno(kde, chyby) {
   if (!chyby.length) return;

@@ -137,7 +137,8 @@ function legs(kind, t) {
   }
 }
 
-export function robot(type = 'Scout') {
+// `ruce: 'siroke'` – paže víc do stran (pozdrav na Přehledu, vyladěno ve Figmě 18. 10. 2026).
+export function robot(type = 'Scout', { ruce } = {}) {
   const kind = POSTAVY[type] ? type : 'Scout';
   const g = geometry(kind);
   const { head: h, torso: t, s } = g;
@@ -145,6 +146,8 @@ export function robot(type = 'Scout') {
   const lx = t.x - 5;
   const rxx = t.x + t.w + 5;
   const arm = g.legs === 'nubs' ? 5 : 9;
+  const armX = ruce === 'siroke' ? arm * 1.55 : arm * 0.78;
+  const armY = ruce === 'siroke' ? n(arm * 1.1) : arm;
   const f = g.face;
   const ground = g.legs === 'treads' ? t.top + t.h + 12 : g.legs === 'nubs' ? t.top + t.h + 7 : 99;
   const shadow = Math.max(18, Math.min(30, Math.max(t.w, h.w * 0.55) / 1.7));
@@ -152,8 +155,8 @@ export function robot(type = 'Scout') {
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
     + `<ellipse class="robot-shadow" cx="54" cy="${n(Math.max(104, ground + 4))}" rx="${n(shadow)}" ry="4"/>`
     + `<g class="robot-body">${legs(g.legs, t)}`
-    + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}l-${n(arm * 0.78)} ${arm}"/>`
-    + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}l${n(arm * 0.78)} ${arm}"/>`
+    + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}l-${n(armX)} ${armY}"/>`
+    + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}l${n(armX)} ${armY}"/>`
     + `<rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
     + (g.core === 'star' ? `<g class="robot-core">${hvezda(54, t.top + t.h / 2 - 1, 4.4)}</g>` : `<circle class="robot-core" cx="54" cy="${n(t.top + t.h / 2 - 1)}" r="3"/>`)
     + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}</g>`

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.25 – 2026-10-18 · Přehled podle Figmy
+
+- **Každé tlačítko na počítači má aspoň 44 px** – i malá tlačítka v kartách a seznamech, položky menu, odkazy u nadpisů, filtry, pole v Nastavení a položky palety. Kontrola `qa:tvary` to teď na počítači vynucuje na všech obrazovkách (dřív připouštěla 32 a 40 px).
+- **Pozdrav s živým přechodem:** zprava se pomalu přelévá fialový přechod a na něm stojí, kolik agentů pracuje a kolik stojí (čeká na tebe, selhal nebo narazil na limit). Bez dat nebo při nejistém zjištění se počty neukazují.
+- **Stav agentů:** dlaždice se obarví barvou stavu, jen když v ní něco je.
+- **Typografie podle Figmy:** nadpisy sekcí 24 px, text v kartách 16 px, věta pod pozdravem 20 px; robot v pozdravu má paže víc do stran.
+
 ## 0.46.24 – 2026-10-18 · Šatník přesně na míru, agenti v cloudu, živý web
 
 - **Šatník má 14 nových kousků:** baret, rybářský klobouček, květinový věneček, vikingská helma, hvězdičkové a lyžařské brýle, ruměnec s pihami, zástěra, baseballová bunda, laclové kalhoty, havajská košile a převleky rytíře, žabáka a včelky.
