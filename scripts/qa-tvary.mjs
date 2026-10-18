@@ -8,7 +8,7 @@
 // odhalí i tam, kde je kapsle zapsaná číslem, které k výšce prvku náhodou přestalo sedět.
 //
 // Stejným průchodem hlídá dvě další pravidla z DESIGN.md:
-//   – výška jednořádkového ovládacího prvku s vlastní plochou je ze stupnice 32 / 40 / 48 px
+//   – výška jednořádkového ovládacího prvku s vlastní plochou je ze stupnice 32 / 40 / 44 / 48 px
 //     (vnitřní tlačítko malé segmentové volby 28 px a hlavní výzva webu 56 px jsou jediné výjimky),
 //   – řez písma se při výběru nemění: vybraná volba má stejnou váhu písma jako nevybraná vedle ní,
 //   – značka v hlavičce (logo + nápis) má všude stejný poměr: hlava robota ≈ výška verzálek nápisu
@@ -39,7 +39,7 @@ const RADKY = ['.choice', '.pick', '.theme-pick', '.site'];
 // Stupnice výšek ovládacích prvků (docs/DESIGN.md, oddíl Tlačítka) a jediné povolené výjimky:
 // vnitřní kapsle malé segmentové volby (28 px v rámu 32 px; v aplikaci `.seg--sm`, na webu
 // přepínač jazyka `.lang`) a hlavní výzva webu `.btn--lg` (56 px).
-const STUPNICE = [32, 40, 48];
+const STUPNICE = [32, 40, 44, 48];
 const VYJIMKY_APLIKACE = [{ vyber: '.seg--sm button', vyska: 28 }];
 const VYJIMKY_WEBU = [{ vyber: '.seg--sm button, .lang a', vyska: 28 }, { vyber: '.btn--lg', vyska: 56 }];
 

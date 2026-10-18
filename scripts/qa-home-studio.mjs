@@ -104,6 +104,17 @@ try {
       await page.locator('.lpick-btn').click();
       assert.equal(await page.locator('.lpick-btn').getAttribute('aria-expanded'), 'true');
       assert.ok(await page.locator('[data-l-hledat]').evaluate((n) => n === document.activeElement), 'po otevření má fokus hledání');
+      // Nabídka leží nad kartami pod ní (ne pod nimi) a ovládací prvky spouštěče mají stejnou výšku jako „Spustit“.
+      const nahore = await page.locator('.lpick-pop').evaluate((pop) => {
+        const r = pop.getBoundingClientRect();
+        const bod = document.elementFromPoint(r.left + r.width / 2, r.bottom - 12);
+        return Boolean(bod && pop.contains(bod));
+      });
+      assert.equal(nahore, true, `${typ}: nabídka agentů je přes obsah pod ní`);
+      if ((page.viewportSize()?.width || 0) > 720) {
+        const vysky = await page.evaluate(() => [...document.querySelectorAll('.launch-bar .lpick-btn, .launch-controls > *, .launch-go')].map((e) => Math.round(e.getBoundingClientRect().height)));
+        assert.ok(vysky.length >= 4 && vysky.every((h) => h === 44), `${typ}: ovládací prvky spouštěče jsou 44 px (${vysky})`);
+      }
       await page.screenshot({ path: `${out}/${typ}-vyber-agenta.png` });
       await page.locator('[data-l-hledat]').fill('codex');
       const viditelne = await page.locator('.lpick-pop .lchip:visible').allTextContents();

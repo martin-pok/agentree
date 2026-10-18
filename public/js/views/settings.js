@@ -1010,8 +1010,8 @@ function pushSekce() {
     return `${nadpis}
       ${radky ? `<ul class="privacy-list">${radky}</ul>
         <div class="set-actions"><button class="btn btn--sm" type="button" data-action="push-test">${tr('Poslat zkušební na telefon')}</button></div>`
-        : `<p class="set-note">${tr('Zatím je nemá zapnutý žádný telefon. Zapínají se v telefonu: spáruj ho (Aplikace → Otevřít na telefonu), otevři Agenteeq přes HTTPS a tady v Upozornění zapni přepínač.')}</p>`}
-      <p class="set-note">${tr('Zprávu doručí push služba výrobce telefonu (Apple, Google). Je šifrovaná pro telefon, takže ji služba nepřečte. Když je {0} vypnutý, nepřijde nic.', tentoPocitac())}</p>`;
+        : `<div class="push-empty"><span>${tr('Zatím žádný telefon. Spáruj ho a zapni přepínač přímo v telefonu.')}</span><a class="btn btn--sm" href="#/nastaveni" data-karta="phone">${tr('Spárovat telefon')}</a></div>`}
+      <p class="set-desc push-privacy">${tr('Doručí je push služba Applu nebo Googlu, zpráva je šifrovaná. Když je {0} vypnutý, nepřijde nic.', tentoPocitac())}</p>`;
   }
   if (!p.podpora.ok) return `${nadpis}<p class="set-note">${PUSH_DUVOD[p.podpora.duvod]()}</p>`;
   const zapnuto = Boolean(p.tady);

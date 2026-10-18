@@ -40,7 +40,7 @@ body { letter-spacing: -.012em; }
 .sec-head h2, .sec-head h3 { font-weight: 400; font-size: 20px; letter-spacing: -.025em; }
 .card { border: 1px solid var(--line-2); box-shadow: none; }
 .brand > span { font: 500 15px/1 var(--f-body); text-transform: uppercase; letter-spacing: .24em; }
-.link { background: transparent; box-shadow: none; padding-inline: 4px; color: var(--mute); }
+.link { background: transparent; box-shadow: none; padding-inline: 12px; margin-inline: -8px; color: var(--mute); }
 .link:hover { color: var(--ink); background: var(--line-2); box-shadow: none; }
 .btn, .lchip, .chip, .seg button, .lselect { font-weight: 500; box-shadow: none; }
 .lchip { height: 32px; font-size: 14px; padding: 0 12px; }
@@ -765,3 +765,29 @@ html.look-open { overflow: hidden; }
   .set-card-head > .state, .set-card-head > .btn { margin-left: 56px; }
   .set-card-head > div { flex: 1 1 calc(100% - 56px); }
 }
+
+/* Spouštěč: všechny ovládací prvky v řadě mají stejnou výšku jako „Spustit“, 44 px (cíl pro klik a dotyk
+   podle WCAG 2.2, 2.5.8 s rezervou). Segmentová volba je jeden 44px prvek: vnější kapsle 44, uvnitř
+   dvoupixelový okraj a tlačítka 40. Rozbalená nabídka agentů leží nad zbytkem stránky, ne pod jeho kartami. */
+.launch { z-index: 5; }
+.launch:has(.lpick-pop:not([hidden])) { z-index: 50; }
+.launch .launch-bar { align-items: center; }
+.launch .launch-bar .lpick-btn,
+.launch .launch-bar .launch-go,
+.launch .launch-controls .lselect,
+.launch .launch-controls .lselect .picker-trigger,
+.launch .launch-controls .lselect select,
+.launch .launch-controls .lselect--btn { height: 44px; min-height: 44px; }
+.launch .launch-controls .seg--light { height: 44px; min-height: 44px; padding: 2px; align-items: stretch; }
+.launch .launch-controls .seg--light button { height: 40px; min-height: 40px; padding-inline: 16px; font-size: 14px; }
+.launch .launch-bar .lpick-btn { padding: 0 12px 0 14px; font-size: 14px; gap: 10px; }
+.launch .launch-bar .lpick-btn :is(.logo, .glyph) { width: 18px; height: 18px; }
+.launch .launch-bar .launch-go { padding: 0 24px; font-size: 14px; gap: 8px; }
+.launch .launch-controls .lselect { padding-left: 16px; font-size: 14px; }
+.launch .launch-controls .lselect .picker-trigger { padding-right: 16px; font-size: 14px; }
+.launch .launch-controls .lselect select { font-size: 14px; }
+.launch .launch-controls .lselect--btn { padding: 0 18px 0 16px; font-size: 14px; }
+.launch .launch-controls .lselect .icon { width: 16px; height: 16px; }
+.launch .launch-controls { align-items: center; gap: 8px; }
+.lpick-pop .lchip { height: 44px; min-height: 44px; }
+.lpick-search, .lpick-search input { height: 44px; }
