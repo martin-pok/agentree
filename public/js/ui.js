@@ -631,12 +631,21 @@ function zive(l, now) {
 export function currentLimits(limits, now = Date.now()) {
   const fresh = limits.filter((l) => zive(l, now));
   const claudePresne = fresh.some((l) => l.provider === 'anthropic' && PRESNE.has(l.source));
+  // Okno patří účtu: dvě licence Claude jsou dvě okna, ne jedno nejnovější. Záznam bez účtu
+  // (historie Claude Desktopu) se přidá k jedinému účtu, který okno má; při víc účtech stojí sám.
+  const ucty = new Set(fresh.filter((l) => l.provider === 'anthropic' && l.accountId).map((l) => l.accountId));
+  const ucet = (l) => l.accountId || (ucty.size === 1 ? [...ucty][0] : '');
   const okna = new Map();
   const ostatni = [];
   for (const l of fresh) {
-    const klic = l.provider === 'anthropic' ? OKNO_CLAUDE.exec(l.id || '')?.[1] : null;
-    if (!klic) ostatni.push(l);
-    else okna.set(klic, [...(okna.get(klic) || []), l]);
+    const okno = l.provider === 'anthropic' ? OKNO_CLAUDE.exec(l.id || '')?.[1] : null;
+    if (!okno) { ostatni.push(l); continue; }
+    // Měření z historie, po kterém se okno podle přesného zdroje obnovilo, patří minulému oknu –
+    // i když je ten přesný záznam sám už příliš starý na zobrazení.
+    if (!PRESNE.has(l.source) && limits.some((p) => PRESNE.has(p.source) && OKNO_CLAUDE.exec(p.id || '')?.[1] === okno
+      && ucet(p) === ucet(l) && Number(p.resetsAt) > l.at && p.resetsAt <= now)) continue;
+    const klic = `${okno}:${ucet(l)}`;
+    okna.set(klic, [...(okna.get(klic) || []), l]);
   }
   const slozena = [...okna.values()].map((zaznamy) => {
     const presne = zaznamy.filter((l) => PRESNE.has(l.source));

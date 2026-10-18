@@ -738,6 +738,9 @@ export function createClaudeCodeConnector(ctx) {
     const id = accountId ? `${def.id}:${accountId}` : def.id;
     const used = Math.max(0, Math.min(100, w.used_percentage));
     const resetsAt = Number(w.resets_at) > 0 ? Math.round(Number(w.resets_at) * 1000) : null;
+    // Nečinná relace překresluje stavový řádek se starým měřením i po obnově okna. Takové číslo
+    // patří minulému oknu – nesmí přepsat čerstvé měření ani vyvolat „vyčerpáno“ s minulým časem.
+    if (resetsAt && resetsAt <= now) return null;
     const prev = store.limits.get(id);
     if (!prev || prev.usedPercent !== used || prev.resetsAt !== resetsAt || now - prev.at > MIN) {
       store.setLimit({ id, accountId, provider: 'anthropic', app: 'Claude', label: def.label, usedPercent: used, windowMinutes: def.minutes, resetsAt, reached: used >= 100, plan: null, text: '', at: now, source: 'statusline', kind: def.kind || 'window' });

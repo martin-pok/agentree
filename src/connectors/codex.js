@@ -261,7 +261,9 @@ export function createCodexConnector(ctx) {
         usedPercent: w.used_percent,
         windowMinutes: w.window_minutes || null,
         resetsAt,
-        reached: w.used_percent >= 100 || Boolean(rl.rate_limit_reached_type),
+        // Příznak `rate_limit_reached_type` patří celému snímku: vyčerpaný týden nesmí označit
+        // i okno 5 h. Okno je vyčerpané podle svého procenta, nebo když příznak jmenuje právě je.
+        reached: w.used_percent >= 100 || (typeof rl.rate_limit_reached_type === 'string' && rl.rate_limit_reached_type.toLowerCase().includes(slot)),
         plan: rl.plan_type || null,
         text: '',
         at: ts,

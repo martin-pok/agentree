@@ -27,6 +27,7 @@ export default {
     "Právě teď": "Right now",
     "Vyžaduje pozornost": "Needs attention",
     "Nic neblokuje. Tihle agenti dokončili práci a čekají na další krok.": "Nothing is blocked. These agents finished and are waiting for your next step.",
+    "Agent nečeká na tebe, ale limit je vyčerpaný.": "No agent is waiting for you, but a limit is used up.",
     "Nic neblokuje. Tohle můžeš vyřídit teď.": "Nothing is blocked. Here is what you can do now.",
     "Na tomto počítači nikdo nepracuje": "Nobody is working on this computer",
     "Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.": "Cloud agents are known only from Claude Desktop, last {0}.",
