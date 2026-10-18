@@ -893,3 +893,45 @@ html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill
   .look-tab { padding: 0 10px; font-size: 13px; }
   .look-tabs { gap: 4px; }
 }
+
+/* Otevřené okno pomocníka navazuje na tlačítko: hlavička v tmavší části značkového přechodu (bílé písmo
+   má kontrast i u nejsvětlejšího místa), stejná hlava ze značky, jemný fialový nádech plochy, odpovědi
+   na kartě a moje zprávy v přechodu. Barvy přechodu jsou pevné jako u tlačítka – v tmavém režimu
+   značka zůstává stejná. */
+.pomocnik { --pm-vio: #5f5bd6; --pm-vio-2: #4440b4; --pm-vio-ink: #4743b8; }
+html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
+.pm-okno {
+  border: 1px solid color-mix(in srgb, var(--pm-vio) 22%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pm-vio) 7%, var(--card)) 0, var(--card) 240px);
+  box-shadow: 0 1px 0 rgb(255 255 255 / .06) inset, 0 36px 72px -24px rgb(56 50 170 / .45), 0 12px 24px -16px rgb(16 16 20 / .25);
+}
+.pm-hlava {
+  position: relative; isolation: isolate; gap: 12px; padding: 16px 14px 16px 16px; border-bottom: 0; color: #fff;
+  background: linear-gradient(125deg, var(--pm-vio) 0%, #524ec8 55%, var(--pm-vio-2) 100%);
+}
+.pm-hlava::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(70% 140% at 100% 0%, rgb(255 255 255 / .16), transparent 60%), radial-gradient(40% 80% at 0% 100%, rgb(140 136 244 / .35), transparent 70%); }
+.pm-hlava h2 { color: #fff; }
+.pm-hlava small { color: rgb(255 255 255 / .86); }
+.pm-avatar { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 50%;
+  background: rgb(255 255 255 / .16); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .24), inset 0 1px 0 rgb(255 255 255 / .3); }
+.pm-avatar .pm-glyph { width: 24px; height: 22px; filter: none; }
+.pm-beta { padding: 2px 8px; border-radius: var(--r-full); background: rgb(255 255 255 / .18); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22); color: #fff; font: 500 11px/16px var(--f-body); letter-spacing: .02em; }
+.pm-novy, .pm-zavrit { background: rgb(255 255 255 / .14); color: #fff; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2); transition: background var(--motion-response) var(--ease); }
+.pm-novy:hover, .pm-zavrit:hover { background: rgb(255 255 255 / .26); color: #fff; }
+.pm-novy:focus-visible, .pm-zavrit:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pm-msg--on { background: var(--card); border: 1px solid color-mix(in srgb, var(--pm-vio) 14%, var(--line-2)); box-shadow: 0 6px 16px -12px rgb(56 50 170 / .35); }
+.pm-msg--ja { background: linear-gradient(135deg, #6a66e0 0%, var(--pm-vio-2) 100%); color: #fff; box-shadow: 0 8px 18px -12px rgb(56 50 170 / .7); }
+.pm-tip b { color: var(--pm-vio-ink); }
+.pm-navrh { min-height: 32px; border-color: color-mix(in srgb, var(--pm-vio) 26%, var(--line)); background: color-mix(in srgb, var(--pm-vio) 6%, var(--card)); color: var(--pm-vio-ink); transition: background var(--motion-response) var(--ease), color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease); }
+.pm-navrh:hover { border-color: transparent; background: linear-gradient(135deg, #6a66e0, var(--pm-vio-2)); color: #fff; }
+.pm-cil:hover { border-color: var(--pm-vio); }
+.pm-cil svg { stroke: var(--pm-vio-ink); }
+.pm-pise i { background: var(--pm-vio); }
+.pm-pole { background: var(--card); border-color: color-mix(in srgb, var(--pm-vio) 22%, var(--line)); box-shadow: 0 8px 20px -16px rgb(56 50 170 / .45); }
+.pm-pole:focus-within { border-color: var(--pm-vio); box-shadow: 0 0 0 4px color-mix(in srgb, var(--pm-vio) 16%, transparent), 0 8px 20px -16px rgb(56 50 170 / .45); }
+.pm-poslat { position: relative; color: #fff; background: radial-gradient(120% 120% at 24% 14%, #8c88f4 0%, #6260d8 46%, #4743b8 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), inset 0 0 0 1px rgb(255 255 255 / .14), 0 6px 14px -6px rgb(82 84 216 / .7); transition: transform var(--motion-press) var(--ease); }
+.pm-poslat:hover { transform: translateY(-1px); }
+.pm-poslat:active { transform: translateY(0) scale(.96); }
+@media (prefers-reduced-motion: reduce) { .pm-poslat, .pm-navrh, .pm-novy, .pm-zavrit { transition: none; } .pm-poslat:hover { transform: none; } }

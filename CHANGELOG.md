@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydáno
+
+- **Pomocník: otevřené okno ve značkovém fialovém přechodu.** Hlavička v přechodu jako plovoucí tlačítko, s hlavou ze značky v průsvitném kroužku; odpovědi na kartě s fialovým okrajem, moje zprávy v přechodu, návrhy otázek jako fialové kapsle, pole s fialovým prstencem a tlačítko Poslat ve stejném přechodu jako tlačítko pomocníka. Světlý i tmavý vzhled.
+
 ## 0.46.19 – 2026-10-18 · Útrata v užším okně, rychlejší první agent na Macu, kontroly přístupnosti
 
 - **Útrata: tabulka nákladů se v užším okně už neposouvá do strany.** Vedle postranního panelu se tabulka (min. 640 px) nevešla v oknech zhruba 700–1100 px – datum a koš byly mimo kartu. O podobě teď rozhoduje šířka karty (container query): pod 656 px se výdaje ukážou jako karty, stejně jako na telefonu.

@@ -7,7 +7,6 @@
 //     k pokračování.
 // Všechno běží lokálně. Skrýt jde v Nastavení → Účet a vzhled. Historie chatu žije jen v této
 // relaci okna (sessionStorage), nikam se neukládá.
-import { robot } from './home-studio.js';
 import { tr, LOCALE } from './i18n.js';
 import { state, agentsList } from './state.js';
 import { request } from './api.js';
@@ -17,6 +16,9 @@ import { jeOtazkaNaCekani } from './co-ceka.js';
 import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
+
+// Hlava ze značky Agenteeq – stejná na plovoucím tlačítku i v hlavičce otevřeného okna.
+const GLYPH = `<svg class="pm-glyph" viewBox="11 15 86 76" aria-hidden="true"><path class="pm-glyph-stem" d="M54 25V34"/><circle cx="54" cy="22" r="4"/><path fill-rule="evenodd" d="M35 34h38a20 20 0 0 1 20 20v13a20 20 0 0 1-20 20H35a20 20 0 0 1-20-20V54a20 20 0 0 1 20-20Zm5 18a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Zm28 0a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Z"/></svg>`;
 import { zkratka } from './system.js';
 
 const TIPY = () => ({
@@ -182,8 +184,8 @@ function sestav() {
   el.innerHTML = `
     <section class="pm-okno" id="pm-okno" role="dialog" aria-labelledby="pm-nadpis" hidden>
       <header class="pm-hlava">
-        <span class="pm-avatar" style="--persona:#6260d8">${robot('Orbit')}</span>
-        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('AI průvodce aplikací')}</small></div>
+        <span class="pm-avatar" aria-hidden="true">${GLYPH}</span>
+        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="pm-beta">${tr('Beta')}</span></h2><small>${tr('AI průvodce aplikací')}</small></div>
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
@@ -196,7 +198,7 @@ function sestav() {
       </form>
     </section>
     <button type="button" class="pm-fab" aria-controls="pm-okno" aria-expanded="false" aria-label="${tr('Otevřít pomocníka')}" title="${tr('Pomocník')}">
-      <svg class="pm-glyph" viewBox="11 15 86 76" aria-hidden="true"><path class="pm-glyph-stem" d="M54 25V34"/><circle cx="54" cy="22" r="4"/><path fill-rule="evenodd" d="M35 34h38a20 20 0 0 1 20 20v13a20 20 0 0 1-20 20H35a20 20 0 0 1-20-20V54a20 20 0 0 1 20-20Zm5 18a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Zm28 0a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Z"/></svg>
+      ${GLYPH}
     </button>`;
   const vstup = el.querySelector('.pm-vstup');
   el.querySelector('.pm-fab').addEventListener('click', () => (el.querySelector('.pm-okno').hidden ? otevri() : zavri()));
