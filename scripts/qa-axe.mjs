@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import assert from 'node:assert/strict';
 import { pripravUkazku } from './demo-fixture.mjs';
+import { api } from '../test/helpers.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
@@ -45,14 +46,18 @@ const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
 const nalezy = [];
 try {
   for (const vzhled of ['light', 'dark']) {
+    // Vzhled jde přes uložené nastavení jako u uživatele. Přepsání data-theme v prohlížeči by
+    // aplikace po načtení nastavení vrátila zpět – tmavá první obrazovka by se pak netestovala.
+    await api(demo.url).send('PUT', '/api/settings', { appearance: vzhled });
     for (const [w, h] of [[1440, 900], [375, 812], [320, 256]]) {
       // CSP aplikace zakazuje vložený skript – axe se smí vložit jen v tomto kontextu QA.
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', bypassCSP: true, reducedMotion: 'reduce' });
       const page = await ctx.newPage();
       for (const trasa of TRASY) {
         await page.goto(`${demo.url}/#/${trasa}`);
-        await page.evaluate((t) => { document.documentElement.dataset.theme = t; }, vzhled);
         await page.waitForTimeout(1200);
+        const motiv = await page.evaluate(() => document.documentElement.dataset.theme);
+        if (motiv !== vzhled) nalezy.push(`${vzhled} ${w}px /${trasa}: místo vzhledu ${vzhled} se vykreslil ${motiv} – kontrola by netestovala, co tvrdí`);
         const preteka = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         if (preteka > 0) nalezy.push(`${vzhled} ${w}px /${trasa}: stránka přetéká do strany o ${preteka} px (WCAG 1.4.10)`);
         await page.addScriptTag({ content: axe });

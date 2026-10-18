@@ -6,6 +6,7 @@
 - **Automatická kontrola WCAG 2.2 A/AA (axe-core) v CI** (`npm run qa:axe`): všech 8 obrazovek ve světlém i tmavém vzhledu na počítači i telefonu, selže na každém porušení. Při prvním běhu našla tlačítko Hledat bez přístupného názvu na telefonu (vidět je jen lupa) – opraveno, má `aria-label`.
 - **Přeskládání při přiblížení 400 % (WCAG 1.4.10) hlídá CI.** `qa:axe` nově kontroluje i 320 × 256 CSS px: všech 8 obrazovek bez vodorovného posunu a bez porušení axe ve světlém i tmavém vzhledu.
 - **Ovládání klávesnicí hlídá CI (WCAG 2.1.1, 2.1.2, 2.4.7).** `qa:axe` na všech 8 obrazovkách (1440 i 375 px) projde Tabem celou stránku: musí se vrátit na začátek bez pasti a každá zastávka musí mít viditelný fokus. Ověřeno i naopak – schovaný fokus kontrola zachytí.
+- **Oprava QA: tmavý Přehled se v `qa:axe` dřív netestoval.** Kontrola přepisovala `data-theme` v prohlížeči a aplikace ho po načtení nastavení vrátila na světlý – první obrazovka každého běhu se tak v „tmavém“ průchodu kontrolovala světlá. Vzhled se teď nastavuje uloženým nastavením jako u uživatele a kontrola selže, když se vykreslí jiný vzhled, než testuje. Tmavý Přehled prošel bez porušení.
 
 ## 0.46.18 – 2026-10-18 · AI pomocník, devět postav, 16 barev a tlačítko zpět
 
