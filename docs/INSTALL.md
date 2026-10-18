@@ -121,7 +121,7 @@ provede napojením.
 | --- | --- |
 | Claude Code, Codex, Cursor, GitHub Copilot (VS Code i CLI), Gemini CLI, Qwen Code | Samy – Agenteeq čte jejich lokální přepisy. |
 | Okamžité události Claude Code (žádost o povolení, přesné limity) | Nastavení → Propojení → Propojení s Claude Code → Zapnout propojení. |
-| ChatGPT, Codex na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot | Rozšíření pro Chrome – viz kapitola níže. |
+| ChatGPT, Codex na webu, Claude Code na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot | Rozšíření pro Chrome – viz kapitola níže. |
 | Náklady API OpenAI a Anthropic | Nastavení → Náklady za API → Admin klíč (uloží se do Klíčenky). |
 
 ## Rozšíření pro Chrome

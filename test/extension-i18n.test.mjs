@@ -45,7 +45,7 @@ test('rozšíření: každý český text v okně má anglický překlad a slovn
   assert.deepEqual([...new Set(chybi)], [], 'texty bez anglického překladu');
   for (const [cs, en] of Object.entries(EN.texty)) assert.equal(promenne(en), promenne(cs), `proměnné nesedí: ${cs}`);
   // Názvy služeb bez diakritiky, které se překládají (ostatní jsou značky a zůstávají).
-  const pouzite = new Set([...zKodu, ...zHtml, ...doTr, 'Codex na webu']);
+  const pouzite = new Set([...zKodu, ...zHtml, ...doTr, 'Codex na webu', 'Claude Code na webu']);
   const navic = Object.keys(EN.texty).filter((k) => !pouzite.has(k));
   assert.deepEqual(navic, [], 'slovník nese texty, které okno nepoužívá');
 });

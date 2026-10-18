@@ -554,6 +554,7 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
     chatgpt: 'https://chatgpt.com/c/abc',
     'codex-web': 'https://chatgpt.com/codex/tasks/abc',
     claude: 'https://claude.ai/new',
+    'claude-code-web': 'https://claude.ai/code/session_01AbCdEfGh',
     gemini: 'https://gemini.google.com/app',
     mscopilot: 'https://copilot.microsoft.com/chats/abc',
     perplexity: 'https://www.perplexity.ai/search/abc',
@@ -578,6 +579,14 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
   }
   assert.equal(normalizedWebUrl('codex-web', 'https://chatgpt.com/c/abc'), null,
     'Codex web must not be impersonated by a ChatGPT page');
+  assert.equal(normalizedWebUrl('claude-code-web', 'https://claude.ai/chat/abc'), null,
+    'Claude Code web must not be impersonated by a Claude.ai chat');
+  assert.equal(normalizedWebUrl('claude-code-web', 'https://claude.ai/codex'), null);
+  assert.equal(normalizedWebUrl('claude-code-web', 'https://claude.ai/code'), 'https://claude.ai/code');
+  const cc = validateWebPayload({ site: 'claude-code-web', conversationId: 'session_01AbCdEfGh', url: 'https://claude.ai/code/session_01AbCdEfGh', generating: true });
+  assert.equal(cc.ok, true);
+  assert.equal(cc.value.generating, true);
+  assert.equal(validateWebPayload({ site: 'claude-code-web', conversationId: 'session_01AbCdEfGh', url: 'https://claude.ai/new' }).ok, false);
   assert.equal(normalizedWebUrl('github-copilot', 'https://github.com/settings/profile'), null,
     'GitHub Copilot must not accept unrelated pages');
 });

@@ -6,6 +6,7 @@ import { ui } from '../texty.js';
 export const WEB_SITES = {
   chatgpt: { name: 'ChatGPT', provider: 'openai' },
   'codex-web': { name: 'Codex · web', provider: 'openai' },
+  'claude-code-web': { name: 'Claude Code · web', provider: 'anthropic' },
   claude: { name: 'Claude.ai', provider: 'anthropic' },
   gemini: { name: 'Gemini', provider: 'google' },
   mscopilot: { name: 'Microsoft Copilot', provider: 'microsoft' },
@@ -20,6 +21,7 @@ export const WEB_SITES = {
 const WEB_ORIGINS = {
   chatgpt: ['chatgpt.com', 'chat.openai.com'],
   'codex-web': ['chatgpt.com', 'chat.openai.com'],
+  'claude-code-web': ['claude.ai'],
   claude: ['claude.ai'],
   gemini: ['gemini.google.com'],
   mscopilot: ['copilot.microsoft.com'],
@@ -36,6 +38,7 @@ export function normalizedWebUrl(site, raw) {
     if (url.protocol !== 'https:' || url.username || url.password || url.port ||
         !WEB_ORIGINS[site]?.includes(url.hostname)) return null;
     if (site === 'codex-web' && !/^\/codex(?:\/|$)/.test(url.pathname)) return null;
+    if (site === 'claude-code-web' && !/^\/code(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'github-copilot' && !/^\/copilot(?:\/|$)/.test(url.pathname)) return null;
     // URLs may carry temporary tokens or user queries; only the route is needed.
     url.search = '';
@@ -108,6 +111,38 @@ export function applyWebPayload(s, v, now = Date.now()) {
   s.limit = v.limit ? { reached: true, text: v.limit, at: s.limit?.at || now, resetsAt: null } : null;
 }
 
+// Claude Code na webu (claude.ai/code/session_…) je vzdálený agent, kterého často zná i cache
+// Claude Desktopu (src/connectors/claude-desktop-code.js) pod stejným `session_…`. Agent má být
+// v přehledu jeden: když cache relaci zná, otevřená karta k ní přidá jen živý důkaz `karta`
+// a o stavu rozhoduje model.js#deriveStatus (čerstvá karta přebije starší cache, zavřená karta
+// po `staleMs` přestane platit a stav se vrátí k cache). Bez Claude Desktopu zůstává karta
+// samostatnou webovou konverzací jako u ostatních služeb.
+export const KARTA_STALE_MS = 150e3;
+export const dvojceClaudeCode = (site, conversationId) =>
+  site === 'claude-code-web' && /^session_[A-Za-z0-9]{8,80}$/.test(conversationId) ? `claude-desktop-code:${conversationId}` : null;
+export const webIdClaudeCode = (remoteId) => `web:claude-code-web:${remoteId}`;
+
+export function applyKarta(s, v, now = Date.now()) {
+  const k = s.karta;
+  const changed = !k || k.counts?.user !== v.counts.user || k.counts?.assistant !== v.counts.assistant;
+  s.karta = {
+    running: v.generating,
+    at: now,
+    since: v.generating ? (k?.running ? k.since : now) : k?.since || 0,
+    lastAt: v.generating || changed ? now : k.lastAt,
+    counts: { ...v.counts },
+    staleMs: KARTA_STALE_MS,
+  };
+  if (v.generating || changed) touch(s, now);
+}
+
+// Webová konverzace vzniklá dřív, než relaci uložila cache Claude Desktopu, se převede na důkaz
+// u relace z cache (volá claude-desktop-code.js).
+export const kartaZWebu = (w) => ({
+  running: Boolean(w.running), at: w.runningAt || 0, since: w.turnStartedAt || 0, lastAt: w.lastAt || 0,
+  counts: { ...(w.web?.counts || { user: 0, assistant: 0 }) }, staleMs: w.staleMs || KARTA_STALE_MS,
+});
+
 export function createWebConnector(ctx) {
   const { store, extensionRecord = () => null } = ctx;
   const lastSeen = new Map();
@@ -130,6 +165,14 @@ export function createWebConnector(ctx) {
       const v = res.value;
       const site = WEB_SITES[v.site];
       const id = `web:${v.site}:${v.conversationId}`;
+      const dvojce = store.get(dvojceClaudeCode(v.site, v.conversationId));
+      if (dvojce) {
+        for (const stare of [id, v.nahrazuje && `web:${v.site}:${v.nahrazuje}`]) if (stare && store.get(stare)) store.remove(stare);
+        applyKarta(dvojce, v, now);
+        lastSeen.set(v.site, now);
+        store.commit(dvojce, now);
+        return { ok: true, id: dvojce.id };
+      }
       // Nová konverzace dostala ID: záznam pod zástupným ID karty se převede na skutečné ID, ať je
       // v přehledu jedna konverzace, ne dvě. Začátek konverzace a probíhající tah zůstanou.
       const predtim = v.nahrazuje ? store.get(`web:${v.site}:${v.nahrazuje}`) : null;
