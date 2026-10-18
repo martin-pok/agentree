@@ -131,10 +131,14 @@ export const ICON = {
   globe: svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>'),
 };
 
-// Kde agent běží: web = na serverech služby, ostatní konektory = proces na tomto Macu.
+// Kde agent běží. V cloudu: konverzace z prohlížeče (služba ji počítá na svých serverech) a vzdálené
+// relace Claude Code (claude.ai/code), které Agenteeq zná z cache Claude Desktopu – agent pracuje na
+// serverech Anthropicu nad repozitářem, ne na tomto počítači. Ostatní konektory čtou přepis
+// a procesy z tohoto počítače, takže agent běží tady.
+export const jeCloud = (s) => s?.source === 'web' || s?.source === 'desktop-cache' || s?.connector === 'claude-desktop-code';
 export const ENV = {
   cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
   local: { icon: ICON.mac, label: tr('Běží na {0}', tomtoPocitaci()), short: tr('Na {0}', tomtoPocitaci()) },
 };
 
-export const envOf = (s) => (s.source === 'web' ? ENV.cloud : ENV.local);
+export const envOf = (s) => (jeCloud(s) ? ENV.cloud : ENV.local);
