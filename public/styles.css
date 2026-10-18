@@ -1553,11 +1553,12 @@ html.is-cloud body { background: var(--paper); }
 .lm-cost { font-family: var(--f-mono); white-space: nowrap; color: var(--ink); }
 .lm-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
 @media (prefers-reduced-motion: reduce) { .ledger-toggle svg { transition: none; } }
-/* Telefon: místo tabulky, která rolovala do strany a schovávala částku, je každý výdaj karta –
-   služba a částka nahoře, typ a datum pod nimi, poznámka přes celou šířku. Hlavička sloupců
-   zůstává pro čtečky obrazovky. */
-@media (max-width: 620px) {
-  .table-wrap:has(> .ledger) { overflow: visible; }
+/* Úzká karta: místo tabulky, která rolovala do strany a schovávala datum i akce, je každý výdaj
+   karta – služba a částka nahoře, typ a datum pod nimi, poznámka přes celou šířku. Rozhoduje šířka
+   karty, ne okna: vedle postranního panelu se tabulka (min. 640 px) nevejde už v okně 900 px.
+   Hlavička sloupců zůstává pro čtečky obrazovky. */
+.table-wrap:has(> .ledger) { container: ledger / inline-size; }
+@container ledger (max-width: 655.98px) {
   .ledger { min-width: 0; display: block; }
   .ledger thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .ledger tbody { display: block; }
@@ -1712,6 +1713,9 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .checklist li::before { content: ''; position: absolute; left: 4px; top: 6px; width: 10px; height: 6px; border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
 .code-line { display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: var(--r-full); background: var(--ink-surface); color: var(--on-ink); }
 .code-line code { flex: 1; min-width: 0; font-size: 12px; overflow-x: auto; white-space: nowrap; }
+/* Dlouhá cesta se posouvá do strany; prolnutí u pravého okraje ukáže, že pokračuje (dřív byla
+   na telefonu natvrdo uříznutá pod tlačítkem). Krátký text k okraji nedosáhne, takže zůstane celý. */
+.code-line code { padding-right: 16px; mask-image: linear-gradient(90deg, #000 calc(100% - 20px), transparent); }
 .details { margin-top: 8px; }
 .details summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 6px 0; }
 .details .code-line { margin-top: 8px; }
