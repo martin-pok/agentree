@@ -237,7 +237,7 @@ try {
       assert.equal(await dlg.locator('[data-pick="color"]').count(), 16, 'záložka Barva: 16 barev');
       await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
       await dlg.locator('[data-tab="hat"]').click();
-      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 12, 'záložka Hlava: žádná + 11 čepic');
+      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 16, 'záložka Hlava: žádná + 15 čepic');
       await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
       await dlg.locator('input[name="nickname"]').fill('Testovací agent');
       assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
