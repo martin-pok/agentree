@@ -529,9 +529,15 @@ html[data-theme='dark'] .rb[data-strana='dole']::after { border-color: color-mix
 @keyframes rb-otocka { 0% { rotate: 0deg; } 100% { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .robot[data-gesto] * { animation: none !important; } }
 
-/* Toast je jednořádková kapsle: kulatá ikona vlevo je soustředná s půlkruhem okraje
-   (odsazení 6 px kolem 28px ikony = výška 40 px, poloměr 20 px). */
-.toast { border-radius: var(--r-full); padding: 6px 8px 6px 6px; min-height: 40px; }
+/* Toast: kulatá ikona je vždy soustředná s rohem. Poloměr 22 px = poloměr ikony 14 + odsazení 8 ze
+   všech stran, takže jeden řádek je přesná kapsle 44 px a delší text (dva řádky) zůstane zaobleným
+   obdélníkem se stejným rohem – ne kapslí, jejíž půlkruh by se rozevřel a ikona by ležela u hrany.
+   Ikona, odkaz i křížek stojí u prvního řádku textu (střed 22 px od horní hrany). */
+.toast { align-items: flex-start; gap: 12px; border-radius: 22px; padding: 8px; min-height: 44px; }
+.toast .toast-icon, .toast .toast-close { width: 28px; height: 28px; }
+.toast .toast-text { padding-block: 4px; }
+.toast .toast-action { padding-block: 4px; line-height: 20px; }
+.toast .toast-close { margin-left: -4px; }
 .toast .toast-close, .toast button { border-radius: var(--r-full); }
 
 /* Přehled: rozhodnutí a stav agentů vedle sebe. Rozhodnutí je decentní karta (ne plná barevná

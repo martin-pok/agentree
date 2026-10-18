@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.21',
+    date: '2026-10-18',
+    title: 'Postavy a šatník přesně na míru',
+    items: [
+      'Oči jsou u všech postav uprostřed obličeje a čepice, brýle i oblečení sedí na každé z nich.',
+      'Orbit, Pixel, Nova, Bolt a Mochi dostali vlastní tvář: planetku s prstencem, pixelový úsměv, hvězdu na hrudi, mohutnou hlavu a Mochi je nově buchtička s očima ^^.',
+      'Oblečení a doplňky mají jemné hrany jako robot sám, bez výrazných obrysů.',
+      'Vzhled agenta změníš klepnutím na jeho robota v detailu.',
+      'Upozornění mají ikonu v rovnováze s okrajem i u delšího textu.',
+    ],
+    en: {
+      title: 'Characters and wardrobe that fit',
+      items: [
+        'Eyes sit in the middle of every face, and hats, glasses and clothes fit every character.',
+        'Orbit, Pixel, Nova, Bolt and Mochi have their own look: a ringed planet, a pixel smile, a star on the chest, a sturdy head, and Mochi is now a bun with ^^ eyes.',
+        'Clothes and accessories have soft edges like the robot itself, without heavy outlines.',
+        'Change an agent\'s look by clicking its robot in the agent detail.',
+        'Alerts keep the icon balanced with the edge even for longer text.',
+      ],
+    },
+  },
+  {
     version: '0.46.20',
     date: '2026-10-18',
     title: 'Pomocník v novém kabátě a různí roboti',
