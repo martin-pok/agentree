@@ -644,7 +644,9 @@ html.look-open { overflow: hidden; }
 .look-swatch svg { width: 16px; height: 16px; opacity: 0; transition: opacity var(--motion-enter, 180ms) var(--ease, ease); position: relative; }
 .look-swatch[aria-pressed='true'] { border-color: var(--swatch); }
 .look-swatch[aria-pressed='true'] svg { opacity: 1; }
-.look-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.look-tabs { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.look-tabs::-webkit-scrollbar { display: none; }
+.look-tab { flex: none; }
 .look-tab {
   flex: none; height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
   color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer;
