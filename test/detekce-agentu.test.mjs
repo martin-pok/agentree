@@ -411,6 +411,29 @@ test('sledování kořene, který ještě neexistuje, začne, jakmile složka vz
   assert.ok(zmeny.includes(null), 'po vzniku složky se ohlásí plný průchod');
 });
 
+// macOS FSEvents doručuje události až od rozběhu proudu – i sekundu po fs.watch. Zápis v té mezeře
+// (agent hned po startu aplikace) by se ukázal až při dalším opakování. Proto po prvním zapnutí nad
+// existujícím kořenem ještě jeden plný průchod; po obnově watcheru ani při dalších událostech už ne.
+test('sledování existujícího kořene po startu jednou doskenuje (zápis před rozběhem FSEvents)', async (t) => {
+  const handlers = [];
+  const fakeWatch = (_dir, _opts, cb) => {
+    const w = { on(ev, fn) { if (ev === 'error') handlers.push(fn); return this; }, unref() {}, close() {} };
+    w.emit = cb;
+    return w;
+  };
+  const zmeny = [];
+  const stopy = [];
+  const w = watchTree('/tmp/existujici/projects', (soubor) => zmeny.push(soubor), { watch: fakeWatch, retryMs: 10, onTrace: (e) => stopy.push(e) });
+  t.after(() => w.close());
+  assert.deepEqual(zmeny, [null], 'hned po zapnutí plný průchod');
+  await waitFor(() => stopy.includes('start-rescan'), 3000);
+  assert.deepEqual(zmeny, [null, null], 'a ještě jeden po rozběhu FSEvents');
+  handlers[0]();
+  await waitFor(() => w.active, 1000);
+  await new Promise((r) => setTimeout(r, 1100));
+  assert.equal(stopy.filter((e) => e === 'start-rescan').length, 1, 'po obnově watcheru se dosken neopakuje');
+});
+
 test('sledování jednoho účtového souboru ignoruje ostatní změny v domovské složce', () => {
   let callback = null;
   let closed = false;
