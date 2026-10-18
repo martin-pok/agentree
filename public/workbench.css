@@ -254,8 +254,8 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .studio-avatar, .home-live .pb-agent-logo.studio-avatar { width: 108px; height: 112px; background: transparent; border-radius: 0; }
 .robot { width: 108px; height: 112px; overflow: visible; color: var(--persona); }
 .robot-shadow { fill: var(--ink); opacity: .07; }
-.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 20%, var(--card)); }
-.robot-shell { stroke: color-mix(in srgb, var(--persona) 32%, var(--card)); stroke-width: 1; }
+.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 26%, var(--card)); }
+.robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
 .robot-face { fill: #242632; }
 .robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
 .robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
@@ -810,3 +810,34 @@ html.look-open { overflow: hidden; }
 @keyframes pm-kyv { 40% { transform: rotate(-6deg) scale(1.04); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .pm-fab:hover .pm-glyph { animation: none; } }
 @media (max-width: 720px) { .pm-glyph { width: 33px; height: 30px; } }
+
+/* Postavy: části, které má jen některá stavba (pásy Rovera, kostičkové nohy Pixela, tváře Mochi a Sprouta). */
+.robot-foot, .robot-tread { fill: color-mix(in srgb, var(--persona) 55%, var(--card)); }
+.robot-wheel { fill: var(--card); opacity: .85; }
+.robot-limbs--stout { stroke-width: 7; }
+.robot-cheek { fill: #ff8fb0; opacity: .55; }
+html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill: color-mix(in srgb, var(--persona) 70%, var(--card)); }
+
+/* Vzhled agenta: devět postav ve třech řadách a šestnáct barev ve dvou. */
+.look-row--robots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.look-row--robots .look-tile .robot, .look-row--robots .look-tile .studio-avatar { width: 56px; height: 58px; }
+.look-row--colors { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px 4px; justify-content: stretch; justify-items: center; }
+.look-row--colors .look-swatch { width: 34px; height: 34px; box-shadow: inset 0 0 0 3px var(--paper); }
+.look-row--colors .look-swatch svg { width: 14px; height: 14px; }
+
+/* Tlačítko zpět vedle nadpisu stránky: kapsle 44 px (stejně jako ostatní akce), tenký obrys, šipka
+   se při najetí posune doleva. Objeví se jen tehdy, když je kam se vrátit. */
+.page-back {
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin-right: -12px; padding: 0;
+  border: 1px solid var(--line); border-radius: var(--r-full); background: var(--card); color: var(--ink);
+  cursor: pointer; pointer-events: auto;
+  transition: background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease);
+}
+.page-back[hidden] { display: none; }
+.page-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--motion-response) var(--ease); }
+.page-back:hover { border-color: var(--ink-2); background: var(--line-2); }
+.page-back:hover svg { translate: -2px 0; }
+.page-back:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { .page-back:not([hidden]) { animation: page-back-in var(--motion-enter, 220ms) var(--ease) both; } }
+@keyframes page-back-in { from { opacity: 0; transform: translateX(6px) scale(.92); } }
+@media (max-width: 720px) { .page-back { margin-right: -4px; } }

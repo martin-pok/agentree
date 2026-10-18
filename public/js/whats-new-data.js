@@ -6,15 +6,21 @@ export const RELEASES = [
   {
     version: '0.46.18',
     date: '2026-10-18',
-    title: 'Vzhled agenta: dotažený šatník a kombinace',
+    title: 'Vzhled agenta: devět postav, 16 barev a tlačítko zpět',
     items: [
+      'Devět postav s vlastní stavbou těla: kulatý Orbit, hranatý Pixel, štíhlá Nova, robustní Bolt, baculatý Mochi, vysoký Echo s vizorem, Rover na pásech a Sprout s lístkem. Oblečení a převleky sedí na každou z nich.',
+      'Šestnáct barev místo čtyř.',
+      'Vedle nadpisu stránky je tlačítko zpět: vrátí tě na předchozí obrazovku, když se překlikneš.',
       'Převlek na celé tělo se teď kombinuje s čepicí i doplňkem na obličej, třeba pirát se slunečními brýlemi a kovbojským kloboukem.',
       'Všechny položky šatníku jsou překreslené do dotažené podoby, čitelné i v tmavém režimu. Přibyly kovbojský klobouk, vrtulková a mikulášská čepice, 3D a srdíčkové brýle, páska přes oko a vesta.',
       'Okno Vzhled agenta se zavře kliknutím mimo něj.',
     ],
     en: {
-      title: 'Agent look: a polished wardrobe you can combine',
+      title: 'Agent look: nine characters, 16 colours and a back button',
       items: [
+        'Nine characters with their own build: round Orbit, boxy Pixel, slim Nova, sturdy Bolt, chubby Mochi, tall Echo with a visor, Rover on tracks and Sprout with a leaf. Clothes and costumes fit every one of them.',
+        'Sixteen colours instead of four.',
+        'A back button next to the page title takes you to the previous screen when you click the wrong thing.',
         'A full-body costume now combines with a hat and a face accessory, for example a pirate with sunglasses and a cowboy hat.',
         'Every wardrobe item has been redrawn to a finished look and reads well in dark mode. New: cowboy hat, propeller and Santa caps, 3D and heart glasses, eye patch and vest.',
         'The agent look window closes when you click outside it.',

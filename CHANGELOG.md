@@ -1,7 +1,10 @@
 # Changelog
 
-## 0.46.18 – 2026-10-18 · Vzhled agenta: dotažený šatník a kombinace
+## 0.46.18 – 2026-10-18 · Vzhled agenta: devět postav, 16 barev a tlačítko zpět
 
+- **Devět postav s vlastní stavbou těla.** Scout, Orbit (velká kulatá hlava), Pixel (hranatý, čtvercové oči), Nova (štíhlá, dvě antény), Bolt (široký a robustní, blesk), Mochi (baculatý, tváře), Echo (vysoký, vizor), Rover (pásy místo nohou, periskop) a Sprout (lístek, tváře). Šatník je nakreslený jednou a na každou postavu se přenese podle její hlavy a trupu (`fit()` v `public/js/robot-svg.js`), brýle sedí na očích u všech. Agent bez vlastní volby si drží dosavadní výchozí vzhled.
+- **Šestnáct barev místo čtyř**, výraznější výplň robota ve světlém režimu.
+- **Tlačítko zpět vedle nadpisu stránky.** Kapsle 44 px se šipkou; objeví se, jakmile se v aplikaci přešlo jinam, a vrátí na předchozí obrazovku (i se sekcí v adrese). Popisek říká kam („Zpět na Přehled“).
 - **Šatník robota je dotažený a dá se kombinovat (#255).** Všech 34 položek je překreslených s obrysem, světlem a stínem a čitelných i v tmavém režimu (dřív byly ploché a například cylindr a sluchátka splývaly s pozadím). Brýle jsou jemné, s odleskem v čočkách. **Převlek se teď kombinuje s čepicí i doplňkem na obličej**: třeba pirát se slunečními brýlemi a kovbojským kloboukem. Vylučuje se jen s oblečením, protože obojí je tělo. Vlastní pokrývku hlavy převleku (čarodějův klobouk, kuchařská čepice, kukla) nahradí čepice, kterou si vybereš. Nové položky: kovbojský klobouk, vrtulková a mikulášská čepice, 3D brýle, srdíčkové brýle, páska přes oko a vesta (11 čepic, 8 doplňků na obličej, 7 kusů oblečení, 8 převleků).
 - **Okno Vzhled agenta se zavře kliknutím mimo něj.**
 - **Útrata: předplatné je označené jako pevná měsíční cena, ne útrata za API.** Když nejsou připojené náklady za API, stránka vysvětlí, že „Zjištěné plány“ jsou fixní cena tarifu a do útraty se nepočítají.

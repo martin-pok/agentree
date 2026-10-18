@@ -64,6 +64,27 @@ const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty
 
 let viewEl = document.getElementById('view');
 const titleEl = document.getElementById('page-title');
+// Tlačítko zpět v hlavičce: objeví se, jakmile se v aplikaci přešlo jinam, a vrátí na předchozí
+// obrazovku (i se sekcí a filtrem v adrese). Zásobník je jen v paměti okna: po obnovení stránky
+// není kam se vracet, tak se tlačítko neukáže.
+const backEl = document.getElementById('page-back');
+const historie = [];
+function zapisHistorii(title) {
+  const adresa = location.hash || '#/prehled';
+  const posledni = historie[historie.length - 1];
+  if (posledni?.adresa === adresa) { posledni.title = title; }
+  else if (historie[historie.length - 2]?.adresa === adresa) { historie.pop(); historie[historie.length - 1].title = title; }
+  else historie.push({ adresa, title });
+  if (historie.length > 50) historie.splice(0, historie.length - 50);
+  const predchozi = historie[historie.length - 2];
+  backEl.hidden = !predchozi;
+  if (predchozi) {
+    const popis = tr('Zpět na {0}', predchozi.title);
+    backEl.setAttribute('aria-label', popis);
+    backEl.title = popis;
+  }
+}
+backEl.addEventListener('click', () => history.back());
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
 const connEl = document.getElementById('conn-pill');
@@ -199,6 +220,7 @@ function navigate() {
   }
   firstNav = false;
   titleEl.textContent = current.title;
+  zapisHistorii(current.title);
   const nav = NAV_OF[current.id];
   for (const a of document.querySelectorAll('[data-nav], [data-sheet-nav]')) {
     if ((a.dataset.nav || a.dataset.sheetNav) === nav) a.setAttribute('aria-current', 'page');

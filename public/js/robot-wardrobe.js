@@ -14,7 +14,7 @@
 //
 // Barvy jdou přes třídy (workbench.css): rf-* výplň, rk-* čára, ro* obrys, rh světlo, rs stín. Díky
 // tomu se věrně přebarví podle --persona a fungují ve světlém i tmavém režimu.
-import { robot } from './robot-svg.js';
+import { robot, fit } from './robot-svg.js';
 import { tr } from './i18n.js';
 
 /* ---------- Čepice ---------- */
@@ -357,18 +357,24 @@ export function renderWardrobe(svg, source) {
     top: !hat ? costume?.top || '' : '',
     body: body?.body || '',
   };
-  const wrap = (jmeno, obsah) => (obsah ? `<g class="robot-wear robot-wear--${jmeno}">${obsah}</g>` : '');
+  // Šatník je nakreslený pro stavbu Scouta; jiná postava ho dostane přenesený na svou hlavu a trup.
+  const typ = /data-robot-type="([A-Za-z]+)"/.exec(svg)?.[1] || 'Scout';
+  const wrap = (jmeno, obsah, cast) => {
+    if (!obsah) return '';
+    const t = fit(typ, cast);
+    return `<g class="robot-wear robot-wear--${jmeno}"${t ? ` transform="${t}"` : ''}>${obsah}</g>`;
+  };
   let out = svg;
-  const back = wrap('back', vrstvy.back);
-  const mid = wrap('mid', vrstvy.mid);
-  const head = wrap('head', vrstvy.head + vrstvy.top);
-  const bodyFront = wrap('body', vrstvy.body);
+  const back = wrap('back', vrstvy.back, 'body');
+  const mid = wrap('mid', vrstvy.mid, 'body');
+  const head = wrap('head', vrstvy.head + vrstvy.top, 'head');
+  const bodyFront = wrap('body', vrstvy.body, 'body');
   if (back) out = out.replace('<g class="robot-body">', back + '<g class="robot-body">');
-  if (mid) out = out.replace('<g class="robot-head">', mid + '<g class="robot-head">');
+  if (mid) out = out.replace(/<g class="robot-head"/, mid + '<g class="robot-head"');
   if (head) out = out.replace('</g></g></svg>', head + '</g></g></svg>');
   if (bodyFront) out = out.replace('</g></svg>', bodyFront + '</g></svg>');
   // Čepice a převlek s pokrývkou hlavy zakrývají anténu; kdyby trčela skrz ně, vypadalo by to jako chyba.
-  if (hat || (costume && (costume.hood || costume.top))) out = out.replace('class="robot"', 'class="robot robot--worn"');
+  if (hat || (costume && (costume.hood || costume.top))) out = out.replace(/class="robot( |")/, 'class="robot robot--worn$1');
   return out;
 }
 

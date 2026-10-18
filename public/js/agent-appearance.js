@@ -2,12 +2,21 @@ import { esc } from './format.js';
 import { tr } from './i18n.js';
 import { state } from './state.js';
 import { ICON } from './icons.js';
-import { robot } from './robot-svg.js';
+import { robot, ROBOT_TYPES } from './robot-svg.js';
 import { WARDROBE, SLOTS, normalizeLook, pickLook, renderWardrobe } from './robot-wardrobe.js';
 
 export const PERSONA_KEY = 'agenteeq:agent-personas:v1';
-export const PERSONA_COLORS = ['#6260d8', '#367b68', '#a85c44', '#92609a'];
-export const PERSONA_AVATARS = ['Scout', 'Orbit', 'Pixel', 'Nova'];
+// Paleta postav. První čtyři barvy a první čtyři postavy jsou výchozí výběr pro agenty bez vlastní volby: jejich
+// pořadí se nemění, aby agent bez uložené volby nezměnil vzhled po aktualizaci.
+const BARVY = [
+  ['#6260d8', () => tr('Indigo')], ['#367b68', () => tr('Šalvěj')], ['#a85c44', () => tr('Terakota')], ['#92609a', () => tr('Orchidej')],
+  ['#2f7fd6', () => tr('Azurová')], ['#1f9aa0', () => tr('Tyrkysová')], ['#4fbf9f', () => tr('Mátová')], ['#7a9a2e', () => tr('Olivová')],
+  ['#d9a53a', () => tr('Medová')], ['#e07a2e', () => tr('Mandarinková')], ['#c23a5a', () => tr('Malinová')], ['#e06aa0', () => tr('Růžová')],
+  ['#6b3f8c', () => tr('Švestková')], ['#2b3a8c', () => tr('Půlnoční')], ['#4a4f63', () => tr('Grafitová')], ['#b59a78', () => tr('Písková')],
+];
+export const PERSONA_COLORS = BARVY.map(([c]) => c);
+export const PERSONA_AVATARS = ROBOT_TYPES;
+const DEFAULT_COUNT = 4;
 
 // Robot s oblečením. `look` je buď uložená volba ({hat, face, outfit, costume}), nebo starý
 // text „accessory“ z dřívější verze. Robot samotný se nepřeškálovává ani nemění.
@@ -25,7 +34,7 @@ export function loadPersonas() {
 // Agent bez vlastní volby má robota i barvu odvozené z id. Dialog z nich vychází, aby po otevření
 // ukazoval to, co agent právě má, a ne vždycky první možnost.
 export function defaultPersona(id) {
-  const index = [...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % PERSONA_COLORS.length;
+  const index = [...String(id)].reduce((n, c) => n + c.charCodeAt(0), 0) % DEFAULT_COUNT;
   return { avatar: PERSONA_AVATARS[index], color: PERSONA_COLORS[index] };
 }
 
@@ -35,7 +44,7 @@ const TABS = [
   { slot: 'outfit', label: () => tr('Oblečení'), none: () => tr('Bez oblečení') },
   { slot: 'costume', label: () => tr('Převleky'), none: () => tr('Bez převleku') },
 ];
-const COLOR_NAMES = () => [tr('Indigo'), tr('Šalvěj'), tr('Terakota'), tr('Orchidej')];
+const COLOR_NAMES = () => BARVY.map(([, name]) => name());
 const NONE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M6.3 17.7 17.7 6.3"/></svg>';
 
 export function editAgentAppearance(id, { onSaved = () => {} } = {}) {

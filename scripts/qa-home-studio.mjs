@@ -313,7 +313,8 @@ try {
         // hranou nadpisu stránky a pravou hranou horní lišty – stejně jako každá jiná stránka.
         const hrany = await page.evaluate(() => {
           const r = (s) => document.querySelector(s)?.getBoundingClientRect();
-          const levo = r('.page-title').left, pravo = r('.topbar').right;
+          const zpet = document.querySelector('#page-back:not([hidden])');
+          const levo = (zpet ? zpet.getBoundingClientRect() : r('.page-title')).left, pravo = r('.topbar').right;
           return ['.home-intro', '.launch-compose', '.home-dvojice', '.home-live']
             .filter((s) => r(s)?.width)
             .map((s) => [s, Math.round(r(s).left - levo), Math.round(r(s).right - pravo)])
