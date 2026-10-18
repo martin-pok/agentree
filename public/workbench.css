@@ -749,3 +749,19 @@ html.look-open { overflow: hidden; }
 .robot--worn .robot-aerial { display: none; }
 .look-tile .studio-avatar { width: 64px; height: 66px; background: none; border-radius: 0; }
 .look-row--robots .look-tile .studio-avatar { width: 42px; height: 44px; }
+
+/* Ikony v Nastavení: jednotná stupnice. Dlaždice v hlavičce karty 44 px s ikonou 22 px (dřív 40/18 splývalo
+   s kartou a ikona vedle 20px nadpisu působila ztracená), volby 36 px s ikonou 20 px. Dlaždice má vlastní
+   jemný podklad a linku, takže drží tvar i v tmavém a světlém režimu. */
+.set-card-head { align-items: center; gap: 16px; }
+.set-card-head > .icon-tile { width: 44px; height: 44px; background: color-mix(in srgb, var(--ink) 5%, var(--card)); box-shadow: inset 0 0 0 1px var(--line); }
+.set-card-head > .icon-tile .icon { width: 22px; height: 22px; stroke-width: 1.7; color: var(--ink); }
+.appearance-option { grid-template-columns: 36px minmax(0, 1fr); align-items: center; }
+.appearance-icon { width: 36px; height: 36px; }
+.appearance-icon .icon { width: 20px; height: 20px; stroke-width: 1.8; }
+@media (max-width: 720px) {
+  .set-card-head > .icon-tile { width: 40px; height: 40px; }
+  .set-card-head > .icon-tile .icon { width: 20px; height: 20px; }
+  .set-card-head > .state, .set-card-head > .btn { margin-left: 56px; }
+  .set-card-head > div { flex: 1 1 calc(100% - 56px); }
+}

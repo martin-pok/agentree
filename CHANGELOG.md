@@ -4,6 +4,8 @@
 
 - **Šatník robota je dotažený a dá se kombinovat (#255).** Všech 34 položek je překreslených s obrysem, světlem a stínem a čitelných i v tmavém režimu (dřív byly ploché a například cylindr a sluchátka splývaly s pozadím). Brýle jsou jemné, s odleskem v čočkách. **Převlek se teď kombinuje s čepicí i doplňkem na obličej**: třeba pirát se slunečními brýlemi a kovbojským kloboukem. Vylučuje se jen s oblečením, protože obojí je tělo. Vlastní pokrývku hlavy převleku (čarodějův klobouk, kuchařská čepice, kukla) nahradí čepice, kterou si vybereš. Nové položky: kovbojský klobouk, vrtulková a mikulášská čepice, 3D brýle, srdíčkové brýle, páska přes oko a vesta (11 čepic, 8 doplňků na obličej, 7 kusů oblečení, 8 převleků).
 - **Okno Vzhled agenta se zavře kliknutím mimo něj.**
+- **Útrata: předplatné je označené jako pevná měsíční cena, ne útrata za API.** Když nejsou připojené náklady za API, stránka vysvětlí, že „Zjištěné plány“ jsou fixní cena tarifu a do útraty se nepočítají.
+- **Ikony v Nastavení mají jednotnou stupnici.** Dlaždice v hlavičce karty 44 px s ikonou 22 px a vlastním podkladem (dřív 40/18 a splývalo s kartou), ikony ve volbách 36/20 px.
 - **Vzhled agenta funguje spolehlivě na telefonu, tabletu i počítači.** Na telefonu se okno otevře jako spodní list s úchytem (stáhneš ho dolů a zavře se), náhled robota zůstává nahoře, záložky jsou v jedné řadě s posunem do strany a „Uložit vzhled“ je vidět pořád. Na počítači se nízká okna přizpůsobí výšce, na dotykových zařízeních mají záložky aspoň 40 px. Stránka pod oknem se nehýbe. Hlídá to nová kontrola na čtyřech velikostech (telefon, telefon naležato, tablet, počítač).
 
 ## 0.46.17 – 2026-10-17 · Aktualizace funguje i z Downloads a z DMG

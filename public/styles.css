@@ -2671,6 +2671,7 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .plan-cena { display: grid; justify-items: end; gap: 2px; text-align: right; }
 .plan-cena b { font: 500 17px/24px var(--f-body); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .plan-cena small { font-size: 12px; line-height: 16px; color: var(--mute); white-space: nowrap; }
+.plans-lede { margin: -4px 0 12px; color: var(--mute); font-size: 13px; line-height: 1.45; }
 .plan-foot { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line-2); font-size: 12px; line-height: 18px; color: var(--mute); }
 @media (max-width: 560px) {
   .plan-row { grid-template-columns: 36px minmax(0, 1fr); }
