@@ -3,7 +3,7 @@
 // všechny tři opakovaly totéž („Na tvé rozhodnutí čeká agentů: 1“) a pozdrav navíc vysvětloval,
 // kde co je. Čisté funkce bez DOM, ať jde každou variantu stavu ověřit testem.
 import { tr } from './i18n.js';
-import { plural } from './format.js';
+import { plural, rel } from './format.js';
 
 /** Věta pod pozdravem „Co dnes posuneme dál?“. Počty nenese – ty patří dlaždicím. */
 export function vetaPozdravu({ cekaji = 0, pracuji = 0 } = {}) {
@@ -18,9 +18,15 @@ export function vetaPozdravu({ cekaji = 0, pracuji = 0 } = {}) {
  * a zároveň je co hlásit o agentech, nese to `poznamka` – selhání zjišťování nesmí zmizet jen
  * proto, že má přednost jiná zpráva.
  */
-export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false } = {}) {
+// Vzdálené relace Claude Code (v cloudu) Agenteeq zná jen z cache Claude Desktopu. „Pracuje“ z ní
+// platí 2 minuty od uložení seznamu (src/connectors/claude-desktop-code.js); starší cache o běhu
+// v cloudu nic neříká, takže „nikdo nepracuje“ by bylo tvrzení bez dat.
+const VZDALENE_CERSTVE = 2 * 60e3;
+
+export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, vzdaleneAt = 0, now = Date.now() } = {}) {
   const problemy = selhalo + limit;
   const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
+  const vzdaleneStare = vzdaleneAt > 0 && now - vzdaleneAt > VZDALENE_CERSTVE;
   let veta;
   if (stav === 'problem') {
     veta = (!limit ? plural(selhalo, 'Selhal {0} agent', 'Selhali {0} agenti', 'Selhalo {0} agentů')
@@ -31,9 +37,10 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
   } else if (stav === 'nevim') {
     veta = tr('Nepodařilo se zjistit, co na počítači běží');
   } else {
-    veta = pracuje ? tr('Vše běží v pořádku') : tr('V pořádku, nikdo nepracuje');
+    veta = pracuje ? tr('Vše běží v pořádku') : vzdaleneStare ? tr('Na tomto počítači nikdo nepracuje') : tr('V pořádku, nikdo nepracuje');
   }
-  const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží') : '';
+  const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
+    : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now)) : '';
   return { stav, veta, poznamka };
 }
 

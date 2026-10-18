@@ -17,7 +17,7 @@ export function createHomeStudio(el) {
   // Robot u pozdravu ukazuje stav všech agentů najednou: kdo čeká na tebe, zamává; když někdo
   // pracuje, píše; jinak odpočívá. Věta pod nadpisem radí, co dělat dál (počty nese box Stav agentů).
   const hlavni = el.querySelector('.home-robot');
-  if (hlavni) hlavni.innerHTML = robot('Orbit');
+  if (hlavni) hlavni.innerHTML = robot('Scout');
   const pulz = el.querySelector('[data-home-pulse]');
   const stavPlochy = () => {
     if (!hlavni || !pulz) return;

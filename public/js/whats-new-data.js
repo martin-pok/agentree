@@ -4,6 +4,30 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.22',
+    date: '2026-10-18',
+    title: 'Pozornost k užitku a skutečná loga',
+    items: [
+      'Když nic neblokuje, Vyžaduje pozornost ukáže agenty, kteří dokončili práci a čekají na další krok, a limity, kterým dochází.',
+      'Bez čekajících úkolů karta řekne, co hlídá: žádosti o povolení, selhání a nejvytíženější limit.',
+      'Replit, Lovable, v0, DeepSeek, Google AI Studio, NotebookLM, Trae a Amp mají svoje skutečné logo.',
+      'Když Claude Desktop dlouho neuložil stav agentů v cloudu, Stav agentů to řekne místo „nikdo nepracuje“.',
+      'Okno rozšíření pro Chrome se vždy otevře v plné šířce, ne jako úzký pruh.',
+      'Robot v pozdravu je zase Scout, roboti mají oči otevřené a jen občas mrknou a zaškrtnutí u hotové úlohy je vidět i v tmavém režimu.',
+    ],
+    en: {
+      title: 'Useful attention card and real logos',
+      items: [
+        'When nothing is blocked, Needs attention shows agents that finished and wait for your next step, and limits running low.',
+        'With nothing to do, the card says what it watches: permission requests, failures and the busiest limit.',
+        'Replit, Lovable, v0, DeepSeek, Google AI Studio, NotebookLM, Trae and Amp show their real logo.',
+        'When Claude Desktop has not saved the state of cloud agents for a while, Agent status says so instead of "nobody is working".',
+        'The Chrome extension window always opens at full width, never as a thin strip.',
+        'The greeting robot is Scout again, robots keep their eyes open and blink now and then, and the check mark on a finished task is visible in dark mode.',
+      ],
+    },
+  },
+  {
     version: '0.46.21',
     date: '2026-10-18',
     title: 'Postavy a šatník přesně na míru',

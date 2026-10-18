@@ -65,10 +65,15 @@
     /* Okno má pevnou výšku 600 px (víc Chrome neukáže): hlavička a pata stojí, roluje jen střed. */
     body {
       position: relative; isolation: isolate; display: flex; flex-direction: column; overflow: hidden;
-      width: min(var(--w), 100vw); height: 600px; background: var(--atmosphere), var(--backdrop); color: var(--ink);
+      width: var(--w); height: 600px; background: var(--atmosphere), var(--backdrop); color: var(--ink);
       font: 400 14px/1.5 var(--f-body); font-variant-numeric: tabular-nums; font-kerning: normal; -webkit-font-smoothing: antialiased;
       container-type: inline-size; container-name: okno;
     }
+    /* Šířka popupu nesmí záviset na šířce okna: Chrome otevře popup skoro nulový a zvětší ho podle
+       obsahu. Se šířkou omezenou na 100vw byl obsah stejně úzký jako okno a popup zůstal pruhem pár
+       pixelů. Na okno se šířka přizpůsobí jen tam, kde je opravdu užší než 380 px (velké zvětšení,
+       otevření v záložce), a nikdy pod 300 px – počáteční prázdné okno tuhle podmínku nesplní. */
+    @media (min-width: 300px) and (max-width: 379.98px) { body { width: 100vw; } }
     b, strong { font-weight: 500; }
     [hidden] { display: none !important; }
     h1, h2, h3, p { margin: 0; }

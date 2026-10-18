@@ -40,12 +40,25 @@ const LOGOS = {
   goose: { label: 'Goose', mono: true },
   opencode: { label: 'OpenCode', mono: true },
   antigravity: { label: 'Antigravity' },
+  // Webové AI nástroje (LobeHub 1.95.0, StackBlitz ze Simple Icons 16.34.0; public/logos/README.md).
+  aistudio: { label: 'Google AI Studio', mono: true },
+  notebooklm: { label: 'NotebookLM', mono: true },
+  // Stitch vlastní logo v žádné sadě nemá: ukazujeme značku Googlu, ne cizí Gemini.
+  google: { label: 'Google' },
+  deepseek: { label: 'DeepSeek' },
+  replit: { label: 'Replit' },
+  lovable: { label: 'Lovable' },
+  v0: { label: 'v0', mono: true },
+  // Bolt vlastní logo v žádné sadě nemá: ukazujeme jeho autora StackBlitz.
+  stackblitz: { label: 'StackBlitz' },
+  trae: { label: 'Trae', mono: true },
+  amp: { label: 'Amp' },
 };
 
-const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama', warp: 'warp' };
+const PROVIDER_LOGO = { anthropic: 'claude', openai: 'openai', google: 'gemini', github: 'githubcopilot', microsoft: 'copilot', cursor: 'cursor', perplexity: 'perplexity', xai: 'grok', alibaba: 'qwen', local: 'ollama', warp: 'warp', deepseek: 'deepseek', replit: 'replit', lovable: 'lovable', vercel: 'v0', stackblitz: 'stackblitz' };
 const CONNECTOR_LOGO = { 'claude-code': 'claude', codex: 'codex', cursor: 'cursor', 'copilot-cli': 'githubcopilot', 'vscode-copilot': 'githubcopilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen' };
-const RUNTIME_LOGO = { 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'codex-app': 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio', warp: 'warp', windsurf: 'windsurf', kiro: 'kiro', zed: 'zed', goose: 'goose', opencode: 'opencode', antigravity: 'antigravity' };
-const WEB_APP_LOGO = [[/chatgpt/i, 'openai'], [/claude/i, 'claude'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot/i, 'githubcopilot'], [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen']];
+const RUNTIME_LOGO = { 'pwa-google-ai-studio': 'aistudio', 'pwa-notebooklm': 'notebooklm', 'pwa-stitch': 'google', 'pwa-chatgpt': 'openai', 'pwa-claude': 'claude', 'pwa-gemini': 'gemini', 'pwa-copilot': 'copilot', 'pwa-perplexity': 'perplexity', 'pwa-grok': 'grok', 'pwa-deepseek': 'deepseek', 'pwa-replit': 'replit', 'pwa-lovable': 'lovable', 'pwa-v0': 'v0', 'pwa-bolt': 'stackblitz', trae: 'trae', amp: 'amp', comet: 'perplexity', 'chatgpt-atlas': 'openai', 'claude-desktop': 'claude', 'claude-code': 'claude', chatgpt: 'openai', codex: 'codex', 'codex-app': 'codex', 'copilot-cli': 'githubcopilot', vscode: 'githubcopilot', cursor: 'cursor', 'ms-copilot': 'copilot', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', perplexity: 'perplexity', grok: 'grok', ollama: 'ollama', lmstudio: 'lmstudio', warp: 'warp', windsurf: 'windsurf', kiro: 'kiro', zed: 'zed', goose: 'goose', opencode: 'opencode', antigravity: 'antigravity' };
+const WEB_APP_LOGO = [[/chatgpt/i, 'openai'], [/claude/i, 'claude'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot/i, 'githubcopilot'], [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen'], [/ai studio/i, 'aistudio'], [/notebooklm/i, 'notebooklm'], [/deepseek/i, 'deepseek'], [/replit/i, 'replit'], [/lovable/i, 'lovable'], [/\bv0\b/i, 'v0']];
 
 // Přijímá klíč poskytovatele ("openai"), session ({connector, app}), konektor ({id}) nebo běhové prostředí ({runtime}).
 export function logoKey(x) {

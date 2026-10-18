@@ -1,13 +1,13 @@
 import { createHomeStudio } from '../home-studio.js';
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, H, MIN } from '../format.js';
+import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, activityItem, decisionCard, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -88,6 +88,57 @@ function onboardingHtml() {
     <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
       <span class="onboard-text"><span>${s.label}</span><small>${s.sub}</small></span>${s.done ? `<span class="sr-only">${tr('hotovo')}</span>` : s.cta}</li>`).join('')}</ol>
   </section>`;
+}
+
+// Nic neblokuje: místo prázdné karty to, co se dá udělat hned – agenti, kteří dokončili práci
+// a čekají na další zadání (posledních 12 h), a limity, kterým zbývá málo (od 80 %). Vyčerpaný
+// limit sem nepatří: ten agenta blokuje a je mezi upozorněními výše.
+function klid(all, hooks, now) {
+  const hotovo = all
+    .filter((s) => s.status === 'waiting' && s.done && now - s.lastAt < 12 * H)
+    .sort((a, b) => b.lastAt - a.lastAt);
+  const dochazi = currentLimits(state.limits || [], now)
+    .map((l) => ({ l, st: limitState(l, now) }))
+    .filter(({ st }) => !st.reached && !st.renewed && st.pct >= 80)
+    .sort((a, b) => b.st.pct - a.st.pct);
+  const radky = [
+    ...dochazi.slice(0, 2).map(({ l, st }) => `<li class="klid-row" data-ton="${st.tone}">
+      <span class="klid-logo">${glyph(l.provider)}</span>
+      <span class="klid-text"><b>${esc(`${l.app || PROVIDERS[pkey(l.provider)].label} · ${l.label}`)}</b><small>${esc(st.label)} · ${esc(limitObnova(l, now).text)}</small></span>
+      <a class="btn btn--sm" href="#/statistiky">${tr('Limity')}</a>
+    </li>`),
+    ...hotovo.slice(0, 3).map((s) => `<li class="klid-row" data-key="${esc(s.id)}">
+      <span class="klid-logo">${glyph(s)}</span>
+      <span class="klid-text"><a href="${agentHref(s.id)}"><b>${esc(s.title)}</b></a><small>${tr('Hotovo')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span> · ${esc(s.app)}</small></span>
+      ${s.open?.length ? openButtons(s, { small: true, max: 1, primary: false }) : `<a class="btn btn--sm" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
+    </li>`),
+  ];
+  const claude = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
+  if (radky.length) {
+    return `<div class="klid">
+    <p class="klid-veta"><span class="calm-mark">${ICON.check}</span><span>${esc(hotovo.length && !dochazi.length ? tr('Nic neblokuje. Tihle agenti dokončili práci a čekají na další krok.') : tr('Nic neblokuje. Tohle můžeš vyřídit teď.'))}</span></p>
+    <ul class="klid-list">${radky.join('')}</ul>
+  </div>`;
+  }
+  // Nic k vyřízení: co Agenteeq hlídá a jak to teď vypadá. Bez měření limitu to říkáme – „v pořádku“
+  // by bylo tvrzení o datech, která nemáme.
+  const nejvic = currentLimits(state.limits || [], now)
+    .map((l) => ({ l, st: limitState(l, now) }))
+    .filter(({ st }) => !st.renewed)
+    .sort((a, b) => b.st.pct - a.st.pct)[0];
+  const hlidam = [
+    [ICON.hand, tr('Žádosti o povolení'), claude && hooks && !hooks.installed
+      ? `<a class="link-inline" href="#/nastaveni" data-karta="claude">${tr('Zapnout u Claude Code')} ${ICON.arrow}</a>`
+      : esc(tr('Žádná nečeká'))],
+    [ICON.alert, tr('Selhání'), esc(tr('Žádné'))],
+    [ICON.clock, tr('Limity'), nejvic
+      ? `${esc(`${nejvic.l.app || PROVIDERS[pkey(nejvic.l.provider)].label} · ${nejvic.l.label}`)} <b>${esc(nejvic.st.label)}</b>`
+      : esc(tr('Žádný změřený limit'))],
+  ];
+  return `<div class="klid">
+    <p class="klid-veta"><span class="calm-mark">${ICON.check}</span><span>${esc(tr('Nic neblokuje. Hlídám za tebe:'))}</span></p>
+    <ul class="klid-hlidam">${hlidam.map(([ikona, co, stav]) => `<li><span class="klid-ikona">${ikona}</span><span>${esc(co)}</span><span class="klid-stav">${stav}</span></li>`).join('')}</ul>
+  </div>`;
 }
 
 function mount(el) {
@@ -304,7 +355,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim });
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, now });
     const pocty = [
       [working.length, popisPoctu('working', working.length), 'ok', '#/agenti?stav=working'],
       [needs.length, popisPoctu('needs_input', needs.length), needs.length ? 'pozor' : '', '#/agenti?stav=needs_input'],
@@ -319,11 +370,9 @@ function update(topics = new Set(['all'])) {
   }
 
   const hooks = state.integrations?.claudeHooks;
-  if (changed(topics, 'sessions', 'integrations')) zivy(el, 'decisions', attention.length
+  if (changed(topics, 'sessions', 'integrations', 'limits', 'tick')) zivy(el, 'decisions', attention.length
     ? `<ul class="decisions">${attention.slice(0, 4).map(decisionCard).join('')}</ul>${attention.length > 4 ? `<a class="link more" href="#/agenti">${plural(attention.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', attention.length - 4)}</a>` : ''}`
-    : `<div class="calm calm--empty"><div class="calm-content"><span class="calm-mark">${ICON.check}</span><div><strong>${tr('Momentálně bez upozornění')}</strong>
-        ${hooks && !hooks.installed && (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing') ? `<a class="link-inline" href="#/nastaveni" data-karta="claude">${tr('Zapnout propojení s Claude Code')} ${ICON.arrow}</a>` : ''}</div></div></div>`);
-
+    : klid(all, hooks, now));
   if (changed(topics, 'sessions', 'tick')) {
     const todayTok = tokensSince(everything, today);
     const avg = Math.max(0, tokensSince(everything, dayStart(now, -7)) - todayTok) / 7;

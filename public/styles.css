@@ -693,6 +693,32 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .calm strong { display: block; font-size: 15px; }
 .calm p { margin: 4px 0 8px; font-size: 14px; color: var(--ink-2); }
 .calm-mark { width: 36px; height: 36px; border-radius: 50%; background: var(--teal-tint); color: var(--teal-ink); display: grid; place-items: center; flex: none; }
+/* Vyžaduje pozornost, když nic neblokuje: jedna věta a pod ní, co se dá udělat hned. */
+.klid { display: grid; gap: 12px; padding: 16px; background: var(--glass); border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 1px 2px rgba(22, 32, 58, .04); }
+.klid-veta { margin: 0; display: flex; align-items: center; gap: 12px; font-size: 14px; line-height: 20px; color: var(--ink-2); }
+.klid-veta .calm-mark { width: 32px; height: 32px; }
+.klid-veta .calm-mark .icon { width: 16px; height: 16px; }
+.klid-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.klid-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.klid-logo { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--card); box-shadow: var(--shadow-sm); }
+.klid-logo .logo, .klid-logo .glyph { width: 18px; height: 18px; }
+.klid-text { min-width: 0; display: grid; gap: 2px; }
+.klid-text a { color: inherit; text-decoration: none; }
+.klid-text a:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.klid-text b { display: block; font-size: 14px; line-height: 20px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.klid-text small { font-size: 12px; line-height: 16px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.klid-row[data-ton='out'] small, .klid-row[data-ton='low'] small { color: var(--brass-ink); }
+.klid { align-content: start; }
+.klid-hlidam { list-style: none; margin: 0; padding: 0; display: grid; }
+.klid-hlidam li { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; border-top: 1px solid var(--line); font-size: 14px; line-height: 20px; }
+.klid-ikona { width: 32px; height: 32px; display: grid; place-items: center; color: var(--mute); }
+.klid-ikona .icon { width: 18px; height: 18px; }
+.klid-stav { color: var(--ink-2); text-align: right; }
+.klid-stav b { font-weight: 500; color: var(--ink); }
+@media (max-width: 560px) {
+  .klid-row { grid-template-columns: 32px minmax(0, 1fr); row-gap: 8px; }
+  .klid-row > .btn { grid-column: 2; justify-self: start; }
+}
 .more { margin-top: 8px; }
 
 .meter-row { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; color: var(--ink-2); margin: 0 8px 12px; }
@@ -2223,6 +2249,8 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .run-mark .icon { width: 10px; height: 10px; stroke-width: 3.2; }
 .run-mark--spin { background: none; border: 2px solid var(--teal-tint); border-top-color: var(--teal); animation: spin .9s linear infinite; }
 .run[data-status='done'] .run-status { color: var(--teal-ink); }
+/* Značka na tónu stavu: v tmavém režimu je tón světlý, proto barva plochy karty, ne bílá. */
+.run:is([data-status='done'], [data-status='failed']) .run-mark { color: var(--card); }
 .run[data-status='done'] .run-mark { background: var(--teal-ink); }
 .run[data-status='failed'] .run-status { color: var(--velvet-ink); }
 .run[data-status='failed'] .run-mark { background: var(--velvet-ink); }
