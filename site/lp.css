@@ -538,6 +538,10 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 .hr .robot-aerial { stroke:var(--persona); stroke-width:5; stroke-linecap:round; fill:none; }
 .hr .robot-face { fill:#181722; }
 .hr .robot-eyes { fill:#f4f3f7; }
+/* Oči a hlava robotů v hero sledují kurzor (site/lp.js); bez pohybu zůstanou v klidu. */
+.hr .robot-gaze { transform:translate(var(--gx,0px),var(--gy,0px)); }
+.hr .robot-head { transform:rotate(var(--tilt,0deg)); }
+@media(prefers-reduced-motion:reduce) { .hr .robot-gaze, .hr .robot-head { transform:none; } }
 .hr svg { filter:drop-shadow(0 16px 20px rgba(0,0,0,.3)); }
 @media(max-width:900px) { .tile--wide { min-height:unset; } .tiles { gap:16px; }
   #soukromi .facts { gap:16px; } #propojeni .logos { grid-template-columns:repeat(2,minmax(0,1fr)); } }
