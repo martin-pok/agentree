@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.46.23 – 2026-10-18 · Pravdivá data: stavy agentů, tokeny, útrata a limity
+
+Nezávislá kontrola pravdivosti dat našla 16 chyb; každá byla doložena konkrétním vstupem a špatným výsledkem a má regresní test.
+
+**Stavy agentů**
+- Agent, kterému jsi schválil povolení, už nehlásí „potřebuje tě“ – Agenteeq to pozná z dalšího nástroje nebo z doběhnutí schváleného (propojení s Claude Code je potřeba v Nastavení obnovit; hooky PreToolUse a PostToolUse 🧪 Beta).
+- Schválené povolení pomocného agenta už nevisí na hlavní konverzaci.
+- Konverzace, která čeká na dlouho pracujícího pomocného agenta, už po 30 minutách nepřejde do „bez aktivity“.
+- Pomocný agent, který čeká na rozhodnutí nebo selhal, se ukáže na své hlavní konverzaci a započítá se v Přehledu, v rozšíření i v odznaku v Docku.
+- Po úspěšném novém tahu už konverzace neukazuje dřívější selhání spuštění.
+- Přerušený tah v Codexu (`turn_aborted`, ověřeno ve zdrojích Codexu 🧪) i v Claude Code už nevypadá jako práce ani jako „hotovo“.
+- Druhý Claude Code ve stejné složce už nezmizí jen proto, že běží pomocný agent.
+- Rozhodnutí a chyby vzdálených agentů ze starší cache Claude Desktopu se ukazují s časem, ke kterému platí, a souhrn v rozšíření nehlásí „nikdo nepracuje“, když u některého agenta chybí čerstvý stav.
+
+**Tokeny a útrata**
+- Tokeny a odhad ceny za posledních 30 dní u projektů počítají jen tokeny spotřebované v tomto období, ne celou historii konverzací, které v něm byly jen aktivní.
+- Odhad ceny přes API počítá každý model jeho vlastní cenou, i když konverzace během práce model přepnula.
+- Zápis do cache na hodinu se v odhadu ceny počítá dvojnásobkem ceny vstupu podle ceníku Anthropicu, ne jako levnější pětiminutový zápis.
+- V časových pásmech s půlhodinovým posunem (například Indie) už „dnes“ nepřichází o tokeny z první půlhodiny dne.
+- Cena podle ceníku API v detailu konverzace je označená jako odhad, stejně jako na kartě projektu.
+
+**Limity**
+- Codex: vyčerpaný týdenní limit už neoznačí okno 5 h jako vyčerpané ani o něm nepošle upozornění.
+- Dvě licence Claude mají každá svůj řádek limitu; záznam bez účtu si nepůjčí čas obnovy jiné licence.
+- Nečinná relace, která po obnově okna překreslí stavový řádek se starým měřením, už nepřepíše čerstvé číslo ani nevyhlásí „vyčerpáno“ s minulým časem obnovy.
+- Jedno okno limitu hlášené stavovým řádkem, odmítnutím API i Claude Desktopem vyvolá jedno upozornění, ne tři.
+- Procento z historie Claude Desktopu změřené před známou obnovou okna se už neukazuje jako současné.
+- Vyžaduje pozornost nepíše „Nic neblokuje“, když je limit vyčerpaný.
+
 ## 0.46.22 – 2026-10-18 · Vyžaduje pozornost k užitku, skutečná loga nástrojů
 
 - **Vyžaduje pozornost ukazuje, co se dá udělat hned.** Když nic neblokuje, místo prázdné karty „Momentálně bez upozornění“ jsou tu agenti, kteří za posledních 12 h dokončili práci a čekají na další krok (s tlačítkem Pokračovat), a limity od 80 %. Když není ani to, karta říká, co hlídá: žádosti o povolení (případně odkaz na zapnutí u Claude Code), selhání a nejvytíženější změřený limit – bez měření to přizná.
