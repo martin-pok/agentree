@@ -2833,3 +2833,10 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   #refresh-app.is-refreshing .refresh-robot, .rr-lesk { animation: none; }
   .rr-zaklad { opacity: .85; }
 }
+
+/* Profilový robot v kolečku: WebKit (aplikace pro Mac) při necelých pixelech nechá pod SVG prosvítat
+   pozadí kolečka jako tmavý proužek. Obrázek proto přesahuje ořez o 1 px a kolečko s obrázkem nemá
+   vlastní tmavé pozadí. */
+.avatar-pick:has(svg) { background: transparent; }
+.avatar-pick svg, .avatar-face svg, .avatar-mini svg { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); max-width: none; display: block; }
+.avatar-mini { position: relative; }
