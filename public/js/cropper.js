@@ -7,7 +7,7 @@ import { tr } from './i18n.js';
 // Retině nebyl rozmazaný. Dřív se obrázek jen zmenšil a karta ho ořízla sama (`object-fit`).
 
 export const TARGETS = {
-  cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), hint: tr('Doporučeno 1400 × 400 px (poměr 7 : 2), PNG, JPG nebo WebP do 4 MB. Důležité drž uprostřed.') },
+  cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), hint: tr('1400 × 400 px · PNG, JPG nebo WebP do 4 MB') },
   logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), hint: tr('Doporučeno 512 × 512 px, nejlépe PNG s průhledným pozadím, do 1,5 MB.') },
 };
 const TYPES = ['image/png', 'image/jpeg', 'image/webp'];
