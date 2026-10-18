@@ -122,8 +122,10 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 @media (max-width: 560px) { .zdravi-pocty span { font-size: var(--type-small); } }
 
 /* Pozdrav: zprava organický fialový přechod, který se pomalu přelévá (dvě rozmazané skvrny
-   jako ve Figmě, každá jiným tempem). Vpravo na nejsytější fialové stojí počty – bílá na
-   #474ae6 má kontrast přes 6:1; text vlevo zůstává na světlé ploše panelu. */
+   jako ve Figmě, každá jiným tempem). Na nejsytější fialové stojí dnešní den jako kalendářní
+   značka (velké číslo dne, vedle měsíc a den v týdnu) a pod ním dnešní aktivita. Pod textem
+   leží vlastní sytá plocha rozpitá stínem do přechodu: kontrast bílé je zaručený, ať se skvrny
+   zrovna posunuly kamkoli. */
 .home-desk .home-intro { position: relative; isolation: isolate; overflow: hidden; grid-template-columns: auto minmax(0, 1fr) auto; }
 .home-intro::before, .home-intro::after {
   content: ''; position: absolute; z-index: -1; pointer-events: none; border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%;
@@ -133,24 +135,39 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 .home-intro::after { width: 50%; height: 170%; right: -18%; top: -30%; background: #474ae6; animation: pozdrav-mesh-b 28s ease-in-out infinite alternate; }
 @keyframes pozdrav-mesh-a { from { transform: translate(0, 0) rotate(0deg) scale(1); } to { transform: translate(-6%, 8%) rotate(14deg) scale(1.08); } }
 @keyframes pozdrav-mesh-b { from { transform: translate(0, 0) rotate(0deg) scale(1.04); } to { transform: translate(5%, -6%) rotate(-12deg) scale(.96); } }
-/* Pod počty leží vlastní sytá plocha, rozpitá stínem do přechodu: kontrast bílé je zaručený,
-   ať se skvrny zrovna posunuly kamkoli. */
-.home-pocty { display: flex; align-items: baseline; gap: 24px; margin: 0; padding: 6px 12px; list-style: none; color: #fff; white-space: nowrap; border-radius: var(--r-full); background: #474ae6; box-shadow: 0 0 36px 28px #474ae6; }
-.home-pocty li { display: flex; align-items: baseline; gap: 8px; }
-.home-pocty b { font: 400 48px/1 var(--f-display); letter-spacing: -.03em; font-variant-numeric: tabular-nums lining-nums; }
-.home-pocty span { font-size: 24px; line-height: 1; }
-.home-pocty:empty { display: none; }
+.home-dnes { display: grid; justify-items: end; gap: 6px; margin-right: 4px; padding: 4px 8px; color: #fff; border-radius: var(--r-lg); background: #474ae6; box-shadow: 0 0 40px 30px #474ae6; }
+.home-dnes:empty { display: none; }
+.home-desk .home-intro .home-dnes p { color: #fff; max-width: none; }
+.home-desk .home-intro .home-den { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 16px; }
+.home-den b { font: 300 56px/.9 var(--f-display); letter-spacing: -.04em; font-variant-numeric: lining-nums; }
+.home-den > span { display: grid; gap: 2px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, .45); font-size: 16px; line-height: 1.25; }
+.home-den > span > span:first-child { font-weight: 500; }
+.home-desk .home-intro .home-aktivita { margin: 0; font-size: 14px; line-height: 1.4; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .home-intro::before, .home-intro::after { animation: none; } }
 .mascot-motion-off .home-intro::before, .mascot-motion-off .home-intro::after { animation: none; }
-/* Užší okno: počty pod nadpis přes celou šířku, přechod se přesune do pravého dolního rohu. */
+/* Užší okno: den se přesune pod nadpis do vlastního fialového pruhu přes celou šířku panelu.
+   Rozmazané skvrny by tu zasáhly do věty pod nadpisem, a tak zmizí – fialová zůstane jen za
+   bílým textem, kde je kontrast jistý. */
 @media (max-width: 1100px) {
   .home-desk .home-intro { grid-template-columns: auto minmax(0, 1fr); }
-  .home-pocty { grid-column: 1 / -1; justify-self: end; }
-  .home-intro::before { width: 90%; height: 120%; right: -30%; top: auto; bottom: -55%; }
-  .home-intro::after { width: 80%; height: 100%; right: -24%; top: auto; bottom: -45%; }
+  .home-intro::before, .home-intro::after { display: none; }
+  .home-dnes { grid-column: 1 / -1; justify-self: stretch; margin: 0; padding: 12px 16px; box-shadow: none; background: linear-gradient(110deg, #6260d8 0%, #474ae6 70%); }
 }
 @media (max-width: 560px) {
-  .home-pocty { gap: 16px; }
-  .home-pocty b { font-size: 36px; }
-  .home-pocty span { font-size: 18px; }
+  .home-den b { font-size: 44px; }
+  .home-den > span { font-size: 14px; }
+  .home-desk .home-intro .home-aktivita { font-size: 12px; white-space: normal; text-align: right; }
 }
+
+/* Posuvník: tenký a tichý, ať nepřebíjí obsah. Místo pro něj je vyhrazené vždy (scrollbar-gutter),
+   takže když otevřené okno stránku zamkne a posuvník zmizí, rozložení neposkočí ani se nepřeskládá.
+   Kde prohlížeč scrollbar-gutter nezná, doplní šířku app.js (--posuvnik). */
+html { scrollbar-gutter: stable; }
+@supports not (scrollbar-gutter: stable) {
+  html:has(body.has-modal), html.notif-open { padding-right: var(--posuvnik, 0px); }
+}
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 20%, transparent) transparent; }
+*::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+*::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
+*::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid transparent; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 18%, transparent); background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ink) 34%, transparent); background-clip: padding-box; }

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.26',
+    date: '2026-10-18',
+    title: 'Klidné rozložení a dnešní den v pozdravu',
+    items: [
+      'Otevřené hledání nebo upozornění už stránkou nehne ani nic nepřeskládá.',
+      'Tenký, decentní posuvník.',
+      'Pozdrav vpravo ukazuje dnešní den a dnešní aktivitu – konverzace a tokeny.',
+    ],
+    en: {
+      title: 'Steady layout and today in the greeting',
+      items: [
+        'Opening search or notifications no longer shifts or rearranges the page.',
+        'A thin, quiet scrollbar.',
+        'The greeting now shows today’s date and today’s activity – conversations and tokens.',
+      ],
+    },
+  },
+  {
     version: '0.46.25',
     date: '2026-10-18',
     title: 'Přehled podle Figmy',

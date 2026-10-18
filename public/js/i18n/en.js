@@ -828,7 +828,6 @@ export default {
     "850 Kč": "850 CZK",
     "Ověřené náklady a živé limity": "Verified costs and live limits",
     "pracuje": "working",
-    "stojí": "stalled",
     "Navrhni název kavárny…": "Suggest a name for a coffee shop…",
     "Vloženo z Agenteeq": "Pasted from Agenteeq",
     "Data jdou jen do Agenteeq na {0}.": "Data goes only to Agenteeq on {0}.",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.26 – 2026-10-18 · Klidné rozložení a dnešní den v pozdravu
+
+- **Otevřené okno už nehýbe stránkou:** hledání, upozornění ani dialog neschovají posuvník tak, aby se obsah posunul doprava a box Stav agentů se přeskládal. Místo pro posuvník je vyhrazené vždy.
+- **Tenký posuvník:** decentní kapsle bez podkladu, výraznější jen pod kurzorem.
+- **Pozdrav vpravo:** místo počtů agentů (ty nese box Stav agentů) dnešní den jako kalendářní značka a pod ním dnešní aktivita – aktivní konverzace a tokeny z přepisů. Na užším okně ve vlastním fialovém pruhu, ať přechod nezasahuje do textu.
+
 ## 0.46.25 – 2026-10-18 · Přehled podle Figmy
 
 - **Každé tlačítko na počítači má aspoň 44 px** – i malá tlačítka v kartách a seznamech, položky menu, odkazy u nadpisů, filtry, pole v Nastavení a položky palety. Kontrola `qa:tvary` to teď na počítači vynucuje na všech obrazovkách (dřív připouštěla 32 a 40 px).

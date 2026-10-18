@@ -192,7 +192,7 @@ function mount(el) {
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
   workspace.className = 'home-workspace';
-  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div><ul class="home-pocty" data-region="pozdrav-pocty" aria-label="${tr('Stav agentů')}"></ul></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
+  workspace.innerHTML = `<div class="home-desk"><header class="home-intro"><span class="home-robot agent-portrait" data-state="idle" style="--persona:#6260d8" aria-hidden="true"></span><div class="home-intro-text"><h2>${tr('Co dnes posuneme dál?')}</h2><p data-home-pulse>${tr('Zadej agentovi úkol.')}</p></div><div class="home-dnes" data-region="pozdrav-dnes"></div></header></div><aside class="home-live" aria-label="${tr('Právě teď')}" data-jen-s-daty><h2>${tr('Právě teď')}</h2></aside>`;
   const desk = workspace.querySelector('.home-desk');
   const live = workspace.querySelector('.home-live');
   // Rozhodnutí a stav agentů stojí vedle sebe: vlevo co čeká na tebe, vpravo jestli všechno běží.
@@ -351,6 +351,19 @@ function update(topics = new Set(['all'])) {
       : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
   }
 
+  // Pravá strana pozdravu: dnešní den jako kalendářní značka a pod ním, co se dnes dělo
+  // (aktivní konverzace a tokeny z přepisů). Počty agentů podle stavu nese box Stav agentů –
+  // tady by se jen opakovaly. Den platí vždy; aktivita se ukáže, jen když dnes nějaká byla.
+  if (changed(topics, 'sessions', 'tick')) {
+    const den = Object.fromEntries(new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).formatToParts(now).map((p) => [p.type, p.value]));
+    const dnesTok = tokensSince(everything, today);
+    const aktivita = [
+      todayCount ? `${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')}` : '',
+      dnesTok ? `${fmtTok(dnesTok)} ${tr('tokenů')}` : '',
+    ].filter(Boolean).join(' · ');
+    zivy(el, 'pozdrav-dnes', `<p class="home-den"><b>${esc(den.day)}</b><span><span>${esc(den.month)}</span><span>${esc(den.weekday)}</span></span></p>${aktivita ? `<p class="home-aktivita"><span class="sr-only">${esc(tr('dnes'))}: </span>${esc(aktivita)}</p>` : ''}`);
+  }
+
   // Stav agentů: jedna věta (v pořádku / pozor / problém / nepodařilo se zjistit), počty a problémy.
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
@@ -363,11 +376,6 @@ function update(topics = new Set(['all'])) {
       [failed.length, popisPoctu('failed', failed.length), failed.length ? 'problem' : '', '#/agenti?stav=failed'],
       [limited.length, popisPoctu('limited', limited.length), limited.length ? 'limit' : '', '#/agenti?stav=limited'],
     ];
-    // Počty v pozdravu: kolik agentů pracuje a kolik stojí (čeká na tebe, selhalo nebo narazilo
-    // na limit). Když se nepodařilo zjistit, co běží, nebo není žádný agent, počty se neukazují –
-    // nula by vypadala jako změřený stav.
-    const stoji = needs.length + failed.length + limited.length;
-    zivy(el, 'pozdrav-pocty', stav === 'nevim' || !all.length ? '' : `<li><b>${working.length}</b><span>${esc(popisPoctu('working', working.length))}</span></li><li><b>${stoji}</b><span>${esc(popisPoctu('stoji', stoji))}</span></li>`);
     zivy(el, 'zdravi', `<div class="zdravi" data-stav="${stav}">
       <p class="zdravi-veta"><span class="zdravi-tecka" aria-hidden="true"></span>${esc(veta)}</p>${poznamka ? `<p class="zdravi-pozn">${esc(poznamka)}</p>` : ''}
       <ul class="zdravi-pocty">${pocty.map(([n, popis, ton, href]) => `<li><a href="${href}" data-ton="${ton}"><b>${n}</b><span>${esc(popis)}</span></a></li>`).join('')}</ul>
