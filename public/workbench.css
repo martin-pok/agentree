@@ -595,7 +595,6 @@ html[data-theme] .launch::before { content: none; }
    Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat.
    Kostra: rolovatelný obsah (.look-scroll) a přilepená spodní lišta, takže „Uložit vzhled“ je vidět vždy,
    na jakkoli malém okně. Na telefonu je z okna spodní list s úchytem (tahem dolů se zavře). */
-.session-appearance-btn { margin-left: auto; }
 html.look-open { overflow: hidden; }
 .studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; overscroll-behavior: contain; }
 .studio-dialog--single[open] { display: flex; flex-direction: column; }
@@ -694,7 +693,6 @@ html.look-open { overflow: hidden; }
   .look-tab { scroll-snap-align: center; }
   .look-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; }
   .look-form footer { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
-  .session-appearance-btn { margin-left: 0; }
 }
 @media (max-width: 720px) and (prefers-reduced-motion: no-preference) {
   .studio-dialog--single[open] { animation: look-sheet-in 260ms cubic-bezier(.2, .8, .2, 1); }
@@ -942,3 +940,21 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .agent-robot-tile .env-badge .icon { width: 14px; height: 14px; stroke-width: 2; color: var(--ink); }
 .table.table--roboti .agent-robot-tile .env-badge, .session-kicker .agent-robot-tile .env-badge { width: 28px; height: 28px; right: -4px; }
 .table.table--roboti .agent-robot-tile .env-badge .icon, .session-kicker .agent-robot-tile .env-badge .icon { width: 16px; height: 16px; }
+
+/* Postavy: šťastné oči ^^ (Mochi) jsou čára v barvě očí, pixelová ústa (Pixel) jsou o stupeň tlumenější. */
+.robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }
+.robot-mouth { fill: #ecf7f6; opacity: .7; }
+
+/* Šatník bez výrazných obrysů: robot sám obrys nemá, takže čáry kolem čepic, brýlí a oblečení jsou jen
+   jemné dotažení hrany ve stejném odstínu, ne kresba fixou. */
+.ro, .rog, .rob, .rop, .rol, .rok { stroke-width: .7; stroke-opacity: .32; }
+
+/* Vzhled agenta se mění klepnutím na jeho robota v hlavičce detailu: odznak s tužkou je vidět vždy,
+   při najetí se robot zvedne a odznak vyplní barvou akce. Žádné osamocené tlačítko v řádku stavu. */
+.session-avatar { position: relative; padding: 0; border: 0; border-radius: var(--r-lg); background: none; cursor: pointer; transition: transform var(--motion-response) var(--ease); }
+.session-avatar:hover { transform: translateY(-2px); }
+.session-avatar:focus-visible { outline: 2px solid var(--action); outline-offset: 4px; }
+.session-avatar-edit { position: absolute; right: -6px; top: 4px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--card); color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 4px 10px -4px rgb(16 16 20 / .35); transition: background var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
+.session-avatar-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.session-avatar:hover .session-avatar-edit, .session-avatar:focus-visible .session-avatar-edit { background: var(--action); color: var(--on-action); }
+@media (prefers-reduced-motion: reduce) { .session-avatar, .session-avatar-edit { transition: none; } .session-avatar:hover { transform: none; } }
