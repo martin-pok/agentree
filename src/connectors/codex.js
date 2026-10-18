@@ -193,6 +193,8 @@ export function createCodexConnector(ctx) {
   const windowMs = config.windowDays * DAY;
   const files = new Map();
   let exists = false;
+  // Kořeny, které existují, ale nejdou přečíst (koreny-prepisu.js#necitelne) – „nevím“, ne „nic“.
+  let necitelne = [];
   let lastEventAt = 0;
   const queue = createFileQueue(sync);
   const domovy = new Set(domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }));
@@ -523,6 +525,7 @@ export function createCodexConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
     for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
@@ -566,9 +569,10 @@ export function createCodexConnector(ctx) {
     idle: () => queue.idle(),
     status() {
       const count = files.size;
+      const necteno = necitelne.length ? ui('Složku {0} nejde přečíst (chybí oprávnění), konverzace v ní nejsou vidět.', necitelne.join(', ')) : '';
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays) : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Na {0} nejsou žádné konverzace Codexu.', POCITAC.tomto),
+        state: necteno && !count ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        detail: necteno && !count ? necteno : count ? `${ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays)}${necteno ? ` ${necteno}` : ''}` : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Na {0} nejsou žádné konverzace Codexu.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt,

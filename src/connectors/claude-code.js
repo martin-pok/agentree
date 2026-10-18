@@ -506,6 +506,8 @@ export function createClaudeCodeConnector(ctx) {
   let lastEventAt = 0;
   let lastHookAt = 0;
   let exists = false;
+  // Kořeny, které existují, ale nejdou přečíst (koreny-prepisu.js#necitelne) – „nevím“, ne „nic“.
+  let necitelne = [];
   const queue = createFileQueue(sync, 40);
   const koreny = createKorenyPrepisu(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }), {
     zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
@@ -692,6 +694,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
     konfliktyId.clear();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
@@ -898,11 +901,12 @@ export function createClaudeCodeConnector(ctx) {
     ingestStatusline,
     status() {
       const count = files.size;
+      const necteno = necitelne.length ? ui('Složku {0} nejde přečíst (chybí oprávnění), konverzace v ní nejsou vidět.', necitelne.join(', ')) : '';
       return {
-        state: konfliktyId.size ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        state: konfliktyId.size || (necteno && !count) ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
         collisions: konfliktyId.size,
-        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : count
-          ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
+        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : necteno && !count ? necteno : count
+          ? `${lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays)}${necteno ? ` ${necteno}` : ''}`
           : exists
             ? ui('Složka existuje, zatím bez sessions.')
             : ui('Na {0} nejsou žádné konverzace Claude Code.', POCITAC.tomto),

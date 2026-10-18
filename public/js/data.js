@@ -21,6 +21,11 @@ export const CHART_OTHER = { key: 'other', label: tr('Ostatní'), color: '#7D849
 export const chartKey = (provider) => (CHART_ORDER.includes(provider) ? provider : 'other');
 export const chartColor = (provider) => (CHART_ORDER.includes(provider) ? CATEGORICAL[CHART_ORDER.indexOf(provider)] : CHART_OTHER.color);
 
+// Konverzace aktivní od `since` (pozdrav a hlavní pruh Přehledu: „N aktivních konverzací dnes“).
+// Proces bez přepisu (src/bezici-agenti.js, `proces`) konverzace není – víme jen, že program běží,
+// a jeho `lastAt` je čas spuštění procesu. Pruh ho počítá zvlášť jako běžící aplikaci.
+export const konverzaceOd = (agents, since) => agents.filter((s) => s.lastAt >= since && !s.proces).length;
+
 export function tokensSince(sessions, since, pred) {
   let sum = 0;
   for (const s of sessions) {

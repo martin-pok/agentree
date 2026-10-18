@@ -19,6 +19,9 @@
 - **Útrata při výpadku Admin API:** když náklady od Anthropicu nebo OpenAI nejde načíst (neplatný klíč, 429, výpadek), Útrata to řekne přímo – i s odpovědí dodavatele. Při selhání obou zdrojů už neukáže „Náklady za API nejsou připojené“, při selhání jednoho upozorní, že součet, prognóza a rozpočet jsou bez něj neúplné.
 - **Synchronizace účtu nemaže útratu, kterou se nepodařilo zjistit:** dočasná chyba Admin API dřív z účtu smazala měsíční útratu dané služby a web ji ukázal jako nulu.
 - **Náklady OpenAI po dnech UTC:** dotaz začíná půlnocí UTC, takže denní koše odpovídají kalendářním dnům a ranní útrata se nepřipíše včerejšku.
+- **Jeden vyčerpaný limit = jedno upozornění:** dřív přišlo upozornění za každou konverzaci, která na limit narazila, a k tomu další za okno účtu – u jednoho 5h okna Claude nebo Codexu dvě i víc.
+- **Počet aktivních konverzací v pozdravu a v pruhu Přehledu** nepočítá program, který jen běží bez přepisu (ten se ukazuje mezi běžícími aplikacemi).
+- **Nečitelná složka s konverzacemi:** když Claude Code nebo Codex mají přepisy ve složce, kterou Agenteeq nesmí číst, Propojení to řekne jako chybu s cestou – dřív stálo „Složka existuje, zatím bez konverzací“.
 - **Odhad ceny přes API u Claude Sonnet 5.5:** čtení z cache se počítá 0,10 $ za milion tokenů podle aktuálního ceníku Anthropicu (dřív 0,20 $ ze starší tabulky), odhad u konverzací se Sonnetem 5.5 tak už nevychází vyšší.
 
 ## 0.46.25 – 2026-10-18 · Přehled podle Figmy

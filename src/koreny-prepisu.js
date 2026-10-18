@@ -4,6 +4,7 @@
 // CODEX_HOME. Aplikace spuštěná z Finderu ty proměnné nevidí (má je jen shell uživatele), prozradí
 // je až běžící proces agenta nebo hook. Kořen se proto dá přidat i za běhu – hned se začne sledovat
 // a projde se. Přehlédnutý kořen by znamenal přehlédnutého agenta, a to je pro Agenteeq nejhorší chyba.
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { watchTree, depthOf } from './watch.js';
 import { statSafe } from './util.js';
@@ -16,7 +17,7 @@ import { statSafe } from './util.js';
 // proto má jejich počet strop – ani nesmyslné nebo podvržené cesty nevyčerpají sledování souborů.
 export const MAX_KORENU = 24;
 
-export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU, domov = '' }) {
+export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU, domov = '', readdir = fs.readdir }) {
   const koreny = new Map(); // absolutní cesta → watcher | null
   let sleduje = false;
   // Kořen, který ještě neexistuje, převezme sledování hned po vzniku (strážce nad rodičem, src/watch.js).
@@ -45,6 +46,19 @@ export function createKorenyPrepisu(vychozi, { zmena, max = MAX_KORENU, domov = 
     async existujici() {
       const out = [];
       for (const koren of koreny.keys()) if ((await statSafe(koren))?.isDirectory()) out.push(koren);
+      return out;
+    },
+    /**
+     * Existující kořeny, které nejde přečíst (chybí oprávnění – na macOS třeba složka v Dokumentech
+     * bez plného přístupu k disku). Výpis souborů chybu spolkne a vrátí prázdno; bez téhle kontroly
+     * by konektor hlásil „složka existuje, zatím bez konverzací“ – nevíme by vypadalo jako nic.
+     */
+    async necitelne() {
+      const out = [];
+      for (const koren of koreny.keys()) {
+        if (!(await statSafe(koren))?.isDirectory()) continue;
+        try { await readdir(koren); } catch (err) { if (err?.code === 'EACCES' || err?.code === 'EPERM') out.push(koren); }
+      }
       return out;
     },
     start() {

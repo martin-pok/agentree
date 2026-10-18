@@ -103,3 +103,16 @@ test('cena z Claude Code (cost.total_cost_usd) je v detailu konverzace označen�
   const src = await fs.readFile(new URL('../public/js/views/session.js', import.meta.url), 'utf8');
   assert.match(src, /tr\('Cena podle ceníku API'\)\}\s*<span class="badge">\$\{tr\('odhad'\)\}<\/span>/);
 });
+
+// Regrese: pozdrav a pruh Přehledu („N aktivních konverzací dnes“) počítaly i proces bez přepisu
+// (src/bezici-agenti.js) – jeho lastAt je čas spuštění programu, ne konverzace.
+test('aktivní konverzace dnes: proces bez přepisu se nepočítá', async () => {
+  const { konverzaceOd } = await import('../public/js/data.js');
+  const od = Date.parse('2026-10-18T00:00:00+05:30');
+  const agenti = [
+    { id: 'claude-code:a', lastAt: od + 3600e3 },
+    { id: 'codex:proces-42', lastAt: od + 60e3, proces: { pid: 42, od: od + 60e3 }, status: 'observed' },
+    { id: 'codex:b', lastAt: od - 1 },
+  ];
+  assert.equal(konverzaceOd(agenti, od), 1);
+});

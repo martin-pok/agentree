@@ -181,6 +181,7 @@ export default {
   "Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.": "Tracking {0} sessions from the last {1} days. Instant events are active.",
   "Sleduji {0} sessions za {1} dní.": "Tracking {0} sessions from the last {1} days.",
   "Složka existuje, zatím bez sessions.": "The folder exists, no sessions yet.",
+  "Složku {0} nejde přečíst (chybí oprávnění), konverzace v ní nejsou vidět.": "The folder {0} cannot be read (missing permission), conversations in it are not visible.",
   "Na {0} nejsou žádné konverzace Claude Code.": "No Claude Code conversations on {0}.",
 
   // src/connectors/claude-desktop-code.js
