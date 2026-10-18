@@ -40,7 +40,7 @@ body { letter-spacing: -.012em; }
 .sec-head h2, .sec-head h3 { font-weight: 400; font-size: 20px; letter-spacing: -.025em; }
 .card { border: 1px solid var(--line-2); box-shadow: none; }
 .brand > span { font: 500 15px/1 var(--f-body); text-transform: uppercase; letter-spacing: .24em; }
-.link { background: transparent; box-shadow: none; padding-inline: 4px; color: var(--mute); }
+.link { background: transparent; box-shadow: none; padding-inline: 12px; margin-inline: -8px; color: var(--mute); }
 .link:hover { color: var(--ink); background: var(--line-2); box-shadow: none; }
 .btn, .lchip, .chip, .seg button, .lselect { font-weight: 500; box-shadow: none; }
 .lchip { height: 32px; font-size: 14px; padding: 0 12px; }
@@ -254,8 +254,8 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .studio-avatar, .home-live .pb-agent-logo.studio-avatar { width: 108px; height: 112px; background: transparent; border-radius: 0; }
 .robot { width: 108px; height: 112px; overflow: visible; color: var(--persona); }
 .robot-shadow { fill: var(--ink); opacity: .07; }
-.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 20%, var(--card)); }
-.robot-shell { stroke: color-mix(in srgb, var(--persona) 32%, var(--card)); stroke-width: 1; }
+.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 26%, var(--card)); }
+.robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
 .robot-face { fill: #242632; }
 .robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
 .robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
@@ -411,7 +411,6 @@ body:has(> .pomocnik:not([hidden])) .main { padding-bottom: calc(var(--pm-spodek
 .pm-fab { display: grid; place-items: center; width: var(--pm-fab); height: var(--pm-fab); padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--card); box-shadow: 0 12px 28px -12px rgb(16 16 20 / .35); cursor: pointer; transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .pm-fab:hover { transform: translateY(-2px); box-shadow: 0 16px 32px -12px rgb(16 16 20 / .4); }
 .pm-fab[aria-expanded='true'] { border-color: var(--action); }
-.pm-fab .guide-robot, .pm-fab .robot { width: 48px; height: 50px; }
 .pm-okno { display: flex; flex-direction: column; width: min(400px, calc(100vw - 32px)); height: min(600px, calc(100dvh - 140px)); border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); box-shadow: 0 32px 64px -20px rgb(16 16 20 / .35); overflow: hidden; animation: lpick-in var(--motion-enter) var(--ease) both; }
 .pm-okno[hidden] { display: none; }
 .pm-hlava { display: flex; align-items: center; gap: 12px; padding: 14px 14px 14px 16px; border-bottom: 1px solid var(--line-2); }
@@ -464,7 +463,6 @@ body:has(> .pomocnik:not([hidden])) .main { padding-bottom: calc(var(--pm-spodek
 @media (max-width: 880px) {
   :root { --pm-fab: 52px; --pm-spodek: calc(max(12px, env(safe-area-inset-bottom)) + 84px); }
   .pomocnik { right: 16px; }
-  .pm-fab .guide-robot, .pm-fab .robot { width: 38px; height: 40px; }
   .pm-okno { height: min(560px, calc(100dvh - 220px)); }
 }
 @media (prefers-reduced-motion: reduce) { .pm-okno { animation: none; } .pm-fab { transition: none; } .pm-pise i { animation: none; opacity: .6; } }
@@ -594,10 +592,16 @@ html[data-theme] .launch::before { content: none; }
 .reply--agent .reply-hint { margin: 0; }
 
 /* Vzhled agenta: dialog z vlastních prvků (žádný systémový select), vlevo živý náhled, vpravo šatník.
-   Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat. */
+   Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat.
+   Kostra: rolovatelný obsah (.look-scroll) a přilepená spodní lišta, takže „Uložit vzhled“ je vidět vždy,
+   na jakkoli malém okně. Na telefonu je z okna spodní list s úchytem (tahem dolů se zavře). */
 .session-appearance-btn { margin-left: auto; }
-.studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px 32px; }
-.look-form { display: grid; gap: 22px; }
+html.look-open { overflow: hidden; }
+.studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; overscroll-behavior: contain; }
+.studio-dialog--single[open] { display: flex; flex-direction: column; }
+.look-form { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+.look-grip { display: none; }
+.look-scroll { display: grid; gap: 22px; align-content: start; min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 28px 32px 12px; scrollbar-gutter: stable; }
 .look-head { align-items: flex-start; }
 .look-head h2 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 500; overflow-wrap: anywhere; }
 .look-eyebrow { margin: 0 0 4px !important; color: var(--mute); font-size: 12px !important; line-height: 1.4; }
@@ -638,45 +642,254 @@ html[data-theme] .launch::before { content: none; }
 .look-swatch svg { width: 16px; height: 16px; opacity: 0; transition: opacity var(--motion-enter, 180ms) var(--ease, ease); position: relative; }
 .look-swatch[aria-pressed='true'] { border-color: var(--swatch); }
 .look-swatch[aria-pressed='true'] svg { opacity: 1; }
-.look-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.look-tabs { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.look-tabs::-webkit-scrollbar { display: none; }
+.look-tab { flex: none; }
 .look-tab {
-  height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
-  color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  flex: none; height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
+  color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer;
 }
 .look-tab:hover { border-color: var(--ink-2); }
 .look-tab[aria-selected='true'] { border-color: var(--action); background: color-mix(in srgb, var(--action) 10%, var(--paper)); color: var(--ink); }
 .look-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-content: start; min-height: 396px; }
-.look-form footer { padding-top: 18px; border-top: 1px solid var(--line); }
+.look-form footer { flex: none; padding: 16px 32px 20px; border-top: 1px solid var(--line); background: var(--card); }
 .look-reset { margin-right: auto; }
 .look-form footer [data-error] { margin-right: auto; }
+/* Nízké okno (malý notebook, tablet naležato): méně vzduchu, obsah se roluje uvnitř, lišta zůstává. */
+@media (min-width: 721px) and (max-height: 820px) {
+  .look-scroll { padding-top: 22px; gap: 16px; }
+  .look-stage { min-height: 150px; padding: 10px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 104px; height: 108px; }
+  .look-left, .look-right { gap: 14px; }
+  .look-grid { min-height: 0; }
+}
+@media (min-width: 721px) and (max-height: 520px) {
+  .studio-dialog--single { max-height: calc(100dvh - 16px); }
+  .look-scroll { padding: 14px 24px 8px; }
+  .look-stage { min-height: 110px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 76px; height: 79px; }
+  .look-form footer { padding: 10px 24px 12px; }
+}
+/* Dotyk: capsule aspoň 40 px (pravidlo 32/40/48), ať se do nich dá trefit palcem. */
+@media (pointer: coarse) { .look-tab { height: 40px; padding: 0 16px; } }
+/* Telefon: spodní list. Úchyt nahoře, tahem dolů se zavře; náhled zůstává nahoře při rolování. */
 @media (max-width: 720px) {
-  .studio-dialog--single { padding: 20px 16px; }
-  .look-body { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .studio-dialog--single { width: 100vw; max-width: none; margin: auto 0 0; max-height: 94dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0; }
+  .look-grip { display: block; flex: none; width: 100%; height: 26px; padding-top: 10px; cursor: grab; touch-action: none; }
+  .look-grip::after { content: ''; display: block; width: 40px; height: 4px; margin: 0 auto; border-radius: var(--r-full); background: var(--line); }
+  .look-scroll { padding: 4px 16px 12px; gap: 18px; scrollbar-gutter: auto; }
+  .look-head h2 { font-size: 19px; }
+  .look-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .look-left, .look-right { display: contents; }
-  /* Živý náhled zůstane nahoře, i když se dole listuje šatníkem. */
-  .look-stage { position: sticky; top: -8px; z-index: 2; grid-auto-flow: column; justify-content: center; align-content: center; min-height: 0; padding: 8px 12px; box-shadow: 0 8px 14px -10px var(--ink); }
+  /* Na telefonu je hlavní věc šatník: hned pod náhledem, jméno, podoba a barva až pod ním. */
+  .look-stage { order: 0; }
+  .look-tabs { order: 1; }
+  .look-grid { order: 2; }
+  .look-name { order: 3; }
+  .look-left .look-set { order: 4; }
+  .look-stage { position: sticky; top: 0; z-index: 2; grid-auto-flow: column; justify-content: center; align-content: center; min-height: 0; padding: 8px 12px; box-shadow: 0 10px 16px -12px var(--ink); }
   .look-stage .studio-avatar, .look-stage .robot { width: 72px; height: 75px; }
+  .look-tabs { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .look-tabs::-webkit-scrollbar { display: none; }
+  .look-tab { scroll-snap-align: center; }
   .look-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; }
+  .look-form footer { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
   .session-appearance-btn { margin-left: 0; }
 }
-/* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. */
+@media (max-width: 720px) and (prefers-reduced-motion: no-preference) {
+  .studio-dialog--single[open] { animation: look-sheet-in 260ms cubic-bezier(.2, .8, .2, 1); }
+}
+@keyframes look-sheet-in { from { transform: translateY(40px); opacity: 0; } }
+/* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. Každá položka má obrys (ro*),
+   světlo (rh) a stín (rs), aby nevypadala jako plochá skvrna; tmavé části mají světlejší hranu
+   (rol), aby v tmavém režimu nesplynuly s pozadím. */
 .robot-wear * { stroke: none; }
 .robot-wear { stroke-linecap: round; stroke-linejoin: round; }
 .rf-main { fill: var(--persona); }
 .rf-deep { fill: color-mix(in srgb, var(--persona) 66%, #0d1018); }
 .rf-soft { fill: color-mix(in srgb, var(--persona) 28%, #fff); }
-.rf-dark { fill: #1d2130; }
+.rf-ink { fill: #2c3250; }
+.rf-night { fill: #1b2036; }
+.rf-shade-lens { fill: #3a4470; }
+.rf-visor { fill: #5fd0e8; fill-opacity: .42; }
 .rf-light { fill: #f7f4ee; stroke: #d6cfbf; stroke-width: .8; }
+.rf-silver { fill: #dfe2ee; }
 .rf-gold { fill: #e8b93f; }
 .rf-goldd { fill: #c99a2a; }
-.rf-warm { fill: #c98a4b; }
+.rf-brown { fill: #7a4b2a; }
+.rf-brown2 { fill: #b9794a; }
+.rf-red { fill: #d9534f; }
+.rf-cyan { fill: #4fc3d9; }
+.rf-pink { fill: #f2a3c0; }
+.rf-denim { fill: #4a6fa5; }
 .rf-glass { fill: #fff; fill-opacity: .16; }
+.rf-lens { fill: #fff; fill-opacity: .12; }
 .rk-main { stroke: var(--persona); }
 .rk-deep { stroke: color-mix(in srgb, var(--persona) 66%, #0d1018); }
 .rk-light { stroke: #f7f4ee; }
+.rk-cream { stroke: #f1e3c4; }
+.rk-white { stroke: #fff; }
+.rk-soft { stroke: color-mix(in srgb, var(--persona) 28%, #fff); }
 .rk-dark { stroke: #1d2130; }
+.rk-ink { stroke: #2c3250; }
+.rk-silver { stroke: #dfe2ee; }
+.rk-silverd { stroke: #5b6486; }
 .rk-gold { stroke: #e8b93f; }
+.rk-goldd { stroke: #a87a14; }
+.rk-pinkd { stroke: #c9628a; }
 .rk-shade { stroke: #b9b3a6; }
+.ro { stroke: color-mix(in srgb, var(--persona) 32%, #080a12); stroke-width: 1.300; }
+.rog { stroke: #9a6f12; stroke-width: 1.200; }
+.rob { stroke: #4a2c16; stroke-width: 1.100; }
+.rop { stroke: #c9628a; stroke-width: 1.300; }
+.rol { stroke: #7a84ab; stroke-width: 1.200; }
+.rok { stroke: #aab4d8; stroke-width: 1.400; }
+.rh { fill: #fff; fill-opacity: .32; }
+.rs { fill: #05070d; fill-opacity: .2; }
 .robot--worn .robot-aerial { display: none; }
 .look-tile .studio-avatar { width: 64px; height: 66px; background: none; border-radius: 0; }
 .look-row--robots .look-tile .studio-avatar { width: 42px; height: 44px; }
+
+/* Ikony v Nastavení: jednotná stupnice. Dlaždice v hlavičce karty 44 px s ikonou 22 px (dřív 40/18 splývalo
+   s kartou a ikona vedle 20px nadpisu působila ztracená), volby 36 px s ikonou 20 px. Dlaždice má vlastní
+   jemný podklad a linku, takže drží tvar i v tmavém a světlém režimu. */
+.set-card-head { align-items: center; gap: 16px; }
+.set-card-head > .icon-tile { width: 44px; height: 44px; background: color-mix(in srgb, var(--ink) 5%, var(--card)); box-shadow: inset 0 0 0 1px var(--line); }
+.set-card-head > .icon-tile .icon { width: 22px; height: 22px; stroke-width: 1.7; color: var(--ink); }
+.appearance-option { grid-template-columns: 36px minmax(0, 1fr); align-items: center; }
+.appearance-icon { width: 36px; height: 36px; }
+.appearance-icon .icon { width: 20px; height: 20px; stroke-width: 1.8; }
+@media (max-width: 720px) {
+  .set-card-head > .icon-tile { width: 40px; height: 40px; }
+  .set-card-head > .icon-tile .icon { width: 20px; height: 20px; }
+  .set-card-head > .state, .set-card-head > .btn { margin-left: 56px; }
+  .set-card-head > div { flex: 1 1 calc(100% - 56px); }
+}
+
+/* Spouštěč: všechny ovládací prvky v řadě mají stejnou výšku jako „Spustit“, 44 px (cíl pro klik a dotyk
+   podle WCAG 2.2, 2.5.8 s rezervou). Segmentová volba je jeden 44px prvek: vnější kapsle 44, uvnitř
+   dvoupixelový okraj a tlačítka 40. Rozbalená nabídka agentů leží nad zbytkem stránky, ne pod jeho kartami. */
+.launch { z-index: 5; }
+.launch:has(.lpick-pop:not([hidden])) { z-index: 50; }
+.launch .launch-bar { align-items: center; }
+.launch .launch-bar .lpick-btn,
+.launch .launch-bar .launch-go,
+.launch .launch-controls .lselect,
+.launch .launch-controls .lselect .picker-trigger,
+.launch .launch-controls .lselect select,
+.launch .launch-controls .lselect--btn { height: 44px; min-height: 44px; }
+.launch .launch-controls .seg--light { height: 44px; min-height: 44px; padding: 2px; align-items: stretch; }
+.launch .launch-controls .seg--light button { height: 40px; min-height: 40px; padding-inline: 16px; font-size: 14px; }
+.launch .launch-bar .lpick-btn { padding: 0 12px 0 14px; font-size: 14px; gap: 10px; }
+.launch .launch-bar .lpick-btn :is(.logo, .glyph) { width: 18px; height: 18px; }
+.launch .launch-bar .launch-go { padding: 0 24px; font-size: 14px; gap: 8px; }
+.launch .launch-controls .lselect { padding-left: 16px; font-size: 14px; }
+.launch .launch-controls .lselect .picker-trigger { padding-right: 16px; font-size: 14px; }
+.launch .launch-controls .lselect select { font-size: 14px; }
+.launch .launch-controls .lselect--btn { padding: 0 18px 0 16px; font-size: 14px; }
+.launch .launch-controls .lselect .icon { width: 16px; height: 16px; }
+.launch .launch-controls { align-items: center; gap: 8px; }
+.lpick-pop .lchip { height: 44px; min-height: 44px; }
+.lpick-search, .lpick-search input { height: 44px; }
+
+/* Tlačítko pomocníka: značkový fialový přechod, světlý tvar hlavy bez očí sledujících kurzor (ty jsou jen
+   u robotů v obsahu) a mezikruží barvy pozadí, které ho odděluje od karet pod sebou, i v tmavém režimu. */
+.pm-fab {
+  position: relative; border: 0; color: #fff;
+  background: radial-gradient(120% 120% at 24% 14%, #8c88f4 0%, #6260d8 46%, #4743b8 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), inset 0 0 0 1px rgb(255 255 255 / .14),
+    0 0 0 4px var(--paper), 0 14px 30px -10px rgb(82 84 216 / .65);
+}
+.pm-fab::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(60% 50% at 50% 0%, rgb(255 255 255 / .22), transparent 70%); pointer-events: none; }
+.pm-fab:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgb(255 255 255 / .38), inset 0 0 0 1px rgb(255 255 255 / .18), 0 0 0 4px var(--paper), 0 18px 34px -10px rgb(98 96 216 / .8); }
+.pm-fab:focus-visible { outline: 2px solid var(--action); outline-offset: 6px; }
+.pm-fab[aria-expanded='true'] { box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), inset 0 0 0 1px rgb(255 255 255 / .14), 0 0 0 4px var(--paper), 0 0 0 6px var(--action); }
+.pm-glyph { position: relative; width: 40px; height: 36px; overflow: visible; fill: #fff; filter: drop-shadow(0 2px 4px rgb(28 24 110 / .35)); }
+.pm-glyph-stem { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; }
+.pm-fab:hover .pm-glyph { animation: pm-kyv .6s var(--ease); }
+@keyframes pm-kyv { 40% { transform: rotate(-6deg) scale(1.04); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pm-fab:hover .pm-glyph { animation: none; } }
+@media (max-width: 720px) { .pm-glyph { width: 33px; height: 30px; } }
+
+/* Postavy: části, které má jen některá stavba (pásy Rovera, kostičkové nohy Pixela, tváře Mochi a Sprouta). */
+.robot-foot, .robot-tread { fill: color-mix(in srgb, var(--persona) 55%, var(--card)); }
+.robot-wheel { fill: var(--card); opacity: .85; }
+.robot-limbs--stout { stroke-width: 7; }
+.robot-cheek { fill: #ff8fb0; opacity: .55; }
+html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill: color-mix(in srgb, var(--persona) 70%, var(--card)); }
+
+/* Vzhled agenta: devět postav ve třech řadách a šestnáct barev ve dvou. */
+.look-row--robots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.look-row--robots .look-tile .robot, .look-row--robots .look-tile .studio-avatar { width: 56px; height: 58px; }
+.look-row--colors { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px 4px; justify-content: stretch; justify-items: center; }
+.look-row--colors .look-swatch { width: 34px; height: 34px; box-shadow: inset 0 0 0 3px var(--paper); }
+.look-row--colors .look-swatch svg { width: 14px; height: 14px; }
+
+/* Tlačítko zpět vedle nadpisu stránky: kapsle 44 px (stejně jako ostatní akce), tenký obrys, šipka
+   se při najetí posune doleva. Objeví se jen tehdy, když je kam se vrátit. */
+.page-back {
+  flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin-right: -12px; padding: 0;
+  border: 1px solid var(--line); border-radius: var(--r-full); background: var(--card); color: var(--ink);
+  cursor: pointer; pointer-events: auto;
+  transition: background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease);
+}
+.page-back[hidden] { display: none; }
+.page-back svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: translate var(--motion-response) var(--ease); }
+.page-back:hover { border-color: var(--ink-2); background: var(--line-2); }
+.page-back:hover svg { translate: -2px 0; }
+.page-back:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) { .page-back:not([hidden]) { animation: page-back-in var(--motion-enter, 220ms) var(--ease) both; } }
+@keyframes page-back-in { from { opacity: 0; transform: translateX(6px) scale(.92); } }
+.page-back-label { display: none; }
+/* Telefon: vedle nadpisu by na šipku nezbylo místo a nadpis by se zkracoval. Tlačítko tam dostane
+   vlastní řádek nad nadpisem a řekne, kam vede („‹ Přehled“). */
+@media (max-width: 720px) {
+  .topbar:has(> .page-back:not([hidden])) { flex-wrap: wrap; row-gap: 12px; }
+  .page-back { order: -1; width: auto; max-width: 100%; height: 40px; margin: 0 100% 0 0; padding: 0 16px 0 10px; gap: 4px; display: inline-flex; align-items: center; font: 500 14px/1 var(--f-body); }
+  .page-back-label { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* Počítač: každá akce s vlastní plochou je aspoň 44 px (WCAG 2.2, 2.5.8 s rezervou) a prvky v jedné
+   řadě jsou stejně vysoké – tlačítka, segmentová volba, hledání, stav spojení i kulatá tlačítka.
+   Malá tlačítka (.btn--sm, 32 px) zůstávají jen uvnitř seznamů a karet. */
+@media (min-width: 721px) {
+  .btn:not(.btn--sm):not(.btn--lg), .search-btn, .conn-pill { height: 44px; min-height: 44px; }
+  .topbar .icon-btn { width: 44px; height: 44px; }
+  .seg:not(.seg--sm):not(.seg--light) { padding: 2px; }
+  .seg:not(.seg--sm):not(.seg--light) button { height: 40px; min-height: 40px; }
+  .search-btn { padding: 0 18px 0 16px; }
+  .search-field input { height: 44px; }
+  /* Nadpis má výšku řady akcí (44 px), aby se v liště nevycentroval níž než začátek obsahu. */
+  .topbar .page-title { line-height: 44px; }
+}
+.pm-msg .pm-zdroj { display: block; margin-top: 8px; color: var(--mute); font-size: 12px; line-height: 1.4; }
+
+/* Vzhled agenta: postava a barva jsou záložky. Vlevo zůstává jen náhled a jméno, vpravo šest záložek
+   v jedné řadě. Na počítači mají záložky a zavírací tlačítko 44 px jako ostatní akce. */
+@media (min-width: 721px) {
+  .studio-dialog--single { width: min(900px, calc(100vw - 24px)); }
+  .look-body { grid-template-columns: 260px minmax(0, 1fr); }
+  .look-stage { min-height: 260px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 150px; height: 156px; }
+  .look-tab { height: 44px; padding: 0 18px; font-size: 14px; }
+  .look-head [data-close] { width: 44px; height: 44px; }
+}
+@media (min-width: 721px) {
+  .look-tab { flex: 1 0 auto; padding: 0 12px; }
+  /* Mřížka drží výšku čtyř řad, aby okno při přepínání záložek neposkakovalo. */
+  .look-grid { min-height: 444px; }
+}
+@media (min-width: 721px) and (max-height: 820px) { .look-grid { min-height: 0; } }
+/* Lišta dialogu: obě tlačítka stejně vysoká (44 px na počítači, 40 px na telefonu). */
+.look-form footer .btn { height: 40px; min-height: 40px; padding: 0 18px; font-size: 14px; }
+@media (min-width: 721px) {
+  .look-form footer .btn { height: 44px; min-height: 44px; }
+  .look-grid .look-tile .robot, .look-grid .look-tile .studio-avatar { width: 72px; height: 75px; }
+}
+/* Tablet: užší náhled, aby se šest záložek vešlo do jedné řady bez posouvání. */
+@media (min-width: 721px) and (max-width: 960px) {
+  .look-body { grid-template-columns: 188px minmax(0, 1fr); gap: 24px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 120px; height: 125px; }
+  .look-tab { padding: 0 10px; font-size: 13px; }
+  .look-tabs { gap: 4px; }
+}

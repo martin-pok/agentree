@@ -12,7 +12,8 @@ import { tr, LOCALE } from './i18n.js';
 import { state, agentsList } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
-import { odpovedPruvodce, poradSNastavenim } from './assistant-guide.js';
+import { odpovedPruvodce, poradSNastavenim, znalostiPruvodce, jeHledaniChatu } from './assistant-guide.js';
+import { jeOtazkaNaCekani } from './co-ceka.js';
 import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
 import { copy, agentHref } from './ui.js';
@@ -88,6 +89,7 @@ function zpravaHtml(z, i) {
     </li>`).join('');
   return `<div class="pm-msg pm-msg--on">
     ${z.text ? `<p>${esc(z.text)}</p>` : ''}
+    ${z.ai ? `<small class="pm-zdroj">${esc(z.ai === 'Claude Code' ? tr('Odpověděl Claude Code na tvoje předplatné · jen z návodů k Agenteeq') : tr('Odpověděl lokální model {0} · jen z návodů k Agenteeq', z.ai))}</small>` : ''}
     ${z.lokalne ? `<p class="pm-lokalne">${esc(z.lokalne.text)}<small>${esc(tr('Zformuloval lokální model {0} na tomto počítači.', z.lokalne.model))}</small></p>` : ''}
     ${cile ? `<ul class="pm-cile">${cile}</ul>` : ''}
     ${vysledky ? `<ul class="pm-vysledky">${vysledky}</ul>` : ''}
@@ -99,9 +101,9 @@ function zpravaHtml(z, i) {
 function vykresli({ ownMessage = false } = {}) {
   if (!el) return;
   const log = el.querySelector('.pm-log');
-  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Hledáš starý chat, nebo nevíš, kde něco nastavit? Napiš mi, co potřebuješ.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
+  const uvod = `<div class="pm-msg pm-msg--on"><p>${esc(tr('Ptej se na cokoli k Agenteeq – kde co najdeš, jak něco nastavit nebo proč něco nefunguje. Pomocník najde i starý chat a řekne, kdo na tebe čeká.'))}</p>${TIPY()[trasa()] ? `<p class="pm-tip"><b>${tr('Tip k této stránce:')}</b> ${esc(TIPY()[trasa()])}</p>` : ''}</div>`;
   renderChatAtPosition(log, () => {
-    log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Hledá se…')}"><i></i><i></i><i></i></div>` : '');
+    log.innerHTML = uvod + zpravy.map(zpravaHtml).join('') + (pracuje ? `<div class="pm-msg pm-msg--on pm-pise" aria-label="${tr('Přemýšlí…')}"><i></i><i></i><i></i></div>` : '');
   }, { ownMessage });
   el.querySelector('.pm-navrhy').hidden = zpravy.length > 0;
 }
@@ -118,7 +120,20 @@ async function posli(text) {
     // Bez serveru: „co na mě čeká?“ ze živého stavu agentů, otázky k aplikaci z průvodce,
     // otázky mimo Agenteeq poctivé „s tím neporadím“ (public/js/assistant-guide.js).
     const rada = odpovedPruvodce(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state, agenti: agentsList });
-    if (rada) {
+    // Otázky k aplikaci zodpoví AI ze znalostní báze (src/pomocnik-ai.js) vlastními slovy; odkazy
+    // na místa v aplikaci přidá průvodce. „Co na mě čeká?“ (živý stav) a hledání starého chatu
+    // (přepisy na disku) zůstávají deterministické. Bez AI na počítači odpoví průvodce.
+    if (!jeHledaniChatu(dotaz) && !(rada?.topic === 'cekani' && jeOtazkaNaCekani(dotaz))) {
+      const historie = zpravy.slice(0, -1).slice(-6).map((z) => ({ kdo: z.kdo, text: z.text || '' }));
+      const ai = await request('POST', '/api/pomocnik/ai', { dotaz, historie, stranka: trasa(), znalosti: znalostiPruvodce(LOCALE) }).catch(() => null);
+      if (ai?.engine) {
+        const cile = rada?.cile?.length ? rada.cile : poradSNastavenim(dotaz, { presne: true });
+        odpoved = { kdo: 'on', text: ai.text, ai: ai.label, cile: (cile || []).slice(0, 3), topic: rada?.topic || null };
+      }
+    }
+    if (odpoved) {
+      // AI odpověděla.
+    } else if (rada) {
       odpoved = { kdo: 'on', ...rada };
     } else {
     const r = await request('POST', '/api/pomocnik', { dotaz });
@@ -168,7 +183,7 @@ function sestav() {
     <section class="pm-okno" id="pm-okno" role="dialog" aria-labelledby="pm-nadpis" hidden>
       <header class="pm-hlava">
         <span class="pm-avatar" style="--persona:#6260d8">${robot('Orbit')}</span>
-        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('Rady a hledání na tvém počítači')}</small></div>
+        <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="badge badge--beta">${tr('Beta')}</span></h2><small>${tr('AI průvodce aplikací')}</small></div>
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
@@ -181,7 +196,7 @@ function sestav() {
       </form>
     </section>
     <button type="button" class="pm-fab" aria-controls="pm-okno" aria-expanded="false" aria-label="${tr('Otevřít pomocníka')}" title="${tr('Pomocník')}">
-      <span class="guide-robot" style="--persona:#6260d8">${robot('Orbit')}</span>
+      <svg class="pm-glyph" viewBox="11 15 86 76" aria-hidden="true"><path class="pm-glyph-stem" d="M54 25V34"/><circle cx="54" cy="22" r="4"/><path fill-rule="evenodd" d="M35 34h38a20 20 0 0 1 20 20v13a20 20 0 0 1-20 20H35a20 20 0 0 1-20-20V54a20 20 0 0 1 20-20Zm5 18a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Zm28 0a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Z"/></svg>
     </button>`;
   const vstup = el.querySelector('.pm-vstup');
   el.querySelector('.pm-fab').addEventListener('click', () => (el.querySelector('.pm-okno').hidden ? otevri() : zavri()));

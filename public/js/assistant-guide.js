@@ -282,6 +282,15 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
  * odpoví ze živého stavu agentů (co-ceka.js); „jak schválím…“ a otázky na nastavení průvodce.
  * Vrací null, když má rozhodnout hledání v konverzacích na serveru. `agenti` = pole nebo funkce.
  */
+/** Znalostní báze pro AI pomocníka (src/pomocnik-ai.js): odpovědi průvodce v jazyce rozhraní. */
+export function znalostiPruvodce(language = 'cs') {
+  const en = language === 'en';
+  return intents.map((i) => (en ? i.en : i.cs)).filter((t) => typeof t === 'string');
+}
+
+/** Hledá se konkrétní dřívější konverzace? To řeší server (src/pomocnik.js), ne AI. */
+export const jeHledaniChatu = (dotaz) => isSearch(norm(dotaz).replace(/[?!.,:;()„“"'’]/g, ' ').replace(/\s+/g, ' ').trim());
+
 export function odpovedPruvodce(dotaz, { agenti = [], snapshot = null, ...ctx } = {}) {
   const rada = guideAnswer(dotaz, { ...ctx, snapshot });
   const q = norm(dotaz);

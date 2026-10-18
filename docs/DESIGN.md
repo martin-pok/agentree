@@ -79,6 +79,8 @@ jako tlačítko vedle nich.
 |---|---|---|---|
 | malé | 32 px | 13 px | lišty nad seznamy, ovládání pod polem pro zadání, `.btn--sm` |
 | základ | 40 px | 14 px | aplikace, rozšíření, pole a výběry |
+| počítač | 44 px | 14 px | na počítači (šířka nad 720 px) každá akce s vlastní plochou: tlačítka, segmentová volba (kapsle 44, tlačítka 40, rám 2), hledání, stav spojení, kulatá tlačítka lišty a pole hledání; prvky v jedné řadě jsou vždy stejně vysoké. `.btn--sm` (32 px) zůstává jen uvnitř seznamů a karet |
+| hlavní řada | 44 px | 14 px | ovládání spouštěče na počítači (výběr agenta, režim, projekt, složka, „Spustit“): cíl pro klik podle WCAG 2.2 (2.5.8) s rezervou, všechny prvky v řadě stejně vysoké; segmentová volba je 44 px (kapsle 44, tlačítka 40, rám 2) |
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |
 
@@ -169,7 +171,7 @@ v `qa:tvary` i `qa:contrast`.
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
   a upozornění), web a okno rozšíření a změří tvar každého ovládacího prvku. Stejným průchodem
-  změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 48 px;
+  změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 44 / 48 px;
   výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
@@ -215,6 +217,6 @@ kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení
 
 Uživatel mění vzhled **v detailu právě otevřeného agenta**, nikoli v Přehledu pomocí dlouhého seznamu všech agentů. Identita upravované konverzace je pevně daná jejím ID. V Přehledu se nastavení pouze zobrazuje; změna nezasahuje do práv, chování, modelu ani dat agenta.
 
-Editor je vlastní modální dialog, systémové `<select>` se v něm nepoužívají. Vlevo je živý náhled robota s vlastním jménem, podoba (čtyři siluety) a barva; vpravo šatník se záložkami **Hlava · Obličej · Oblečení · Převleky** (WAI-ARIA tabs, přepínání šipkami). Každá dlaždice ukazuje robota přesně v tom, co by po kliknutí měl na sobě, takže se nic nevybírá naslepo. Čepici, brýle a oblečení lze kombinovat; **převlek** (kosmonaut, dinosaurus, čaroděj, nindža, kuchař, pirát, superhrdina, kočka) je celé tělo a ostatní položky nahradí, a naopak (`pickLook` v `public/js/robot-wardrobe.js`). Dialog se na počítači vejde bez scrollování; na telefonu zůstává náhled nahoře. Starší uložený vzhled s jedním „accessory“ se načte dál (`normalizeLook`). Každá položka žije ve shodném `viewBox="0 0 108 112"` robota a barví se tokeny (`--persona`, `rf-*`/`rk-*` v `workbench.css`), takže funguje ve světlém i tmavém režimu. Jde jen o vzhled; nic nemění oprávnění ani chování agenta.
+Editor je vlastní modální dialog, systémové `<select>` se v něm nepoužívají. Vlevo je živý náhled robota s vlastním jménem, podoba (čtyři siluety) a barva; vpravo šatník se záložkami **Hlava · Obličej · Oblečení · Převleky** (WAI-ARIA tabs, přepínání šipkami). Každá dlaždice ukazuje robota přesně v tom, co by po kliknutí měl na sobě, takže se nic nevybírá naslepo. Čepici, doplněk na obličej a oblečení lze kombinovat; **převlek** (kosmonaut, dinosaurus, čaroděj, nindža, kuchař, pirát, superhrdina, kočka) je oblečení na celé tělo, takže nahradí jen oblečení, a naopak. Čepice a doplněk na obličej na převleku zůstanou, vlastní pokrývku hlavy převleku čepice vyměnila (`pickLook`, `renderWardrobe` v `public/js/robot-wardrobe.js`). Každá položka má obrys, světlo a stín a tmavé části mají světlejší hranu, aby v tmavém režimu nesplynuly s pozadím. Okno se zavře Esc, tlačítkem i kliknutím mimo (stisk i uvolnění musí být venku, aby výběr textu nezavřel okno). Dialog se na počítači vejde bez scrollování; na telefonu zůstává náhled nahoře. Starší uložený vzhled s jedním „accessory“ se načte dál (`normalizeLook`). Každá položka žije ve shodném `viewBox="0 0 108 112"` robota a barví se tokeny (`--persona`, `rf-*`/`rk-*` v `workbench.css`), takže funguje ve světlém i tmavém režimu. Jde jen o vzhled; nic nemění oprávnění ani chování agenta.
 
 **Stav:** šatník a dialog přepracované na zadání majitele z reportu (bod 10.5); čeká na ověření na Macu.

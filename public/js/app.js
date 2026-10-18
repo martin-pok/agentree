@@ -32,7 +32,7 @@ import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { popisPoctu } from './stav-vety.js';
-import { modifikator, zkratka, ariaZkratka, JE_MAC } from './system.js';
+import { modifikator, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
 import { mountDetekce } from './detekce-ui.js';
 import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
@@ -64,6 +64,28 @@ const NAV_OF = { prehled: 'prehled', agenti: 'agenti', agent: 'agenti', projekty
 
 let viewEl = document.getElementById('view');
 const titleEl = document.getElementById('page-title');
+// Tlačítko zpět v hlavičce: objeví se, jakmile se v aplikaci přešlo jinam, a vrátí na předchozí
+// obrazovku (i se sekcí a filtrem v adrese). Zásobník je jen v paměti okna: po obnovení stránky
+// není kam se vracet, tak se tlačítko neukáže.
+const backEl = document.getElementById('page-back');
+const historie = [];
+function zapisHistorii(title) {
+  const adresa = location.hash || '#/prehled';
+  const posledni = historie[historie.length - 1];
+  if (posledni?.adresa === adresa) { posledni.title = title; }
+  else if (historie[historie.length - 2]?.adresa === adresa) { historie.pop(); historie[historie.length - 1].title = title; }
+  else historie.push({ adresa, title });
+  if (historie.length > 50) historie.splice(0, historie.length - 50);
+  const predchozi = historie[historie.length - 2];
+  backEl.hidden = !predchozi;
+  if (predchozi) {
+    const popis = tr('Zpět na {0}', predchozi.title);
+    backEl.setAttribute('aria-label', popis);
+    backEl.title = popis;
+    backEl.querySelector('.page-back-label').textContent = predchozi.title;
+  }
+}
+backEl.addEventListener('click', () => history.back());
 const profileEl = document.getElementById('profile');
 const footEl = document.getElementById('side-foot');
 const connEl = document.getElementById('conn-pill');
@@ -89,7 +111,6 @@ document.querySelector('[data-nav-action="launch"]').setAttribute('aria-label', 
 document.querySelector('[data-nav-action="more"] span').textContent = tr('Více');
 document.querySelector('.search-btn span').textContent = tr('Hledat');
 // Zkratka hledání podle systému: ⌘K na Macu, Ctrl+K jinde (public/js/system.js).
-document.querySelector('.search-btn kbd').textContent = zkratka('K');
 document.querySelector('.search-btn').setAttribute('aria-keyshortcuts', ariaZkratka('K'));
 titleEl.textContent = tr('Přehled');
 bell.setAttribute('aria-label', tr('Upozornění'));
@@ -199,6 +220,7 @@ function navigate() {
   }
   firstNav = false;
   titleEl.textContent = current.title;
+  zapisHistorii(current.title);
   const nav = NAV_OF[current.id];
   for (const a of document.querySelectorAll('[data-nav], [data-sheet-nav]')) {
     if ((a.dataset.nav || a.dataset.sheetNav) === nav) a.setAttribute('aria-current', 'page');
@@ -680,36 +702,39 @@ const palette = createPalette(
   },
 );
 
-// Obnova může doběhnout dřív, než by uživatel zaregistroval změnu. Ikona proto dokončí jednu
-// celou otáčku a teprve potom se vrátí do klidového stavu. Samotné tlačítko se nevypíná: neztratí
-// hover ani rozměr a stav aria-busy zároveň zabrání druhému souběžnému požadavku.
+// Obnova: ikona v tlačítku se na chvíli promění v hlavu robota ze značky, přes kterou přejede
+// fialový odlesk – stejný motiv jako načítací scéna aplikace. Žádný pruh, žádný systémový kurzor.
+// Tlačítko se nevypíná (neztratí hover ani rozměr); aria-busy zabrání druhému souběžnému požadavku
+// a čtečce obrazovky stav řekne skrytá oblast role="status". Odlesk vždy dojede aspoň jednou celý,
+// i když obnova skončí dřív.
+const HLAVA = 'M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z';
+const ODLESK_MS = 1100;
 function spustObnovu(button) {
+  if (!button.querySelector('.refresh-robot')) {
+    button.insertAdjacentHTML('beforeend', `<svg class="refresh-robot" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs><clipPath id="rr-tvar"><path d="${HLAVA}"/></clipPath><linearGradient id="rr-lesk" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#7b7df0" stop-opacity="0"/><stop offset=".5" stop-color="#c9caff"/><stop offset="1" stop-color="#7b7df0" stop-opacity="0"/></linearGradient></defs><path class="rr-zaklad" d="${HLAVA}"/><g clip-path="url(#rr-tvar)"><rect class="rr-lesk" x="-24" y="-12" width="22" height="72" fill="url(#rr-lesk)" transform="rotate(16 -13 24)"/></g></svg>`);
+  }
+  const start = performance.now();
   button.setAttribute('aria-busy', 'true');
   button.classList.add('is-refreshing');
   const status = document.createElement('div');
-  status.className = 'refresh-status';
+  status.className = 'sr-only';
   status.setAttribute('role', 'status');
-  status.setAttribute('aria-live', 'polite');
-  // One clear state line, a small branded indicator and indeterminate motion.
-  // Never imply a measured download percentage; never block the current page.
-  status.innerHTML = `<span class="refresh-status__indicator" aria-hidden="true"></span>
-    <div class="refresh-status__content"><strong></strong>
-      <div class="refresh-status__track" aria-hidden="true"><i></i></div>
-    </div>`;
-  const label = status.querySelector('strong');
-  label.textContent = tr('Obnovuji aktuální data');
+  status.textContent = tr('Obnovuji aktuální data');
   document.body.append(status);
   let cleaned = false;
   return {
     setStage(stage) {
-      if (!cleaned && stage === 'snapshot') label.textContent = tr('Aktualizuji zobrazená data…');
+      if (!cleaned && stage === 'snapshot') status.textContent = tr('Aktualizuji zobrazená data…');
     },
     finish() {
       if (cleaned) return;
       cleaned = true;
-      status.remove();
-      button.classList.remove('is-refreshing');
-      button.removeAttribute('aria-busy');
+      const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
+      setTimeout(() => {
+        status.remove();
+        button.classList.remove('is-refreshing');
+        button.removeAttribute('aria-busy');
+      }, zbyva < 60 ? 0 : zbyva);
     },
   };
 }

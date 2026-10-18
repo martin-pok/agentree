@@ -8,7 +8,9 @@ const source = await fs.readFile(new URL('../public/js/assistant-guide.js', impo
 const ui = await fs.readFile(new URL('../public/js/robot-guide.js', import.meta.url), 'utf8');
 
 test('pomocník používá průvodce před obecným vyhledáváním', () => {
-  assert.match(ui, /import \{ odpovedPruvodce, poradSNastavenim \} from '\.\/assistant-guide\.js'/);
+  assert.match(ui, /import \{ odpovedPruvodce, poradSNastavenim, znalostiPruvodce, jeHledaniChatu \} from '\.\/assistant-guide\.js'/);
+  // AI odpovídá ze znalostní báze průvodce; bez AI odpoví průvodce sám.
+  assert.match(ui, /request\('POST', '\/api\/pomocnik\/ai', \{ dotaz, historie, stranka: trasa\(\), znalosti: znalostiPruvodce\(LOCALE\) \}\)/);
   const guideIndex = ui.indexOf('odpovedPruvodce(dotaz');
   const serverIndex = ui.indexOf("request('POST', '/api/pomocnik', { dotaz })");
   assert.ok(guideIndex >= 0 && serverIndex > guideIndex);

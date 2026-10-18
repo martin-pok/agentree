@@ -32,7 +32,7 @@ export function createHomeStudio(el) {
     stavPlochy();
     el.querySelectorAll('.pb-agents li[data-key]').forEach((li, i) => {
       const p = saved[li.dataset.key] || {};
-      const index = [...String(li.dataset.key)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
+      const index = [...String(li.dataset.key)].reduce((n, c) => n + c.charCodeAt(0), 0) % 4;
       const logo = li.querySelector('.pb-agent-logo');
       if (!logo) return;
       logo.classList.add('studio-avatar');
@@ -53,7 +53,7 @@ export function createHomeStudio(el) {
 export function agentRobot(s) {
   let p = {};
   p = loadPersonas()[s.id] || {};
-  const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % colors.length;
+  const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % 4;
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
   return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p)}</span>`;

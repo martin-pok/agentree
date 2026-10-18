@@ -104,6 +104,17 @@ try {
       await page.locator('.lpick-btn').click();
       assert.equal(await page.locator('.lpick-btn').getAttribute('aria-expanded'), 'true');
       assert.ok(await page.locator('[data-l-hledat]').evaluate((n) => n === document.activeElement), 'po otevření má fokus hledání');
+      // Nabídka leží nad kartami pod ní (ne pod nimi) a ovládací prvky spouštěče mají stejnou výšku jako „Spustit“.
+      const nahore = await page.locator('.lpick-pop').evaluate((pop) => {
+        const r = pop.getBoundingClientRect();
+        const bod = document.elementFromPoint(r.left + r.width / 2, r.bottom - 12);
+        return Boolean(bod && pop.contains(bod));
+      });
+      assert.equal(nahore, true, `${typ}: nabídka agentů je přes obsah pod ní`);
+      if ((page.viewportSize()?.width || 0) > 720) {
+        const vysky = await page.evaluate(() => [...document.querySelectorAll('.launch-bar .lpick-btn, .launch-controls > *, .launch-go')].map((e) => Math.round(e.getBoundingClientRect().height)));
+        assert.ok(vysky.length >= 4 && vysky.every((h) => h === 44), `${typ}: ovládací prvky spouštěče jsou 44 px (${vysky})`);
+      }
       await page.screenshot({ path: `${out}/${typ}-vyber-agenta.png` });
       await page.locator('[data-l-hledat]').fill('codex');
       const viditelne = await page.locator('.lpick-pop .lchip:visible').allTextContents();
@@ -218,13 +229,21 @@ try {
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
       const dlg = page.locator('.studio-dialog--single');
-      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 9, 'záložka Hlava: žádná + 8 čepic');
-      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      // Dialog začíná postavou: devět postav, každá v tom, co má agent na sobě.
+      assert.equal(await dlg.locator('[data-pick="avatar"]').count(), 9, 'záložka Postava: 9 postav');
+      await dlg.locator('[data-pick="avatar"][data-value="Rover"]').click();
+      assert.equal(await dlg.locator('.studio-preview .robot--rover').count(), 1, 'náhled ukazuje zvolenou postavu');
+      await dlg.locator('[data-tab="color"]').click();
+      assert.equal(await dlg.locator('[data-pick="color"]').count(), 16, 'záložka Barva: 16 barev');
       await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
+      await dlg.locator('[data-tab="hat"]').click();
+      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 12, 'záložka Hlava: žádná + 11 čepic');
+      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
       await dlg.locator('input[name="nickname"]').fill('Testovací agent');
       assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
       await dlg.locator('.studio-preview .robot-wear--head').waitFor();
-      // Obličej a oblečení se s čepicí kombinují, převlek na celé tělo je nahradí (a naopak).
+      // Čepice, obličej a oblečení se kombinují. Převlek je oblečení na celé tělo: nahradí jen oblečení,
+      // čepice i doplněk na obličej na něm zůstanou.
       await dlg.locator('[data-tab="face"]').click();
       await dlg.locator('[data-pick="face"][data-value="sunglasses"]').click();
       await dlg.locator('[data-tab="outfit"]').click();
@@ -233,11 +252,16 @@ try {
       await dlg.locator('[data-tab="costume"]').click();
       await dlg.locator('[data-pick="costume"][data-value="astronaut"]').click();
       assert.equal(await dlg.locator('[data-pick="costume"][data-value="astronaut"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('[data-tab="outfit"]').click();
+      assert.equal(await dlg.locator('[data-pick="outfit"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek nahradí oblečení');
       await dlg.locator('[data-tab="hat"]').click();
-      assert.equal(await dlg.locator('[data-pick="hat"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek vyčistí čepici');
-      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true', 'čepice na převleku zůstane');
+      await dlg.locator('[data-tab="face"]').click();
+      assert.equal(await dlg.locator('[data-pick="face"][data-value="sunglasses"]').getAttribute('aria-pressed'), 'true', 'brýle na převleku zůstanou');
+      await dlg.locator('[data-tab="outfit"]').click();
+      await dlg.locator('[data-pick="outfit"][data-value="tee"]').click();
       await dlg.locator('[data-tab="costume"]').click();
-      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'čepice vyčistí převlek');
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'oblečení nahradí převlek');
       await dlg.locator('[data-tab="hat"]').click();
       // Klávesnice: šipky přepínají záložky.
       await dlg.locator('[data-tab="hat"]').focus();
@@ -255,10 +279,17 @@ try {
       await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('light'); });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
-      await page.locator('.session-kicker .robot-wear').waitFor();
+      await page.locator('.session-kicker .robot-wear').first().waitFor();
       await page.locator('[data-agent-appearance]').click();
       assert.equal(await page.locator('.studio-dialog--single input[name="nickname"]').inputValue(), 'Testovací agent', 'vzhled se uloží právě tomuto agentovi');
       await page.keyboard.press('Escape');
+      await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+      // Kliknutí mimo okno ho zavře; kliknutí uvnitř (i na jeho okraj) ne.
+      await page.locator('[data-agent-appearance]').click();
+      await page.locator('.studio-dialog--single[open]').waitFor();
+      await page.locator('.studio-dialog--single .look-stage').click();
+      assert.equal(await page.locator('.studio-dialog--single[open]').count(), 1, 'kliknutí dovnitř okno nezavře');
+      await page.mouse.click(4, 4);
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
       await page.goto(`${demo.url}/#/prehled`);
       assert.equal(await page.locator('.studio-customize').count(), 0, 'na Přehledu nesmí být globální editor');
@@ -289,7 +320,8 @@ try {
         // hranou nadpisu stránky a pravou hranou horní lišty – stejně jako každá jiná stránka.
         const hrany = await page.evaluate(() => {
           const r = (s) => document.querySelector(s)?.getBoundingClientRect();
-          const levo = r('.page-title').left, pravo = r('.topbar').right;
+          const zpet = document.querySelector('#page-back:not([hidden])');
+          const levo = (zpet ? zpet.getBoundingClientRect() : r('.page-title')).left, pravo = r('.topbar').right;
           return ['.home-intro', '.launch-compose', '.home-dvojice', '.home-live']
             .filter((s) => r(s)?.width)
             .map((s) => [s, Math.round(r(s).left - levo), Math.round(r(s).right - pravo)])
@@ -297,6 +329,62 @@ try {
         });
         assert.deepEqual(hrany, [], `${typ} ${w}px: bloky Přehledu drží šířku obsahu`);
         await page.screenshot({ path: `${out}/${typ}-prehled-${w}.png` });
+      }
+      // Responzivita dialogu Vzhled agenta: telefon, telefon naležato, tablet a počítač. Nic nesmí přetékat,
+      // „Uložit vzhled“ je vidět bez rolování, záložky jsou v jedné řadě a na dotyk aspoň 40 px vysoké.
+      const stav = await (await fetch(`${demo.url}/api/state`)).json();
+      const idAgenta = (stav.sessions || [])[0]?.id;
+      assert.ok(idAgenta, `${typ}: ukázka má aspoň jednoho agenta`);
+      for (const [nazev, w, h, dotyk] of [['telefon', 375, 667, true], ['telefon naležato', 812, 375, true], ['tablet', 768, 1024, true], ['počítač', 1440, 900, false]]) {
+        const c = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: dotyk, isMobile: dotyk && w < 800 && typ === 'chromium', reducedMotion: 'reduce' });
+        const pg = await c.newPage();
+        const chybyOkna = [];
+        pg.on('pageerror', (e) => chybyOkna.push(e.message));
+        await pg.goto(`${demo.url}/#/agent/${encodeURIComponent(idAgenta)}`);
+        await pg.locator('[data-agent-appearance]').click();
+        const dd = pg.locator('.studio-dialog--single[open]');
+        await dd.waitFor();
+        const m = await dd.evaluate((x) => {
+          const r = (e) => e.getBoundingClientRect();
+          const tabs = [...x.querySelectorAll('.look-tab')].map(r);
+          const dlg = r(x);
+          const save = r(x.querySelector('button[type=submit]'));
+          const scroll = x.querySelector('.look-scroll');
+          return {
+            vodorovne: x.scrollWidth > x.clientWidth + 1 || scroll.scrollWidth > scroll.clientWidth + 1 || document.documentElement.scrollWidth > innerWidth + 1,
+            ulozitVidet: save.top >= 0 && save.bottom <= innerHeight + 1 && save.left >= 0 && save.right <= innerWidth + 1,
+            vOkne: dlg.left >= -1 && dlg.right <= innerWidth + 1 && dlg.top >= -1 && dlg.bottom <= innerHeight + 1,
+            radkyZalozek: new Set(tabs.map((t) => Math.round(t.top))).size,
+            nejnizsiZalozka: Math.min(...tabs.map((t) => t.height)),
+            nejuzsiDlazdice: Math.min(...[...x.querySelectorAll('.look-grid .look-tile')].map((t) => r(t).width)),
+            zavrit: Math.min(r(x.querySelector('[data-close]')).width, r(x.querySelector('[data-close]')).height),
+            pozadiZamcene: document.documentElement.classList.contains('look-open'),
+          };
+        });
+        const kde = `${typ} ${nazev} ${w}x${h}`;
+        assert.equal(m.vodorovne, false, `${kde}: dialog přetéká do strany`);
+        assert.equal(m.ulozitVidet, true, `${kde}: Uložit vzhled musí být vidět bez rolování`);
+        assert.equal(m.vOkne, true, `${kde}: dialog se vejde do okna`);
+        assert.equal(m.radkyZalozek, 1, `${kde}: záložky v jedné řadě`);
+        assert.ok(m.nejuzsiDlazdice >= 70, `${kde}: dlaždice jsou dost široké (${m.nejuzsiDlazdice})`);
+        assert.ok(m.zavrit >= 40, `${kde}: tlačítko zavřít je aspoň 40 px`);
+        assert.equal(m.pozadiZamcene, true, `${kde}: stránka pod oknem se nehýbe`);
+        if (dotyk) assert.ok(m.nejnizsiZalozka >= 40, `${kde}: záložky mají aspoň 40 px (${m.nejnizsiZalozka})`);
+        if (w < 721) {
+          // Tah za úchyt: malý tah okno nezavře, velký ano (syntetické dotykové události, platí v Chromiu i WebKitu).
+          const tah = (od, doY) => pg.locator('.look-grip').evaluate((g, [a, b]) => {
+            const udalost = (typ2, y) => g.dispatchEvent(new PointerEvent(typ2, { pointerId: 7, pointerType: 'touch', clientX: 100, clientY: y, bubbles: true }));
+            udalost('pointerdown', a); udalost('pointermove', b); udalost('pointerup', b);
+          }, [od, doY]);
+          await tah(100, 140);
+          assert.equal(await pg.locator('.studio-dialog--single[open]').count(), 1, `${kde}: malý tah za úchyt okno nezavře`);
+          await tah(100, 260);
+          await pg.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+          assert.equal(await pg.evaluate(() => document.documentElement.classList.contains('look-open')), false, `${kde}: po zavření se stránka odemkne`);
+        }
+        assert.deepEqual(chybyOkna, [], `${kde}: chyby v konzoli`);
+        await pg.screenshot({ path: `${out}/${typ}-vzhled-${nazev.replace(/ /g, '-')}.png` });
+        await c.close();
       }
       assert.deepEqual(errors, [], `${typ}: chyby v konzoli`);
       console.log(`PASS ${typ}: výběr agenta (klik, hledání, šipky, Enter, Esc, klik mimo), koncept zůstal, Spustit odeslal zadání, pomocník (jak zapnu → Nastavení, najdi chat → otevřít, Esc, skrytí v Nastavení), robot v panelu, zaoblený panel, bez přetečení, čistá konzole`);

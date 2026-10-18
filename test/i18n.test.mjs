@@ -262,6 +262,7 @@ const MIMO_ROZHRANI = {
   'src/alerts.js': null, // celý soubor: překládá klient (viz JEN_KLIENT)
   'src/webpush.js': ['invalid subscription keys'],
   'src/pomocnik.js': ['Pomáháš uživateli najít jeho dřívější konverzace s AI.'], // pokyn pro lokální model, ne text rozhraní // vnitřní chyba, posli() ji změní na zrušení odběru
+  'src/pomocnik-ai.js': null, // celý soubor: pokyny a znalostní báze pro model, ne text rozhraní
   'src/verze-souboru.js': ['Stránka nemá </head>', 'sw.js nemá řádek „const CACHE'], // chyba vývojáře při úpravě index.html nebo sw.js
 };
 const mimoRozhrani = (soubor, text) => (MIMO_ROZHRANI[soubor] || []).some((z) => text === z || (z.length >= 16 && text.startsWith(z)));

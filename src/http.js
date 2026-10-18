@@ -527,7 +527,10 @@ export function createHttpServer(app, existingServer = null) {
     }],
     ['POST', /^\/api\/hooks\/claude-code$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
-      const r = await app.connectors['claude-code'].ingestHook(await readBody(req));
+      const telo = await readBody(req);
+      // Dotaz Pomocníka přes Claude Code není agent uživatele (src/pomocnik-ai.js).
+      if (app.jePomocnikSession?.(telo?.session_id)) return { ok: true };
+      const r = await app.connectors['claude-code'].ingestHook(telo);
       if (!r.ok) throw new HttpError(400, r.error);
       return r;
     }, { token: true }],
@@ -685,6 +688,10 @@ export function createHttpServer(app, existingServer = null) {
       return { alert };
     }],
     // Pomocník: jen čte. Z telefonu bez přepisů (stejně jako /api/sessions/:id).
+    ['POST', /^\/api\/pomocnik\/ai$/, async (req) => {
+      const body = await readBody(req);
+      return unwrap(await app.pomocnikOdpoved({ dotaz: body?.dotaz, historie: body?.historie, stranka: body?.stranka, znalosti: body?.znalosti, zTohotoPocitace: zTohotoMacu(req) }));
+    }],
     ['POST', /^\/api\/pomocnik$/, async (req) => {
       const body = await readBody(req);
       return unwrap(await app.pomocnik({ dotaz: body?.dotaz, smiPrepisy: zTohotoMacu(req) }));
@@ -714,7 +721,7 @@ export function createHttpServer(app, existingServer = null) {
       if (body.pomocnik !== undefined) {
         const p = body.pomocnik;
         if (!p || typeof p !== 'object' || Array.isArray(p) || Object.values(p).some((x) => typeof x !== 'boolean')) throw new HttpError(422, ui('Neplatné nastavení pomocníka.'));
-        datastore.data.settings.pomocnik = { ...datastore.data.settings.pomocnik, ...(typeof p.zobrazit === 'boolean' ? { zobrazit: p.zobrazit } : {}), ...(typeof p.model === 'boolean' ? { model: p.model } : {}) };
+        datastore.data.settings.pomocnik = { ...datastore.data.settings.pomocnik, ...(typeof p.zobrazit === 'boolean' ? { zobrazit: p.zobrazit } : {}), ...(typeof p.model === 'boolean' ? { model: p.model } : {}), ...(typeof p.ai === 'boolean' ? { ai: p.ai } : {}) };
       }
       if (body.language !== undefined) {
         if (!['cs', 'en'].includes(body.language)) throw new HttpError(422, ui('Jazyk musí být čeština nebo angličtina.'));
