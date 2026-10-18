@@ -59,6 +59,15 @@ const mesic = (ts) => { const d = new Date(ts); return d.getFullYear() * 12 + d.
 // Každé upozornění se uloží do seznamu a zvedne počet u zvonečku. Oznámení v systému (a bublina
 // v aplikaci) ale nepřijde, když je noční ticho (`muted: 'quiet'`) nebo když jich v minutě přišlo
 // moc (`muted: 'burst'`). Ztlumená pak shrne jedno souhrnné upozornění (`kind: 'digest'`).
+// Jedno okno limitu hlásí víc zdrojů (stavový řádek, odmítnutí API, Claude Desktop), každý pod
+// vlastním `id`. Upozornění patří oknu, ne zdroji: klíč je poskytovatel, okno a minuta obnovy.
+// Bez času obnovy se okna zdrojů spárovat nedají a klíčem zůstává `id`.
+const OKNO_CLAUDE = /^claude:(five_hour|seven_day)(?::|$)/;
+function klicOkna(l) {
+  const okno = (l.provider === 'anthropic' && OKNO_CLAUDE.exec(l.id || '')?.[1]) || null;
+  return okno && l.resetsAt ? `${l.provider}:${okno}:${Math.round(l.resetsAt / 60e3)}` : `${l.id}:${l.resetsAt || ''}`;
+}
+
 export class AlertEngine {
   constructor({ store, datastore, notifier, projectNotify = () => 'all', now = Date.now }) {
     this.store = store;
@@ -150,9 +159,11 @@ export class AlertEngine {
 
   onLimit(limit, prev) {
     if (!this.settings.limits || !limit) return;
+    // Měření pořízené až po obnově svého okna patří minulému oknu a o současném stavu nic neříká.
+    if (Number(limit.resetsAt) > 0 && Number(limit.at) > 0 && limit.resetsAt <= limit.at) return;
     if (limit.reached && !prev?.reached) {
       this.raise({
-        key: `limit:${limit.id}:${limit.resetsAt || limit.at}`,
+        key: `limit:${limit.resetsAt ? klicOkna(limit) : `${limit.id}:${limit.at}`}`,
         level: 'critical',
         kind: 'limit',
         title: `${limit.app}: ${limit.label} vyčerpán`,
@@ -165,7 +176,7 @@ export class AlertEngine {
     const hit = [95, 80].find((t) => limit.usedPercent >= t && !(typeof prev?.usedPercent === 'number' && prev.usedPercent >= t));
     if (!hit) return;
     this.raise({
-      key: `limit_near:${limit.id}:${limit.resetsAt || ''}:${hit}`,
+      key: `limit_near:${klicOkna(limit)}:${hit}`,
       level: 'warning',
       kind: 'limit_near',
       title: `${limit.app}: ${limit.label} na ${Math.round(limit.usedPercent)} %`,
@@ -184,7 +195,7 @@ export class AlertEngine {
       if (!l.reached && !(typeof l.usedPercent === 'number' && l.usedPercent > 0)) continue;
       const name = l.windowMinutes === 300 ? '5hodinový limit' : l.windowMinutes === 10080 ? 'týdenní limit' : l.label.toLowerCase();
       const a = this.raise({
-        key: `limit_reset:${l.id}:${l.resetsAt}`,
+        key: `limit_reset:${klicOkna(l)}`,
         level: 'info',
         kind: 'limit_reset',
         title: `${l.app}: ${name} je obnovený`,

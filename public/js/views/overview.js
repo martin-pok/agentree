@@ -91,15 +91,15 @@ function onboardingHtml() {
 }
 
 // Nic neblokuje: místo prázdné karty to, co se dá udělat hned – agenti, kteří dokončili práci
-// a čekají na další zadání (posledních 12 h), a limity, kterým zbývá málo (od 80 %). Vyčerpaný
-// limit sem nepatří: ten agenta blokuje a je mezi upozorněními výše.
+// a čekají na další zadání (posledních 12 h), a limity, kterým zbývá málo (od 80 %) nebo jsou
+// vyčerpané. Vyčerpaný limit může platit, i když agent, který na něj narazil, mezitím odpověděl.
 function klid(all, hooks, now) {
   const hotovo = all
     .filter((s) => s.status === 'waiting' && s.done && now - s.lastAt < 12 * H)
     .sort((a, b) => b.lastAt - a.lastAt);
   const dochazi = currentLimits(state.limits || [], now)
     .map((l) => ({ l, st: limitState(l, now) }))
-    .filter(({ st }) => !st.reached && !st.renewed && st.pct >= 80)
+    .filter(({ st }) => !st.renewed && (st.reached || st.pct >= 80))
     .sort((a, b) => b.st.pct - a.st.pct);
   const radky = [
     ...dochazi.slice(0, 2).map(({ l, st }) => `<li class="klid-row" data-ton="${st.tone}">
@@ -116,7 +116,7 @@ function klid(all, hooks, now) {
   const claude = (state.connectors || []).some((c) => c.id === 'claude-code' && c.state !== 'missing');
   if (radky.length) {
     return `<div class="klid">
-    <p class="klid-veta"><span class="calm-mark">${ICON.check}</span><span>${esc(hotovo.length && !dochazi.length ? tr('Nic neblokuje. Tihle agenti dokončili práci a čekají na další krok.') : tr('Nic neblokuje. Tohle můžeš vyřídit teď.'))}</span></p>
+    <p class="klid-veta"><span class="calm-mark">${ICON.check}</span><span>${esc(dochazi.some(({ st }) => st.reached) ? tr('Agent nečeká na tebe, ale limit je vyčerpaný.') : hotovo.length && !dochazi.length ? tr('Nic neblokuje. Tihle agenti dokončili práci a čekají na další krok.') : tr('Nic neblokuje. Tohle můžeš vyřídit teď.'))}</span></p>
     <ul class="klid-list">${radky.join('')}</ul>
   </div>`;
   }

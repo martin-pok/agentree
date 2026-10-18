@@ -23,11 +23,13 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     turns: 0,
     tokens: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 },
     hourly: {},
+    hourlyUsage: {},
     minutes: new Set(),
     running: false,
     runningAt: 0,
     procesSkoncil: 0,     // kdy výpis procesů potvrdil, že proces vedoucí tah skončil (src/konec-procesu.js)
     stopAt: 0,
+    prerusenoAt: 0,       // kdy byl tah přerušen (Esc v Claude Code, turn_aborted v Codexu) – přerušený tah není „hotovo“
     toolWaitSince: 0,
     toolWaitKind: '',     // na co čeká nástroj bez výsledku: 'cteni' | 'uprava' | 'dlouhy' (claude-code.js)
     permissionMode: '',   // režim oprávnění Claude Code, když ho přepis nese
@@ -41,6 +43,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     limit: null,
     ended: false,
     hookAt: 0,
+    hookTool: '',         // id nástroje z posledního hooku PreToolUse, který ještě nedoběhl (claude-code.js)
     failure: null,
     context: null,
     effort: '',
@@ -68,18 +71,42 @@ export function touch(s, ts) {
 
 const TOKEN_KEYS = ['input', 'output', 'cacheWrite', 'cacheRead'];
 
+// Složky hodinové přihrádky `hourlyUsage[hodina][model]`: vstup, výstup, čtení z cache, zápis do
+// cache na 5 minut, zápis do cache na hodinu. Odhad ceny přes API (public/js/cenik-api.js) z nich
+// počítá jen tokeny uvnitř zvoleného období a každý model svou cenou.
+export const USAGE_KEYS = ['input', 'output', 'cacheRead', 'cacheWrite5m', 'cacheWrite1h'];
+
+export function resetTokens(s) {
+  s.tokens = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
+  s.hourly = {};
+  s.hourlyUsage = {};
+}
+
+// `delta.cacheWrite1h` je ta část `delta.cacheWrite`, která šla do cache na hodinu; `delta.model`
+// model, který tokeny spotřeboval (bez něj platí model session).
 export function addTokens(s, ts, delta, sign = 1) {
   for (const k of TOKEN_KEYS) s.tokens[k] += sign * (delta[k] || 0);
+  if (!ts) return;
+  const k = hourKey(ts);
   // Hlavní metrika je jen vstup + výstup – to je spotřeba, kterou uživatel pozná i ve svém
   // účtu u dodavatele. Zápis do cache je technická režie (stejný kontext se zapisuje znovu
   // s každým tahem) a dokázal hlavní číslo nadsadit skoro devítinásobně; drží se dál v
   // `s.tokens.cacheWrite` a zobrazuje se odděleně ve složení tokenů.
   const amount = sign * ((delta.input || 0) + (delta.output || 0));
-  if (!ts || !amount) return;
-  const k = hourKey(ts);
-  const next = (s.hourly[k] || 0) + amount;
-  if (next > 0) s.hourly[k] = next;
-  else delete s.hourly[k];
+  if (amount) {
+    const next = (s.hourly[k] || 0) + amount;
+    if (next > 0) s.hourly[k] = next;
+    else delete s.hourly[k];
+  }
+  const w1h = delta.cacheWrite1h || 0;
+  const v = [delta.input || 0, delta.output || 0, delta.cacheRead || 0, (delta.cacheWrite || 0) - w1h, w1h];
+  if (!v.some(Boolean)) return;
+  const model = delta.model || s.model || '';
+  const hodina = ((s.hourlyUsage ||= {})[k] ||= {});
+  const b = (hodina[model] ||= [0, 0, 0, 0, 0]);
+  for (let i = 0; i < b.length; i++) b[i] += sign * v[i];
+  if (b.every((x) => x <= 0)) delete hodina[model];
+  if (!Object.keys(hodina).length) delete s.hourlyUsage[k];
 }
 
 export function pushEntry(s, { at, role, text = '', tool, status, questions }) {
@@ -129,6 +156,12 @@ export function vetaLimitu(limit) {
   return ui('{0} vyčerpán', limit.label);
 }
 
+// Čekání a selhání, které zdroj jen převzal z cache (vzdálený Claude Code, `observedAt` = kdy ji
+// Claude Desktop uložil), platí k tomu okamžiku. Starší než `staleMs` se neschovává – rozhodnutí
+// i chyba se samy nevyřeší –, ale hlásí se jako nečerstvé a s časem, ke kterému platí.
+const zastarale = (x, s, now) => Boolean(x.observedAt && now - x.observedAt > s.staleMs);
+const hlaseniZ = (x, text, s, now) => (zastarale(x, s, now) ? ui('{0} · stav z {1}', text, CAS_OBNOVY(x.observedAt)) : text);
+
 // Pořadí pravidel je záměrné – viz docs/ARCHITECTURE.md („Stavový model session“).
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
@@ -139,11 +172,13 @@ export function deriveStatus(s, now) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
     if (active) return { status: 'limited', reason: vetaLimitu(s.limit), stale: false };
   }
-  // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat.
-  if (s.failure && now - s.failure.at < DAY && !(s.running && (s.runningAt || 0) > s.failure.at)) {
-    return { status: 'failed', reason: s.failure.text || ui('Spuštění selhalo'), stale: false };
+  // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat
+  // nebo nezačne nový tah (zadání po selhání) – doběhlý tah po obnovení selhání překrývá.
+  const prekonano = (s.running && (s.runningAt || 0) > s.failure?.at) || (s.turnStartedAt || 0) > s.failure?.at;
+  if (s.failure && now - s.failure.at < DAY && !prekonano) {
+    return { status: 'failed', reason: hlaseniZ(s.failure, s.failure.text || ui('Spuštění selhalo'), s, now), stale: zastarale(s.failure, s, now) };
   }
-  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: s.pending.text || ui('Potřebuje tvé rozhodnutí'), stale: false };
+  if (s.pending && now - s.pending.at < 12 * HOUR) return { status: 'needs_input', reason: hlaseniZ(s.pending, s.pending.text || ui('Potřebuje tvé rozhodnutí'), s, now), stale: zastarale(s.pending, s, now) };
   // Proces bez přepisu není konverzace ani stav „čeká na zadání“. Víme pouze, že příslušný program
   // v daném okamžiku běží; hlavního a pomocného agenta z toho samotného určit nelze.
   if (s.proces) return { status: 'observed', reason: s.proces.popis, stale: false };
@@ -176,8 +211,9 @@ export function deriveStatus(s, now) {
   if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
   const answered = s.turns > 0 || s.tokens.output > 0 || s.transcript.some((e) => e.role === 'assistant' || e.role === 'tool');
-  const done = answered && !stale;
-  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
+  const preruseno = !s.running && s.prerusenoAt > 0 && s.prerusenoAt >= (s.turnStartedAt || 0);
+  const done = answered && !stale && !preruseno;
+  if (age < 3 * HOUR) return { status: 'waiting', reason: skoncil ? ui('Agent skončil uprostřed práce') : stale ? s.staleReason || ui('Delší dobu bez aktivity') : preruseno ? ui('Přerušeno, čeká na další zadání') : answered ? ui('Hotovo, čeká na další zadání') : ui('Zatím bez odpovědi agenta'), stale, done };
   if (age < DAY) return { status: 'idle', reason: '', stale, done };
   return { status: 'archived', reason: '', stale, done };
 }
@@ -225,6 +261,11 @@ export function summarize(s, now, windowMs, hooky = null) {
   const since = hourKey(now - windowMs);
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
+  // Kopie: přihrádky se dál mění na místě a odeslaný souhrn se nesmí měnit s nimi.
+  const hourlyUsage = {};
+  for (const [k, modely] of Object.entries(s.hourlyUsage || {})) {
+    if (k >= since) hourlyUsage[k] = Object.fromEntries(Object.entries(modely).map(([m, v]) => [m, [...v]]));
+  }
   const working = status === 'working';
   // Název se zkracuje na hranici slova s „…“; celý (do rozumné délky) nese fullTitle, aby ho
   // rozhraní mohlo ukázat v bublině nad zkráceným textem. Nezkrácený název fullTitle neopakuje.
@@ -255,6 +296,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     turns: s.turns,
     tokens: { ...s.tokens },
     hourly,
+    hourlyUsage,
     spans: spansFromMinutes(s.minutes, now),
     progress: s.progress,
     activity: working ? clip(s.activity, 160) : '',

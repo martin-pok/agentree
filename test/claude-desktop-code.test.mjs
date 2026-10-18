@@ -194,7 +194,13 @@ test('Claude remote: běžící relace ve výčtovém tvaru pracuje, čekající
   const ceka = { ...bezi, session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_BLOCKED', updated_at: new Date(now - 20 * 60e3).toISOString(), post_turn_summary: { status_category: 'need_input', needs_action: 'Mám nasadit na produkci?' } };
   const c = applyRemoteSession(newSession(), ceka, null, now - 15 * 60e3, now);
   const dc = deriveStatus(c, now);
-  assert.equal(dc.status, 'needs_input'); assert.equal(dc.reason, 'Mám nasadit na produkci?');
+  assert.equal(dc.status, 'needs_input');
+  // Cache je 15 min stará: rozhodnutí zůstává vidět, ale poctivě jako stav k času načtení.
+  assert.match(dc.reason, /^Mám nasadit na produkci\? · stav z \d{1,2}\. \d{1,2}\. \d{2}:\d{2}$/); assert.equal(dc.stale, true);
+  const cerstva = deriveStatus(applyRemoteSession(newSession(), ceka, null, now - 30e3, now), now);
+  assert.equal(cerstva.reason, 'Mám nasadit na produkci?'); assert.equal(cerstva.stale, false);
+  const selhal = deriveStatus(applyRemoteSession(newSession(), { ...ceka, status_bucket: 'SESSION_STATUS_BUCKET_FAILED', post_turn_summary: null }, null, now - 20 * 60e3, now), now);
+  assert.equal(selhal.status, 'failed'); assert.equal(selhal.stale, true); assert.match(selhal.reason, / · stav z /);
   // Čekání staré přes 12 h už do rozhodnutí nepatří (deriveStatus).
   const stara = applyRemoteSession(newSession(), { ...ceka, updated_at: new Date(now - 13 * 3600e3).toISOString() }, null, now - 60e3, now);
   assert.notEqual(deriveStatus(stara, now).status, 'needs_input');

@@ -496,7 +496,7 @@ function update() {
           ${s.effort ? `<div><dt>${tr('Úroveň přemýšlení')}</dt><dd>${esc(s.effort)}</dd></div>` : ''}
           ${s.repo ? `<div><dt>${tr('Repozitář')}</dt><dd>${esc(s.repo)}</dd></div>` : ''}
           ${s.pr ? `<div><dt>${tr('Pull request')}</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
-          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena podle ceníku API')}</dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
+          ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena podle ceníku API')} <span class="badge">${tr('odhad')}</span></dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
           <div><dt>${tr('Zahájeno')}</dt><dd>${dateTime(s.startedAt)}</dd></div>
           <div><dt>${tr('Doba trvání')}</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
           <div><dt>${tr('Zadání')}</dt><dd>${s.turns ?? '–'}</dd></div>

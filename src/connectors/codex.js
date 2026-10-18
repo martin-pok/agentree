@@ -261,7 +261,9 @@ export function createCodexConnector(ctx) {
         usedPercent: w.used_percent,
         windowMinutes: w.window_minutes || null,
         resetsAt,
-        reached: w.used_percent >= 100 || Boolean(rl.rate_limit_reached_type),
+        // Příznak `rate_limit_reached_type` patří celému snímku: vyčerpaný týden nesmí označit
+        // i okno 5 h. Okno je vyčerpané podle svého procenta, nebo když příznak jmenuje právě je.
+        reached: w.used_percent >= 100 || (typeof rl.rate_limit_reached_type === 'string' && rl.rate_limit_reached_type.toLowerCase().includes(slot)),
         plan: rl.plan_type || null,
         text: '',
         at: ts,
@@ -334,6 +336,17 @@ export function createCodexConnector(ctx) {
           case 'task_complete':
             s.running = false;
             s.activity = '';
+            touch(s, ts);
+            return;
+          // Přerušený tah (Esc, nové zadání místo běžícího, konec revize) končí jako task_complete,
+          // jen se nehlásí jako „hotovo“. Název a důvody (`interrupted`, `replaced`, `review_ended`)
+          // podle zdroje openai/codex (protocol.rs, rollout/policy.rs – událost se do přepisu ukládá).
+          case 'turn_aborted':
+            s.running = false;
+            s.activity = '';
+            s.toolWaitSince = 0;
+            s.prerusenoAt = Math.min(ts || Date.now(), Date.now());
+            pushEntry(s, { at: ts, role: 'system', text: p.reason === 'interrupted' ? ui('Přerušeno uživatelem') : ui('Tah přerušen') });
             touch(s, ts);
             return;
           case 'token_count': {

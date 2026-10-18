@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.23',
+    date: '2026-10-18',
+    title: 'Čísla a stavy, kterým se dá věřit',
+    items: [
+      'Agent po schválení povolení už nehlásí, že tě potřebuje, a pomocní agenti se správně promítnou do hlavní konverzace i do počtů.',
+      'Přerušený tah nevypadá jako práce ani jako hotovo a staré selhání po novém tahu zmizí.',
+      'Tokeny a odhad ceny za 30 dní počítají jen to období a každý model jeho vlastní cenou.',
+      'Limity: Codex nehlásí vyčerpané okno 5 h kvůli týdnu, dvě licence Claude jsou zvlášť a staré měření po obnově se neukáže.',
+      'Jedno okno limitu = jedno upozornění, ne tři.',
+    ],
+    en: {
+      title: 'Numbers and states you can trust',
+      items: [
+        'After you approve a permission the agent no longer says it needs you, and subagents show up correctly on their main conversation and in the counts.',
+        'An interrupted turn no longer looks like work or done, and an old failure disappears after a new turn.',
+        '30-day tokens and the cost estimate count only that period and price each model at its own rate.',
+        'Limits: Codex no longer marks the 5 h window as used up because of the weekly one, two Claude licences are separate, and old readings are not shown after a reset.',
+        'One limit window means one alert, not three.',
+      ],
+    },
+  },
+  {
     version: '0.46.22',
     date: '2026-10-18',
     title: 'Pozornost k užitku a skutečná loga',
