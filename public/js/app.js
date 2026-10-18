@@ -82,6 +82,7 @@ function zapisHistorii(title) {
     const popis = tr('Zpět na {0}', predchozi.title);
     backEl.setAttribute('aria-label', popis);
     backEl.title = popis;
+    backEl.querySelector('.page-back-label').textContent = predchozi.title;
   }
 }
 backEl.addEventListener('click', () => history.back());

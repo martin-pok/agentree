@@ -840,4 +840,11 @@ html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill
 .page-back:focus-visible { outline: 2px solid var(--action); outline-offset: 2px; }
 @media (prefers-reduced-motion: no-preference) { .page-back:not([hidden]) { animation: page-back-in var(--motion-enter, 220ms) var(--ease) both; } }
 @keyframes page-back-in { from { opacity: 0; transform: translateX(6px) scale(.92); } }
-@media (max-width: 720px) { .page-back { margin-right: -4px; } }
+.page-back-label { display: none; }
+/* Telefon: vedle nadpisu by na šipku nezbylo místo a nadpis by se zkracoval. Tlačítko tam dostane
+   vlastní řádek nad nadpisem a řekne, kam vede („‹ Přehled“). */
+@media (max-width: 720px) {
+  .topbar:has(> .page-back:not([hidden])) { flex-wrap: wrap; row-gap: 12px; }
+  .page-back { order: -1; width: auto; max-width: 100%; height: 40px; margin: 0 100% 0 0; padding: 0 16px 0 10px; gap: 4px; display: inline-flex; align-items: center; font: 500 14px/1 var(--f-body); }
+  .page-back-label { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
