@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { statSafe, readJson, toTs, clip, clipBlock, isInjectedPrompt, MIN, DAY } from '../util.js';
-import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
+import { touch, addTokens, resetTokens, pushEntry, resetTranscript } from '../model.js';
 import { todosProgress } from './claude-code.js';
 import { appSupportDir, JE_WINDOWS } from '../platform.js';
 import { noDataState } from './install-state.js';
@@ -30,8 +30,7 @@ export const CURSOR_HEADERS_SQL = 'SELECT composerId, workspaceId, createdAt, la
 export function applyCursorComposer(s, { header, head, data, bubbles, folder, now = Date.now(), dbChangedAt = now }) {
   resetTranscript(s);
   s.turns = 0;
-  s.tokens = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
-  s.hourly = {};
+  resetTokens(s);
   s.startedAt = 0;
   s.lastAt = 0;
   s.minutes = new Set();

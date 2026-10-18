@@ -1,4 +1,4 @@
-import { startOfDay, dayStart, hourTs, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
+import { startOfDay, dayStart, hourTs, hodinaVObdobi, H, WEEKDAYS, WEEKDAYS_FULL, timeHM } from './format.js';
 import { PROVIDERS, pkey } from './icons.js';
 import { tr, podleJazyka } from './i18n.js';
 
@@ -25,7 +25,7 @@ export function tokensSince(sessions, since, pred) {
   let sum = 0;
   for (const s of sessions) {
     if (pred && !pred(s)) continue;
-    for (const k in s.hourly) if (hourTs(k) >= since) sum += s.hourly[k];
+    for (const k in s.hourly) if (hodinaVObdobi(k, since)) sum += s.hourly[k];
   }
   return sum;
 }
@@ -154,12 +154,12 @@ export function groupTotals(sessions, since, keyOf) {
 
 export function activeHours(sessions, since) {
   const set = new Set();
-  for (const s of sessions) for (const k in s.hourly) if (s.hourly[k] > 0 && hourTs(k) >= since) set.add(k);
+  for (const s of sessions) for (const k in s.hourly) if (s.hourly[k] > 0 && hodinaVObdobi(k, since)) set.add(k);
   return set.size;
 }
 
 export function isActiveSince(s, since) {
   if (s.lastAt >= since) return true;
-  for (const k in s.hourly) if (hourTs(k) >= since) return true;
+  for (const k in s.hourly) if (hodinaVObdobi(k, since)) return true;
   return false;
 }

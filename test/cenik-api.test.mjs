@@ -18,11 +18,12 @@ test('ceník API: ID modelu z přepisu najde svou cenu, cizí a staré modely ne
 });
 
 test('ceník API: odhad sečte všechny druhy tokenů a řekne, co nepokryl', () => {
+  const h = '2026-10-07T09';
   const o = odhadCenyApi([
-    { model: 'claude-opus-5-5', tokens: { input: 1e6, output: 1e6, cacheRead: 1e6, cacheWrite: 1e6 } },
-    { model: 'claude-sonnet-4-6', tokens: { input: 2e6, output: 0, cacheRead: 0, cacheWrite: 0 } },
-    { model: 'gpt-5', tokens: { input: 500, output: 500, cacheRead: 0, cacheWrite: 0 } },
-    { model: 'claude-opus-5', tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } },
+    { model: 'claude-opus-5-5', hourlyUsage: { [h]: { 'claude-opus-5-5': [1e6, 1e6, 1e6, 1e6, 0] } } },
+    { model: 'claude-sonnet-4-6', hourlyUsage: { [h]: { 'claude-sonnet-4-6': [2e6, 0, 0, 0, 0] } } },
+    { model: 'gpt-5', hourlyUsage: { [h]: { 'gpt-5': [500, 500, 0, 0, 0] } } },
+    { model: 'claude-opus-5', hourlyUsage: {} },
   ]);
   assert.equal(Math.round(o.usd * 100) / 100, 4 + 20 + 0.2 + 5 + 6);
   assert.equal(o.sCenou, 6e6);

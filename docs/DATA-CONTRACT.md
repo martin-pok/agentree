@@ -192,7 +192,11 @@ interface SessionSummary {
   startedAt: number; lastAt: number;   // ms
   turns: number;
   tokens: { input: number; output: number; cacheWrite: number; cacheRead: number };
-  hourly: Record<string, number>;      // "2026-09-10T18" (UTC hodina) → tokeny (vstup + výstup + zápis cache)
+  hourly: Record<string, number>;      // "2026-09-10T18" (UTC hodina) → tokeny (vstup + výstup)
+  hourlyUsage: Record<string, Record<string, [number, number, number, number, number]>>;
+                                       // UTC hodina → model → [vstup, výstup, čtení cache, zápis cache 5 min, zápis cache 1 h];
+                                       // jen zdroje, které tokeny hlásí přes model.js#addTokens; ořez jako u hourly
+                                       // (odhad ceny přes API počítá jen tokeny v období a každý model svou cenou)
   spans: [number, number][];           // úseky aktivity za 24 h (ms)
   progress: { done: number; total: number; current: string } | null;
   activity: string;                    // jen když working

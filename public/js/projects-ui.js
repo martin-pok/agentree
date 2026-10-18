@@ -4,7 +4,7 @@ import { esc, shortPath, plural, jeAbsolutniCesta, castiCesty } from './format.j
 import { ICON, glyph, logoKey } from './icons.js';
 import { modal, toast } from './ui.js';
 import { openCropper, TARGETS } from './cropper.js';
-import { sessionTotal, needsYou } from './data.js';
+import { tokensSince, needsYou } from './data.js';
 import { tr } from './i18n.js';
 import { SABLONY_PROJEKTU, stitkyZTextu } from './sablony.js';
 
@@ -50,7 +50,8 @@ export function projectStats(p, now = Date.now()) {
     total: all.length,
     working: live.filter((s) => s.status === 'working').length,
     needs: live.filter(needsYou).length,
-    tokens: liveAll.filter((s) => s.lastAt >= since).reduce((a, s) => a + sessionTotal(s), 0),
+    // Jen tokeny spotřebované za 30 dní – ne celá historie konverzací, které v nich jen něco dělaly.
+    tokens: tokensSince(liveAll, since),
     lastAt: all.reduce((m, s) => Math.max(m, s.lastAt || 0), 0),
     services: logos.map((x) => x.s),
   };

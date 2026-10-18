@@ -138,6 +138,11 @@ export const dayStart = (ts, offset = 0) => {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + offset).getTime();
 };
 export const hourTs = (key) => Date.parse(`${key}:00:00Z`);
+// Hodinová přihrádka (klíč je hodina UTC) patří do období od `since`, když se s ním překrývá.
+// V pásmech s půlhodinovým posunem (Indie, Newfoundland) tak „dnes“ nepřijde o první půlhodinu
+// dne – za cenu, že přibere nejvýš půlhodinu před půlnocí. V celohodinových pásmech je to totéž
+// co „začátek přihrádky ≥ začátek období“.
+export const hodinaVObdobi = (key, since) => hourTs(key) + H > since;
 
 // Datum „RRRR-MM-DD“ jako místní půlnoc. Date.parse('2026-10-01') je půlnoc UTC, takže by
 // v Americe ukázal 30. září.

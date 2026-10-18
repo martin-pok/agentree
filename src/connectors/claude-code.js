@@ -402,13 +402,21 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
   // Pořadí načítání souborů na tom nezáleží, takže výsledek je vždy stejný.
   if (st.ownSessionId && o.sessionId && o.sessionId !== st.ownSessionId) return;
   if (u && id) {
+    // Zápis do cache na 5 minut a na hodinu má jinou cenu. Novější přepisy rozpad nesou
+    // v `usage.cache_creation` (stejně jako Admin API, cloud-billing.js); starší jen součet,
+    // který se pak bere jako 5minutový.
+    const cc = u.cache_creation && typeof u.cache_creation === 'object' ? u.cache_creation : null;
+    const w5m = Number(cc?.ephemeral_5m_input_tokens) || 0;
+    const w1h = Number(cc?.ephemeral_1h_input_tokens) || 0;
     const cur = {
       input: u.input_tokens || 0,
       output: u.output_tokens || 0,
-      cacheWrite: typeof u.cache_creation_input_tokens === 'number' ? u.cache_creation_input_tokens : 0,
+      cacheWrite: typeof u.cache_creation_input_tokens === 'number' ? u.cache_creation_input_tokens : w5m + w1h,
       cacheRead: u.cache_read_input_tokens || 0,
       ts,
+      model: s.model,
     };
+    cur.cacheWrite1h = Math.min(w1h, cur.cacheWrite);
     // Streamované zprávy se v přepisu opakují se stejným id – platí poslední záznam.
     const prev = st.msgs.get(id);
     if (prev) addTokens(s, prev.ts, prev, -1);
