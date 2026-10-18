@@ -5,7 +5,13 @@ import { JE_WINDOWS } from './platform.js';
 import { ui } from './texty.js';
 
 // Claude Code hooky posílají události do Agenteeq okamžitě (start, zadání, žádost o povolení, konec tahu).
-export const HOOK_EVENTS = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
+// Základní sada je ta, kterou zapisovaly verze do 0.46: bez ní propojení nefunguje. PreToolUse a
+// PostToolUse (přidané později) prozradí, že žádost o povolení skončila: začal další nástroj, nebo
+// schválený doběhl. O samotném schválení Claude Code nic nepošle a bez nich agent „potřeboval tebe“ až
+// do konce tahu. Propojení jen se základní sadou dál funguje, Nastavení ho nabídne obnovit (`current: false`).
+export const HOOK_EVENTS_ZAKLAD = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
+export const HOOK_EVENTS_NASTROJE = ['PreToolUse', 'PostToolUse'];
+export const HOOK_EVENTS = [...HOOK_EVENTS_ZAKLAD, ...HOOK_EVENTS_NASTROJE];
 export const HOOK_PATH = '/api/hooks/claude-code';
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
@@ -135,7 +141,7 @@ export async function hooksStatus(file, token, headersFile) {
   try {
     ({ json } = await readSettings(file));
   } catch (err) {
-    return { installed: false, partial: false, current: false, funguje: false, inlineToken: false, events: [], path: file, error: err.message };
+    return { installed: false, partial: false, chybi: [], current: false, funguje: false, inlineToken: false, events: [], path: file, error: err.message };
   }
   const has = (ev, pred) => (Array.isArray(json.hooks?.[ev]) ? json.hooks[ev] : []).some((g) => (g?.hooks || []).some(pred));
   const events = HOOK_EVENTS.filter((ev) => has(ev, isOurs));
@@ -148,11 +154,14 @@ export async function hooksStatus(file, token, headersFile) {
   // Funkční = události i limity dorazí: aktuální příkaz, nebo zápis z dřívější verze s platným tokenem
   // přímo v příkazu. Takové propojení funguje, jen ho Nastavení nabídne obnovit (token mimo příkaz).
   const funkcni = (command) => current(command) || (Boolean(token) && tokenVPrikazu(command) && commandText(command).includes(token) && !command.includes('>NUL'));
-  const hooksFunkcni = HOOK_EVENTS.every((ev) => has(ev, (h) => isOurs(h) && funkcni(h.command)));
+  const hooksFunkcni = HOOK_EVENTS_ZAKLAD.every((ev) => has(ev, (h) => isOurs(h) && funkcni(h.command)));
+  const zaklad = HOOK_EVENTS_ZAKLAD.every((ev) => events.includes(ev));
   const statusLineFunkcni = statusLine === 'ours' && funkcni(json.statusLine.command);
   return {
-    installed: events.length === HOOK_EVENTS.length,
-    partial: events.length > 0 && events.length < HOOK_EVENTS.length,
+    // Zapnuté = je celá základní sada; chybějící události nástrojů jen znamenají „obnovit“.
+    installed: zaklad,
+    partial: events.length > 0 && !zaklad,
+    chybi: zaklad ? HOOK_EVENTS.filter((ev) => !events.includes(ev)) : [],
     // Aktuální = hooky s platným tokenem a stavový řádek Agenteeq (cizí stavový řádek nepřepisujeme).
     current: hooksCurrent && (statusLine === 'foreign' || statusLineCurrent),
     funguje: hooksFunkcni && (statusLine === 'foreign' || statusLineFunkcni),
@@ -207,7 +216,8 @@ export async function installHooks(file, { port, token, headersFile, now = Date.
   const command = hookCommand(port, headersFile);
   for (const ev of HOOK_EVENTS) {
     if (!Array.isArray(json.hooks[ev])) json.hooks[ev] = [];
-    json.hooks[ev].push({ hooks: [{ type: 'command', command, timeout: 5 }] });
+    // U událostí nástrojů je matcher „*“ (všechny nástroje), ostatní události matcher nemají.
+    json.hooks[ev].push({ ...(HOOK_EVENTS_NASTROJE.includes(ev) ? { matcher: '*' } : {}), hooks: [{ type: 'command', command, timeout: 5 }] });
   }
   let statusLine = 'foreign';
   if (!json.statusLine || isOurStatusLine(json.statusLine)) {

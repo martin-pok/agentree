@@ -1125,6 +1125,7 @@ export default {
     "Je potřeba obnovit": "Needs updating",
     "Vypnuto": "Off",
     "Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.": "The connection was set up in an older version of Agenteeq. Update it so subscription limits show too.",
+    "Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby Agenteeq poznal, že jsi povolení vyřídil, a agent dál neukazoval, že tě potřebuje.": "The connection was set up in an older version of Agenteeq. Update it so Agenteeq can tell you’ve handled a permission request and the agent stops showing that it needs you.",
     "Propojení vzniklo ve starší verzi Agenteeq a klíč Agenteeq stojí přímo v nastavení Claude Code. Obnov ho – klíč se přesune do souboru, který čte jen tvůj účet.": "The connection was set up in an older version of Agenteeq and keeps the Agenteeq key directly in the Claude Code settings. Update it to move the key into a file only your account can read.",
     "Obnovit propojení": "Update connection",
     "Neozývá se": "Not responding",

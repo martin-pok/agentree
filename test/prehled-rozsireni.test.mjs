@@ -51,11 +51,12 @@ test('extension mirrors dashboard for 20 concurrent agents and does not double-c
     const desktop = agentsList();
     const popup = prehledProRozsireni(all);
     assert.equal(desktop.length, 20, 'main app has exactly 20 visible agents');
-    assert.equal(popup.zdravi.pracuje, 20, 'extension has exactly the same 20');
-    assert.equal(popup.zdravi.cekaNaTebe, 0, 'hidden child must not create a phantom action');
+    // Skrytý podřízený agent, který čeká na rozhodnutí, se nepočítá zvlášť – jeho stav nese rodič.
+    assert.equal(popup.zdravi.pracuje, 19, 'parent carries the waiting child, the rest keeps working');
+    assert.equal(popup.zdravi.cekaNaTebe, 1, 'hidden child needing input is counted once, on its parent');
     assert.deepEqual(selectAgents(all).map(x => x.id).sort(), desktop.map(x => x.id).sort());
-    assert.equal(popup.rozhodnuti.length, 0);
-    assert.equal(popup.pracuji.length, 4, 'popup only renders first four, aggregate stays 20');
+    assert.deepEqual(popup.rozhodnuti.map((x) => [x.id, x.status]), [[real[0].id, 'needs_input']]);
+    assert.equal(popup.pracuji.length, 4, 'popup only renders first four, aggregate stays 19');
   } finally {
     state.sessions = before;
   }

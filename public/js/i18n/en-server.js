@@ -36,6 +36,11 @@ export default {
   "Potřebuje tě {0} agentů": "{0} agents need you",
   "Nepodařilo se zjistit, co na počítači běží": "Couldn’t find out what is running on this computer",
   "Vše běží v pořádku": "Everything is running fine",
+  "U {0} agenta chybí čerstvý stav": "No fresh status for {0} agent",
+  "U {0} agentů chybí čerstvý stav": "No fresh status for {0} agents",
+  "{0} · stav z {1}": "{0} · status as of {1}",
+  "Přerušeno, čeká na další zadání": "Interrupted, waiting for the next prompt",
+  "Tah přerušen": "Turn interrupted",
   "V pořádku, nikdo nepracuje": "All fine, nobody is working",
   // src/alerts.js
   "{0}: spuštění selhalo": "{0}: start failed",

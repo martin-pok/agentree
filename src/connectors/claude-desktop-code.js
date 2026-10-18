@@ -172,7 +172,8 @@ export function hlasenyStav(metadata) {
 // „Pracuje“ drží deriveStatus 2 minuty od načtení; starší hlášení je nečerstvé („stale“) se
 // vlastním důvodem. Dřív se nečerstvé „pracuje“ zahodilo a relace se ukázala jako „Hotovo, čeká
 // na další zadání“ – o agentovi, který podle posledních známých dat pracoval. Čekání na rozhodnutí
-// a selhání se samy nezmění, platí od `updated_at` (změna na serveru) bez ohledu na stáří načtení.
+// a selhání se samy nezmění: zůstávají vidět od `updated_at` (změna na serveru), ale se starší cache
+// je deriveStatus hlásí jako nečerstvé s časem načtení („· stav z 18. 10. 14:05“).
 function applyReportedStatus(s, metadata, observedAt, now) {
   const updated = Math.min(Date.parse(metadata.updated_at), now);
   const observed = observedAt > 0 && observedAt <= now + 1000 ? Math.min(observedAt, now) : 0;
@@ -200,10 +201,10 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.runningAt = hlasenoAt;
   s.activity = '';
   if (hlaseno === 'failed') {
-    s.failure = { at: updated, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
+    s.failure = { at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
   } else if (hlaseno === 'needs_input') {
     const otazka = metadata.post_turn_summary?.needs_action;
-    s.pending = { kind: 'question', at: updated, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
+    s.pending = { kind: 'question', at: updated, observedAt: hlasenoAt, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
   }
 }
 // Kdy Claude Desktop seznam relací naposledy uložil – stav vzdálených agentů je přesně tak čerstvý.
