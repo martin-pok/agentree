@@ -160,6 +160,15 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
   .home-desk .home-intro .home-aktivita { font-size: 12px; white-space: normal; text-align: right; }
 }
 
+/* Odsazení po stranách roste s výškou (vlastník, 18. 10. 2026): 44px tlačítko s 12–16 px po
+   stranách vypadá stlačeně. Na počítači má text 22 px od okraje, s ikonou na začátku 18 px
+   (ikona opticky vyplní kus prostoru), odkaz se šipkou 18/16 px. */
+@media (min-width: 721px) {
+  :is(.btn, .chip, .lchip):not(.btn--lg):not(.icon-btn) { padding-inline: 22px; font-size: 14px; }
+  :is(.btn, .chip, .lchip):not(.btn--lg):not(.icon-btn):has(> svg:first-child, > .icon:first-child, > .glyph:first-child, > .logo:first-child, > img:first-child) { padding-left: 18px; }
+  .link { padding-inline: 18px 16px; }
+}
+
 /* Posuvník: tenký a tichý, ať nepřebíjí obsah. Místo pro něj je vyhrazené vždy (scrollbar-gutter),
    takže když otevřené okno stránku zamkne a posuvník zmizí, rozložení neposkočí ani se nepřeskládá.
    Kde prohlížeč scrollbar-gutter nezná, doplní šířku app.js (--posuvnik). */

@@ -4,6 +4,7 @@
 
 - **Roboti podle Figmy:** paže vyrůstají z trupu bez mezery, oči jsou přesně uprostřed obličeje a nohy stojí na stínu – u všech devíti postav v aplikaci i na webu.
 - **Otevřené okno už nehýbe stránkou:** hledání, upozornění ani dialog neschovají posuvník tak, aby se obsah posunul doprava a box Stav agentů se přeskládal. Místo pro posuvník je vyhrazené vždy.
+- **Tlačítka s odsazením podle výšky:** 44px tlačítka na počítači mají 22 px po stranách (s ikonou 18 px) – už nevypadají stlačeně.
 - **Tenký posuvník:** decentní kapsle bez podkladu, výraznější jen pod kurzorem.
 - **Pozdrav vpravo:** místo počtů agentů (ty nese box Stav agentů) dnešní den jako kalendářní značka a pod ním dnešní aktivita – aktivní konverzace a tokeny z přepisů. Fialový přechod je jen jemný náznak, prolíná se rychleji a text zůstává tmavý na světlé ploše.
 

@@ -9,7 +9,7 @@ export const RELEASES = [
     title: 'Klidné rozložení a dnešní den v pozdravu',
     items: [
       'Otevřené hledání nebo upozornění už stránkou nehne ani nic nepřeskládá.',
-      'Tenký, decentní posuvník.',
+      'Tenký, decentní posuvník a tlačítka s odsazením, které sedí k jejich výšce.',
       'Roboti mají paže od těla bez mezery, oči uprostřed a stojí nohama na zemi.',
       'Pozdrav vpravo ukazuje dnešní den a dnešní aktivitu – konverzace a tokeny.',
     ],
@@ -17,7 +17,7 @@ export const RELEASES = [
       title: 'Steady layout and today in the greeting',
       items: [
         'Opening search or notifications no longer shifts or rearranges the page.',
-        'A thin, quiet scrollbar.',
+        'A thin, quiet scrollbar and buttons whose side padding fits their height.',
         'Robots’ arms now grow from the body, eyes sit centred and feet stand on the ground.',
         'The greeting now shows today’s date and today’s activity – conversations and tokens.',
       ],
