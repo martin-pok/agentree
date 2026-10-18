@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.19',
+    date: '2026-10-18',
+    title: 'Útrata v užším okně a rychlejší první agent',
+    items: [
+      'Agent, kterého spustíš hned po otevření Agenteeq, se na Macu ukáže v přehledu do 2 sekund.',
+      'Útrata: v užším okně se náklady ukážou jako přehledné karty, nic se neschovává mimo obrazovku.',
+      'Na telefonu je u dlouhé cesty ke zkopírování vidět, že pokračuje – posuneš ji prstem.',
+      'Celou aplikaci jde ovládat klávesnicí s viditelným zvýrazněním a funguje i při přiblížení na 400 %. Hlídá to automatická kontrola přístupnosti.',
+    ],
+    en: {
+      title: 'Spend in narrow windows and a faster first agent',
+      items: [
+        'An agent you start right after opening Agenteeq shows up in the overview within 2 seconds on a Mac.',
+        'Spend: in a narrow window costs appear as clear cards, nothing hides off screen.',
+        'On a phone, a long path to copy now shows that it continues – swipe to scroll it.',
+        'The whole app works with the keyboard with a visible focus ring and at 400 % zoom. An automatic accessibility check keeps it that way.',
+      ],
+    },
+  },
+  {
     version: '0.46.18',
     date: '2026-10-18',
     title: 'AI pomocník, devět postav, 16 barev a tlačítko zpět',
