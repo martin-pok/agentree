@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 18. 10. 2026:** veřejné Preview je `v0.46.17` (oprava aktualizace z dočasné cesty macOS). Šatník robota se dotahuje v kandidátu `v0.46.18`. Stable Latest je `v0.46.0`.
+**Stav 18. 10. 2026:** veřejné Preview je [`v0.46.18`](https://github.com/martin-pok/agentree/releases/tag/v0.46.18) (AI pomocník, devět postav a 16 barev, tlačítko zpět, 44 px ovládání; 8/8 příloh, SHA-256 ověřeno po zveřejnění). Na `main` od té doby: automatická kontrola WCAG 2.2 A/AA (axe) v CI (#284) a dosken po startu sledování, aby agent hned po startu aplikace byl v přehledu do 2 s i na macOS (#285). Stable Latest je `v0.46.0`. Chrome Web Store pořád nabízí 0.31.4 – nahrát `agenteeq-extension-0.46.18.zip` může jen vlastník účtu vydavatele.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 18. 10. 2026:** `v0.46.17` je zveřejněné Preview. Připravuje se **0.46.18 Preview** s dotaženým šatníkem robota. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a Mac UAT. Vydané `v0.46.17` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
+**Aktuální release vlak 18. 10. 2026:** **0.46.18 Preview** (`v0.46.18`) je zveřejněné (první aktualizace přes opravený aktualizátor z 0.46.17 – čeká na potvrzení vlastníka na Macu). Další Preview ponese #284 a #285. Brána: zelené PR, přesné `main` CI a CodeQL, Draft s osmi novými přílohami, nezávislý SHA-256 audit a Mac UAT. Vydané `v0.46.17` ani historické Drafty se nepřepisují. [Release readiness](RELEASE-READINESS.md), [Notion report #255](https://github.com/martin-pok/agentree/issues/255).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
