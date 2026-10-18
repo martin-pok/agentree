@@ -181,7 +181,7 @@ function sestav() {
       </form>
     </section>
     <button type="button" class="pm-fab" aria-controls="pm-okno" aria-expanded="false" aria-label="${tr('Otevřít pomocníka')}" title="${tr('Pomocník')}">
-      <svg class="pm-glyph" viewBox="0 0 32 32" aria-hidden="true"><circle class="pm-glyph-tip" cx="16" cy="4.6" r="1.9"/><path class="pm-glyph-stem" d="M16 6.5v3.2"/><rect class="pm-glyph-head" x="4.5" y="9.7" width="23" height="17.3" rx="7.2"/><rect class="pm-glyph-ear" x="2" y="15.4" width="2.6" height="6" rx="1.3"/><rect class="pm-glyph-ear" x="27.4" y="15.4" width="2.6" height="6" rx="1.3"/><rect class="pm-glyph-visor" x="8.4" y="13.6" width="15.2" height="9.4" rx="4.7"/><rect class="pm-glyph-eye" x="11.6" y="16.6" width="3" height="3.6" rx="1.5"/><rect class="pm-glyph-eye" x="17.4" y="16.6" width="3" height="3.6" rx="1.5"/></svg>
+      <svg class="pm-glyph" viewBox="11 15 86 76" aria-hidden="true"><path class="pm-glyph-stem" d="M54 25V34"/><circle cx="54" cy="22" r="4"/><path fill-rule="evenodd" d="M35 34h38a20 20 0 0 1 20 20v13a20 20 0 0 1-20 20H35a20 20 0 0 1-20-20V54a20 20 0 0 1 20-20Zm5 18a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Zm28 0a4 4 0 0 0-4 4v8a4 4 0 0 0 8 0v-8a4 4 0 0 0-4-4Z"/></svg>
     </button>`;
   const vstup = el.querySelector('.pm-vstup');
   el.querySelector('.pm-fab').addEventListener('click', () => (el.querySelector('.pm-okno').hidden ? otevri() : zavri()));
