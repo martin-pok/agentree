@@ -1,6 +1,8 @@
 # Changelog
 
-## Nevydáno
+## 0.46.21 – 2026-10-18 · Postavy a šatník přesně, upozornění s čistou geometrií
+
+- **Rozšíření do Chrome Web Store se po zveřejnění vydání nahraje samo** (`.github/workflows/chrome-web-store.yml`), jakmile má repozitář přístup k API obchodu.
 
 - **Upozornění (toast) s přesnou geometrií.** Kapsle s plným zaoblením se u dvouřádkového textu rozevřela a ikona ležela u zakřivené hrany. Teď má roh 22 px = poloměr ikony 14 + odsazení 8 ze všech stran: jeden řádek je přesná kapsle 44 px, delší text zaoblený obdélník se soustřednou ikonou; ikona, odkaz i křížek stojí u prvního řádku.
 - **Oči vždy uprostřed obličeje.** Poloha očí se počítala jako u Scouta (24,5 bodu pod temenem × šířka hlavy), takže u postav s jiným poměrem hlavy vyjížděly z obličeje – Bolt je měl pod jeho spodním okrajem. Teď jsou ve středu tmavé plochy a jejich velikost nepřeroste výšku obličeje.
