@@ -728,6 +728,24 @@ html.look-open { overflow: hidden; }
 .rf-denim { fill: #4a6fa5; }
 .rf-glass { fill: #fff; fill-opacity: .16; }
 .rf-lens { fill: #fff; fill-opacity: .12; }
+.rf-white { fill: #fff; }
+.rf-steel { fill: #c9cfdf; }
+.rf-horn { fill: #f1e3c4; }
+.rf-leaf { fill: #5fa85a; }
+.rf-leafd { fill: #3f8a45; }
+.rk-leaf { stroke: #4f9a4a; }
+.rf-blush { fill: #f28aa6; fill-opacity: .82; }
+.rf-freckle { fill: #b9574f; fill-opacity: .75; }
+.rf-starlens { fill: #f2a3c0; fill-opacity: .38; }
+.rf-mirror { fill: #ef6f4a; }
+.rf-mirror2 { fill: #f59a44; }
+.rf-mirror3 { fill: #f8c95a; }
+.rf-frog { fill: #6cbb55; }
+.rf-frogd { fill: #4b9440; }
+.rf-froglight { fill: #def2bf; }
+.rf-bee { fill: #f4c430; }
+.rf-wing { fill: #d6ebfb; fill-opacity: .9; }
+.rk-wingv { stroke: #9fc4e2; }
 .rk-main { stroke: var(--persona); }
 .rk-deep { stroke: color-mix(in srgb, var(--persona) 66%, #0d1018); }
 .rk-light { stroke: #f7f4ee; }
@@ -736,6 +754,7 @@ html.look-open { overflow: hidden; }
 .rk-soft { stroke: color-mix(in srgb, var(--persona) 28%, #fff); }
 .rk-dark { stroke: #1d2130; }
 .rk-ink { stroke: #2c3250; }
+.rk-antenna { stroke: #4a5380; }
 .rk-silver { stroke: #dfe2ee; }
 .rk-silverd { stroke: #5b6486; }
 .rk-gold { stroke: #e8b93f; }
