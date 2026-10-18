@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.18 – 2026-10-18 · Vzhled agenta: dotažený šatník a kombinace
+
+- **Šatník robota je dotažený a dá se kombinovat (#255).** Všech 34 položek je překreslených s obrysem, světlem a stínem a čitelných i v tmavém režimu (dřív byly ploché a například cylindr a sluchátka splývaly s pozadím). Brýle jsou jemné, s odleskem v čočkách. **Převlek se teď kombinuje s čepicí i doplňkem na obličej**: třeba pirát se slunečními brýlemi a kovbojským kloboukem. Vylučuje se jen s oblečením, protože obojí je tělo. Vlastní pokrývku hlavy převleku (čarodějův klobouk, kuchařská čepice, kukla) nahradí čepice, kterou si vybereš. Nové položky: kovbojský klobouk, vrtulková a mikulášská čepice, 3D brýle, srdíčkové brýle, páska přes oko a vesta (11 čepic, 8 doplňků na obličej, 7 kusů oblečení, 8 převleků).
+- **Okno Vzhled agenta se zavře kliknutím mimo něj.**
+
 ## 0.46.17 – 2026-10-17 · Aktualizace funguje i z Downloads a z DMG
 
 - **Aktualizace aplikace spuštěné z Downloads nebo z DMG už nekončí chybou (#255).** Dřív po stažení aktualizace vyskočilo „Do složky …/AppTranslocation/… nejde zapisovat“: macOS spouští aplikaci otevřenou rovnou z Downloads nebo z DMG z dočasné cesty jen ke čtení a tam se nová verze nedala uložit. Agenteeq teď v takovém případě nainstaluje novou verzi do složky Aplikace (a když do ní nejde zapisovat, do `~/Applications`), restartuje se odtud a dřívější verzi vrátí, kdyby se nová nedala otevřít. Aplikace, která už je ve složce se zápisem, se vyměňuje na místě jako dřív. Poprvé z 0.46.16 na 0.46.17 ještě poběží starý aktualizátor: pokud Agenteeq spouštíš z Downloads nebo z DMG, přetáhni ho jednou do složky Aplikace.

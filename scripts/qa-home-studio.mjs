@@ -218,13 +218,14 @@ try {
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
       const dlg = page.locator('.studio-dialog--single');
-      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 9, 'záložka Hlava: žádná + 8 čepic');
+      assert.equal(await dlg.locator('[data-pick="hat"]').count(), 12, 'záložka Hlava: žádná + 11 čepic');
       await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
       await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
       await dlg.locator('input[name="nickname"]').fill('Testovací agent');
       assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
       await dlg.locator('.studio-preview .robot-wear--head').waitFor();
-      // Obličej a oblečení se s čepicí kombinují, převlek na celé tělo je nahradí (a naopak).
+      // Čepice, obličej a oblečení se kombinují. Převlek je oblečení na celé tělo: nahradí jen oblečení,
+      // čepice i doplněk na obličej na něm zůstanou.
       await dlg.locator('[data-tab="face"]').click();
       await dlg.locator('[data-pick="face"][data-value="sunglasses"]').click();
       await dlg.locator('[data-tab="outfit"]').click();
@@ -233,11 +234,16 @@ try {
       await dlg.locator('[data-tab="costume"]').click();
       await dlg.locator('[data-pick="costume"][data-value="astronaut"]').click();
       assert.equal(await dlg.locator('[data-pick="costume"][data-value="astronaut"]').getAttribute('aria-pressed'), 'true');
+      await dlg.locator('[data-tab="outfit"]').click();
+      assert.equal(await dlg.locator('[data-pick="outfit"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek nahradí oblečení');
       await dlg.locator('[data-tab="hat"]').click();
-      assert.equal(await dlg.locator('[data-pick="hat"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'převlek vyčistí čepici');
-      await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
+      assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true', 'čepice na převleku zůstane');
+      await dlg.locator('[data-tab="face"]').click();
+      assert.equal(await dlg.locator('[data-pick="face"][data-value="sunglasses"]').getAttribute('aria-pressed'), 'true', 'brýle na převleku zůstanou');
+      await dlg.locator('[data-tab="outfit"]').click();
+      await dlg.locator('[data-pick="outfit"][data-value="tee"]').click();
       await dlg.locator('[data-tab="costume"]').click();
-      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'čepice vyčistí převlek');
+      assert.equal(await dlg.locator('[data-pick="costume"][data-value="none"]').getAttribute('aria-pressed'), 'true', 'oblečení nahradí převlek');
       await dlg.locator('[data-tab="hat"]').click();
       // Klávesnice: šipky přepínají záložky.
       await dlg.locator('[data-tab="hat"]').focus();
@@ -255,10 +261,17 @@ try {
       await page.evaluate(async () => { const { applyAppearance } = await import('/js/appearance.js'); applyAppearance('light'); });
       await page.locator('.studio-dialog--single button[type="submit"]').click();
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
-      await page.locator('.session-kicker .robot-wear').waitFor();
+      await page.locator('.session-kicker .robot-wear').first().waitFor();
       await page.locator('[data-agent-appearance]').click();
       assert.equal(await page.locator('.studio-dialog--single input[name="nickname"]').inputValue(), 'Testovací agent', 'vzhled se uloží právě tomuto agentovi');
       await page.keyboard.press('Escape');
+      await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+      // Kliknutí mimo okno ho zavře; kliknutí uvnitř (i na jeho okraj) ne.
+      await page.locator('[data-agent-appearance]').click();
+      await page.locator('.studio-dialog--single[open]').waitFor();
+      await page.locator('.studio-dialog--single .look-stage').click();
+      assert.equal(await page.locator('.studio-dialog--single[open]').count(), 1, 'kliknutí dovnitř okno nezavře');
+      await page.mouse.click(4, 4);
       await page.locator('.studio-dialog--single').waitFor({ state: 'detached' });
       await page.goto(`${demo.url}/#/prehled`);
       assert.equal(await page.locator('.studio-customize').count(), 0, 'na Přehledu nesmí být globální editor');

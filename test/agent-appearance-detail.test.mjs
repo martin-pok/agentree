@@ -53,21 +53,38 @@ test('Notion: avatars retain the 108x112 canonical robot proportions and wear on
 });
 
 test('šatník: je z čeho vybírat a každá položka má český popisek', () => {
-  assert.ok(Object.keys(WARDROBE.hat).length >= 8 && Object.keys(WARDROBE.costume).length >= 8);
-  assert.ok(Object.keys(WARDROBE.face).length >= 5 && Object.keys(WARDROBE.outfit).length >= 6);
+  assert.ok(Object.keys(WARDROBE.hat).length >= 11 && Object.keys(WARDROBE.costume).length >= 8);
+  assert.ok(Object.keys(WARDROBE.face).length >= 8 && Object.keys(WARDROBE.outfit).length >= 7);
   for (const slot of SLOTS) for (const item of Object.values(WARDROBE[slot])) assert.ok(String(item.label()).length > 2);
 });
 
-test('šatník: čepice, brýle a oblečení se kombinují, převlek je celé tělo a ostatní nahradí', () => {
+test('šatník: čepice, brýle a oblečení se kombinují; převlek nahradí jen oblečení', () => {
   let look = pickLook(NO_LOOK, 'hat', 'crown');
   look = pickLook(look, 'face', 'monocle');
   look = pickLook(look, 'outfit', 'scarf');
   assert.deepEqual(look, { hat: 'crown', face: 'monocle', outfit: 'scarf', costume: 'none' });
   const suit = pickLook(look, 'costume', 'pirate');
-  assert.deepEqual(suit, { hat: 'none', face: 'none', outfit: 'none', costume: 'pirate' });
-  assert.equal(pickLook(suit, 'hat', 'cap').costume, 'none', 'čepice vyčistí převlek');
+  assert.deepEqual(suit, { hat: 'crown', face: 'monocle', outfit: 'none', costume: 'pirate' }, 'čepice a obličej zůstanou, oblečení zmizí');
+  assert.equal(pickLook(suit, 'outfit', 'tee').costume, 'none', 'oblečení nahradí převlek');
+  assert.equal(pickLook(suit, 'hat', 'cap').costume, 'pirate', 'čepice převlek nenahradí');
   assert.equal(pickLook(suit, 'costume', 'none').costume, 'none');
   assert.deepEqual(pickLook(look, 'hat', 'neexistuje'), look, 'neznámá položka nic nezmění');
+});
+
+test('šatník: převlek s čepicí a brýlemi se vykreslí; vlastní pokrývku hlavy převleku vyměnila čepice', () => {
+  const nindza = renderAgentRobot('Scout', { costume: 'ninja' });
+  assert.match(nindza, /fill-rule="evenodd"/, 'nindža má kuklu');
+  const snepici = renderAgentRobot('Scout', { costume: 'ninja', hat: 'cap', face: 'glasses' });
+  assert.doesNotMatch(snepici, /fill-rule="evenodd"/, 'kukla ustoupí čepici');
+  assert.match(snepici, /M28 29C28 12 40 6/, 'čepice je vidět');
+  assert.match(snepici, /robot-wear--mid/, 'tělo převleku zůstalo');
+  assert.match(snepici, /M32 46 25 43\.500/, 'brýle jsou vidět');
+  // Přilba kosmonauta je nad brýlemi (brýle jsou uvnitř přilby), ne pod nimi.
+  const kosmonaut = renderAgentRobot('Scout', { costume: 'astronaut', face: 'glasses' });
+  assert.ok(kosmonaut.indexOf('stroke-width="2.200" opacity=".9"') > kosmonaut.indexOf('M32 46 25 43.500'), 'přilba je až po brýlích');
+  for (const kus of [nindza, snepici, kosmonaut]) {
+    assert.equal((kus.match(/<g\b/g) || []).length, (kus.match(/<\/g>/g) || []).length, 'párové <g>');
+  }
 });
 
 test('šatník: vzhled uložený starou verzí (jedno „accessory“) se pořád načte', () => {
@@ -77,7 +94,7 @@ test('šatník: vzhled uložený starou verzí (jedno „accessory“) se pořá
   assert.equal(normalizeLook({ accessory: 'spacesuit' }).costume, 'astronaut');
   assert.deepEqual(normalizeLook(null), NO_LOOK);
   assert.deepEqual(normalizeLook({ hat: '<script>' }), NO_LOOK, 'neznámá hodnota z úložiště se zahodí');
-  assert.deepEqual(normalizeLook({ costume: 'ninja', hat: 'crown' }), { ...NO_LOOK, costume: 'ninja' });
+  assert.deepEqual(normalizeLook({ costume: 'ninja', hat: 'crown', outfit: 'tee' }), { ...NO_LOOK, hat: 'crown', costume: 'ninja' }, 'převlek vyloučí jen oblečení');
 });
 
 test('Notion: English translations cover all new agent appearance controls', async () => {

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.18',
+    date: '2026-10-18',
+    title: 'Vzhled agenta: dotažený šatník a kombinace',
+    items: [
+      'Převlek na celé tělo se teď kombinuje s čepicí i doplňkem na obličej, třeba pirát se slunečními brýlemi a kovbojským kloboukem.',
+      'Všechny položky šatníku jsou překreslené do dotažené podoby, čitelné i v tmavém režimu. Přibyly kovbojský klobouk, vrtulková a mikulášská čepice, 3D a srdíčkové brýle, páska přes oko a vesta.',
+      'Okno Vzhled agenta se zavře kliknutím mimo něj.',
+    ],
+    en: {
+      title: 'Agent look: a polished wardrobe you can combine',
+      items: [
+        'A full-body costume now combines with a hat and a face accessory, for example a pirate with sunglasses and a cowboy hat.',
+        'Every wardrobe item has been redrawn to a finished look and reads well in dark mode. New: cowboy hat, propeller and Santa caps, 3D and heart glasses, eye patch and vest.',
+        'The agent look window closes when you click outside it.',
+      ],
+    },
+  },
+  {
     version: '0.46.17',
     date: '2026-10-17',
     title: 'Aktualizace funguje i z Downloads a z DMG',

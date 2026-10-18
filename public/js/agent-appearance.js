@@ -151,6 +151,15 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
   });
   nickname.addEventListener('input', () => redraw({ grid: false }));
   dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+  // Kliknutí mimo okno ho zavře. Počítá se jen, když stisk i uvolnění myši proběhly venku: výběr textu
+  // v poli jména, který skončí za okrajem, ho zavřít nesmí.
+  const uvnitr = (e) => {
+    const r = dialog.getBoundingClientRect();
+    return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  };
+  let stiskVenku = false;
+  dialog.addEventListener('pointerdown', (e) => { stiskVenku = !uvnitr(e); });
+  dialog.addEventListener('click', (e) => { if (stiskVenku && !uvnitr(e)) dialog.close(); stiskVenku = false; });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     saved[id] = { name: nickname.value.trim(), avatar: choice.avatar, color: choice.color, ...choice.look };

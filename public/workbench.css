@@ -659,24 +659,52 @@ html[data-theme] .launch::before { content: none; }
   .look-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; }
   .session-appearance-btn { margin-left: 0; }
 }
-/* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. */
+/* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. Každá položka má obrys (ro*),
+   světlo (rh) a stín (rs), aby nevypadala jako plochá skvrna; tmavé části mají světlejší hranu
+   (rol), aby v tmavém režimu nesplynuly s pozadím. */
 .robot-wear * { stroke: none; }
 .robot-wear { stroke-linecap: round; stroke-linejoin: round; }
 .rf-main { fill: var(--persona); }
 .rf-deep { fill: color-mix(in srgb, var(--persona) 66%, #0d1018); }
 .rf-soft { fill: color-mix(in srgb, var(--persona) 28%, #fff); }
-.rf-dark { fill: #1d2130; }
+.rf-ink { fill: #2c3250; }
+.rf-night { fill: #1b2036; }
+.rf-shade-lens { fill: #3a4470; }
+.rf-visor { fill: #5fd0e8; fill-opacity: .42; }
 .rf-light { fill: #f7f4ee; stroke: #d6cfbf; stroke-width: .8; }
+.rf-silver { fill: #dfe2ee; }
 .rf-gold { fill: #e8b93f; }
 .rf-goldd { fill: #c99a2a; }
-.rf-warm { fill: #c98a4b; }
+.rf-brown { fill: #7a4b2a; }
+.rf-brown2 { fill: #b9794a; }
+.rf-red { fill: #d9534f; }
+.rf-cyan { fill: #4fc3d9; }
+.rf-pink { fill: #f2a3c0; }
+.rf-denim { fill: #4a6fa5; }
 .rf-glass { fill: #fff; fill-opacity: .16; }
+.rf-lens { fill: #fff; fill-opacity: .12; }
 .rk-main { stroke: var(--persona); }
 .rk-deep { stroke: color-mix(in srgb, var(--persona) 66%, #0d1018); }
 .rk-light { stroke: #f7f4ee; }
+.rk-cream { stroke: #f1e3c4; }
+.rk-white { stroke: #fff; }
+.rk-soft { stroke: color-mix(in srgb, var(--persona) 28%, #fff); }
 .rk-dark { stroke: #1d2130; }
+.rk-ink { stroke: #2c3250; }
+.rk-silver { stroke: #dfe2ee; }
+.rk-silverd { stroke: #5b6486; }
 .rk-gold { stroke: #e8b93f; }
+.rk-goldd { stroke: #a87a14; }
+.rk-pinkd { stroke: #c9628a; }
 .rk-shade { stroke: #b9b3a6; }
+.ro { stroke: color-mix(in srgb, var(--persona) 32%, #080a12); stroke-width: 1.300; }
+.rog { stroke: #9a6f12; stroke-width: 1.200; }
+.rob { stroke: #4a2c16; stroke-width: 1.100; }
+.rop { stroke: #c9628a; stroke-width: 1.300; }
+.rol { stroke: #7a84ab; stroke-width: 1.200; }
+.rok { stroke: #aab4d8; stroke-width: 1.400; }
+.rh { fill: #fff; fill-opacity: .32; }
+.rs { fill: #05070d; fill-opacity: .2; }
 .robot--worn .robot-aerial { display: none; }
 .look-tile .studio-avatar { width: 64px; height: 66px; background: none; border-radius: 0; }
 .look-row--robots .look-tile .studio-avatar { width: 42px; height: 44px; }
