@@ -349,26 +349,21 @@ export function renderWardrobe(svg, source) {
   const costume = WARDROBE.costume[look.costume];
   if (!hat && !face && !outfit && !costume) return svg;
   const body = costume || outfit;
-  // Vlastní pokrývku hlavy převlek ztrácí, když si uživatel vybral čepici.
-  const vrstvy = {
-    back: body?.back || '',
-    mid: body?.mid || '',
-    head: (hat ? '' : costume?.hood || '') + (costume?.face || '') + (face?.head || '') + (hat?.head || ''),
-    top: !hat ? costume?.top || '' : '',
-    body: body?.body || '',
-  };
-  // Šatník je nakreslený pro stavbu Scouta; jiná postava ho dostane přenesený na svou hlavu a trup.
+  // Vlastní pokrývku hlavy převlek ztrácí, když si uživatel vybral čepici. Pokrývka hlavy se kotví
+  // k temeni, obličejová část k očím (fit v robot-svg.js), oblečení k trupu.
   const typ = /data-robot-type="([A-Za-z]+)"/.exec(svg)?.[1] || 'Scout';
   const wrap = (jmeno, obsah, cast) => {
     if (!obsah) return '';
     const t = fit(typ, cast);
     return `<g class="robot-wear robot-wear--${jmeno}"${t ? ` transform="${t}"` : ''}>${obsah}</g>`;
   };
+  const back = wrap('back', body?.back, 'body');
+  const mid = wrap('mid', body?.mid, 'body');
+  const head = wrap('hood', hat ? '' : costume?.hood, 'hat')
+    + wrap('face', (costume?.face || '') + (face?.head || ''), 'face')
+    + wrap('hat', (hat?.head || '') + (!hat ? costume?.top || '' : ''), 'hat');
+  const bodyFront = wrap('body', body?.body, 'body');
   let out = svg;
-  const back = wrap('back', vrstvy.back, 'body');
-  const mid = wrap('mid', vrstvy.mid, 'body');
-  const head = wrap('head', vrstvy.head + vrstvy.top, 'head');
-  const bodyFront = wrap('body', vrstvy.body, 'body');
   if (back) out = out.replace('<g class="robot-body">', back + '<g class="robot-body">');
   if (mid) out = out.replace(/<g class="robot-head"/, mid + '<g class="robot-head"');
   if (head) out = out.replace('</g></g></svg>', head + '</g></g></svg>');
