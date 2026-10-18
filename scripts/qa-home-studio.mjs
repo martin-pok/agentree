@@ -229,9 +229,16 @@ try {
       await page.locator('.studio-dialog--single[open]').waitFor();
       assert.equal(await page.locator('.studio-dialog--single select').count(), 0, 'editor nikdy nevyvolá systémový dropdown');
       const dlg = page.locator('.studio-dialog--single');
+      // Dialog začíná postavou: devět postav, každá v tom, co má agent na sobě.
+      assert.equal(await dlg.locator('[data-pick="avatar"]').count(), 9, 'záložka Postava: 9 postav');
+      await dlg.locator('[data-pick="avatar"][data-value="Rover"]').click();
+      assert.equal(await dlg.locator('.studio-preview .robot--rover').count(), 1, 'náhled ukazuje zvolenou postavu');
+      await dlg.locator('[data-tab="color"]').click();
+      assert.equal(await dlg.locator('[data-pick="color"]').count(), 16, 'záložka Barva: 16 barev');
+      await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
+      await dlg.locator('[data-tab="hat"]').click();
       assert.equal(await dlg.locator('[data-pick="hat"]').count(), 12, 'záložka Hlava: žádná + 11 čepic');
       await dlg.locator('[data-pick="hat"][data-value="cap"]').click();
-      await dlg.locator('[data-pick="color"][data-value="#367b68"]').click();
       await dlg.locator('input[name="nickname"]').fill('Testovací agent');
       assert.equal(await dlg.locator('[data-pick="hat"][data-value="cap"]').getAttribute('aria-pressed'), 'true');
       await dlg.locator('.studio-preview .robot-wear--head').waitFor();

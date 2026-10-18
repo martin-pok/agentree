@@ -9,7 +9,7 @@ export default {
   texty: {
     "Vzhled agenta": "Agent appearance",
     "Upravit vzhled": "Customize appearance",
-    "Doplňky a oblečení": "Accessories and outfits",
+    "Vzhled robota": "Robot look",
     "Bez doplňku": "None",
     "Tričko": "T-shirt",
     "Data z Chromu": "Data from Chrome",
@@ -1593,7 +1593,7 @@ export default {
     "Obličej": "Face",
     "Oblečení": "Outfit",
     "Převleky": "Costumes",
-    "Podoba": "Robot",
+    "Postava": "Character",
     "Bez čepice": "No hat",
     "Bez oblečení": "No outfit",
     "Bez převleku": "No costume",

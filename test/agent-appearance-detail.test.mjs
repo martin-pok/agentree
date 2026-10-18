@@ -101,7 +101,7 @@ test('šatník: vzhled uložený starou verzí (jedno „accessory“) se pořá
 
 test('Notion: English translations cover all new agent appearance controls', async () => {
   const dict = await source('public/js/i18n/en.js');
-  const texty = ['Vzhled agenta', 'Upravit vzhled', 'Doplňky a oblečení', 'Bez doplňku', 'Hlava', 'Obličej', 'Oblečení', 'Převleky', 'Podoba', 'Obnovit výchozí', 'Bez čepice', 'Bez oblečení', 'Bez převleku'];
+  const texty = ['Vzhled agenta', 'Upravit vzhled', 'Vzhled robota', 'Bez doplňku', 'Hlava', 'Obličej', 'Oblečení', 'Převleky', 'Postava', 'Barva', 'Obnovit výchozí', 'Bez čepice', 'Bez oblečení', 'Bez převleku'];
   for (const slot of SLOTS) for (const item of Object.values(WARDROBE[slot])) texty.push(item.label());
   for (const text of texty) {
     assert.ok(dict.includes('"' + text + '":'), text + ' needs English translation');

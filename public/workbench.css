@@ -861,3 +861,33 @@ html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill
   .search-field input { height: 44px; }
 }
 .pm-msg .pm-zdroj { display: block; margin-top: 8px; color: var(--mute); font-size: 12px; line-height: 1.4; }
+
+/* Vzhled agenta: postava a barva jsou záložky. Vlevo zůstává jen náhled a jméno, vpravo šest záložek
+   v jedné řadě. Na počítači mají záložky a zavírací tlačítko 44 px jako ostatní akce. */
+@media (min-width: 721px) {
+  .studio-dialog--single { width: min(900px, calc(100vw - 24px)); }
+  .look-body { grid-template-columns: 260px minmax(0, 1fr); }
+  .look-stage { min-height: 260px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 150px; height: 156px; }
+  .look-tab { height: 44px; padding: 0 18px; font-size: 14px; }
+  .look-head [data-close] { width: 44px; height: 44px; }
+}
+@media (min-width: 721px) {
+  .look-tab { flex: 1 0 auto; padding: 0 12px; }
+  /* Mřížka drží výšku čtyř řad, aby okno při přepínání záložek neposkakovalo. */
+  .look-grid { min-height: 444px; }
+}
+@media (min-width: 721px) and (max-height: 820px) { .look-grid { min-height: 0; } }
+/* Lišta dialogu: obě tlačítka stejně vysoká (44 px na počítači, 40 px na telefonu). */
+.look-form footer .btn { height: 40px; min-height: 40px; padding: 0 18px; font-size: 14px; }
+@media (min-width: 721px) {
+  .look-form footer .btn { height: 44px; min-height: 44px; }
+  .look-grid .look-tile .robot, .look-grid .look-tile .studio-avatar { width: 72px; height: 75px; }
+}
+/* Tablet: užší náhled, aby se šest záložek vešlo do jedné řady bez posouvání. */
+@media (min-width: 721px) and (max-width: 960px) {
+  .look-body { grid-template-columns: 188px minmax(0, 1fr); gap: 24px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 120px; height: 125px; }
+  .look-tab { padding: 0 10px; font-size: 13px; }
+  .look-tabs { gap: 4px; }
+}
