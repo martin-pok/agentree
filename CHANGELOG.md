@@ -15,6 +15,7 @@
 - **Tlačítka s odsazením podle výšky:** 44px tlačítka na počítači mají 22 px po stranách (s ikonou 18 px) – už nevypadají stlačeně.
 - **Tenký posuvník:** decentní kapsle bez podkladu, výraznější jen pod kurzorem.
 - **Pozdrav vpravo:** místo počtů agentů (ty nese box Stav agentů) dnešní den jako kalendářní značka a pod ním dnešní aktivita – aktivní konverzace a tokeny z přepisů. Fialový přechod je jen jemný náznak, prolíná se rychleji a text zůstává tmavý na světlé ploše.
+- **Odhad ceny přes API u Claude Sonnet 5.5:** čtení z cache se počítá 0,10 $ za milion tokenů podle aktuálního ceníku Anthropicu (dřív 0,20 $ ze starší tabulky), odhad u konverzací se Sonnetem 5.5 tak už nevychází vyšší.
 
 ## 0.46.25 – 2026-10-18 · Přehled podle Figmy
 

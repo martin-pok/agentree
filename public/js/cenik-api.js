@@ -8,9 +8,10 @@ import { hodinaVObdobi } from './format.js';
 // délku cache uvádějí (`usage.cache_creation`); starší jen součet, který se bere jako 5minutový.
 //
 // Zdroj: oficiální ceník Anthropicu https://platform.claude.com/docs/en/about-claude/pricing,
-// ověřeno 7. 10. 2026. USD za milion tokenů: vstup, výstup, čtení z cache, zápis do cache (5 min).
-// Stránka si u Claude Sonnet 5.5 odporuje (tabulka 0,20 $, text o násobcích 0,10 $ za čtení
-// z cache); bere se hodnota z tabulky. Claude Haiku 5.5 má cenu podle délky promptu (nad 100 000
+// ověřeno 18. 10. 2026. USD za milion tokenů: vstup, výstup, čtení z cache, zápis do cache (5 min).
+// Čtení z cache u Claude Opus 5.5 a Sonnet 5.5 stojí 0,05násobek vstupu (tabulka i poznámka pod ní:
+// 0,20 $ a 0,10 $). Do 18. 10. 2026 tu Sonnet 5.5 měl 0,20 $ podle starší tabulky, která si
+// s poznámkou odporovala – stránka teď uvádí 0,10 $ shodně na obou místech. Claude Haiku 5.5 má cenu podle délky promptu (nad 100 000
 // tokenů pětkrát vyšší), kterou z přepisu nepoznáme – do odhadu proto nejde a hlásí se jako bez ceníku.
 // Ostatní poskytovatelé (OpenAI, Google…) zatím ověřený ceník nemají a nedohadují se.
 //
@@ -19,7 +20,7 @@ import { hodinaVObdobi } from './format.js';
 //
 // Při změně ceníku uprav čísla, CENIK_API_OVERENO a záznam v docs/CONNECTORS.md.
 
-export const CENIK_API_OVERENO = '2026-10-07';
+export const CENIK_API_OVERENO = '2026-10-18';
 export const CENIK_API_ZDROJ = 'https://platform.claude.com/docs/en/about-claude/pricing';
 
 // [vstup, výstup, čtení z cache, zápis do cache 5 min] v USD za MTok.
@@ -36,7 +37,7 @@ const CLAUDE = {
   'opus-4.5': [5, 25, 0.5, 6.25],
   'opus-4.1': [15, 75, 1.5, 18.75],
   'opus-4': [15, 75, 1.5, 18.75],
-  'sonnet-5.5': [2, 10, 0.2, 2.5],
+  'sonnet-5.5': [2, 10, 0.1, 2.5],
   'sonnet-5': [2, 10, 0.2, 2.5],
   'sonnet-4.6': [3, 15, 0.3, 3.75],
   'sonnet-4.5': [3, 15, 0.3, 3.75],
