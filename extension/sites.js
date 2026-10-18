@@ -225,6 +225,19 @@
       model: (doc) => text(doc.querySelector('[data-testid="model-switcher-dropdown-button"]')).slice(0, 60),
       composerSelector: '#prompt-textarea, textarea[name="prompt-textarea"]',
     },
+    // Claude Code na webu (claude.ai/code) je vzdálený agent, ne chat. Stejná doména jako Claude.ai,
+    // proto musí být v seznamu před ním. ID relace z adresy (`session_…`) je totéž, pod kterým relaci
+    // zná cache Claude Desktopu – aplikace podle něj obě spojí do jednoho agenta (src/connectors/web.js).
+    // Selektory jsou obecné a na živé stránce neověřené (🧪, docs/CONNECTORS.md).
+    {
+      id: 'claude-code-web',
+      hosts: ['claude.ai'],
+      path: /^\/code(\/|$)/,
+      conversationId: (loc) => idFrom(loc, /^\/code\/(session_[\w-]+)/) || tabId(),
+      generating: (doc) => Boolean(doc.querySelector('[data-is-streaming="true"]')) || Boolean(stopButton(doc)),
+      title: (doc) => cleanTitle(doc.title, [/\s*[-–|]\s*Claude(?: Code)?$/i, /^Claude Code$/i]),
+      composerSelector: 'div.ProseMirror[contenteditable="true"]',
+    },
     {
       id: 'claude',
       hosts: ['claude.ai'],

@@ -282,6 +282,7 @@ chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() =>
 const SITE_HOSTS = {
   chatgpt: ['chatgpt.com', 'chat.openai.com'],
   'codex-web': ['chatgpt.com'],
+  'claude-code-web': ['claude.ai'],
   claude: ['claude.ai'],
   gemini: ['gemini.google.com'],
   mscopilot: ['copilot.microsoft.com'],
@@ -295,7 +296,8 @@ function senderMatchesSite(sender, site) {
   try {
     const url = new URL(sender.tab.url || sender.url);
     return url.protocol === 'https:' && SITE_HOSTS[site]?.includes(url.hostname) === true
-      && (site !== 'github-copilot' || url.pathname.startsWith('/copilot'));
+      && (site !== 'github-copilot' || url.pathname.startsWith('/copilot'))
+      && (site !== 'claude-code-web' || /^\/code(?:\/|$)/.test(url.pathname));
   } catch {
     return false;
   }

@@ -32,6 +32,26 @@ test('Codex na webu se pozná zvlášť od ChatGPT', () => {
   assert.equal(detect(loc('https://chatgpt.com/codexfoo')).id, 'chatgpt');
 });
 
+test('Claude Code na webu (claude.ai/code) se pozná zvlášť od chatu Claude.ai', () => {
+  assert.equal(detect(loc('https://claude.ai/code')).id, 'claude-code-web');
+  assert.equal(detect(loc('https://claude.ai/code/session_01AbCdEfGhIjKl')).id, 'claude-code-web');
+  assert.equal(detect(loc('https://claude.ai/chat/abc-def')).id, 'claude');
+  assert.equal(detect(loc('https://claude.ai/new')).id, 'claude');
+  // Adresa, která jen začíná stejně, Claude Code není.
+  assert.equal(detect(loc('https://claude.ai/codex')).id, 'claude');
+  const cc = SITES.find((s) => s.id === 'claude-code-web');
+  // ID relace je totéž, pod kterým ji zná cache Claude Desktopu – podle něj se spojí do jednoho agenta.
+  assert.equal(cc.conversationId(loc('https://claude.ai/code/session_01AbCdEfGhIjKl')), 'session_01AbCdEfGhIjKl');
+  assert.equal(cc.conversationId(loc('https://claude.ai/code/session_01AbCdEfGhIjKl/files')), 'session_01AbCdEfGhIjKl');
+  assert.match(cc.conversationId(loc('https://claude.ai/code')), /^tab-/);
+  assert.equal(cc.title({ title: 'Oprav přihlášení - Claude' }), 'Oprav přihlášení');
+  assert.equal(cc.title({ title: 'Claude Code' }), '');
+  const doc = (sel) => ({ querySelector: (q) => (q.includes(sel) ? {} : null), querySelectorAll: () => [] });
+  assert.equal(cc.generating(doc('data-is-streaming="true"')), true);
+  assert.equal(cc.generating(doc('stop-button')), true);
+  assert.equal(cc.generating(doc('nic-takoveho')), false);
+});
+
 test('ID konverzace se bere z adresy, ne z náhody', () => {
   const codex = SITES.find((s) => s.id === 'codex-web');
   assert.equal(codex.conversationId(loc('https://chatgpt.com/codex/tasks/task-42')), 'task-42');

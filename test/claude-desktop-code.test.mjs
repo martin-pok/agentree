@@ -6,6 +6,7 @@ import v8 from 'node:v8';
 import { maskedCrc, unsnappy, logRecords, tableEntries, readLevelSnapshot, readClaudeDesktopCache, decodeClone } from '../src/claude-desktop-cache.js';
 import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage, hlasenyStav } from '../src/connectors/claude-desktop-code.js';
 import { createSession, deriveStatus } from '../src/model.js';
+import { applyKarta } from '../src/connectors/web.js';
 import { appSupportDir } from '../src/platform.js';
 import { tempDir, startTestServer, api, waitFor, openStream } from './helpers.mjs';
 
@@ -250,4 +251,66 @@ test('Claude remote: čerstvější dotaz na jednu relaci přebije starší sezn
   assert.equal(remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries: [queries[2]] } } }]), null);
   // Prázdný seznam je platný stav (žádné relace), ne chyba.
   assert.deepEqual(remoteSessions([{ key: 'react-query-cache', value: { clientState: { queries: [{ queryKey: ['sessions_api_list_sessions'], state: { dataUpdatedAt: now, data: { pages: [] } } }] } } }]).sessions, []);
+});
+
+// Relace sledovaná v Chromu na claude.ai/code: rozšíření posílá `claude-code-web` se `session_…` z adresy.
+const karta = (generating, conversationId = id) => ({ site: 'claude-code-web', conversationId, url: `https://claude.ai/code/${conversationId}`, generating, counts: { user: 2, assistant: 1 } });
+const stejnyAgent = (state) => state.sessions.filter((s) => s.id.endsWith(id));
+
+test('Claude Code na webu: otevřená karta a cache Claude Desktopu jsou jeden agent a živá karta přebije starou cache', async (t) => {
+  const home = await tempDir();
+  // Cache Claude Desktopu: relace naposledy hlášená jako „pracuje“, ale seznam je 10 minut starý.
+  const stara = Date.now() - 600000;
+  const meta = { ...metadata(), session_status: 'idle', status_bucket: 'completed', post_turn_summary: { status_category: 'completed' }, updated_at: new Date(stara).toISOString() };
+  await fixture(home, [meta]);
+  const server = await startTestServer({ AGENTEEQ_SOURCE_HOME: home }); t.after(() => server.close());
+  await waitFor(() => server.app.store.summary(`claude-desktop-code:${id}`));
+  assert.notEqual(server.app.store.summary(`claude-desktop-code:${id}`).status, 'working');
+
+  const res = server.app.connectors.web.ingest(karta(true));
+  assert.equal(res.ok, true);
+  assert.equal(res.id, `claude-desktop-code:${id}`, 'karta se připojí k relaci z cache');
+  let state = (await api(server.url).get('/api/state')).body;
+  assert.deepEqual(stejnyAgent(state).map((s) => s.id), [`claude-desktop-code:${id}`], 'jeden agent, ne dva');
+  const s = stejnyAgent(state)[0];
+  assert.equal(s.status, 'working');
+  assert.match(s.reason, /karty/);
+  assert.equal(s.title, 'Ranní práce na repozitáři', 'název a repozitář zůstávají z cache');
+
+  // Karta hlásí, že agent dopracoval: už nepracuje, i když by ho cache držela.
+  server.app.connectors.web.ingest(karta(false));
+  state = (await api(server.url).get('/api/state')).body;
+  assert.equal(stejnyAgent(state).length, 1);
+  assert.notEqual(stejnyAgent(state)[0].status, 'working');
+});
+
+test('Claude Code na webu: karta otevřená dřív, než relaci uloží cache, se do ní převede', async (t) => {
+  const home = await tempDir(), f = await fixture(home, []);
+  const server = await startTestServer({ AGENTEEQ_SOURCE_HOME: home }); t.after(() => server.close());
+  // Bez Claude Desktopu je karta samostatná webová konverzace – aplikace funguje i tak.
+  assert.equal(server.app.connectors.web.ingest(karta(true)).id, `web:claude-code-web:${id}`);
+  assert.equal(server.app.store.summary(`web:claude-code-web:${id}`).status, 'working');
+  await f.write([{ ...metadata(), session_status: 'idle', status_bucket: 'completed', post_turn_summary: {} }], 2);
+  await waitFor(() => server.app.store.summary(`claude-desktop-code:${id}`), 1900);
+  const state = (await api(server.url).get('/api/state')).body;
+  assert.deepEqual(stejnyAgent(state).map((s) => s.id), [`claude-desktop-code:${id}`]);
+  assert.equal(stejnyAgent(state)[0].status, 'working', 'živý stav z karty přežije převod');
+});
+
+test('Claude Code na webu: zavřená karta přestane platit a stav se vrátí k cache; čekání z cache karta nepřebije starým tahem', () => {
+  const now = Date.now();
+  const meta = { ...metadata(now), session_status: 'idle', status_bucket: 'completed', post_turn_summary: { status_category: 'completed' } };
+  const s = applyRemoteSession(newSession(), meta, null, now - 1000, now);
+  applyKarta(s, { generating: true, counts: { user: 1, assistant: 0 } }, now);
+  assert.equal(deriveStatus(s, now + 1000).status, 'working');
+  // Karta se 150 s neozvala (zavřená, uspaný Chrome): o stavu zase rozhoduje cache.
+  const pozdeji = deriveStatus(s, now + 200e3);
+  assert.notEqual(pozdeji.status, 'working');
+  assert.equal(pozdeji.reason, deriveStatus({ ...s, karta: null }, now + 200e3).reason);
+  // Cache hlásí čekání na rozhodnutí novější, než karta uviděla začátek tahu: čekání platí.
+  const ceka = { ...metadata(now), session_status: 'requires_action', status_bucket: 'blocked', post_turn_summary: {}, updated_at: new Date(now).toISOString() };
+  const s2 = applyRemoteSession(newSession(), ceka, null, now, now);
+  applyKarta(s2, { generating: true, counts: { user: 1, assistant: 0 } }, now - 5000);
+  applyKarta(s2, { generating: true, counts: { user: 1, assistant: 0 } }, now);
+  assert.equal(deriveStatus(s2, now + 1000).status, 'needs_input');
 });

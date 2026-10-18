@@ -257,7 +257,7 @@ Na macOS se Codex CLI hledá také přímo v `ChatGPT.app/Contents/Resources/cod
   Code nebo Codexu by znamenalo vydávat se za jejich aplikaci; to Agenteeq nedělá. Spouští jejich
   vlastní přihlášení a ptá se jejich vlastním příkazem.
 - **Hesla ani tokeny dodavatelů Agenteeq nevidí.** U CLI bere jen „přihlášen ano / ne“ a ověřené údaje o účtu; webové rozšíření posílá jen dostupná metadata konverzace. U poskytovatele nesmí z neznámého stavu odvodit kladnou autorizaci.
-- **Bezpečné odkazy z rozšíření:** server vyžaduje HTTPS a přesnou doménu služby; `codex-web` a `github-copilot` mají navíc vlastní cesty. Parametry `?` a `#` se před uložením zahazují, aby se nepřenášely tokeny v URL.
+- **Bezpečné odkazy z rozšíření:** server vyžaduje HTTPS a přesnou doménu služby; `codex-web`, `claude-code-web` a `github-copilot` mají navíc vlastní cesty. Parametry `?` a `#` se před uložením zahazují, aby se nepřenášely tokeny v URL.
 - **UAT evidence pro všechny konektory:** [CONNECTOR-UAT-0461.md](CONNECTOR-UAT-0461.md). Bez reálného Macu a živého přihlášení nelze považovat všechna připojení za end-to-end ověřená.
 - **Neznámý výstup je „nepodařilo se zjistit“,** ne „nenapojeno“. Hlídání běží nejvýš 10 minut
   po 2 s a skončí zprávou „vypršelo“. Zavřené okno hlídání zruší.
