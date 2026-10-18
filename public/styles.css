@@ -2249,6 +2249,8 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .run-mark .icon { width: 10px; height: 10px; stroke-width: 3.2; }
 .run-mark--spin { background: none; border: 2px solid var(--teal-tint); border-top-color: var(--teal); animation: spin .9s linear infinite; }
 .run[data-status='done'] .run-status { color: var(--teal-ink); }
+/* Značka na tónu stavu: v tmavém režimu je tón světlý, proto barva plochy karty, ne bílá. */
+.run:is([data-status='done'], [data-status='failed']) .run-mark { color: var(--card); }
 .run[data-status='done'] .run-mark { background: var(--teal-ink); }
 .run[data-status='failed'] .run-status { color: var(--velvet-ink); }
 .run[data-status='failed'] .run-mark { background: var(--velvet-ink); }

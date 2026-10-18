@@ -53,7 +53,6 @@ button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0;
 :is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-arm-left { animation: robot-type .9s ease-in-out infinite alternate; }
 :is(.agent-portrait[data-state='working'], .pb-agent[data-status='working']) .robot-arm-right { animation: robot-type .9s ease-in-out -.45s infinite alternate; }
 :is(.agent-portrait[data-state='needs_input'], .pb-agent[data-status='needs_input']) .robot-arm-right { transform: rotate(-118deg); animation: robot-wave 5s ease-in-out infinite; }
-:is(.agent-portrait, .pb-agent):is([data-state='waiting'], [data-status='waiting'], [data-state='idle'], [data-status='idle']) .robot-eyes { transform: scaleY(.55); }
 :is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-aerial { transform: rotate(38deg); }
 :is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-eyes { opacity: .45; }
 @keyframes robot-signal { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
