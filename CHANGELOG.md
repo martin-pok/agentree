@@ -2,6 +2,8 @@
 
 ## Nevydáno
 
+- **Útrata: tabulka nákladů se v užším okně už neposouvá do strany.** Vedle postranního panelu se tabulka (min. 640 px) nevešla v oknech zhruba 700–1100 px – datum a koš byly mimo kartu. O podobě teď rozhoduje šířka karty (container query): pod 656 px se výdaje ukážou jako karty, stejně jako na telefonu.
+- **Box se zkopírovatelnou cestou (Nastavení → Rozšíření) na telefonu:** dlouhá cesta už není natvrdo uříznutá pod tlačítkem Kopírovat – prolnutí u okraje ukazuje, že text pokračuje a jde posunout.
 - **Agent spuštěný hned po startu aplikace se ukáže do 2 s i na macOS.** FSEvents doručuje události až od rozběhu proudu, který na vytíženém Macu trvá i přes sekundu – zápis v té mezeře se dřív ukázal až při dalším opakování. Sledování existujícího kořene přepisů teď po prvním zapnutí jednou doskenuje (`src/watch.js`, test v `test/detekce-agentu.test.mjs`). Odhalil to hraniční běh testu „čas do přehledu“ v CI (#180).
 - **Automatická kontrola WCAG 2.2 A/AA (axe-core) v CI** (`npm run qa:axe`): všech 8 obrazovek ve světlém i tmavém vzhledu na počítači i telefonu, selže na každém porušení. Při prvním běhu našla tlačítko Hledat bez přístupného názvu na telefonu (vidět je jen lupa) – opraveno, má `aria-label`.
 - **Přeskládání při přiblížení 400 % (WCAG 1.4.10) hlídá CI.** `qa:axe` nově kontroluje i 320 × 256 CSS px: všech 8 obrazovek bez vodorovného posunu a bez porušení axe ve světlém i tmavém vzhledu.
