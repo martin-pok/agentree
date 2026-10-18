@@ -6,6 +6,7 @@ import { watchTree, createFileQueue } from '../watch.js';
 import { readClaudeDesktopCache } from '../claude-desktop-cache.js';
 import { applyClaudeLine, newFileState, STATUS_WINDOWS } from './claude-code.js';
 import { ui } from '../texty.js';
+import { kartaZWebu, webIdClaudeCode } from './web.js';
 
 const SESSION = /^session_[A-Za-z0-9]{8,80}$/;
 export const remoteId = (value) => typeof value === 'string' && SESSION.test(value) ? value : '';
@@ -254,6 +255,12 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
         if (previous) s.seq = previous.seq; // A shorter cache must not look like an older SSE snapshot.
         applyRemoteSession(s, metadata, cache.get(metadata.id), metadata._observedAt);
         s.resetTranscript = Boolean(previous);
+        // Otevřená karta claude.ai/code s touž relací (rozšíření, web.js): živý důkaz zůstává u relace
+        // a webová konverzace, která vznikla dřív než záznam v cache, se do ní převede – agent je jeden.
+        const web = store.get(webIdClaudeCode(metadata.id));
+        s.karta = web ? kartaZWebu(web) : previous?.karta || null;
+        if (s.karta?.lastAt) touch(s, s.karta.lastAt);
+        if (web) store.remove(web.id);
         store.sessions.set(id, s);
         store.commit(s);
         fingerprints.set(id, fingerprint);

@@ -38,6 +38,7 @@
       'před {0} h': '{0} h ago',
       // Služby
       'Codex na webu': 'Codex on the web',
+      'Claude Code na webu': 'Claude Code on the web',
       '{0} z {1}': '{0} of {1}',
       'naposledy {0}': 'last seen {0}',
       'Sledovat {0}': 'Track {0}',

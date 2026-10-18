@@ -356,7 +356,7 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
 
 ```json
 {
-  "site": "chatgpt | claude | gemini | mscopilot | perplexity | grok | qwen | github-copilot",
+  "site": "chatgpt | codex-web | claude-code-web | claude | gemini | mscopilot | perplexity | grok | qwen | github-copilot",
   "conversationId": "[A-Za-z0-9_.:-]{1,200}",
   "url": "https://…",
   "generating": true,
@@ -371,6 +371,11 @@ interface LicenseStatus { valid: boolean; hasKey: boolean; plan: 'free' | 'pro' 
 `nahrazuje` posílá rozšíření v prvním hlášení konverzace, která právě dostala ID (předtím se hlásila
 pod zástupným ID karty). Server záznam `web:<site>:<nahrazuje>` převede na skutečné ID a odebere
 (`session:remove`). Jiný tvar nebo totéž ID se ignoruje.
+
+`claude-code-web` (claude.ai/code) s `conversationId` tvaru `session_…`: zná-li tutéž relaci cache Claude
+Desktopu (`claude-desktop-code:session_…`), hlášení nevytvoří webovou konverzaci, ale připojí se k ní
+(`{ ok, id: "claude-desktop-code:session_…" }`) a případný záznam `web:claude-code-web:session_…`
+odebere. Stav pak odvozuje `deriveStatus` z čerstvé karty (do 150 s od posledního hlášení), jinak z cache.
 
 Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
 Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text

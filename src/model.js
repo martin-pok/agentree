@@ -166,7 +166,31 @@ const hlaseniZ = (x, text, s, now) => (zastarale(x, s, now) ? ui('{0} · stav z 
 // `stale` = agent formálně neukončil tah, ale dlouho se nic neděje (nebo jeho proces skončil); takový přechod nesmí hlásit „dokončeno“.
 // `done` = agent skutečně doběhl: odpověděl a tah neskončil jen vypršením. Jen tehdy smí rozhraní
 // říct „hotovo“ – stav `waiting` sám o sobě to neznamená (může jít o stale tah nebo o zadání bez odpovědi).
+// Otevřená karta claude.ai/code u vzdálené relace z cache Claude Desktopu (src/connectors/web.js#applyKarta).
+// Platí, jen dokud se karta ozývá (`staleMs`); zavřená nebo uspaná karta nic netvrdí.
+const zivaKarta = (s, now) => {
+  const k = s.karta;
+  return k && k.at > 0 && k.at <= now + 60e3 && now - k.at < k.staleMs ? k : null;
+};
+
 export function deriveStatus(s, now) {
+  const karta = zivaKarta(s, now);
+  if (karta) {
+    // Čerstvá karta vidí běh přímo, cache Claude Desktopu jen s odstupem: o tom, jestli agent
+    // pracuje, rozhoduje karta. Čekání na rozhodnutí z cache platí dál, pokud ho karta nepřekonala
+    // novým tahem (začal po něm).
+    s = {
+      ...s,
+      running: karta.running,
+      runningAt: karta.at,
+      activity: karta.running ? ui('Pracuje · podle otevřené karty v prohlížeči') : '',
+      staleMs: karta.staleMs,
+      lastAt: Math.max(s.lastAt || 0, karta.lastAt || 0),
+      toolWaitSince: 0,
+      procesSkoncil: 0,
+      pending: karta.running && s.pending && karta.since > s.pending.at ? null : s.pending,
+    };
+  }
   const age = now - (s.lastAt || 0);
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;

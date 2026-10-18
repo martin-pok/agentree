@@ -5,6 +5,7 @@
 const SITES = [
   ['chatgpt', 'ChatGPT', 'openai'],
   ['codex-web', 'Codex na webu', 'codex'],
+  ['claude-code-web', 'Claude Code na webu', 'claude'],
   ['claude', 'Claude.ai', 'claude'],
   ['gemini', 'Gemini', 'gemini'],
   ['mscopilot', 'Microsoft Copilot', 'copilot'],

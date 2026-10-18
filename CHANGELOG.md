@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.24 – 2026-10-18 · Šatník přesně na míru, agenti v cloudu, živý web
+
+- **Šatník má 14 nových kousků:** baret, rybářský klobouček, květinový věneček, vikingská helma, hvězdičkové a lyžařské brýle, ruměnec s pihami, zástěra, baseballová bunda, laclové kalhoty, havajská košile a převleky rytíře, žabáka a včelky.
+- **Čepice sedí na temeni a brýle přesně na očích** u všech 9 postav – i u širokých a nízkých (Bolt, Mochi, Rover), kde dřív čepice padala do obličeje a brýle přetékaly. Kukly, přilby a dresy převleků se kreslí podle tvaru hlavy a trupu dané postavy. Test měří obálku každé položky na každé postavě.
+- **Mrak u agentů v cloudu:** vzdálené relace Claude Code (claude.ai/code) mají ikonu mraku místo notebooku a filtr Zdroj je podle toho třídí. Místní agenti (Claude Code, Codex, Cursor na tomto počítači) dál ukazují notebook.
+- **Claude Code z claude.ai/code živě přes rozšíření (🧪 Beta):** otevřenou kartu rozšíření pozná zvlášť od chatu Claude.ai a během práce ukáže „Pracuje · podle otevřené karty v prohlížeči“. Když tutéž relaci zná i Claude Desktop, je v přehledu jeden agent; po zavření karty se stav vrátí k poslední uložené cache. Selektory na claude.ai/code zatím neověřené na živé stránce.
+- **Web:** roboti v hero sledují kurzor v celém hero (i nad nadpisem), plynule – oči, náklon hlavy, paralaxa; panel rozšíření má lockup „Agenteeq / in browser“.
+
 ## 0.46.23 – 2026-10-18 · Pravdivá data: stavy agentů, tokeny, útrata a limity
 
 Nezávislá kontrola pravdivosti dat našla 16 chyb; každá byla doložena konkrétním vstupem a špatným výsledkem a má regresní test.

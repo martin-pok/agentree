@@ -55,8 +55,8 @@ test('Notion: avatars retain the 108x112 canonical robot proportions and wear on
 });
 
 test('šatník: je z čeho vybírat a každá položka má český popisek', () => {
-  assert.ok(Object.keys(WARDROBE.hat).length >= 11 && Object.keys(WARDROBE.costume).length >= 8);
-  assert.ok(Object.keys(WARDROBE.face).length >= 8 && Object.keys(WARDROBE.outfit).length >= 7);
+  assert.ok(Object.keys(WARDROBE.hat).length >= 15 && Object.keys(WARDROBE.costume).length >= 11);
+  assert.ok(Object.keys(WARDROBE.face).length >= 11 && Object.keys(WARDROBE.outfit).length >= 11);
   for (const slot of SLOTS) for (const item of Object.values(WARDROBE[slot])) assert.ok(String(item.label()).length > 2);
 });
 
@@ -78,7 +78,7 @@ test('šatník: převlek s čepicí a brýlemi se vykreslí; vlastní pokrývku 
   assert.match(nindza, /fill-rule="evenodd"/, 'nindža má kuklu');
   const snepici = renderAgentRobot('Scout', { costume: 'ninja', hat: 'cap', face: 'glasses' });
   assert.doesNotMatch(snepici, /fill-rule="evenodd"/, 'kukla ustoupí čepici');
-  assert.match(snepici, /M28 29C28 12 40 6/, 'čepice je vidět');
+  assert.match(snepici, /M28 24\.5C28 7\.5 40 1\.5/, 'čepice je vidět');
   assert.match(snepici, /robot-wear--mid/, 'tělo převleku zůstalo');
   assert.match(snepici, /M32 46 25 43\.500/, 'brýle jsou vidět');
   // Přilba kosmonauta je nad brýlemi (brýle jsou uvnitř přilby), ne pod nimi.

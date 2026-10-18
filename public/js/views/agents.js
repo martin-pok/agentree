@@ -2,7 +2,7 @@ import { agentRobot } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
-import { glyph, PROVIDERS, pkey, ICON, ENV, envOf } from '../icons.js';
+import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
@@ -293,7 +293,7 @@ function update() {
   const q = norm(f.q.trim());
   // Zdroj, poskytovatel a hledání platí i pro počty u projektů – jsou to nadřazené filtry.
   const matchFacets = (s) =>
-    (f.source === 'all' || (f.source === 'web' ? s.source === 'web' : s.source !== 'web'))
+    (f.source === 'all' || (f.source === 'web' ? jeCloud(s) : !jeCloud(s)))
     && (!f.providers.size || f.providers.has(pkey(s.provider)))
     && (!q || norm([s.title, s.project, s.cwd, s.app, s.model, s.branch, s.url, projectById(s.projectId)?.name].join(' ')).includes(q));
   const scoped = all.filter(matchFacets);

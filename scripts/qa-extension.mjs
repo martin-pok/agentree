@@ -46,7 +46,7 @@ async function spolecne(page, kde, errors) {
   assert.equal(popisky.filter((x) => /^otevřít( v)? agenteeq|^open( in)? agenteeq/.test(x)).length, 0, `${kde}: nejasné „Otevřít Agenteeq“`);
   // Hlavička se vejde: značka, stav, obnova a služby na jednom řádku.
   assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5 && x.getBoundingClientRect().height <= 32.5)), `${kde}: hlavička přetéká`);
-  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 9);
+  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 10);
   assert.equal(await page.locator('#sites-open').isVisible(), true, `${kde}: služby a port jsou dostupné vždy`);
   // Obrys zaostření nemění tvar: kapsle zůstane kapslí, kruh kruhem.
   await page.locator('#refresh-popup').focus();
@@ -170,7 +170,7 @@ try {
           await page.locator('#sites input[type=checkbox]').first().focus();
           await page.keyboard.press('Space');
           assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
-          assert.equal(await page.locator('#sites-count').textContent(), '8 z 9');
+          assert.equal(await page.locator('#sites-count').textContent(), '9 z 10');
           if (state === 'paired') {
             await page.locator('#port').fill('80');
             await page.locator('#port-form button').click();
@@ -410,7 +410,7 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
       const text = await page.evaluate(() => document.body.innerText + ' ' + [...document.querySelectorAll('[aria-label],[placeholder],[title]')].map((e) => `${e.getAttribute('aria-label') || ''} ${e.getAttribute('placeholder') || ''} ${e.getAttribute('title') || ''}`).join(' '));
       assert.doesNotMatch(text, /[ěščřžýáíéůúďťňó]/i, `en ${state}: v okně zůstala čeština`);
-      // Čeština bez diakritiky: „z“ v počtu („8 z 9“) a slova, která v angličtině nejsou.
+      // Čeština bez diakritiky: „z“ v počtu („9 z 10“) a slova, která v angličtině nejsou.
       assert.doesNotMatch(text, /\d\s+z\s+\d|(^|\s)(ve|na|se|je|pro|nebo|tady|jsi)\s/i, `en ${state}: v okně zůstala čeština bez diakritiky`);
       assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5)), `en ${state}: hlavička se vejde`);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `en ${state}: nic nepřetéká do strany`);

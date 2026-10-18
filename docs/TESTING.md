@@ -365,7 +365,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 - [ ] Tlačítko „Stáhnout pro Mac“ vede na existující vydání na GitHubu.
 - [ ] Prohlídka: při dojetí k rámu se Přehled rozsvítí (čísla vyjedou), přepnutí na Projekty a Útratu přehraje jejich nástup; výřez živého rozhraní sedí na snímek; s omezeným pohybem rovnou konečný stav.
 
-### Rozšíření (pro každý web: ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
+### Rozšíření (pro každý web: ChatGPT, Codex na webu, Claude Code na webu, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat, GitHub Copilot)
 
 - [ ] Načti `extension/` jako rozbalené, otevři web, pošli zprávu a počkej na odpověď.
 - [ ] Během generování je session „Pracuje“, po dokončení „Čeká na zadání“ do 2 s.
@@ -378,6 +378,9 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
       vlastní adresu, pole pro zadání nalezeno, počty zpráv odpovídají stránce, „Začátek i konec
       odpovědi zachycen“. Klikni **Sedí**, nebo **Nesedí**.
 - [ ] **Uložit vzorek stránky** a vzorek přidej do `test/fixtures/web/` (návod v README tamtéž).
+- [ ] Claude Code na webu: otevři `claude.ai/code/session_…` relace, kterou zná i Claude Desktop – v přehledu
+      je **jeden** agent; během práce „Pracuje · podle otevřené karty v prohlížeči“, po zavření karty
+      do 150 s zpět na stav z cache Claude Desktopu.
       Potvrzený vzorek je regresní test; až teprve pak smí být služba v `docs/CONNECTORS.md` ✅.
 
 ## Protokol ověření – 0.32.0 (3. 10. 2026, macOS 26.6, Node 24.18, Playwright 1.63)

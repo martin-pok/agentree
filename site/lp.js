@@ -198,27 +198,56 @@ if (scena) {
     zmer();
 
     if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      let mys = 0;
-      let x = 0;
-      let y = 0;
-      const posun = () => {
-        mys = 0;
+      // Kurzor se sleduje v celém hero (nadpis, text, tlačítka i okno), ne jen nad oknem – jinak
+      // roboti reagovali jen ve spodní části a působilo to, že efekt někdy nefunguje.
+      // Pohyb tlumí pružina (lineární interpolace na snímek): roboti za kurzorem doplují,
+      // necukají sebou. Smyčka běží jen dokud se pohyb neusadí, pak se zastaví.
+      const hero = scena.closest('.hero') || scena;
+      const roboti = [...scena.querySelectorAll('.hr')];
+      const cil = { mx: 0, my: 0, x: null, y: null };
+      const ted = { mx: 0, my: 0 };
+      const pohled = new Map(roboti.map((r) => [r, { gx: 0, gy: 0, tilt: 0 }]));
+      let snimek = 0;
+      const k = 0.14;
+      const krok = () => {
+        snimek = 0;
         if (!scenaViditelna || document.hidden) return;
-        scena.style.setProperty('--mx', ((x / innerWidth) * 2 - 1).toFixed(3));
-        scena.style.setProperty('--my', ((y / innerHeight) * 2 - 1).toFixed(3));
+        ted.mx += (cil.mx - ted.mx) * k;
+        ted.my += (cil.my - ted.my) * k;
+        let pohyb = Math.abs(cil.mx - ted.mx) + Math.abs(cil.my - ted.my);
+        scena.style.setProperty('--mx', ted.mx.toFixed(4));
+        scena.style.setProperty('--my', ted.my.toFixed(4));
+        for (const r of roboti) {
+          const p = pohled.get(r);
+          let gx = 0, gy = 0, tilt = 0;
+          if (cil.x !== null) {
+            const b = r.getBoundingClientRect();
+            const dx = cil.x - (b.left + b.width / 2);
+            const dy = cil.y - (b.top + b.height / 2);
+            const d = Math.hypot(dx, dy) || 1;
+            // Oči se podívají ke kurzoru (nejvýš 3,5 bodu kresby), hlava se lehce nakloní.
+            gx = (dx / d) * 3.5;
+            gy = (dy / d) * 2.5;
+            tilt = Math.max(-9, Math.min(9, dx / 60));
+          }
+          p.gx += (gx - p.gx) * k; p.gy += (gy - p.gy) * k; p.tilt += (tilt - p.tilt) * k;
+          pohyb += Math.abs(gx - p.gx) + Math.abs(gy - p.gy) + Math.abs(tilt - p.tilt) / 10;
+          r.style.setProperty('--gx', `${p.gx.toFixed(2)}px`);
+          r.style.setProperty('--gy', `${p.gy.toFixed(2)}px`);
+          r.style.setProperty('--tilt', `${p.tilt.toFixed(2)}deg`);
+        }
+        if (pohyb > 0.002) snimek = requestAnimationFrame(krok);
       };
-      // Jen interakce uvnitř hero; žádné trvalé pointermove výpočty na celém webu.
-      scena.addEventListener('pointermove', (e) => {
-        x = e.clientX;
-        y = e.clientY;
-        if (!mys && scenaViditelna && !document.hidden) mys = requestAnimationFrame(posun);
+      const rozjed = () => { if (!snimek && scenaViditelna && !document.hidden) snimek = requestAnimationFrame(krok); };
+      hero.addEventListener('pointermove', (e) => {
+        if (e.pointerType === 'touch') return;
+        const b = hero.getBoundingClientRect();
+        cil.mx = Math.max(-1, Math.min(1, ((e.clientX - b.left) / b.width) * 2 - 1));
+        cil.my = Math.max(-1, Math.min(1, ((e.clientY - b.top) / Math.min(b.height, innerHeight)) * 2 - 1));
+        cil.x = e.clientX; cil.y = e.clientY;
+        rozjed();
       }, { passive: true });
-      scena.addEventListener('pointerleave', () => {
-        if (mys) cancelAnimationFrame(mys);
-        mys = 0;
-        scena.style.removeProperty('--mx');
-        scena.style.removeProperty('--my');
-      });
+      hero.addEventListener('pointerleave', () => { cil.mx = 0; cil.my = 0; cil.x = null; cil.y = null; rozjed(); });
     }
   }
 }

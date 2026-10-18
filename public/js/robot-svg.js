@@ -3,8 +3,9 @@
 // Každá postava má vlastní stavbu těla (hlava, trup, nohy, uši, anténa, oči), ale všechny se kreslí
 // ve stejném viewBoxu 108×112 a mají stejné třídy, takže animace, sledování kurzoru i šatník fungují
 // u všech. Šatník se kreslí pro výchozí stavbu (Scout) a na jinou postavu se přenese přes `fit()`
-// třemi kotvami se stejným měřítkem ve všech směrech (nic se nedeformuje): čepice k temeni, doplňky
-// na obličej k linii očí (oči jsou vždy uprostřed obličeje) a oblečení k trupu.
+// třemi kotvami: čepice k temeni (stejné měřítko v obou osách), doplňky na obličej k linii očí
+// (oči jsou vždy uprostřed obličeje, výška podle obličeje) a oblečení k trupu. Co musí sedět přesně
+// na tvar hlavy nebo trupu (kukla, přilba, dres), kreslí šatník rovnou z geometry().
 
 const REF = { head: { w: 66, top: 23, eyeY: 47.5 }, torso: { x: 33, top: 69, w: 42, h: 24 } };
 
@@ -45,14 +46,23 @@ export function geometry(type = 'Scout') {
 }
 
 // Transformace, která přenese vrstvu nakreslenou pro Scouta na jinou postavu. Čepice se kotví
-// k temeni, doplňky na obličej k linii očí – obojí stejným měřítkem v obou osách, takže se nic
-// nenatahuje. Oblečení se přizpůsobí obdélníku trupu.
+// k temeni stejným měřítkem v obou osách, doplňky na obličej k linii očí a do výšky obličeje.
+// Oblečení se přizpůsobí obdélníku trupu.
 export function fit(type, part) {
   const g = geometry(type);
-  if (part === 'hat' || part === 'face') {
-    const [ref, cil] = part === 'hat' ? [REF.head.top, g.head.top] : [REF.head.eyeY, g.eyeY];
-    if (Math.abs(g.s - 1) < 1e-3 && Math.abs(cil - ref) < 1e-3) return '';
-    return `translate(${n(54 - 54 * g.s)} ${n(cil - ref * g.s)}) scale(${n(g.s)})`;
+  if (part === 'hat') {
+    if (Math.abs(g.s - 1) < 1e-3 && Math.abs(g.head.top - REF.head.top) < 1e-3) return '';
+    return `translate(${n(54 - 54 * g.s)} ${n(g.head.top - REF.head.top * g.s)}) scale(${n(g.s)})`;
+  }
+  if (part === 'face') {
+    // Brýle a knír musí zůstat v obličeji. U nízkého širokého obličeje (Bolt, Mochi, Rover) je
+    // výška obličeje menší, než by odpovídalo šířce hlavy: svisle se proto řídí výškou obličeje
+    // (es, stejně jako oči) a vodorovně šířkou nejvýš o 10 % víc, aby skla zůstala kulatá a
+    // seděla na očích (ty jsou od středu ve vzdálenosti podle šířky hlavy).
+    const sy = g.es;
+    const sx = Math.min(g.s, g.es * 1.1);
+    if (Math.abs(sx - 1) < 1e-3 && Math.abs(sy - 1) < 1e-3 && Math.abs(g.eyeY - REF.head.eyeY) < 1e-3) return '';
+    return `translate(${n(54 - 54 * sx)} ${n(g.eyeY - REF.head.eyeY * sy)}) scale(${n(sx)}${Math.abs(sx - sy) < 1e-3 ? '' : ' ' + n(sy)})`;
   }
   const t = REF.torso;
   const sx = g.torso.w / t.w;

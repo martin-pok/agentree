@@ -57,6 +57,7 @@ export const AGENTI = {
 export const WEBY = {
   chatgpt: { label: 'ChatGPT', provider: 'openai', logo: 'openai', url: 'https://chatgpt.com/' },
   'codex-web': { label: 'Codex · web', provider: 'openai', logo: 'codex', url: 'https://chatgpt.com/codex' },
+  'claude-code-web': { label: 'Claude Code · web', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/code' },
   claude: { label: 'Claude.ai', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/new' },
   gemini: { label: 'Gemini', provider: 'google', logo: 'gemini', url: 'https://gemini.google.com/app' },
   mscopilot: { label: 'Microsoft Copilot', provider: 'microsoft', logo: 'copilot', url: 'https://copilot.microsoft.com/' },

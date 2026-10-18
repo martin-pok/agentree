@@ -90,7 +90,9 @@ test('static budgets guard marketing page against heavy regressions', async () =
     assert.ok(stat.size <= max, name + ' exceeds transfer-size budget: ' + stat.size + ' > ' + max);
   }
   const js = await fs.readFile(path.join(ROOT, 'site/lp.js'), 'utf8');
-  assert.match(js, /scena\.addEventListener\('pointermove'/);
+  // Kurzor se sleduje v celém hero (nadpis i okno), nikdy na celém webu.
+  assert.match(js, /hero\.addEventListener\('pointermove'/);
+  assert.match(js, /scena\.closest\('\.hero'\)/);
   assert.match(js, /scenaViditelna/);
   assert.doesNotMatch(js, /^\s*(?:window\.)?addEventListener\('pointermove'/m);
 });
