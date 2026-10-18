@@ -594,10 +594,16 @@ html[data-theme] .launch::before { content: none; }
 .reply--agent .reply-hint { margin: 0; }
 
 /* Vzhled agenta: dialog z vlastních prvků (žádný systémový select), vlevo živý náhled, vpravo šatník.
-   Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat. */
+   Šatník ukazuje u každé položky robota, jak v ní bude opravdu vypadat.
+   Kostra: rolovatelný obsah (.look-scroll) a přilepená spodní lišta, takže „Uložit vzhled“ je vidět vždy,
+   na jakkoli malém okně. Na telefonu je z okna spodní list s úchytem (tahem dolů se zavře). */
 .session-appearance-btn { margin-left: auto; }
-.studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 28px 32px; }
-.look-form { display: grid; gap: 22px; }
+html.look-open { overflow: hidden; }
+.studio-dialog--single { width: min(780px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; overscroll-behavior: contain; }
+.studio-dialog--single[open] { display: flex; flex-direction: column; }
+.look-form { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+.look-grip { display: none; }
+.look-scroll { display: grid; gap: 22px; align-content: start; min-height: 0; flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 28px 32px 12px; scrollbar-gutter: stable; }
 .look-head { align-items: flex-start; }
 .look-head h2 { margin: 0; font-size: 22px; line-height: 1.25; font-weight: 500; overflow-wrap: anywhere; }
 .look-eyebrow { margin: 0 0 4px !important; color: var(--mute); font-size: 12px !important; line-height: 1.4; }
@@ -640,25 +646,60 @@ html[data-theme] .launch::before { content: none; }
 .look-swatch[aria-pressed='true'] svg { opacity: 1; }
 .look-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .look-tab {
-  height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
-  color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  flex: none; height: 32px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper);
+  color: var(--ink-2); font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer;
 }
 .look-tab:hover { border-color: var(--ink-2); }
 .look-tab[aria-selected='true'] { border-color: var(--action); background: color-mix(in srgb, var(--action) 10%, var(--paper)); color: var(--ink); }
 .look-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-content: start; min-height: 396px; }
-.look-form footer { padding-top: 18px; border-top: 1px solid var(--line); }
+.look-form footer { flex: none; padding: 16px 32px 20px; border-top: 1px solid var(--line); background: var(--card); }
 .look-reset { margin-right: auto; }
 .look-form footer [data-error] { margin-right: auto; }
+/* Nízké okno (malý notebook, tablet naležato): méně vzduchu, obsah se roluje uvnitř, lišta zůstává. */
+@media (min-width: 721px) and (max-height: 820px) {
+  .look-scroll { padding-top: 22px; gap: 16px; }
+  .look-stage { min-height: 150px; padding: 10px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 104px; height: 108px; }
+  .look-left, .look-right { gap: 14px; }
+  .look-grid { min-height: 0; }
+}
+@media (min-width: 721px) and (max-height: 520px) {
+  .studio-dialog--single { max-height: calc(100dvh - 16px); }
+  .look-scroll { padding: 14px 24px 8px; }
+  .look-stage { min-height: 110px; }
+  .look-stage .studio-avatar, .look-stage .robot { width: 76px; height: 79px; }
+  .look-form footer { padding: 10px 24px 12px; }
+}
+/* Dotyk: capsule aspoň 40 px (pravidlo 32/40/48), ať se do nich dá trefit palcem. */
+@media (pointer: coarse) { .look-tab { height: 40px; padding: 0 16px; } }
+/* Telefon: spodní list. Úchyt nahoře, tahem dolů se zavře; náhled zůstává nahoře při rolování. */
 @media (max-width: 720px) {
-  .studio-dialog--single { padding: 20px 16px; }
-  .look-body { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .studio-dialog--single { width: 100vw; max-width: none; margin: auto 0 0; max-height: 94dvh; border-radius: var(--r-xl) var(--r-xl) 0 0; border-bottom: 0; }
+  .look-grip { display: block; flex: none; width: 100%; height: 26px; padding-top: 10px; cursor: grab; touch-action: none; }
+  .look-grip::after { content: ''; display: block; width: 40px; height: 4px; margin: 0 auto; border-radius: var(--r-full); background: var(--line); }
+  .look-scroll { padding: 4px 16px 12px; gap: 18px; scrollbar-gutter: auto; }
+  .look-head h2 { font-size: 19px; }
+  .look-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
   .look-left, .look-right { display: contents; }
-  /* Živý náhled zůstane nahoře, i když se dole listuje šatníkem. */
-  .look-stage { position: sticky; top: -8px; z-index: 2; grid-auto-flow: column; justify-content: center; align-content: center; min-height: 0; padding: 8px 12px; box-shadow: 0 8px 14px -10px var(--ink); }
+  /* Na telefonu je hlavní věc šatník: hned pod náhledem, jméno, podoba a barva až pod ním. */
+  .look-stage { order: 0; }
+  .look-tabs { order: 1; }
+  .look-grid { order: 2; }
+  .look-name { order: 3; }
+  .look-left .look-set { order: 4; }
+  .look-stage { position: sticky; top: 0; z-index: 2; grid-auto-flow: column; justify-content: center; align-content: center; min-height: 0; padding: 8px 12px; box-shadow: 0 10px 16px -12px var(--ink); }
   .look-stage .studio-avatar, .look-stage .robot { width: 72px; height: 75px; }
+  .look-tabs { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .look-tabs::-webkit-scrollbar { display: none; }
+  .look-tab { scroll-snap-align: center; }
   .look-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 0; }
+  .look-form footer { padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
   .session-appearance-btn { margin-left: 0; }
 }
+@media (max-width: 720px) and (prefers-reduced-motion: no-preference) {
+  .studio-dialog--single[open] { animation: look-sheet-in 260ms cubic-bezier(.2, .8, .2, 1); }
+}
+@keyframes look-sheet-in { from { transform: translateY(40px); opacity: 0; } }
 /* Šatník: barvy jdou přes tokeny, takže funguje světlý i tmavý režim. Každá položka má obrys (ro*),
    světlo (rh) a stín (rs), aby nevypadala jako plochá skvrna; tmavé části mají světlejší hranu
    (rol), aby v tmavém režimu nesplynuly s pozadím. */

@@ -311,6 +311,62 @@ try {
         assert.deepEqual(hrany, [], `${typ} ${w}px: bloky Přehledu drží šířku obsahu`);
         await page.screenshot({ path: `${out}/${typ}-prehled-${w}.png` });
       }
+      // Responzivita dialogu Vzhled agenta: telefon, telefon naležato, tablet a počítač. Nic nesmí přetékat,
+      // „Uložit vzhled“ je vidět bez rolování, záložky jsou v jedné řadě a na dotyk aspoň 40 px vysoké.
+      const stav = await (await fetch(`${demo.url}/api/state`)).json();
+      const idAgenta = (stav.sessions || [])[0]?.id;
+      assert.ok(idAgenta, `${typ}: ukázka má aspoň jednoho agenta`);
+      for (const [nazev, w, h, dotyk] of [['telefon', 375, 667, true], ['telefon naležato', 812, 375, true], ['tablet', 768, 1024, true], ['počítač', 1440, 900, false]]) {
+        const c = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: dotyk, isMobile: dotyk && w < 800 && typ === 'chromium', reducedMotion: 'reduce' });
+        const pg = await c.newPage();
+        const chybyOkna = [];
+        pg.on('pageerror', (e) => chybyOkna.push(e.message));
+        await pg.goto(`${demo.url}/#/agent/${encodeURIComponent(idAgenta)}`);
+        await pg.locator('[data-agent-appearance]').click();
+        const dd = pg.locator('.studio-dialog--single[open]');
+        await dd.waitFor();
+        const m = await dd.evaluate((x) => {
+          const r = (e) => e.getBoundingClientRect();
+          const tabs = [...x.querySelectorAll('.look-tab')].map(r);
+          const dlg = r(x);
+          const save = r(x.querySelector('button[type=submit]'));
+          const scroll = x.querySelector('.look-scroll');
+          return {
+            vodorovne: x.scrollWidth > x.clientWidth + 1 || scroll.scrollWidth > scroll.clientWidth + 1 || document.documentElement.scrollWidth > innerWidth + 1,
+            ulozitVidet: save.top >= 0 && save.bottom <= innerHeight + 1 && save.left >= 0 && save.right <= innerWidth + 1,
+            vOkne: dlg.left >= -1 && dlg.right <= innerWidth + 1 && dlg.top >= -1 && dlg.bottom <= innerHeight + 1,
+            radkyZalozek: new Set(tabs.map((t) => Math.round(t.top))).size,
+            nejnizsiZalozka: Math.min(...tabs.map((t) => t.height)),
+            nejuzsiDlazdice: Math.min(...[...x.querySelectorAll('.look-grid .look-tile')].map((t) => r(t).width)),
+            zavrit: Math.min(r(x.querySelector('[data-close]')).width, r(x.querySelector('[data-close]')).height),
+            pozadiZamcene: document.documentElement.classList.contains('look-open'),
+          };
+        });
+        const kde = `${typ} ${nazev} ${w}x${h}`;
+        assert.equal(m.vodorovne, false, `${kde}: dialog přetéká do strany`);
+        assert.equal(m.ulozitVidet, true, `${kde}: Uložit vzhled musí být vidět bez rolování`);
+        assert.equal(m.vOkne, true, `${kde}: dialog se vejde do okna`);
+        assert.equal(m.radkyZalozek, 1, `${kde}: záložky v jedné řadě`);
+        assert.ok(m.nejuzsiDlazdice >= 70, `${kde}: dlaždice jsou dost široké (${m.nejuzsiDlazdice})`);
+        assert.ok(m.zavrit >= 40, `${kde}: tlačítko zavřít je aspoň 40 px`);
+        assert.equal(m.pozadiZamcene, true, `${kde}: stránka pod oknem se nehýbe`);
+        if (dotyk) assert.ok(m.nejnizsiZalozka >= 40, `${kde}: záložky mají aspoň 40 px (${m.nejnizsiZalozka})`);
+        if (w < 721) {
+          // Tah za úchyt: malý tah okno nezavře, velký ano (syntetické dotykové události, platí v Chromiu i WebKitu).
+          const tah = (od, doY) => pg.locator('.look-grip').evaluate((g, [a, b]) => {
+            const udalost = (typ2, y) => g.dispatchEvent(new PointerEvent(typ2, { pointerId: 7, pointerType: 'touch', clientX: 100, clientY: y, bubbles: true }));
+            udalost('pointerdown', a); udalost('pointermove', b); udalost('pointerup', b);
+          }, [od, doY]);
+          await tah(100, 140);
+          assert.equal(await pg.locator('.studio-dialog--single[open]').count(), 1, `${kde}: malý tah za úchyt okno nezavře`);
+          await tah(100, 260);
+          await pg.locator('.studio-dialog--single').waitFor({ state: 'detached' });
+          assert.equal(await pg.evaluate(() => document.documentElement.classList.contains('look-open')), false, `${kde}: po zavření se stránka odemkne`);
+        }
+        assert.deepEqual(chybyOkna, [], `${kde}: chyby v konzoli`);
+        await pg.screenshot({ path: `${out}/${typ}-vzhled-${nazev.replace(/ /g, '-')}.png` });
+        await c.close();
+      }
       assert.deepEqual(errors, [], `${typ}: chyby v konzoli`);
       console.log(`PASS ${typ}: výběr agenta (klik, hledání, šipky, Enter, Esc, klik mimo), koncept zůstal, Spustit odeslal zadání, pomocník (jak zapnu → Nastavení, najdi chat → otevřít, Esc, skrytí v Nastavení), robot v panelu, zaoblený panel, bez přetečení, čistá konzole`);
       await ctx.close();

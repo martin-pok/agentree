@@ -25,7 +25,9 @@ test('Notion: compact, keyboard-addressable, branded choices instead of system d
   assert.match(editor, /aria-pressed="false"/);
   assert.match(editor, /control\.setAttribute\('aria-pressed', String\(selected\)\)/);
   assert.match(editor, /dialog\.showModal\(\)/);
-  assert.match(editor, /dialog\.addEventListener\('close', \(\) => dialog\.remove\(\)/);
+  assert.match(editor, /dialog\.addEventListener\('close', \(\) => \{[^}]*dialog\.remove\(\)/);
+  assert.match(editor, /look-grip/);
+  assert.match(style, /\.look-scroll/);
   assert.match(style, /\.look-tile:focus-visible/);
   assert.match(style, /@media \(max-width: 720px\)/);
   assert.match(editor, /role="tablist"/);

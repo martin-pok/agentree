@@ -57,7 +57,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
   dialog.setAttribute('aria-labelledby', 'look-title');
   const tile = (attrs, robotHtml, label, extra = '') =>
     '<button type="button" class="look-tile" ' + attrs + ' aria-pressed="false"' + extra + '>' + robotHtml + '<span>' + esc(label) + '</span></button>';
-  dialog.innerHTML = '<form class="look-form">' +
+  dialog.innerHTML = '<form class="look-form"><div class="look-grip" aria-hidden="true"></div><div class="look-scroll">' +
     '<header class="look-head"><div><p class="look-eyebrow">' + tr('Vzhled agenta') + '</p><h2 id="look-title">' + esc(agent.title || agent.app || tr('Agent')) + '</h2></div>' +
     '<button type="button" class="icon-btn icon-btn--line" data-close aria-label="' + tr('Zavřít') + '">' + ICON.close + '</button></header>' +
     '<div class="look-body"><div class="look-left">' +
@@ -72,7 +72,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     '</div></fieldset></div>' +
     '<div class="look-right"><div class="look-tabs" role="tablist" aria-label="' + tr('Doplňky a oblečení') + '">' +
     TABS.map((t) => '<button type="button" class="look-tab" role="tab" id="look-tab-' + t.slot + '" aria-controls="look-grid" data-tab="' + t.slot + '">' + esc(t.label()) + '</button>').join('') +
-    '</div><div class="look-grid" id="look-grid" role="tabpanel"></div></div></div>' +
+    '</div><div class="look-grid" id="look-grid" role="tabpanel"></div></div></div></div>' +
     '<footer><button type="button" class="btn btn--sm look-reset" data-reset>' + tr('Obnovit výchozí') + '</button>' +
     '<span class="muted small" data-error role="status"></span>' +
     '<button class="btn btn--primary" type="submit">' + tr('Uložit vzhled') + '</button></footer></form>';
@@ -112,6 +112,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
       const on = control.dataset.tab === tab;
       control.setAttribute('aria-selected', String(on));
       control.tabIndex = on ? 0 : -1;
+      if (on) control.scrollIntoView?.({ inline: 'center', block: 'nearest' });
     }
     stage.innerHTML = '<span class="studio-avatar">' + worn(choice.look) + '</span><span class="look-stage-name">' +
       esc(nickname.value.trim() || agent.app || tr('Agent')) + '</span>';
@@ -168,7 +169,30 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     dialog.close();
     onSaved();
   });
-  dialog.addEventListener('close', () => dialog.remove(), { once: true });
+  // Telefon: tah za úchyt dolů zavře spodní list. Myš ho netahá (má tlačítko ✕, Esc a klik mimo).
+  const grip = dialog.querySelector('.look-grip');
+  let tahY = null;
+  const pust = () => { tahY = null; dialog.style.transition = ''; dialog.style.transform = ''; };
+  grip.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse') return;
+    tahY = e.clientY;
+    dialog.style.transition = 'none';
+    try { grip.setPointerCapture(e.pointerId); } catch { /* syntetická událost nebo už uvolněný ukazatel */ }
+  });
+  grip.addEventListener('pointermove', (e) => {
+    if (tahY == null) return;
+    dialog.style.transform = 'translateY(' + Math.max(0, e.clientY - tahY) + 'px)';
+  });
+  grip.addEventListener('pointerup', (e) => {
+    if (tahY == null) return;
+    const dy = e.clientY - tahY;
+    pust();
+    if (dy > 90) dialog.close();
+  });
+  grip.addEventListener('pointercancel', pust);
+  // Stránka pod oknem se nesmí hýbat (iOS ji jinak roluje i za modálním oknem).
+  document.documentElement.classList.add('look-open');
+  dialog.addEventListener('close', () => { document.documentElement.classList.remove('look-open'); dialog.remove(); }, { once: true });
   redraw();
   dialog.showModal();
   return true;
