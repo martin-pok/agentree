@@ -1135,7 +1135,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .acct-sync-head { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 16px; }
 .acct-sync-icon { width: 40px; height: 40px; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--teal-tint); color: var(--teal-ink); }
 /* Optical balance: keep the 40px tile, give its thinner cloud outline slightly more presence. */
-.acct-sync-icon > .icon { width: 22px; height: 22px; }
+.acct-sync-icon > .icon { width: 26px; height: 26px; stroke-width: 2; }
 .acct-sync-text { display: grid; gap: 2px; min-width: 0; }
 .acct-sync-state { display: flex; align-items: center; gap: 8px; font-size: 13px; line-height: 20px; color: var(--mute); }
 .acct-sync-state .nowrap, .acct-eyebrow .nowrap { white-space: nowrap; }

@@ -249,7 +249,7 @@ function update() {
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
       ${sp.ledger?.length ? `<p class="spend-note">${tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')}</p>` : ''}
-    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatné níže je pevná měsíční cena a do útraty se nepočítá.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
+    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatná mají pevnou měsíční cenu a do útraty se nepočítají.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
 
   fill(el, 'plans', plansHtml(sp));
   fill(el, 'provider-accounts', providerAccountsHtml(sp));
