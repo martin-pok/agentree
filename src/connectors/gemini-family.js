@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { statSafe, toTs, isInjectedPrompt, clip, clipBlock, MIN, DAY } from '../util.js';
-import { touch, addTokens, pushEntry, resetTranscript } from '../model.js';
+import { touch, addTokens, resetTokens, pushEntry, resetTranscript } from '../model.js';
 import { watchTree, createFileQueue, listFiles } from '../watch.js';
 import { noDataState } from './install-state.js';
 import { ui } from '../texty.js';
@@ -47,8 +47,7 @@ export function geminiTokens({ input = 0, output = 0, cached = 0, thoughts = 0, 
 }
 
 export function applyGeminiChat(s, j, mtimeMs, now = Date.now()) {
-  s.tokens = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
-  s.hourly = {};
+  resetTokens(s);
   s.turns = 0;
   s.startedAt = 0;
   s.lastAt = 0;
@@ -135,8 +134,7 @@ export function parseGeminiJsonl(text) {
 // příkazem /branch si ale kopíruje zprávy rodiče doslova – poznají se podle `forkedFrom`
 // a do tokenů se nepočítají (spotřebovala je relace, ze které pocházejí).
 export function applyQwenJsonl(s, text, mtimeMs, now = Date.now()) {
-  s.tokens = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
-  s.hourly = {};
+  resetTokens(s);
   s.turns = 0;
   s.startedAt = 0;
   s.lastAt = 0;

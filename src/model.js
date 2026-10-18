@@ -23,6 +23,7 @@ export function createSession({ connector, localId, provider, app, source = 'loc
     turns: 0,
     tokens: { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 },
     hourly: {},
+    hourlyUsage: {},
     minutes: new Set(),
     running: false,
     runningAt: 0,
@@ -68,18 +69,42 @@ export function touch(s, ts) {
 
 const TOKEN_KEYS = ['input', 'output', 'cacheWrite', 'cacheRead'];
 
+// Složky hodinové přihrádky `hourlyUsage[hodina][model]`: vstup, výstup, čtení z cache, zápis do
+// cache na 5 minut, zápis do cache na hodinu. Odhad ceny přes API (public/js/cenik-api.js) z nich
+// počítá jen tokeny uvnitř zvoleného období a každý model svou cenou.
+export const USAGE_KEYS = ['input', 'output', 'cacheRead', 'cacheWrite5m', 'cacheWrite1h'];
+
+export function resetTokens(s) {
+  s.tokens = { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
+  s.hourly = {};
+  s.hourlyUsage = {};
+}
+
+// `delta.cacheWrite1h` je ta část `delta.cacheWrite`, která šla do cache na hodinu; `delta.model`
+// model, který tokeny spotřeboval (bez něj platí model session).
 export function addTokens(s, ts, delta, sign = 1) {
   for (const k of TOKEN_KEYS) s.tokens[k] += sign * (delta[k] || 0);
+  if (!ts) return;
+  const k = hourKey(ts);
   // Hlavní metrika je jen vstup + výstup – to je spotřeba, kterou uživatel pozná i ve svém
   // účtu u dodavatele. Zápis do cache je technická režie (stejný kontext se zapisuje znovu
   // s každým tahem) a dokázal hlavní číslo nadsadit skoro devítinásobně; drží se dál v
   // `s.tokens.cacheWrite` a zobrazuje se odděleně ve složení tokenů.
   const amount = sign * ((delta.input || 0) + (delta.output || 0));
-  if (!ts || !amount) return;
-  const k = hourKey(ts);
-  const next = (s.hourly[k] || 0) + amount;
-  if (next > 0) s.hourly[k] = next;
-  else delete s.hourly[k];
+  if (amount) {
+    const next = (s.hourly[k] || 0) + amount;
+    if (next > 0) s.hourly[k] = next;
+    else delete s.hourly[k];
+  }
+  const w1h = delta.cacheWrite1h || 0;
+  const v = [delta.input || 0, delta.output || 0, delta.cacheRead || 0, (delta.cacheWrite || 0) - w1h, w1h];
+  if (!v.some(Boolean)) return;
+  const model = delta.model || s.model || '';
+  const hodina = ((s.hourlyUsage ||= {})[k] ||= {});
+  const b = (hodina[model] ||= [0, 0, 0, 0, 0]);
+  for (let i = 0; i < b.length; i++) b[i] += sign * v[i];
+  if (b.every((x) => x <= 0)) delete hodina[model];
+  if (!Object.keys(hodina).length) delete s.hourlyUsage[k];
 }
 
 export function pushEntry(s, { at, role, text = '', tool, status, questions }) {
@@ -225,6 +250,11 @@ export function summarize(s, now, windowMs, hooky = null) {
   const since = hourKey(now - windowMs);
   const hourly = {};
   for (const [k, v] of Object.entries(s.hourly)) if (k >= since && v > 0) hourly[k] = v;
+  // Kopie: přihrádky se dál mění na místě a odeslaný souhrn se nesmí měnit s nimi.
+  const hourlyUsage = {};
+  for (const [k, modely] of Object.entries(s.hourlyUsage || {})) {
+    if (k >= since) hourlyUsage[k] = Object.fromEntries(Object.entries(modely).map(([m, v]) => [m, [...v]]));
+  }
   const working = status === 'working';
   // Název se zkracuje na hranici slova s „…“; celý (do rozumné délky) nese fullTitle, aby ho
   // rozhraní mohlo ukázat v bublině nad zkráceným textem. Nezkrácený název fullTitle neopakuje.
@@ -255,6 +285,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     turns: s.turns,
     tokens: { ...s.tokens },
     hourly,
+    hourlyUsage,
     spans: spansFromMinutes(s.minutes, now),
     progress: s.progress,
     activity: working ? clip(s.activity, 160) : '',

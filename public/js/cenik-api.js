@@ -1,7 +1,11 @@
+import { hodinaVObdobi } from './format.js';
+
 // Odhad ceny tokenů přes API (projekty: „kolik by to stálo přes API“). Je to ODHAD: Claude Code
-// s předplatným Pro/Max se platí paušálem, ne po tokenech, a přepisy neříkají, jestli šel zápis
-// do cache na 5 minut, nebo na hodinu (počítá se 5minutový). Rozhraní ho proto vždy označuje
+// s předplatným Pro/Max se platí paušálem, ne po tokenech. Rozhraní ho proto vždy označuje
 // slovem „odhad“ a nikdy ho nesčítá s ověřenou útratou (AGENTS.md: metriky se nemíchají).
+// Počítá se z hodinových přihrádek `hourlyUsage` (src/model.js#addTokens): jen tokeny uvnitř
+// období, každý model svou cenou a zápis do cache na hodinu zvlášť. Novější přepisy Claude Code
+// délku cache uvádějí (`usage.cache_creation`); starší jen součet, který se bere jako 5minutový.
 //
 // Zdroj: oficiální ceník Anthropicu https://platform.claude.com/docs/en/about-claude/pricing,
 // ověřeno 7. 10. 2026. USD za milion tokenů: vstup, výstup, čtení z cache, zápis do cache (5 min).
@@ -9,6 +13,9 @@
 // z cache); bere se hodnota z tabulky. Claude Haiku 5.5 má cenu podle délky promptu (nad 100 000
 // tokenů pětkrát vyšší), kterou z přepisu nepoznáme – do odhadu proto nejde a hlásí se jako bez ceníku.
 // Ostatní poskytovatelé (OpenAI, Google…) zatím ověřený ceník nemají a nedohadují se.
+//
+// Zápis do cache na hodinu stojí podle téže stránky (oddíl o násobcích ceny za cache) dvojnásobek
+// základní ceny vstupu u všech modelů – 5minutový 1,25násobek, jak ukazuje i tabulka níže.
 //
 // Při změně ceníku uprav čísla, CENIK_API_OVERENO a záznam v docs/CONNECTORS.md.
 
@@ -47,30 +54,42 @@ export function klicModelu(model) {
 /** Cena modelu [vstup, výstup, čtení cache, zápis cache] v USD/MTok, nebo null bez ověřeného ceníku. */
 export const cenaModelu = (model) => CLAUDE[klicModelu(model)] || null;
 
-const tokenu = (t) => (t?.input || 0) + (t?.output || 0) + (t?.cacheRead || 0) + (t?.cacheWrite || 0);
+export const ZAPIS_1H_NASOBEK = 2;
 
 /**
- * Odhad ceny konverzací přes API v USD. Vrací { usd, sCenou, bezCeny, modelyBezCeny } – tokeny
- * (všechny čtyři druhy) s ověřenou cenou a bez ní, aby rozhraní řeklo, jak velká část odhad kryje.
+ * Odhad ceny konverzací přes API v USD za tokeny od `since` (ms). Vrací { usd, sCenou, bezCeny,
+ * modelyBezCeny } – tokeny (všech pět druhů) s ověřenou cenou a bez ní, aby rozhraní řeklo, jak
+ * velká část odhad kryje. Hodiny bez rozpadu podle modelu (zdroje, které ho nevedou) jdou do
+ * „bez ceny“ – jejich cena se nedohaduje.
  */
-export function odhadCenyApi(sessions) {
+export function odhadCenyApi(sessions, since = -Infinity) {
   let usd = 0;
   let sCenou = 0;
   let bezCeny = 0;
   const modelyBezCeny = new Set();
   for (const s of sessions) {
-    const t = s.tokens;
-    const vsech = tokenu(t);
-    if (!vsech) continue;
-    const cena = cenaModelu(s.model);
-    if (!cena) {
-      bezCeny += vsech;
-      if (s.model) modelyBezCeny.add(s.model);
-      continue;
+    const hodiny = s.hourlyUsage || {};
+    for (const k in hodiny) {
+      if (!hodinaVObdobi(k, since)) continue;
+      for (const [model, [vstup, vystup, cteni, zapis5m, zapis1h]] of Object.entries(hodiny[k])) {
+        const vsech = vstup + vystup + cteni + zapis5m + zapis1h;
+        if (!vsech) continue;
+        const cena = cenaModelu(model);
+        if (!cena) {
+          bezCeny += vsech;
+          if (model) modelyBezCeny.add(model);
+          continue;
+        }
+        const [cVstup, cVystup, cCteni, cZapis] = cena;
+        usd += (vstup * cVstup + vystup * cVystup + cteni * cCteni + zapis5m * cZapis + zapis1h * cVstup * ZAPIS_1H_NASOBEK) / 1e6;
+        sCenou += vsech;
+      }
     }
-    const [vstup, vystup, cteni, zapis] = cena;
-    usd += ((t.input || 0) * vstup + (t.output || 0) * vystup + (t.cacheRead || 0) * cteni + (t.cacheWrite || 0) * zapis) / 1e6;
-    sCenou += vsech;
+    for (const k in s.hourly || {}) {
+      if (hodiny[k] || !(s.hourly[k] > 0) || !hodinaVObdobi(k, since)) continue;
+      bezCeny += s.hourly[k];
+      if (s.model) modelyBezCeny.add(s.model);
+    }
   }
   return { usd, sCenou, bezCeny, modelyBezCeny: [...modelyBezCeny] };
 }

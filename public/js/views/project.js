@@ -5,7 +5,7 @@ import { odhadCenyApi, CENIK_API_OVERENO, CENIK_API_ZDROJ } from '../cenik-api.j
 import { glyph, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy, vetaStavu } from '../ui.js';
-import { sessionTotal, needsYou } from '../data.js';
+import { sessionTotal, tokensSince, needsYou } from '../data.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
@@ -286,12 +286,12 @@ function update() {
       : `<p class="small muted">${tr('Bez složky – do projektu patří jen ručně zařazené konverzace.')}</p>`}`);
 
   const byApp = new Map();
-  for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + sessionTotal(s));
+  for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + tokensSince([s], now - 30 * 864e5));
   const bars = [...byApp.entries()].filter(([, val]) => val > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
   fill(el, 'services', `<div class="side-head"><h3>${tr('Tokeny podle služby')}</h3></div>
     ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : `<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`}`);
 
-  fill(el, 'cost', odhadHtml(st.liveAll.filter((s) => s.lastAt >= now - 30 * 864e5)));
+  fill(el, 'cost', odhadHtml(st.liveAll, now - 30 * 864e5));
 
   const textarea = el.querySelector('[data-notes]');
   if (document.activeElement !== textarea && !v.saveTimer && !v.saving && textarea.value !== p.notes) { textarea.value = p.notes; const t = el.querySelector('[data-brief-tpl]'); if (t) t.hidden = Boolean(p.notes.trim()); }
@@ -299,8 +299,8 @@ function update() {
 
 // Odhad ceny přes API (public/js/cenik-api.js): kolik by tokeny projektu stály, kdyby šly přes API.
 // Vždy s označením „odhad“ a odděleně od skutečné útraty – předplatné se platí paušálem.
-function odhadHtml(sessions) {
-  const o = odhadCenyApi(sessions);
+function odhadHtml(sessions, since) {
+  const o = odhadCenyApi(sessions, since);
   const head = `<div class="side-head"><h3 id="cost-h">${tr('Cena přes API')} <span class="badge">${tr('odhad')}</span></h3></div>`;
   if (!o.sCenou && !o.bezCeny) return `${head}<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`;
   if (!o.sCenou) return `${head}<p class="small muted">${tr('Pro modely v tomto projektu zatím nemám ověřený ceník, a tak cenu neodhaduji.')}</p>`;
