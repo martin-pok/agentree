@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.27',
+    date: '2026-10-18',
+    title: 'Roboti na zemi a obnova přes celou aplikaci',
+    items: [
+      'Všichni roboti stojí nohama na zemi, i Mochi a Rover.',
+      'Nová ikona prázdných stavů v barvách značky.',
+      'Obnova dat je vidět přes celou aplikaci – jemný fialový závoj s logem.',
+      'Pomocník radí, kde upravit vzhled agenta; Odhlásit a Smazat účet jsou na konci sekce Účet a vzhled.',
+    ],
+    en: {
+      title: 'Robots on the ground and app-wide refresh',
+      items: [
+        'Every robot stands on the ground, Mochi and Rover included.',
+        'A new empty-state icon in brand colours.',
+        'Refreshing data shows across the whole app – a subtle violet veil with the logo.',
+        'The assistant tells you where to change an agent’s look; Sign out and Delete account sit at the end of Account and appearance.',
+      ],
+    },
+  },
+  {
     version: '0.46.26',
     date: '2026-10-18',
     title: 'Klidné rozložení a dnešní den v pozdravu',
