@@ -2,9 +2,10 @@
 
 ## 0.46.26 – 2026-10-18 · Klidné rozložení a dnešní den v pozdravu
 
+- **Roboti podle Figmy:** paže vyrůstají z trupu bez mezery, oči jsou přesně uprostřed obličeje a nohy stojí na stínu – u všech devíti postav v aplikaci i na webu.
 - **Otevřené okno už nehýbe stránkou:** hledání, upozornění ani dialog neschovají posuvník tak, aby se obsah posunul doprava a box Stav agentů se přeskládal. Místo pro posuvník je vyhrazené vždy.
 - **Tenký posuvník:** decentní kapsle bez podkladu, výraznější jen pod kurzorem.
-- **Pozdrav vpravo:** místo počtů agentů (ty nese box Stav agentů) dnešní den jako kalendářní značka a pod ním dnešní aktivita – aktivní konverzace a tokeny z přepisů. Na užším okně ve vlastním fialovém pruhu, ať přechod nezasahuje do textu.
+- **Pozdrav vpravo:** místo počtů agentů (ty nese box Stav agentů) dnešní den jako kalendářní značka a pod ním dnešní aktivita – aktivní konverzace a tokeny z přepisů. Fialový přechod je jen jemný náznak, prolíná se rychleji a text zůstává tmavý na světlé ploše.
 
 ## 0.46.25 – 2026-10-18 · Přehled podle Figmy
 

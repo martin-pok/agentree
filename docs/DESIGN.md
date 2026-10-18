@@ -225,12 +225,14 @@ Usazení šatníku na devět postav (rozhodnutí vlastníka 18. 10. 2026, po če
 
 ## Přehled: pozdrav a Stav agentů (Figma, 18. 10. 2026)
 
-- Pozdrav má zprava organický fialový přechod (#6260d8 a #474ae6, rozmazané skvrny, které se
-  pomalu přelévají 22 s a 28 s; při omezení pohybu stojí). Vpravo na syté ploše #474ae6 dnešní
-  den jako kalendářní značka (číslo dne 56 px, vedle měsíc a den v týdnu) a pod ním dnešní
-  aktivita (aktivní konverzace · tokeny z přepisů), jen když nějaká byla. Počty agentů podle
-  stavu sem nepatří – nese je box Stav agentů. Pod 1100 px den ve vlastním fialovém pruhu,
-  skvrny se nekreslí (zasáhly by do věty pod nadpisem).
+- Pozdrav má zprava jemný fialový přechod: dvě rozmazané skvrny s 18–30 % sytosti, které se
+  prolínají (9 s a 12 s; při omezení pohybu stojí). Text zůstává tmavý na světlé ploše. Vpravo
+  dnešní den jako kalendářní značka (číslo dne 56 px v barvě akce, vedle měsíc a den v týdnu)
+  a pod ním dnešní aktivita (aktivní konverzace · tokeny z přepisů), jen když nějaká byla.
+  Počty agentů podle stavu sem nepatří – nese je box Stav agentů.
+- Robot (robot-svg.js, Figma 18. 10. 2026): paže začínají 2 jednotky uvnitř trupu (žádná
+  mezera) s vektorem 14 × 10, oči přesně uprostřed obličeje, chodidla končí na zemi (y 102,5),
+  kde leží střed stínu.
 - Posuvník: tenký (8 px, kapsle 4 px), bez podkladu; místo pro něj je vždy vyhrazené
   (`scrollbar-gutter: stable`), takže zamčená stránka pod oknem neposkočí.
 - Dlaždice Stav agentů: barva stavu (25 % odstínu na kartě) jen když je počet nenulový;

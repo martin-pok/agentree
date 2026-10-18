@@ -10,6 +10,7 @@ export const RELEASES = [
     items: [
       'Otevřené hledání nebo upozornění už stránkou nehne ani nic nepřeskládá.',
       'Tenký, decentní posuvník.',
+      'Roboti mají paže od těla bez mezery, oči uprostřed a stojí nohama na zemi.',
       'Pozdrav vpravo ukazuje dnešní den a dnešní aktivitu – konverzace a tokeny.',
     ],
     en: {
@@ -17,6 +18,7 @@ export const RELEASES = [
       items: [
         'Opening search or notifications no longer shifts or rearranges the page.',
         'A thin, quiet scrollbar.',
+        'Robots’ arms now grow from the body, eyes sit centred and feet stand on the ground.',
         'The greeting now shows today’s date and today’s activity – conversations and tokens.',
       ],
     },

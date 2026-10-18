@@ -40,7 +40,8 @@ export function geometry(type = 'Scout') {
   const [tw, th, tr] = p.torso;
   const tTop = top + h - 5;
   const face = { x: x + 7 * s, top: top + 9 * s, w: w - 14 * s, h: h - 19 * s, r: p.face ?? Math.min(r, 14 * s) };
-  const eyeY = face.top + face.h / 2 - 0.5 * s;
+  // Oči přesně uprostřed obličeje (vyrovnáno ve Figmě 18. 10. 2026).
+  const eyeY = face.top + face.h / 2;
   const es = Math.min(s, face.h / 32);
   return { ...p, s, es, face, head: { x, top, w, h, r }, torso: { x: 54 - tw / 2, top: tTop, w: tw, h: th, r: tr }, eyeY };
 }
@@ -130,24 +131,33 @@ function legs(kind, t) {
   const rx = 54 + t.w / 2 - Math.min(8, t.w / 4);
   switch (kind) {
     case 'treads': return `<rect class="robot-tread" x="${n(54 - t.w / 2 - 6)}" y="${n(bottom + 1)}" width="${n(t.w + 12)}" height="11" rx="5.5"/><circle class="robot-wheel" cx="${n(54 - t.w / 2)}" cy="${n(bottom + 6.5)}" r="2.6"/><circle class="robot-wheel" cx="54" cy="${n(bottom + 6.5)}" r="2.6"/><circle class="robot-wheel" cx="${n(54 + t.w / 2)}" cy="${n(bottom + 6.5)}" r="2.6"/>`;
-    case 'blocks': return `<rect class="robot-foot" x="${n(lx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(99 - bottom)}" rx="2"/><rect class="robot-foot" x="${n(rx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(99 - bottom)}" rx="2"/>`;
-    case 'stout': return `<path class="robot-limbs robot-limbs--stout" d="M${n(lx)} ${n(bottom - 2)}v${n(98 - bottom)}m${n(rx - lx)} -${n(98 - bottom)}v${n(98 - bottom)}"/>`;
+    case 'blocks': return `<rect class="robot-foot" x="${n(lx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/><rect class="robot-foot" x="${n(rx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/>`;
+    case 'stout': return `<path class="robot-limbs robot-limbs--stout" d="M${n(lx)} ${n(bottom - 2)}V${ZEME}M${n(rx)} ${n(bottom - 2)}V${ZEME}"/>`;
     case 'nubs': return `<ellipse class="robot-foot" cx="${n(lx + 2)}" cy="${n(bottom + 3)}" rx="6" ry="4"/><ellipse class="robot-foot" cx="${n(rx - 2)}" cy="${n(bottom + 3)}" rx="6" ry="4"/>`;
-    default: return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 5)}v${n(103 - bottom)}m${n(rx - lx)} -${n(103 - bottom)}v${n(103 - bottom)}"/>`;
+    default: return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 5)}V${ZEME}M${n(rx)} ${n(bottom - 5)}V${ZEME}"/>`;
   }
 }
 
-// `ruce: 'siroke'` – paže víc do stran (pozdrav na Přehledu, vyladěno ve Figmě 18. 10. 2026).
-export function robot(type = 'Scout', { ruce } = {}) {
+// Paže vyrůstají z trupu (začátek schovaný pod jeho hranou, žádná mezera) a míří šikmo do stran.
+// Tvar podle Figmy (vlastník, 18. 10. 2026): rameno 2 jednotky uvnitř trupu, 5 pod jeho horní
+// hranou, vektor paže 14 × 10. Šatník z toho bere konce paží (rukavice, tlapky).
+export function paze(g) {
+  const t = g.torso;
+  const k = g.legs === 'nubs' ? 5 / 9 : 1;
+  const dx = 14 * k;
+  const dy = 10 * k;
+  const y = t.top + 5;
+  return { levo: [t.x + 2, y, t.x + 2 - dx, y + dy], pravo: [t.x + t.w - 2, y, t.x + t.w - 2 + dx, y + dy] };
+}
+
+// Země: chodidla končí na 102,5, kde leží střed stínu – robot stojí, nevznáší se.
+const ZEME = 102.5;
+
+export function robot(type = 'Scout') {
   const kind = POSTAVY[type] ? type : 'Scout';
   const g = geometry(kind);
   const { head: h, torso: t, s } = g;
-  const shoulderY = t.top + 6;
-  const lx = t.x - 5;
-  const rxx = t.x + t.w + 5;
-  const arm = g.legs === 'nubs' ? 5 : 9;
-  const armX = ruce === 'siroke' ? arm * 1.55 : arm * 0.78;
-  const armY = ruce === 'siroke' ? n(arm * 1.1) : arm;
+  const { levo: [lx, shoulderY, lex, ley], pravo: [rxx, , rex, rey] } = paze(g);
   const f = g.face;
   const ground = g.legs === 'treads' ? t.top + t.h + 12 : g.legs === 'nubs' ? t.top + t.h + 7 : 99;
   const shadow = Math.max(18, Math.min(30, Math.max(t.w, h.w * 0.55) / 1.7));
@@ -155,8 +165,8 @@ export function robot(type = 'Scout', { ruce } = {}) {
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
     + `<ellipse class="robot-shadow" cx="54" cy="${n(Math.max(104, ground + 4))}" rx="${n(shadow)}" ry="4"/>`
     + `<g class="robot-body">${legs(g.legs, t)}`
-    + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}l-${n(armX)} ${armY}"/>`
-    + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}l${n(armX)} ${armY}"/>`
+    + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
+    + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`
     + `<rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
     + (g.core === 'star' ? `<g class="robot-core">${hvezda(54, t.top + t.h / 2 - 1, 4.4)}</g>` : `<circle class="robot-core" cx="54" cy="${n(t.top + t.h / 2 - 1)}" r="3"/>`)
     + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}</g>`
