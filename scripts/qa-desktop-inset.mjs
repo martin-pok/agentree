@@ -49,7 +49,8 @@ for (const [engine, launcher] of [['chromium', chromium], ['webkit', webkit]]) {
             padding: parseFloat(getComputedStyle(main).paddingTop),
             sidebarTop: sidebar.top,
             sidebarBottom: sidebar.bottom,
-            titleTop: title.top,
+            // Tlačítko zpět stojí na telefonu na vlastním řádku nad nadpisem – hlavička pak začíná jím.
+            titleTop: Math.min(title.top, ...[document.querySelector('#page-back:not([hidden])')].filter(Boolean).map((el) => el.getBoundingClientRect().top)),
             titleBottom: title.bottom,
             actions: actions.map(({ top, bottom, left, right }) => ({ top, bottom, left, right })),
             title: { left: title.left, right: title.right },

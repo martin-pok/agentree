@@ -859,6 +859,8 @@ html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill
   .seg:not(.seg--sm):not(.seg--light) button { height: 40px; min-height: 40px; }
   .search-btn { padding: 0 18px 0 16px; }
   .search-field input { height: 44px; }
+  /* Nadpis má výšku řady akcí (44 px), aby se v liště nevycentroval níž než začátek obsahu. */
+  .topbar .page-title { line-height: 44px; }
 }
 .pm-msg .pm-zdroj { display: block; margin-top: 8px; color: var(--mute); font-size: 12px; line-height: 1.4; }
 
