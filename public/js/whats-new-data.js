@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.24',
+    date: '2026-10-18',
+    title: 'Šatník na míru a agenti v cloudu',
+    items: [
+      'Šatník má 14 nových kousků – od baretu a vikingské helmy po převleky rytíře, žabáka a včelky.',
+      'Čepice sedí na temeni a brýle přesně na očích u všech postav a barev.',
+      'Agenti pracující v cloudu (claude.ai/code) mají ikonu mraku, místní agenti notebook.',
+      'Relaci Claude Code otevřenou v Chromu na claude.ai/code uvidíš živě přes rozšíření (Beta).',
+    ],
+    en: {
+      title: 'Tailored wardrobe and cloud agents',
+      items: [
+        'The wardrobe has 14 new pieces – from a beret and a viking helmet to knight, frog and bee costumes.',
+        'Hats sit on top of the head and glasses exactly on the eyes for every character and colour.',
+        'Agents working in the cloud (claude.ai/code) show a cloud icon, local agents a laptop.',
+        'A Claude Code session open in Chrome on claude.ai/code now shows up live through the extension (Beta).',
+      ],
+    },
+  },
+  {
     version: '0.46.23',
     date: '2026-10-18',
     title: 'Čísla a stavy, kterým se dá věřit',
