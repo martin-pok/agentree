@@ -168,6 +168,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         const zaznamy = connectors['cloud-billing'].autoEntries();
         return utrataPoMesicich(zaznamy, { mesice, prevod: (e) => convert(e.amount, e.currency, sp), mena: sp.currency || 'CZK' });
       },
+      // Služby s klíčem, jejichž náklady se nepodařilo načíst – jejich řádky v účtu se nemažou.
+      utrataNezjistena: () => connectors['cloud-billing'].failedServices(),
     },
   });
 
@@ -552,7 +554,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const sp = datastore.data.spend;
     const sources = connectors['cloud-billing'].providers();
     const connected = Object.values(sources).filter((source) => source.state === 'connected');
-    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    // Zdroj s klíčem, jehož náklady se nepodařilo načíst. Bez něj by Útrata neúplný součet ukázala
+    // jako celý (jeden zdroj selže, druhý platí) nebo selhání jako „nepřipojeno“ – nevíme ≠ nic.
+    const failed = Object.entries(sources).filter(([, source]) => source.state === 'error').map(([id, source]) => ({ id, detail: source.detail || '' }));
+    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null, failed }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {

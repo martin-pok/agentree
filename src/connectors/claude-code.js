@@ -352,11 +352,23 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
         provider: 'anthropic', app: 'Claude', label: model ? `${kind.label} · ${model}` : kind.label,
         usedPercent: null, windowMinutes: null, resetsAt, reached: true, plan: null, text, at: ts, model,
       });
+      return;
     }
+    // Jiná chyba API (500, přetížení, vypršelé přihlášení, příliš dlouhý prompt…) tah ukončila bez
+    // odpovědi. Dřív z toho bylo „Hotovo, čeká na další zadání“ – teď „selhalo“ s textem chyby, dokud
+    // nepřijde nové zadání nebo úspěšná odpověď. Zrušený požadavek není selhání, ale přerušení.
+    // Chyba pomocníka zapsaná v rodičovském přepisu (isSidechain) rodiče neshazuje.
+    if (o.isSidechain && !st.subagentFile) return;
+    if (/^request was aborted/i.test(text)) {
+      s.prerusenoAt = ts || Date.now();
+      return;
+    }
+    s.failure = { text, at: ts, kind: 'chyba' };
     return;
   }
 
   if (s.limit && ts > s.limit.at) s.limit = null;
+  if (s.failure?.kind === 'chyba' && ts > s.failure.at) s.failure = null;
   onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null, s);
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 

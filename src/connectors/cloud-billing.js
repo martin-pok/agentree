@@ -65,8 +65,11 @@ async function fetchAnthropicPages(fetchImpl, pathname, key, redirect, groupBy) 
 // Usage s limitem 180 je navíc mimo specifikaci (max 31) a vracel chybu.
 export const OPENAI_LIMIT = { costs: 180, usage: 31 };
 
+// Začátek je zarovnaný na půlnoc UTC. Anthropic koše na začátek dne přichytí sám, u OpenAI
+// dokumentace jen říká, že `start_time` je včetně – kdyby koše začínaly v čase dotazu (např. ve
+// 22:06), denní náklad by se připsal dni, kdy koš začal, a ranní útrata by spadla do včerejška.
 async function fetchOpenAIPages(fetchImpl, pathname, key, redirect, limit, groupBy) {
-  const start = String(Math.floor((Date.now() - 180 * DAY) / 1000));
+  const start = String(Math.floor((Date.now() - 180 * DAY) / DAY) * (DAY / 1000));
   return fetchPages(fetchImpl, {
     vendor: 'OpenAI',
     redirect,
@@ -347,6 +350,11 @@ export function createCloudBillingConnector(ctx, { fetchImpl = globalThis.fetch 
         }
       }
       return out;
+    },
+    // Služby, jejichž náklady se při posledním pokusu nepodařilo načíst (klíč je, odpověď ne).
+    // `autoEntries()` je pro ně prázdné – to ale znamená „nezjištěno“, ne „nic se neutratilo“.
+    failedServices() {
+      return [['openai-admin', 'openai-api'], ['anthropic-admin', 'anthropic-api']].filter(([id]) => state[id].state === 'error').map(([, service]) => service);
     },
     // Rozpad útraty a tokenů po modelech: jeden záznam za službu, den (UTC) a model. Částka v USD
     // nezaokrouhlená (součet za den = denní součet nákladů), tokens = null, když spotřebu tokenů

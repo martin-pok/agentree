@@ -118,7 +118,8 @@ export class AlertEngine {
         key: `failed:${s.id}:${s.failure?.at || s.lastAt}`,
         level: 'critical',
         kind: 'failed',
-        title: `${s.app}: spuštění selhalo`,
+        // Chyba API uprostřed konverzace (src/connectors/claude-code.js) není selhání spuštění.
+        title: s.failure?.kind === 'chyba' ? `${s.app}: skončil chybou` : `${s.app}: spuštění selhalo`,
         body: s.reason || s.title,
         sessionId: s.id,
       });

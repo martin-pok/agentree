@@ -1511,6 +1511,7 @@ html.is-cloud body { background: var(--paper); }
 .spend-stats .is-over { color: var(--velvet-ink); }
 .set-note.budget-api-note { margin: 0 0 16px; }
 .spend-stats .spend-note { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
+.spend-stats .spend-note--warn { padding: 8px 12px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
 .budget-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
 .budget-card { padding: 18px 20px; display: grid; gap: 10px; }
 .budget-top { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }

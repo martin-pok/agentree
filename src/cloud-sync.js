@@ -223,8 +223,11 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
   // zdroj, který už není napojený. Upsert řádky jen přepisuje, nemaže – bez úklidu by na webu zůstala
   // stará čísla, jako by platila. Tokeny po dnech se neuklízejí: den, který Mac už nevidí, je pořád
   // pravdivá historie. Útrata se uklízí jen v měsících, které Mac počítá (zdroje.mesiceUtraty).
+  // Služba, jejíž náklady se teď nepodařilo načíst (Admin API odpovědělo 401/429/5xx…), se neuklízí:
+  // prázdné položky znamenají „nevíme“, ne „nic se neutratilo“ – smazání by web ukázal jako nulu.
   async function uklid(token, deviceId, balik) {
     const mesice = (zdroje.mesiceUtraty?.() || []).map((m) => `${m}-01`).sort();
+    const nezjistene = new Set((zdroje.utrataNezjistena?.() || []).map(idCloudu));
     const tabulky = {
       spend_monthly: { klice: ['month', 'service', 'kind', 'currency'], filtr: mesice.length ? `&month=gte.${mesice[0]}` : null },
       limits: { klice: ['provider', 'window_key'], filtr: '' },
@@ -237,6 +240,7 @@ export function createCloudSync({ config, ucet, datastore, zdroje, verze, fetchI
       const vUctu = await volej(`/rest/v1/${tabulka}?device_id=eq.${encodeURIComponent(deviceId)}&select=${klice.join(',')}${filtr}`, { token });
       for (const r of Array.isArray(vUctu) ? vUctu : []) {
         if (ted.has(klic(r))) continue;
+        if (tabulka === 'spend_monthly' && nezjistene.has(r.service)) continue;
         const podminka = klice.map((k) => `&${k}=eq.${encodeURIComponent(String(r[k]))}`).join('');
         await volej(`/rest/v1/${tabulka}?device_id=eq.${encodeURIComponent(deviceId)}${podminka}`, { method: 'DELETE', token, prefer: 'return=minimal' });
       }

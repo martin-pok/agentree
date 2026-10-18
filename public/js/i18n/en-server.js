@@ -44,6 +44,7 @@ export default {
   "V pořádku, nikdo nepracuje": "All fine, nobody is working",
   // src/alerts.js
   "{0}: spuštění selhalo": "{0}: start failed",
+  "{0}: skončil chybou": "{0}: ended with an error",
   "{0} potřebuje tvé rozhodnutí": "{0} needs your decision",
   "{0}: vyčerpaný limit": "{0}: limit reached",
   "{0} dokončil úlohu": "{0} finished a task",

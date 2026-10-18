@@ -7,7 +7,7 @@ import fs from 'node:fs/promises';
 globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
 const { spendSummary, monthlyTotals, SERVICES, KINDS, CURRENCIES, DEFAULT_SPEND } = await import('../src/spend.js');
 const { rateInfo } = await import('../src/rates.js');
-const { ledgerHtml, plansHtml, providerAccountsHtml } = await import('../public/js/views/spend.js');
+const { ledgerHtml, plansHtml, providerAccountsHtml, spendHeroHtml } = await import('../public/js/views/spend.js');
 
 const NOW = new Date(2026, 9, 12, 10).getTime(); // 12. 10. 2026
 const ledger = [
@@ -176,8 +176,9 @@ test('Útrata: u ručních záznamů i u součtů stojí, že se nepočítají; 
   const html = ledgerHtml(payload(spend));
   assert.match(html, /Starší ruční záznamy<\/span><span class="ledger-group-note">nepočítají se do součtů ani rozpočtu<\/span>/);
   const kod = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
-  const hero = kod.slice(kod.indexOf("fill(el, 'hero'"), kod.indexOf("fill(el, 'plans'"));
-  assert.match(hero, /sp\.ledger\?\.length \? `<p class="spend-note">\$\{tr\('Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.'\)\}<\/p>` : ''/);
+  const sp = { ...payload(spend), billing: { connected: true, at: NOW, failed: [] } };
+  assert.match(spendHeroHtml(sp), /<p class="spend-note">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/p>/);
+  assert.doesNotMatch(spendHeroHtml({ ...sp, ledger: [] }), /Starší ruční záznamy/);
   const dialog = kod.slice(kod.indexOf('function openBudgets('), kod.indexOf('onSubmit:', kod.indexOf('function openBudgets(')));
   assert.match(dialog, /sp\.billing\?\.connected === false \? `<p class="set-note budget-api-note" data-budget-api>\$\{tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\)\}/);
 });

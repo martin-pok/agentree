@@ -13,7 +13,7 @@ const ZARIZENI = '11111111-2222-4333-8444-555555555555';
 const NYNI = Date.UTC(2026, 9, 5, 12);
 
 // Atrapa PostgREST. `zarizeniChyba`: jak dlouho založení zařízení selhává (check constraint apod.).
-function atrapa({ datastore, zarizeniChyba = null, profil = false, vUctu = {} } = {}) {
+function atrapa({ datastore, zarizeniChyba = null, profil = false, vUctu = {}, nezjistene = [] } = {}) {
   const volani = [];
   const stav = { zarizeniChyba };
   const fetchImpl = async (url, init) => {
@@ -43,6 +43,7 @@ function atrapa({ datastore, zarizeniChyba = null, profil = false, vUctu = {} } 
       utrata: () => [{ month: '2026-10-01', service: 'openai-api', kind: 'api', currency: 'CZK', amount: 230 }],
       limity: () => [{ id: 'claude-code:five_hour', provider: 'anthropic', usedPercent: 40, at: NYNI }],
       konektory: () => [{ id: 'claude-code', state: 'connected', lastEventAt: NYNI }],
+      utrataNezjistena: () => nezjistene,
     },
   });
   return { s, volani, ds, stav };
@@ -122,6 +123,26 @@ test('úklid: řádky, které by počítač už neposlal, z účtu zmizí – ú
   const iZapis = volani.findIndex((v) => v.method === 'POST' && v.tabulka === 'spend_monthly');
   const iMazani = volani.findIndex((v) => v.method === 'DELETE');
   assert.ok(iZapis < iMazani);
+});
+
+// Regrese: když Admin API Anthropicu odpoví chybou (401, 429, 5xx), konektor jeho náklady vyřadí
+// a počítač by je neposlal. Úklid je pak smazal z účtu a web ukázal útratu Anthropicu jako nulu.
+test('úklid: služba, jejíž náklady se nepodařilo načíst, se z účtu nemaže', async () => {
+  const { s, volani } = atrapa({
+    datastore: { data: { cloud: { syncEnabled: true, syncAt: 0, devices: { [UZIVATEL]: ZARIZENI } } }, save() {} },
+    nezjistene: ['anthropic-api'],
+    vUctu: {
+      spend_monthly: [
+        { month: '2026-09-01', service: 'anthropic-api', kind: 'api', currency: 'CZK' },
+        { month: '2026-10-01', service: 'anthropic-api', kind: 'api', currency: 'CZK' },
+        { month: '2026-10-01', service: 'openai-api', kind: 'api', currency: 'EUR' },
+      ],
+    },
+  });
+  const st = await s.synchronizuj();
+  assert.equal(st.ok, true, st.chyba);
+  const smazane = volani.filter((v) => v.method === 'DELETE' && v.tabulka === 'spend_monthly').map((v) => v.query.service);
+  assert.deepEqual(smazane, ['eq.openai-api'], 'starou měnu u načtené služby uklidit, nezjištěnou službu nechat');
 });
 
 test('„Synchronizovat teď“: úspěch jen tehdy, když souhrny opravdu odešly', async () => {

@@ -238,3 +238,45 @@ test('Pomocný agent: přepis v podsložce subagents se čte celý a váže se n
     await s.close();
   }
 });
+
+// Regrese: tah, který skončil chybou API (500, přetížení, vypršelé přihlášení…), se hlásil jako
+// „Hotovo, čeká na další zadání“ (done: true). Selhání není dokončení.
+test('chyba API mimo limit: „selhalo“ s textem chyby, nové zadání nebo úspěšná odpověď ho zruší', () => {
+  const chyba = 'API Error: 500 {"type":"error","error":{"type":"api_error","message":"Internal server error"}}';
+  const { s, st } = feed([
+    { type: 'user', timestamp: at(0), message: { content: 'Oprav to' } },
+    { type: 'assistant', timestamp: at(2), isApiErrorMessage: true, message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: chyba }] } },
+  ]);
+  const d = deriveStatus(s, T0 + 10e3);
+  assert.equal(d.status, 'failed');
+  assert.equal(d.reason, chyba);
+  assert.equal(d.done ?? false, false);
+  assert.equal(s.failure.kind, 'chyba');
+  // Úspěšná odpověď později (např. pokračování) selhání ruší.
+  applyClaudeLine(st, s, { type: 'assistant', timestamp: at(20), message: { id: 'm2', model: 'claude-opus-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo.' }], usage: { input_tokens: 1, output_tokens: 1 } } });
+  assert.equal(s.failure, null);
+  assert.equal(deriveStatus(s, T0 + 25e3).status, 'waiting');
+
+  // Nové zadání po selhání: agent zase pracuje.
+  const b = feed([
+    { type: 'user', timestamp: at(0), message: { content: 'Oprav to' } },
+    { type: 'assistant', timestamp: at(2), isApiErrorMessage: true, message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: 'API Error: Request timed out.' }] } },
+    { type: 'user', timestamp: at(30), message: { content: 'Zkus to znovu' } },
+  ]);
+  assert.equal(deriveStatus(b.s, T0 + 31e3).status, 'working');
+
+  // Zrušený požadavek je přerušení, ne selhání ani „hotovo“.
+  const c = feed([
+    { type: 'user', timestamp: at(0), message: { content: 'Oprav to' } },
+    { type: 'assistant', timestamp: at(2), isApiErrorMessage: true, message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: 'Request was aborted.' }] } },
+  ]);
+  const dc = deriveStatus(c.s, T0 + 10e3);
+  assert.deepEqual([dc.status, dc.done, dc.reason], ['waiting', false, 'Přerušeno, čeká na další zadání']);
+
+  // Chyba pomocníka v rodičovském přepisu rodiče neshazuje.
+  const d2 = feed([
+    { type: 'user', timestamp: at(0), message: { content: 'Oprav to' } },
+    { type: 'assistant', timestamp: at(2), isSidechain: true, isApiErrorMessage: true, message: { id: 'e1', model: '<synthetic>', content: [{ type: 'text', text: 'API Error: 529 Overloaded' }] } },
+  ]);
+  assert.equal(d2.s.failure, null);
+});
