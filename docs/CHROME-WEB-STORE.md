@@ -207,3 +207,16 @@ The extension only sends conversation status and message counts to http://127.0.
   vlastní klíč. Na verzi aplikace 0.31.4 a starší se verze z obchodu spáruje
   jednorázovým kódem. Kdo měl ruční kopii, po instalaci z obchodu ji v `chrome://extensions` odebere,
   ať se konverzace nehlásí dvakrát.
+
+## Automatické nahrání po zveřejnění vydání
+
+Workflow `.github/workflows/chrome-web-store.yml` se spustí po každém zveřejnění vydání (i ručně
+s tagem). Stáhne ZIP rozšíření z příloh, ověří ho proti `SHA256SUMS.txt` a verzi manifestu,
+nahraje ho do položky `hocghhpigfilngdajmafkdcljdedanch` přes Chrome Web Store API a odešle ke
+kontrole. Zveřejnění v obchodě pak závisí jen na kontrole Googlu.
+
+Jednorázově potřebuje tři tajné hodnoty repozitáře (Settings → Secrets and variables → Actions):
+`CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` – OAuth klient typu Desktop v Google Cloud
+projektu se zapnutým Chrome Web Store API, přihlášený účtem vydavatele (scope
+`https://www.googleapis.com/auth/chromewebstore`). Bez nich workflow jen ohlásí varování a nic
+nenahraje. Obrázky v záznamu obchodu API nemění; ty se mění ručně v Developer Dashboard.
