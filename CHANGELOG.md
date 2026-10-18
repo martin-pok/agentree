@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydáno
+
+- **Automatická kontrola WCAG 2.2 A/AA (axe-core) v CI** (`npm run qa:axe`): všech 8 obrazovek ve světlém i tmavém vzhledu na počítači i telefonu, selže na každém porušení. Při prvním běhu našla tlačítko Hledat bez přístupného názvu na telefonu (vidět je jen lupa) – opraveno, má `aria-label`.
+
 ## 0.46.18 – 2026-10-18 · AI pomocník, devět postav, 16 barev a tlačítko zpět
 
 - **Pomocník odpovídá jako AI.** Na otázky k aplikaci odpoví vlastními slovy, česky i anglicky a s ohledem na předchozí zprávy, jen ze znalostní báze Agenteeq (návody průvodce + popis stránek); pod odpovědí nabídne tlačítka na správné místo v aplikaci. Zdarma: použije Ollamu na tomto počítači, jinak Claude Code na předplatné uživatele (`claude -p` s modelem Haiku, bez nástrojů, bez MCP, bez hooků a bez uložení konverzace, v prázdné dočasné složce; dotaz se neobjeví mezi agenty). Konverzace uživatele do modelu nikdy nejdou. Pod odpovědí je napsané, kdo odpověděl. Vypíná se v Nastavení → Účet a vzhled → Pomocník odpovídá jako AI; z telefonu Claude Code nespustí. Bez AI na počítači odpovídá průvodce jako dřív. „Co na mě čeká?“ a hledání starého chatu zůstávají přesné (živý stav, přepisy na disku). `src/pomocnik-ai.js`, `test/pomocnik-ai.test.mjs`.
