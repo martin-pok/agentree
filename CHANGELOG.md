@@ -1,6 +1,6 @@
 # Changelog
 
-## Nevydáno
+## 0.46.20 – 2026-10-18 · Pomocník ve značkovém přechodu
 
 - **Pomocník: otevřené okno ve značkovém fialovém přechodu.** Hlavička v přechodu jako plovoucí tlačítko, s hlavou ze značky v průsvitném kroužku; odpovědi na kartě s fialovým okrajem, moje zprávy v přechodu, návrhy otázek jako fialové kapsle, pole s fialovým prstencem a tlačítko Poslat ve stejném přechodu jako tlačítko pomocníka. Světlý i tmavý vzhled.
 

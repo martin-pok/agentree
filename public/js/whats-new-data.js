@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.20',
+    date: '2026-10-18',
+    title: 'Pomocník v novém kabátě',
+    items: [
+      'Okno pomocníka je ve fialovém přechodu značky, stejně jako jeho tlačítko – s hlavou robota v hlavičce, odpověďmi na kartách a tvými zprávami v přechodu.',
+      'Návrhy otázek jsou výrazné kapsle a pole pro dotaz se při psaní zvýrazní.',
+    ],
+    en: {
+      title: 'The assistant gets a new look',
+      items: [
+        'The assistant window uses the brand purple gradient like its button – with the robot head in the header, answers on cards and your messages in the gradient.',
+        'Suggested questions are clear capsules and the question field lights up while you type.',
+      ],
+    },
+  },
+  {
     version: '0.46.19',
     date: '2026-10-18',
     title: 'Útrata v užším okně a rychlejší první agent',
