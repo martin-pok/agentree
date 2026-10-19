@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.29',
+    date: '2026-10-19',
+    title: 'Pomocník uhne při čtení',
+    items: [
+      'Na telefonu tlačítko Pomocníka při posouvání dolů uhne a nezakrývá karty.',
+      'Ve filtru projektů je místo useknuté věty krátké „Založit projekt“.',
+      'Kredity dvou účtů Codexu se už nemíchají do jedné řady.',
+    ],
+    en: {
+      title: 'The assistant steps aside while you read',
+      items: [
+        'On phones the assistant button slides away while you scroll down, so it no longer covers cards.',
+        'The project filter shows a short “Create project” instead of a cut-off sentence.',
+        'Credits of two Codex accounts are no longer mixed into one series.',
+      ],
+    },
+  },
+  {
     version: '0.46.28',
     date: '2026-10-19',
     title: 'Pravdivá data i při výpadku',

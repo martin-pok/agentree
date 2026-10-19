@@ -253,17 +253,18 @@ export function createCodexConnector(ctx) {
   // Ověřené účty podle domova (src/app.js z `account/rateLimits/read` téhož CODEX_HOME). Snímek
   // limitů v přepisu účet nenese: se dvěma různými účty by se okna jedné licence přepisovala
   // druhou. Snímek se proto přiřadí účtu svého domova; když to nejde, do limitů se nezapíše
-  // (čísla každého účtu dodá app-server zvlášť). S jedním účtem zůstává sdílený klíč.
+  // (čísla každého účtu dodá app-server zvlášť). S jedním účtem zůstává sdílený klíč. Řada kreditů
+  // je jen jedna, proto se se dvěma účty z přepisu nezapisuje vůbec.
   let uctyDomovu = new Map();
   const ucetSnimku = (st) => {
     const ruzne = new Set(uctyDomovu.values());
-    if (ruzne.size <= 1) return { accountId: null, nejasne: false };
+    if (ruzne.size <= 1) return { accountId: null, nejasne: false, viceUctu: false };
     const accountId = uctyDomovu.get(st?.domov) || null;
-    return { accountId, nejasne: !accountId };
+    return { accountId, nejasne: !accountId, viceUctu: true };
   };
 
   function rateLimits(s, rl, ts, st) {
-    const { accountId, nejasne } = ucetSnimku(st);
+    const { accountId, nejasne, viceUctu } = ucetSnimku(st);
     for (const slot of nejasne ? [] : ['primary', 'secondary']) {
       const w = rl[slot];
       if (!w || typeof w.used_percent !== 'number') continue;
@@ -287,7 +288,7 @@ export function createCodexConnector(ctx) {
     }
     const c = rl.credits;
     const zustatek = zustatekKreditu(c);
-    if (zustatek !== null && !nejasne) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
+    if (zustatek !== null && !viceUctu) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
     // The snapshot can report an exhausted primary/secondary window without
     // rate_limit_reached_type. The global quota tile already knows this, but
     // without a session limit deriveStatus wrongly says "čeká na zadání".
@@ -490,6 +491,9 @@ export function createCodexConnector(ctx) {
   async function scanCreditHistory() {
     if (historieKreditu) return 0;
     historieKreditu = true;
+    // Řada kreditů je jedna pro Codex; se dvěma různými účty by do ní padaly odečty obou.
+    // Aktuální zůstatek každého účtu pak dodá app-server zvlášť (src/app.js).
+    if (new Set(uctyDomovu.values()).size > 1) return 0;
     const hranice = Date.now() - windowMs;
     let bodu = 0;
     const odecty = [];

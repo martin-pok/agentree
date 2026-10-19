@@ -177,6 +177,27 @@ function zavri({ fokus = true } = {}) {
   if (fokus) el.querySelector('.pm-fab').focus({ preventScroll: true });
 }
 
+// Na telefonu tlačítko při čtení (posun dolů) ustoupí z cesty, aby nezakrývalo pravý okraj karet;
+// vrátí se při posunu nahoru a na konci stránky. Otevřený chat ani fokus na tlačítku neustupují.
+function ustupPriPosunu() {
+  const uzky = window.matchMedia('(max-width: 880px)');
+  let posledni = window.scrollY;
+  let ceka = false;
+  const prepocti = () => {
+    ceka = false;
+    const y = window.scrollY;
+    const dole = y + window.innerHeight >= document.documentElement.scrollHeight - 8;
+    const otevreno = !el.querySelector('.pm-okno').hidden;
+    const fokus = el.contains(document.activeElement);
+    const ustup = uzky.matches && !otevreno && !fokus && !dole && y > 24 && y > posledni + 4;
+    if (ustup) el.classList.add('pm-ustup');
+    else if (y < posledni - 4 || dole || otevreno || fokus || !uzky.matches || y <= 24) el.classList.remove('pm-ustup');
+    posledni = y;
+  };
+  window.addEventListener('scroll', () => { if (!ceka) { ceka = true; requestAnimationFrame(prepocti); } }, { passive: true });
+  el.addEventListener('focusin', () => el.classList.remove('pm-ustup'));
+}
+
 function sestav() {
   nactiZpravy();
   el = document.createElement('div');
@@ -235,6 +256,7 @@ function sestav() {
   vstup.addEventListener('input', () => { vstup.style.height = ''; vstup.style.height = `${Math.min(vstup.scrollHeight, 120)}px`; });
   el.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el.querySelector('.pm-okno').hidden) { e.stopPropagation(); zavri(); } });
   document.body.append(el);
+  ustupPriPosunu();
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
 }
 

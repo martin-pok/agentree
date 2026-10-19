@@ -101,7 +101,7 @@ test('Codex: dva domovy s různými účty si okna nepřepisují, snímek bez ú
   const prepis = (domov, id, pct) => {
     const f = path.join(domov, 'sessions', '2026', '10', '19', `rollout-2026-10-19T10-00-00-${id}.jsonl`);
     fs.mkdirSync(path.dirname(f), { recursive: true });
-    const rl = { limit_id: 'codex', primary: { used_percent: pct, window_minutes: 300, resets_at: Math.floor(now / 1000) + 3600 } };
+    const rl = { limit_id: 'codex', primary: { used_percent: pct, window_minutes: 300, resets_at: Math.floor(now / 1000) + 3600 }, credits: { has_credits: true, balance: String(pct) } };
     fs.writeFileSync(f, [{ timestamp: ts(0), type: 'session_meta', payload: { id, originator: 'codex_cli_rs' } }, { timestamp: ts(2), type: 'event_msg', payload: { type: 'token_count', rate_limits: rl } }].map((r) => JSON.stringify(r)).join('\n') + '\n');
   };
   prepis(path.join(home, '.codex'), '01a0546a-6679-76d3-9454-ba9f37a24016', 20);
@@ -112,6 +112,8 @@ test('Codex: dva domovy s různými účty si okna nepřepisují, snímek bez ú
   await c.start(); c.stop();
   const okna = store.limitList().filter((l) => l.windowMinutes === 300);
   assert.deepEqual(okna.map((l) => [l.accountId, l.usedPercent]).sort(), [['codex:aaaa', 20], ['codex:bbbb', 80]]);
+  // Řada kreditů je jedna: zůstatky dvou účtů se do ní nemíchají (každý ukazuje app-server).
+  assert.equal(store.hasCredits('codex'), false);
 
   // Druhý domov bez ověřeného účtu: jeho 80 % nesmí nikde vystupovat jako limit.
   const store2 = new Store({ config, datastore: fakeDatastore() });

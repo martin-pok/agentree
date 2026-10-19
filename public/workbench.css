@@ -465,7 +465,11 @@ body:has(> .pomocnik:not([hidden])) .main { padding-bottom: calc(var(--pm-spodek
   .pomocnik { right: 16px; }
   .pm-okno { height: min(560px, calc(100dvh - 220px)); }
 }
-@media (prefers-reduced-motion: reduce) { .pm-okno { animation: none; } .pm-fab { transition: none; } .pm-pise i { animation: none; opacity: .6; } }
+/* Ustoupení při čtení na telefonu (robot-guide.js#ustupPriPosunu): tlačítko sjede pod spodní lištu. */
+.pomocnik { transition: transform var(--motion-move) var(--ease), opacity var(--motion-move) var(--ease); }
+.pomocnik.pm-ustup { transform: translateY(calc(var(--pm-fab) + 24px)); opacity: 0; pointer-events: none; }
+.pomocnik.pm-ustup > * { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .pm-okno { animation: none; } .pm-fab { transition: none; } .pomocnik { transition: opacity var(--motion-move) linear; } .pomocnik.pm-ustup { transform: none; } .pm-pise i { animation: none; opacity: .6; } }
 
 /* Levý panel jako plovoucí deska se zaoblenými rohy a odstupem od kraje okna (ne useknutý). */
 @media (min-width: 881px) {
