@@ -113,12 +113,25 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
    počet i popisek zůstávají v barvě textu, takže kontrast nezávisí na odstínu. */
 .zdravi-pocty a { justify-items: center; text-align: center; padding: 14px 12px; }
 .zdravi-pocty span { font-size: var(--type-body); color: var(--ink-2); }
-.zdravi-pocty a[data-ton] b { color: var(--ink); }
-.zdravi-pocty a[data-ton='pracuje'] { background: color-mix(in srgb, #00d632 25%, var(--card)); }
-.zdravi-pocty a[data-ton='pozor'] { background: color-mix(in srgb, #ec8200 25%, var(--card)); }
-.zdravi-pocty a[data-ton='problem'] { background: color-mix(in srgb, #ff0005 25%, var(--card)); }
-.zdravi-pocty a[data-ton='limit'] { background: color-mix(in srgb, #f8d700 25%, var(--card)); }
-.zdravi-pocty a[data-ton]:hover { filter: saturate(1.15) brightness(.98); }
+/* Stav ve dlaždici: tón jen jako přechod 45° z barvy stavu do neutrální plochy a číslo v jeho
+   barvě. Žádná obvodová ani horní linka – dlaždici drží plocha, ne rámeček. Tóny jsou tokeny
+   motivu (Den i Noc), číslo má -ink variantu kvůli kontrastu textu. */
+.zdravi-pocty a { --ton: var(--ink); --ton-text: var(--ink); position: relative; isolation: isolate; transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
+.zdravi-pocty a[data-ton='pracuje'] { --ton: var(--teal); --ton-text: var(--teal-ink); }
+.zdravi-pocty a[data-ton='pozor'] { --ton: var(--sky); --ton-text: var(--sky); }
+.zdravi-pocty a[data-ton='problem'] { --ton: var(--velvet); --ton-text: var(--velvet-ink); }
+.zdravi-pocty a[data-ton='limit'] { --ton: var(--brass); --ton-text: var(--brass-ink); }
+.zdravi-pocty a:not([data-ton='']) { background: linear-gradient(45deg, color-mix(in srgb, var(--ton) 16%, var(--card)) 0%, color-mix(in srgb, var(--ton) 5%, var(--card)) 55%, color-mix(in srgb, var(--ink) 3%, var(--card)) 100%); }
+.zdravi-pocty a:not([data-ton='']) b { color: var(--ton-text); }
+/* Najetí: plocha se o kousek zvedne a tón v rohu zesílí (překryv, protože přechod se animovat nedá). */
+.zdravi-pocty a::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: linear-gradient(45deg, color-mix(in srgb, var(--ton) 12%, transparent), transparent 70%); opacity: 0; transition: opacity var(--motion-response) var(--ease); pointer-events: none; }
+@media (hover: hover) {
+  .zdravi-pocty a:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -20px color-mix(in srgb, var(--ton) 50%, transparent); }
+  .zdravi-pocty a:hover::before { opacity: 1; }
+}
+.zdravi-pocty a:active { transform: translateY(0); transition-duration: var(--motion-press); }
+.zdravi-pocty a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .zdravi-pocty a { transition: none; } .zdravi-pocty a:hover { transform: none; } }
 @media (max-width: 560px) { .zdravi-pocty span { font-size: var(--type-small); } }
 
 /* Pozdrav: zprava jemný, živý fialový přechod (vlastník, 18. 10. 2026: „velmi subtilní“). Dvě

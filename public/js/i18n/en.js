@@ -940,7 +940,6 @@ export default {
     "není": "not installed",
     "veřejná adresa": "public address",
     "privátní síť": "private network",
-    "Zjištění ještě neproběhlo.": "Not checked yet.",
     "Doporučení:": "Recommendation:",
     "Zjistit znovu": "Check again",
     "Adresa {0} v síti Tailscale:": "Address of {0} on Tailscale:",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.38 – 2026-10-19 · Jemnější stav agentů a poznámky bez hnědé
+
+- **Dlaždice „Stav agentů“ na Přehledu** už nemají sytou barevnou plochu. Stav nese jemný přechod 45° z barvy stavu do neutrální plochy a číslo v jeho barvě, bez rámečku. Po najetí kurzorem se dlaždice o kousek zvedne a tón v rohu zesílí; při omezeném pohybu zůstane na místě.
+- **Poznámky v kartách** (Nastavení, Statistiky, Útrata, detail agenta) už nejsou v hnědém boxu. Obyčejná nápověda je skleněná plocha s jemnou linkou a chladným přechodem, skutečné varování si drží teplý tón, jen jemnější.
+- U „Mimo domov“ nahradil štítek „nezjištěno“ u tlačítka samostatný box „Zjištění ještě neproběhlo“.
+
 ## 0.46.37 – 2026-10-19 · Projekty čitelné i v tmavém režimu
 
 - **Projekt s černou barvou** měl v tmavém režimu tečku, aktivitu na kartě i obálku neviditelnou (kontrast zhruba 1 : 1). Černá se teď kreslí barvou textu, která se s režimem obrací: v tmavém je světlá, ve světlém tmavá. Uložená barva projektu se nemění.

@@ -624,3 +624,26 @@ test('poslední údaj pod názvem konverzace se na úzkém telefonu zkracuje vý
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.cell-sub > span:last-child \{ min-width: 0; overflow: hidden; text-overflow: ellipsis; \}/);
 });
+
+test('dlaždice Stav agentů: jemný přechod 45° bez rámečku, číslo v tónu, najetí zvedne dlaždici', async () => {
+  const css = await zdroj('public/refinement.css');
+  assert.doesNotMatch(css, /#00d632|#ec8200|#ff0005|#f8d700/, 'žádné syté plné barvy mimo tokeny');
+  assert.match(css, /\.zdravi-pocty a:not\(\[data-ton=''\]\) \{ background: linear-gradient\(45deg, color-mix\(in srgb, var\(--ton\) 16%, var\(--card\)\)/);
+  assert.match(css, /\.zdravi-pocty a:not\(\[data-ton=''\]\) b \{ color: var\(--ton-text\); \}/);
+  assert.match(css, /@media \(hover: hover\) \{\s*\.zdravi-pocty a:hover \{ transform: translateY\(-2px\);/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.zdravi-pocty a \{ transition: none; \}/);
+  const blok = css.slice(css.indexOf('Stav ve dlaždici'), css.indexOf('prefers-reduced-motion: reduce) { .zdravi-pocty'));
+  assert.doesNotMatch(blok, /inset 0 (0|1px) 0 (0 )?1px|border:/, 'bez obvodové i horní linky');
+});
+
+test('poznámky v kartách jsou skleněné, ne hnědé; „Zjištění ještě neproběhlo“ je štítek u tlačítka', async () => {
+  const css = await zdroj('public/styles.css');
+  const note = css.match(/^\.set-note \{[^}]+\}/m)?.[0] || '';
+  assert.doesNotMatch(note, /brass-tint/, 'obyčejná poznámka nemá hnědou výplň');
+  assert.match(note, /linear-gradient\(45deg, color-mix\(in srgb, var\(--sky\) 7%, transparent\)/);
+  const warn = css.match(/^\.set-note--warn \{[^}]+\}/m)?.[0] || '';
+  assert.doesNotMatch(warn, /brass-tint/);
+  const settings = await zdroj('public/js/views/settings.js');
+  assert.doesNotMatch(settings, /Zjištění ještě neproběhlo/);
+  assert.match(settings, /t\.list\.length \? '' : `<span class="badge">\$\{tr\('nezjištěno'\)\}<\/span>`/, 'nezjištěný stav zůstává vidět');
+});

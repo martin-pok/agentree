@@ -96,10 +96,10 @@ function remoteCard() {
       <span>${esc(x.description)}</span>
       <span class="muted small">${esc(x.security)}</span>
       ${x.hint ? `<span class="muted small">${esc(x.hint)}</span>` : ''}
-    </li>`).join('')}</ul>` : `<p class="set-note">${tr('Zjištění ještě neproběhlo.')}</p>`}
+    </li>`).join('')}</ul>` : ''}
     ${rada && rada.doporuceni !== 'zadny' && rada.doporuceni !== 'nevim' ? `<p class="set-note"><b>${tr('Doporučení:')}</b> ${esc(rada.text)}</p>` : rada ? `<p class="set-note">${esc(rada.text)}</p>` : ''}
     ${rada?.kroky?.length ? `<ol class="steps steps--compact">${rada.kroky.map((k) => `<li>${esc(k)}</li>`).join('')}</ol>` : ''}
-    <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}${tr('Zjistit znovu')}</button></div>
+    <div class="set-actions"><button class="btn btn--sm" type="button" data-action="remote-detect">${ICON.refresh}${tr('Zjistit znovu')}</button>${t.list.length ? '' : `<span class="badge">${tr('nezjištěno')}</span>`}</div>
     <p class="set-note">${tr('Uložení na plochu telefonu potřebuje HTTPS. Veřejný tunel ho má sám, u Tailscale ho zapneš příkazem <code>tailscale serve</code>.')}</p>`;
 }
 

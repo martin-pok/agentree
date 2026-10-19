@@ -1678,7 +1678,10 @@ html.is-cloud body { background: var(--paper); }
 }
 .set-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; scroll-margin-top: 24px; min-width: 0; }
 .set-group-title { margin: 0; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
-.set-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); font-size: 13px; }
+/* Poznámka v kartě: skleněná plocha s jemnou linkou a chladným přechodem 45° v barvě značky.
+   Hnědá výplň působila jako varování i u obyčejné nápovědy; varování má vlastní teplý tón níž. */
+.set-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-sm); background: linear-gradient(45deg, color-mix(in srgb, var(--sky) 7%, transparent), transparent 65%); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); font-size: 13px; }
+.set-note code { padding: 1px 6px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--ink) 6%, transparent); white-space: nowrap; }
 .set-card { padding: 28px; }
 /* Krátké zvýraznění karty, na kterou odkázalo tlačítko – jinak není poznat, kam skok vedl. */
 .is-called-out { animation: callout 1.8s var(--ease) both; }
@@ -1731,7 +1734,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .appearance-options.appearance-options--lang { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .appearance-options.appearance-options--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .appearance-options--lang .appearance-option { grid-template-columns: 1fr; height: 40px; min-height: 0; padding: 0 16px; border-radius: var(--r-full); text-align: center; }
-.set-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.set-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
 /* Dvě nezávislé volby pod sebou (kanál, způsob): každá má svůj popisek a mezi skupinami je víc
    vzduchu než mezi kartami uvnitř skupiny, takže se obrysy vybraných karet nikdy nedotknou. */
 .set-choice + .set-choice { margin-top: 24px; }
@@ -2644,7 +2647,7 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .ext-reinstall { margin: 0 0 16px; }
 .ext-reinstall summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 8px 0; }
 .ext-reinstall[open] summary { margin-bottom: 8px; }
-.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
+.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: linear-gradient(45deg, color-mix(in srgb, var(--brass) 14%, transparent), color-mix(in srgb, var(--brass) 3%, transparent) 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 28%, transparent); color: var(--ink); }
 /* Poznámka s akcí (detail konverzace: stav bez propojení s Claude Code). */
 .hook-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .hook-note > span { flex: 1 1 280px; min-width: 0; }
