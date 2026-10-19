@@ -34,21 +34,22 @@ try {
   await page.locator('#refresh-app').click();
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  // Obnova se ukazuje jen v tlačítku: hlava robota se značky s odleskem. Žádný pruh, žádná plovoucí
-  // karta, žádný systémový kurzor „pracuje“.
+  // Obnova se ukazuje přes celou aplikaci: fialový závoj s bílou hlavou robota a odleskem, který
+  // nic neblokuje. Žádný pruh, žádný systémový kurzor „pracuje“.
   const tlacitko = page.locator('#refresh-app');
-  assert.equal(await tlacitko.locator('.refresh-robot').isVisible(), true, 'v tlačítku je hlava robota');
-  assert.equal(await tlacitko.locator('.icon').isVisible(), false, 'šipky obnovy se schovají');
+  await page.waitForFunction(() => document.querySelector('.obnova-zavoj.is-on'));
+  assert.equal(await page.locator('.obnova-zavoj .obnova-hlava').isVisible(), true, 'uprostřed je hlava robota');
+  assert.equal(await page.locator('.obnova-zavoj').evaluate((el) => getComputedStyle(el).pointerEvents), 'none', 'závoj nic neblokuje');
   assert.equal(await page.locator('.refresh-status, .refresh-status__track, .topbar [role="progressbar"]').count(), 0, 'žádný pruh ani karta');
   assert.notEqual(await tlacitko.evaluate((el) => getComputedStyle(el).cursor), 'progress', 'žádný systémový kurzor');
-  assert.equal(await page.locator('[role="status"].sr-only').filter({ hasText: 'Obnovuji aktuální data' }).count(), 1, 'čtečka obrazovky stav slyší');
-  assert.notEqual(await tlacitko.locator('.rr-lesk').evaluate((el) => getComputedStyle(el).animationName), 'none', 'odlesk se pohybuje');
+  assert.equal(await page.locator('.obnova-zavoj[role="status"]').filter({ hasText: 'Obnovuji aktuální data' }).count(), 1, 'čtečka obrazovky stav slyší');
+  assert.notEqual(await page.locator('.oz-lesk').evaluate((el) => getComputedStyle(el).animationName), 'none', 'odlesk se pohybuje');
   const rozmer = await tlacitko.evaluate((el) => [el.offsetWidth, el.offsetHeight]);
   assert.equal(await page.locator('#refresh-app').isDisabled(), false, 'tlačítko obnovy nesmí při práci změnit velikost ani přijít o fokus');
   await page.screenshot({ path: `${out}/refresh-motion.png` });
   assert.equal((await response).status(), 200);
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
-  assert.equal(await tlacitko.locator('.refresh-robot').isVisible(), false, 'po obnově se vrátí ikona');
+  await page.waitForFunction(() => !document.querySelector('.obnova-zavoj'));
   assert.deepEqual(await tlacitko.evaluate((el) => [el.offsetWidth, el.offsetHeight]), rozmer, 'tlačítko nemění rozměr');
   assert.equal(requests, 1, 'opakované kliknutí nesmí spustit souběžnou obnovu');
 
@@ -56,7 +57,7 @@ try {
   const reducedResponse = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
   await page.locator('#refresh-app').click();
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  assert.equal(await page.locator('#refresh-app .rr-lesk').evaluate((element) => getComputedStyle(element).animationName), 'none', 'omezený pohyb vypne odlesk');
+  assert.equal(await page.locator('.oz-lesk').evaluate((element) => getComputedStyle(element).animationName), 'none', 'omezený pohyb vypne odlesk');
   await reducedResponse;
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   assert.deepEqual(errors, [], `chyby prohlížeče: ${errors.join('; ')}`);

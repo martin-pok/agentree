@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.27 – 2026-10-18 · Roboti pevně na zemi, obnova přes celou aplikaci
+
+- **Všichni roboti stojí na zemi:** Mochi s bachratými nožkami i Rover na pásu dosahují na stín stejně jako ostatní postavy.
+- **Nová ikona prázdných stavů:** oficiální hlava značky v barvě akce s jemným leskem a svítící anténou, oči se pomalu rozhlížejí.
+- **Obnova je vidět na celé aplikaci:** po klepnutí na obnovení se přes rozhraní položí jemný fialový závoj s bílou hlavou robota a odleskem – nic neblokuje a čtečka obrazovky stav ohlásí.
+- **Z bug reportu 14. 10.:** Pomocník na otázku po vzhledu agenta radí detail agenta (ne vzhled aplikace); Odhlásit a Smazat účet jsou na konci sekce Účet a vzhled; nápověda k obrázku projektu je kratší; mrak v synchronizaci je opticky vyvážený.
+- **Pravdivé texty:** Útrata už neodkazuje na předplatné „níže“, Dovednosti uvádějí všechny složky, ze kterých čtou.
+
 ## 0.46.26 – 2026-10-18 · Klidné rozložení a dnešní den v pozdravu
 
 - **Roboti podle Figmy:** paže vyrůstají z trupu bez mezery, oči jsou přesně uprostřed obličeje a nohy stojí na stínu – u všech devíti postav v aplikaci i na webu.

@@ -723,18 +723,20 @@ const palette = createPalette(
 // i když obnova skončí dřív.
 const HLAVA = 'M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z';
 const ODLESK_MS = 1100;
+// Ruční obnova se týká celé aplikace, a tak ji ukazuje celá aplikace: přes rozhraní se položí
+// jemný fialový závoj a uprostřed bílá hlava robota s přejíždějícím odleskem – stejný motiv jako
+// načítací scéna. Závoj nic neblokuje (pointer-events: none) a rozepsaný formulář zůstane.
 function spustObnovu(button) {
-  if (!button.querySelector('.refresh-robot')) {
-    button.insertAdjacentHTML('beforeend', `<svg class="refresh-robot" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs><clipPath id="rr-tvar"><path d="${HLAVA}"/></clipPath><linearGradient id="rr-lesk" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#7b7df0" stop-opacity="0"/><stop offset=".5" stop-color="#c9caff"/><stop offset="1" stop-color="#7b7df0" stop-opacity="0"/></linearGradient></defs><path class="rr-zaklad" d="${HLAVA}"/><g clip-path="url(#rr-tvar)"><rect class="rr-lesk" x="-24" y="-12" width="22" height="72" fill="url(#rr-lesk)" transform="rotate(16 -13 24)"/></g></svg>`);
-  }
   const start = performance.now();
   button.setAttribute('aria-busy', 'true');
   button.classList.add('is-refreshing');
-  const status = document.createElement('div');
-  status.className = 'sr-only';
-  status.setAttribute('role', 'status');
-  status.textContent = tr('Obnovuji aktuální data');
-  document.body.append(status);
+  const zavoj = document.createElement('div');
+  zavoj.className = 'obnova-zavoj';
+  zavoj.setAttribute('role', 'status');
+  zavoj.innerHTML = `<svg class="obnova-hlava" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs><clipPath id="oz-tvar"><path d="${HLAVA}"/></clipPath><linearGradient id="oz-lesk" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#c9caff" stop-opacity="0"/><stop offset=".5" stop-color="#8f91ff"/><stop offset="1" stop-color="#c9caff" stop-opacity="0"/></linearGradient></defs><path class="oz-zaklad" d="${HLAVA}"/><g clip-path="url(#oz-tvar)"><rect class="oz-lesk" x="-24" y="-12" width="22" height="72" fill="url(#oz-lesk)" transform="rotate(16 -13 24)"/></g></svg><span class="sr-only">${esc(tr('Obnovuji aktuální data'))}</span>`;
+  document.body.append(zavoj);
+  requestAnimationFrame(() => zavoj.classList.add('is-on'));
+  const status = zavoj.querySelector('.sr-only');
   let cleaned = false;
   return {
     setStage(stage) {
@@ -743,9 +745,11 @@ function spustObnovu(button) {
     finish() {
       if (cleaned) return;
       cleaned = true;
+      // Odlesk vždy dojede aspoň jednou celý, i když obnova skončí dřív.
       const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
       setTimeout(() => {
-        status.remove();
+        zavoj.classList.remove('is-on');
+        setTimeout(() => zavoj.remove(), 300);
         button.classList.remove('is-refreshing');
         button.removeAttribute('aria-busy');
       }, zbyva < 60 ? 0 : zbyva);

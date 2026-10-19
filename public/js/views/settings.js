@@ -72,7 +72,7 @@ function sourceRow(c) {
 const GROUPS = [
   ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'moje', 'custom']],
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
-  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license']],
+  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license', 'account-end']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
   ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy', 'help']],
 ];
@@ -925,8 +925,6 @@ function accountCard() {
       ${syncBlock(u)}
       <div class="acct-foot">
         <p class="account-privacy">${ICON.shield}<span>${esc(UCET_SOUKROMI)} ${odkazSoukromi()}</span></p>
-        <div class="acct-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
-          <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">${tr('Smazat účet')}</button></div>
       </div>`;
   }
   if (u.stav === 'overuji') {
@@ -1232,6 +1230,14 @@ function update(topics) {
   const ucetEl = el.querySelector('[data-region="account"]');
   if (ucetEl) ucetEl.hidden = !state.ucet || state.ucet.stav === 'nenastaveno';
   if (ucetEl && !ucetEl.hidden) fill(el, 'account', accountCard());
+  // Odhlášení a smazání účtu stojí až na konci sekce Účet a vzhled (bug report 14. 10.: nebezpečné
+  // akce dole, ne hned u přihlášení), jen když je člověk přihlášený.
+  const konecEl = el.querySelector('[data-region="account-end"]');
+  const prihlasen = Boolean(state.ucet) && ['prihlaseno', 'nedostupne'].includes(state.ucet.stav);
+  if (konecEl) konecEl.hidden = !prihlasen;
+  if (konecEl && prihlasen) fill(el, 'account-end', `${head(ICON.cloud, tr('Odhlášení a smazání účtu'), tr('Data na {0} zůstanou, jak jsou.', tomtoPocitaci()))}
+    <div class="acct-actions"><button class="btn btn--sm" type="button" data-action="ucet-odhlasit">${tr('Odhlásit se')}</button>
+      <button class="btn btn--sm btn--ghost-danger" type="button" data-action="ucet-smazat">${tr('Smazat účet')}</button></div>`);
 
   /* Profil */
   const current = state.settings.avatar;

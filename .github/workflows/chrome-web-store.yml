@@ -4,9 +4,15 @@
 # CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN. Bez nich úloha jen ohlásí, co chybí.
 name: Chrome Web Store
 
+# Vydání zveřejňuje publish.yml tokenem GITHUB_TOKEN – takové zveřejnění událost `release`
+# nevyvolá (GitHub nespouští workflow z akcí GITHUB_TOKENu). Proto se úloha spouští i po úspěšném
+# doběhnutí „Zveřejnit vydání“ a tag si vezme z naposledy zveřejněného vydání.
 on:
   release:
     types: [published]
+  workflow_run:
+    workflows: ['Zveřejnit vydání']
+    types: [completed]
   workflow_dispatch:
     inputs:
       tag:
@@ -23,6 +29,7 @@ concurrency:
 jobs:
   nahrat:
     name: nahrát rozšíření do obchodu
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -36,6 +43,13 @@ jobs:
       - name: Stáhnout a ověřit ZIP z vydání
         run: |
           set -euo pipefail
+          if [ -z "$TAG" ]; then
+            # Spuštěno po „Zveřejnit vydání“: naposledy zveřejněné (ne koncept) vydání.
+            TAG=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json' \
+              "https://api.github.com/repos/$REPO/releases?per_page=20" \
+              | jq -r '[.[] | select(.draft == false)] | sort_by(.published_at) | last | .tag_name')
+            echo "TAG=$TAG" >> "$GITHUB_ENV"
+          fi
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Neplatný tag vydání"; exit 1; }
           VERZE="${TAG#v}"
           ZIP="agenteeq-extension-$VERZE.zip"

@@ -256,7 +256,7 @@ function update() {
       ? `<div class="skills-more"><span class="muted small">${ze(list.length) ? tr('Zobrazeno {0} ze {1}', ukazane.length, list.length) : tr('Zobrazeno {0} z {1}', ukazane.length, list.length)}</span><button class="btn" type="button" data-more>${plural(Math.min(STRANA, list.length - ukazane.length), 'Zobrazit další {0}', 'Zobrazit další {0}', 'Zobrazit dalších {0}').replace('{0}', Math.min(STRANA, list.length - ukazane.length))}</button></div>` : ''}`
     : emptyState({
       title: v.items.length ? tr('Tomuto filtru neodpovídá žádná dovednost') : tr('Na {0} zatím žádné dovednosti nejsou', tomtoPocitaci()),
-      text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq ukáže každý soubor SKILL.md ze složky .agents/skills, od Claude i od Codexu.'),
+      text: v.items.length ? tr('Zkus jiný zdroj nebo hledaný výraz.') : tr('Agenteeq ukáže každý soubor SKILL.md ze složek .agents, .claude a .codex – dovednosti, pluginy i plánované úlohy.'),
       ...(v.items.length ? {} : { action: znovuTlacitko(tr('Zkontrolovat znovu')) }),
     }));
 }

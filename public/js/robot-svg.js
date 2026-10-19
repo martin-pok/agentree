@@ -130,10 +130,20 @@ function legs(kind, t) {
   const lx = 54 - t.w / 2 + Math.min(8, t.w / 4);
   const rx = 54 + t.w / 2 - Math.min(8, t.w / 4);
   switch (kind) {
-    case 'treads': return `<rect class="robot-tread" x="${n(54 - t.w / 2 - 6)}" y="${n(bottom + 1)}" width="${n(t.w + 12)}" height="11" rx="5.5"/><circle class="robot-wheel" cx="${n(54 - t.w / 2)}" cy="${n(bottom + 6.5)}" r="2.6"/><circle class="robot-wheel" cx="54" cy="${n(bottom + 6.5)}" r="2.6"/><circle class="robot-wheel" cx="${n(54 + t.w / 2)}" cy="${n(bottom + 6.5)}" r="2.6"/>`;
+    // Pás leží na zemi (spodní hrana na středu stínu), s trupem ho spojují dvě krátké vzpěry.
+    case 'treads': {
+      const ty = ZEME + 1.5 - 11;
+      return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 3)}V${n(ty + 2)}M${n(rx)} ${n(bottom - 3)}V${n(ty + 2)}"/><rect class="robot-tread" x="${n(54 - t.w / 2 - 6)}" y="${n(ty)}" width="${n(t.w + 12)}" height="11" rx="5.5"/><circle class="robot-wheel" cx="${n(54 - t.w / 2)}" cy="${n(ty + 5.5)}" r="2.6"/><circle class="robot-wheel" cx="54" cy="${n(ty + 5.5)}" r="2.6"/><circle class="robot-wheel" cx="${n(54 + t.w / 2)}" cy="${n(ty + 5.5)}" r="2.6"/>`;
+    }
     case 'blocks': return `<rect class="robot-foot" x="${n(lx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/><rect class="robot-foot" x="${n(rx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/>`;
     case 'stout': return `<path class="robot-limbs robot-limbs--stout" d="M${n(lx)} ${n(bottom - 2)}V${ZEME}M${n(rx)} ${n(bottom - 2)}V${ZEME}"/>`;
-    case 'nubs': return `<ellipse class="robot-foot" cx="${n(lx + 2)}" cy="${n(bottom + 3)}" rx="6" ry="4"/><ellipse class="robot-foot" cx="${n(rx - 2)}" cy="${n(bottom + 3)}" rx="6" ry="4"/>`;
+    // Bachraté nožky od trupu až na zem: horní okraj pod trupem, spodní na středu stínu.
+    case 'nubs': {
+      const top = bottom - 1;
+      const cy = (top + ZEME + 1.5) / 2;
+      const ry = (ZEME + 1.5 - top) / 2;
+      return `<ellipse class="robot-foot" cx="${n(lx + 2)}" cy="${n(cy)}" rx="6.5" ry="${n(ry)}"/><ellipse class="robot-foot" cx="${n(rx - 2)}" cy="${n(cy)}" rx="6.5" ry="${n(ry)}"/>`;
+    }
     default: return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 5)}V${ZEME}M${n(rx)} ${n(bottom - 5)}V${ZEME}"/>`;
   }
 }
@@ -159,11 +169,10 @@ export function robot(type = 'Scout') {
   const { head: h, torso: t, s } = g;
   const { levo: [lx, shoulderY, lex, ley], pravo: [rxx, , rex, rey] } = paze(g);
   const f = g.face;
-  const ground = g.legs === 'treads' ? t.top + t.h + 12 : g.legs === 'nubs' ? t.top + t.h + 7 : 99;
   const shadow = Math.max(18, Math.min(30, Math.max(t.w, h.w * 0.55) / 1.7));
   const cheeks = g.cheeks ? `<ellipse class="robot-cheek" cx="${n(54 - 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/><ellipse class="robot-cheek" cx="${n(54 + 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/>` : '';
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
-    + `<ellipse class="robot-shadow" cx="54" cy="${n(Math.max(104, ground + 4))}" rx="${n(shadow)}" ry="4"/>`
+    + `<ellipse class="robot-shadow" cx="54" cy="${n(ZEME + 1.5)}" rx="${n(shadow)}" ry="4"/>`
     + `<g class="robot-body">${legs(g.legs, t)}`
     + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
     + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`

@@ -513,12 +513,13 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.match(app, /button\.classList\.add\('is-refreshing'\)/);
   assert.match(app, /button\.getAttribute\('aria-busy'\) === 'true'/, 'druhý refresh se nesmí spustit souběžně');
   assert.doesNotMatch(app.slice(app.indexOf("data-action === 'rescan'"), app.indexOf("data-action === 'rescan'") + 900), /button\.disabled\s*=/, 'stav obnovy nesmí změnit geometrii ani fokus tlačítka');
-  // Obnova se ukazuje jen v tlačítku: hlava robota ze značky s odleskem (motiv načítací scény),
-  // žádný pruh, plovoucí karta ani systémový kurzor.
-  assert.match(app, /class="refresh-robot"/);
+  // Obnova se týká celé aplikace (vlastník, 18. 10. 2026): jemný fialový závoj přes rozhraní
+  // s bílou hlavou robota a odleskem (motiv načítací scény); nic neblokuje, žádný pruh ani kurzor.
+  assert.match(app, /zavoj\.className = 'obnova-zavoj'/);
   assert.doesNotMatch(app.slice(app.indexOf('function spustObnovu'), app.indexOf("document.addEventListener('click'", app.indexOf('function spustObnovu'))), /refresh-status|track/, 'žádný pruh ani karta');
   assert.doesNotMatch(css, /#refresh-app\[aria-busy='true'\] \{ cursor: progress/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  #refresh-app\.is-refreshing \.refresh-robot, \.rr-lesk \{ animation: none; \}/);
+  assert.match(css, /\.obnova-zavoj \{[^}]*pointer-events: none/, 'závoj nesmí blokovat práci');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  \.oz-lesk \{ animation: none; opacity: 0; \}/);
 });
 
 test('Útrata bez připojeného API: na telefonu drží ikona, text a tlačítko jednu osu', async () => {

@@ -565,7 +565,10 @@ export function legendHtml(series, { box = false } = {}) {
 }
 
 // Prázdný stav: hlava robota ze značky se zavřenýma očima – odpočívá, protože tu zatím nic není.
-const EMPTY_ROBOT = '<svg viewBox="0 0 48 48" width="48" height="48" fill="none"><path class="er-ant" d="M24 5V13" stroke-width="3" stroke-linecap="round"/><circle class="er-svetlo" cx="24" cy="5" r="3"/><rect class="er-hlava" x="6" y="13" width="36" height="29" rx="11.5"/><path class="er-oko" d="M15.5 28.5h5M27.5 28.5h5" stroke-width="3" stroke-linecap="round"/></svg>';
+// Prázdný stav: oficiální široká hlava značky (public/brand/agenteeq-dock.svg – hlava 78 × 53,
+// zaoblení 20, oči 8 × 16) v barvě akce, s jemným leskem na horní hraně a světlem na anténě.
+// Oči se pomalu rozhlížejí („hledá“), při omezení pohybu stojí.
+const EMPTY_ROBOT = '<svg viewBox="0 0 108 108" width="64" height="64" fill="none"><path class="er-ant" d="M54 25V34" stroke-width="5" stroke-linecap="round"/><circle class="er-svetlo" cx="54" cy="21" r="5"/><rect class="er-hlava" x="15" y="34" width="78" height="53" rx="20"/><path class="er-lesk" d="M33 38h42a16 16 0 0 1 14 8.5H19A16 16 0 0 1 33 38Z"/><g class="er-oci"><rect x="36" y="52" width="8" height="16" rx="4"/><rect x="64" y="52" width="8" height="16" rx="4"/></g></svg>';
 
 export function emptyState({ title, text = '', action = '' }) {
   return `<div class="empty"><span class="empty-mark" aria-hidden="true">${EMPTY_ROBOT}</span><strong>${esc(title)}</strong>${text ? `<p>${text}</p>` : ''}${action}</div>`;
