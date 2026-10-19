@@ -89,3 +89,35 @@ test('jedno okno hlášené třemi zdroji = jedno upozornění na vyčerpání i
     assert.equal(ds.data.alerts.filter((a) => a.kind === 'limit_reset').length, 1);
   }
 });
+
+test('Codex: dva domovy s různými účty si okna nepřepisují, snímek bez účtu se nezapíše', async () => {
+  const home = await tempDir();
+  const druhy = path.join(home, 'druhy-codex');
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: path.join(home, 'app'), AGENTEEQ_CODEX_HOME: druhy });
+  const store = new Store({ config, datastore: fakeDatastore() });
+  store.ready = true;
+  const now = Date.now();
+  const ts = (s) => new Date(now - 30000 + s * 1000).toISOString();
+  const prepis = (domov, id, pct) => {
+    const f = path.join(domov, 'sessions', '2026', '10', '19', `rollout-2026-10-19T10-00-00-${id}.jsonl`);
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    const rl = { limit_id: 'codex', primary: { used_percent: pct, window_minutes: 300, resets_at: Math.floor(now / 1000) + 3600 } };
+    fs.writeFileSync(f, [{ timestamp: ts(0), type: 'session_meta', payload: { id, originator: 'codex_cli_rs' } }, { timestamp: ts(2), type: 'event_msg', payload: { type: 'token_count', rate_limits: rl } }].map((r) => JSON.stringify(r)).join('\n') + '\n');
+  };
+  prepis(path.join(home, '.codex'), '01a0546a-6679-76d3-9454-ba9f37a24016', 20);
+  prepis(druhy, '01a0546a-6679-76d3-9454-ba9f37a24017', 80);
+
+  const c = createCodexConnector({ config, store });
+  c.bindAccounts([{ home: path.join(home, '.codex'), accountId: 'codex:aaaa' }, { home: druhy, accountId: 'codex:bbbb' }]);
+  await c.start(); c.stop();
+  const okna = store.limitList().filter((l) => l.windowMinutes === 300);
+  assert.deepEqual(okna.map((l) => [l.accountId, l.usedPercent]).sort(), [['codex:aaaa', 20], ['codex:bbbb', 80]]);
+
+  // Druhý domov bez ověřeného účtu: jeho 80 % nesmí nikde vystupovat jako limit.
+  const store2 = new Store({ config, datastore: fakeDatastore() });
+  store2.ready = true;
+  const c2 = createCodexConnector({ config, store: store2 });
+  c2.bindAccounts([{ home: path.join(home, '.codex'), accountId: 'codex:aaaa' }, { home: path.join(home, 'jiny'), accountId: 'codex:cccc' }]);
+  await c2.start(); c2.stop();
+  assert.deepEqual(store2.limitList().filter((l) => l.windowMinutes === 300).map((l) => [l.accountId, l.usedPercent]), [['codex:aaaa', 20]]);
+});

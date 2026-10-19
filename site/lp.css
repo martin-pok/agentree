@@ -120,11 +120,13 @@ html[data-os-ready] [data-os-switcher] { display:inline-flex; align-items:center
 [data-os-choice] { min-width:76px; min-height:48px; padding:5px 14px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
 [data-os-choice][aria-pressed="true"] { background:var(--on-stage); color:var(--backdrop); }
 [data-os-choice]:focus-visible { outline:2px solid var(--accent-violet); outline-offset:3px; }
+/* Na Windows si obě výzvy prohodí pořadí i roli: hlavní je „Stáhnout pro Windows“ a vypadá
+   přesně jako hlavní „Stáhnout pro Mac“ na Macu, Mac dostane podobu vedlejší výzvy. */
 html[data-os="windows"] .cta-row [data-stahnout="windows-x64"] { order:-1; }
-html[data-os="windows"] #vyzkouset [data-stahnout="windows-x64"],
-html[data-os="windows"] .install-page .hero [data-stahnout="windows-x64"] { background:var(--accent-violet); color:#fff; border-color:var(--accent-violet); }
-html[data-os="windows"] #vyzkouset [data-stahnout="mac-arm64"],
-html[data-os="windows"] .install-page .hero [data-stahnout="mac-arm64"] { background:transparent; color:inherit; border:1px solid currentColor; }
+:where(html[data-os="windows"]) .unit--dark .cta-row [data-stahnout="windows-x64"] { background:var(--on-stage); color:var(--backdrop); box-shadow:none; }
+:where(html[data-os="windows"]) .unit--dark .cta-row [data-stahnout="mac-arm64"] { background:transparent; color:var(--on-stage); box-shadow:inset 0 0 0 1px var(--on-stage-mute); }
+:where(html[data-os="windows"]) #vyzkouset .cta-row [data-stahnout="windows-x64"] { background:var(--action); color:var(--on-action); box-shadow:none; }
+:where(html[data-os="windows"]) #vyzkouset .cta-row [data-stahnout="mac-arm64"] { background:transparent; color:var(--ink); box-shadow:inset 0 0 0 1px var(--mute); }
 .btn--lg { min-height: 56px; padding: 8px 30px; font-size: 17px; }
 .nav .btn, .unit--dark .btn { background: var(--on-stage); color: var(--backdrop); }
 .nav .btn:hover, .unit--dark .btn:hover { background: #D9D5E0; }
@@ -807,7 +809,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 #vyzkouset .steps li:nth-child(3)::before { background:radial-gradient(ellipse at 30% 25%,rgba(194,142,77,.15),transparent 64%); }
 #vyzkouset .steps li:nth-child(2) .step-n { color:#198a76; }
 #vyzkouset .steps li:nth-child(3) .step-n { color:#95692d; }
-#vyzkouset .steps b { font-size:19px; letter-spacing:-.02em; }
+#vyzkouset .steps li > b { font-size:19px; letter-spacing:-.02em; }
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
  #vyzkouset .steps li:hover { transform:translateY(-5px); border-color:rgba(98,96,216,.2); box-shadow:0 32px 70px -50px rgba(37,31,88,.35),inset 0 1px white; }
  #vyzkouset .steps li:hover::before { transform:translate3d(10%,8%,0); }
@@ -934,13 +936,13 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .hero .unit-head { gap:24px; }
 .install-page .hero h1 { max-width:15ch; }
 .install-page #mac,.install-page #windows,.install-page #rozsireni,.install-page #potize { position:relative; background:#f2f0f7; color:#17203b; }
-.install-page #windows,.install-page #potize { background:#eae8f1; }
+.install-page #potize { background:#eae8f1; }
 .install-page :is(#mac,#windows,#rozsireni,#potize) .unit-head h2 { letter-spacing:-.05em; }
 .install-page .steps { gap:18px; }
 .install-page .steps li,.install-page .gatekeeper { border:1px solid rgba(50,42,96,.11); background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(248,247,253,.94)); box-shadow:0 24px 56px -48px rgba(29,20,73,.25); }
 .install-page .steps li { min-height:235px; }
 .install-page .step-n { color:#6260d8; font-variant-numeric:tabular-nums; }
-.install-page .steps li b { color:#17203b; font-size:19px; }
+.install-page .steps li > b { color:#17203b; font-size:19px; }
 .install-page .steps li p,.install-page .gatekeeper p { color:#58566c; }
 .install-page .rows { border-color:rgba(32,26,70,.14); }
 .install-page .rows details { border-color:rgba(32,26,70,.14); }
@@ -1032,30 +1034,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .extension-instructions { min-width:0; padding:clamp(28px,3vw,46px); border-radius:26px; align-self:stretch; align-content:center; gap:20px; }
 .install-page .extension-instructions .rozsireni-akce { margin:0; }
 .install-page .extension-instructions .btn { min-height:56px; }
-.install-page .extension-display { min-width:0; position:relative; overflow:visible; border-radius:26px; background:#1d1b28;
-  border:1px solid rgba(255,255,255,.14); box-shadow:0 34px 65px -37px rgba(25,18,60,.45); color:#f6f3fa; }
-.extension-display-top { display:flex; align-items:center; gap:6px; min-height:46px; padding:0 20px; border-bottom:1px solid rgba(255,255,255,.09); }
-.extension-dot { width:7px; height:7px; background:#6c6776; border-radius:50%; }
-.extension-address { margin:auto; color:#a9a3b7; font-size:12px; letter-spacing:.02em; }
-.extension-display-body { padding:clamp(20px,3vw,36px); display:grid; gap:23px; }
-.extension-app { display:flex; align-items:center; gap:10px; font-size:17px; }
-.extension-linked { margin-left:auto; color:#83e2ca; font-size:12px; }
-.extension-linked i { display:inline-block; width:6px; height:6px; margin-left:6px; border-radius:50%; background:#66d9bd; }
-.extension-conversation,.extension-received { padding:20px; display:flex; align-items:center; gap:15px; border-radius:18px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.045); }
-.extension-profile { width:45px; height:45px; border-radius:13px; display:grid; place-items:center; background:rgba(255,255,255,.075); }
-.extension-profile img { filter:brightness(0) invert(1); }
-.extension-conversation strong,.extension-received strong { font-size:15px; font-weight:500; }
-.extension-conversation p,.extension-received small { display:block; margin-top:4px; color:#aea8bb; font-size:12px; }
-.extension-signal { display:flex; justify-content:center; align-items:center; gap:9px; }
-.extension-signal span { height:1px; width:55px; background:linear-gradient(90deg,transparent,rgba(172,165,240,.6)); }
-.extension-signal span:last-child { transform:rotate(180deg); }
-.extension-signal i { width:7px; height:7px; border-radius:50%; background:#a8a1ec; box-shadow:0 0 15px #8a7dea55; }
-.extension-received b { margin-left:auto; color:#80dfc4; font-size:20px; }
-.extension-mascot { position:absolute; top:-43px; right:25px; width:66px; transform:rotate(18deg); filter:drop-shadow(0 12px 14px #0c0b1250); }
-.extension-mascot img { display:block; width:100%; }
-@media(max-width:900px) { .install-page .extension-layout { grid-template-columns:minmax(0,1fr); } .install-page .extension-display { max-width:700px; margin:auto; width:100%; } }
-@media(max-width:620px) { .install-page .extension-display-body { padding:19px; gap:15px; } .extension-mascot { width:46px; top:-25px; } }
-@media(prefers-reduced-motion:reduce) { .install-page .extension-display * { animation:none!important; } }
+@media(max-width:900px) { .install-page .extension-layout { grid-template-columns:minmax(0,1fr); } }
 
 
 /* Branded static not-found page. */
@@ -1086,48 +1065,37 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-hero-path i { position:absolute; right:0; top:-3px; width:7px; height:7px; border-radius:50%; background:#c6bbfd; }
 .install-hero-robot { position:absolute; top:-19px; right:24%; width:65px; transform:rotate(18deg); filter:drop-shadow(0 12px 17px #0008); }
 .install-hero-robot img { display:block; width:100%; height:auto; }
-.install-page #mac .steps--ctyri { grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; border-radius:26px;
+.install-page .steps--ctyri { grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; border-radius:26px;
  border:1px solid rgba(55,50,100,.13); background:rgba(255,255,255,.65); overflow:hidden; }
-.install-page #mac .steps--ctyri li { min-width:0; min-height:260px; border:0; border-radius:0; background:none; box-shadow:none;
+.install-page .steps--ctyri li { min-width:0; min-height:260px; border:0; border-radius:0; background:none; box-shadow:none;
  padding:30px 26px; position:relative; }
-.install-page #mac .steps--ctyri li:not(:last-child) { border-right:1px solid rgba(55,50,100,.12); }
-.install-page #mac .steps--ctyri li::before { content:""; position:absolute; top:54px; left:78px; right:0; height:1px;
+.install-page .steps--ctyri li:not(:last-child) { border-right:1px solid rgba(55,50,100,.12); }
+.install-page .steps--ctyri li::before { content:""; position:absolute; top:54px; left:78px; right:0; height:1px;
  background:linear-gradient(90deg,rgba(98,96,216,.26),transparent); pointer-events:none; }
-.install-page #mac .steps--ctyri li:last-child::before { display:none; }
-.install-page #mac .steps--ctyri .step-n { display:grid; place-items:center; width:52px; height:52px; margin-bottom:26px;
+.install-page .steps--ctyri li:last-child::before { display:none; }
+.install-page .steps--ctyri .step-n { display:grid; place-items:center; width:52px; height:52px; margin-bottom:26px;
  border-radius:16px; background:#efedfc; color:#6260d8; font-size:25px; }
-.install-page #mac .steps--ctyri li b { font-size:17px; }
-.install-page #mac .steps--ctyri li p { font-size:14px; line-height:1.65; }
-.install-page #mac .steps--ctyri li:hover { background:rgba(98,96,216,.047); }
+.install-page .steps--ctyri li > b { font-size:17px; }
+.install-page .steps--ctyri li p { font-size:14px; line-height:1.65; }
+.install-page .steps--ctyri li:hover { background:rgba(98,96,216,.047); }
 .install-page .extension-layout { align-items:center; grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr); }
 .install-page .extension-instructions { align-self:center; min-height:0; height:max-content; padding:clamp(26px,3vw,40px); }
 .install-page .extension-instructions .rozsireni-akce { margin:0; }
-.install-page .extension-display { max-width:640px; }
-@media(max-width:1100px) { .install-page #mac .steps--ctyri { grid-template-columns:repeat(2,minmax(0,1fr)); }
- .install-page #mac .steps--ctyri li:nth-child(2) { border-right:0; }
- .install-page #mac .steps--ctyri li:nth-child(-n+2) { border-bottom:1px solid rgba(55,50,100,.12); } }
+@media(max-width:1100px) { .install-page .steps--ctyri { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .install-page .steps--ctyri li:nth-child(2) { border-right:0; }
+ .install-page .steps--ctyri li:nth-child(-n+2) { border-bottom:1px solid rgba(55,50,100,.12); } }
 @media(max-width:700px) { .install-page .extension-layout { grid-template-columns:1fr; }
  .install-hero-scene { padding-top:12px; } .install-hero-node { min-width:0; padding:12px 9px; flex:1; font-size:12px; }
  .install-hero-path { width:22px; flex:none; } .install-hero-robot { width:42px; top:-24px; }
- .install-page #mac .steps--ctyri { grid-template-columns:1fr; }
- .install-page #mac .steps--ctyri li { min-height:0; padding:23px 26px; border-right:0!important; border-bottom:1px solid rgba(55,50,100,.12); }
- .install-page #mac .steps--ctyri li:last-child { border-bottom:0; }
- .install-page #mac .steps--ctyri li::before { display:none; }
- .install-page #mac .steps--ctyri .step-n { margin-bottom:13px; } }
-@media(prefers-reduced-motion:reduce) { .install-page #mac .steps--ctyri li { transition:none; } }
+ .install-page .steps--ctyri { grid-template-columns:1fr; }
+ .install-page .steps--ctyri li { min-height:0; padding:23px 26px; border-right:0!important; border-bottom:1px solid rgba(55,50,100,.12); }
+ .install-page .steps--ctyri li:last-child { border-bottom:0; }
+ .install-page .steps--ctyri li::before { display:none; }
+ .install-page .steps--ctyri .step-n { margin-bottom:13px; } }
+@media(prefers-reduced-motion:reduce) { .install-page .steps--ctyri li { transition:none; } }
 
 
 /* Installation finishing — coherent Windows sequence and content-sized store panel. */
-.install-page #windows .windows-steps { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:0; overflow:hidden;
- border:1px solid rgba(55,50,100,.13); border-radius:26px; background:rgba(255,255,255,.7); }
-.install-page #windows .windows-steps li { min-width:0; min-height:230px; padding:30px 28px; border:0;
- border-radius:0; box-shadow:none; background:transparent; }
-.install-page #windows .windows-steps li:not(:last-child) { border-right:1px solid rgba(55,50,100,.12); }
-.install-page #windows .windows-steps .step-n { display:grid; place-items:center; width:50px; height:50px; margin-bottom:22px; 
- background:#efedfc; border-radius:15px; font-size:25px; color:#6260d8; }
-.install-page #windows .windows-steps li b { font-size:17px; }
-.install-page #windows .windows-steps li p { margin-top:8px; line-height:1.6; }
-.install-page #windows .windows-steps li:hover { background:rgba(98,96,216,.05); }
 .install-page #windows .gatekeeper { margin-top:20px; border-radius:22px; }
 .install-page .extension-store-card { align-self:center!important; height:auto!important; min-height:0!important; justify-self:stretch; display:flex; flex-direction:column; gap:23px; }
 .extension-store-heading { display:flex; align-items:center; gap:13px; }
@@ -1137,12 +1105,6 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .extension-store-card .rozsireni-akce { margin:0; }
 .install-page .extension-store-card .extension-cta { display:inline-flex; align-items:center; justify-content:center; width:max-content; max-width:100%; }
 .install-page .extension-store-card > p { line-height:1.65; margin:0; }
-@media(max-width:900px) { .install-page #windows .windows-steps li { padding:24px 18px; } }
-@media(max-width:700px) { .install-page #windows .windows-steps { grid-template-columns:1fr; } .install-page #windows .windows-steps li { min-height:0; padding:22px 25px; }
- .install-page #windows .windows-steps li:not(:last-child) { border-right:0; border-bottom:1px solid rgba(55,50,100,.12); }
- .install-page #windows .windows-steps .step-n { margin-bottom:14px; }
-}
-
 /* Filled platform marks use local SVG masks so their violet stays legible on both button surfaces. */
 #vyzkouset [data-stahnout]::before,.install-page [data-stahnout]::before {
   content:"";display:block;flex:none;width:20px;height:20px;background-color:#6255C9;
@@ -1155,9 +1117,14 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 #vyzkouset [data-stahnout="windows-x64"]::before,.install-page [data-stahnout="windows-x64"]::before {
   -webkit-mask-image:url('/platform-windows.svg');mask-image:url('/platform-windows.svg');
 }
+/* Značka systému má barvu podle role tlačítka, ne podle systému: na bílé hlavní výzvě sytá
+   fialová, na tmavé ploše (vedlejší výzva v tmavém úvodu, hlavní výzva ve světlé sekci) světlá. */
 #vyzkouset [data-stahnout="mac-arm64"]::before,
 .install-page .hero [data-stahnout="windows-x64"]::before,
-.install-page #windows [data-stahnout]::before {background-color:#BDB0FC;}
+:where(html[data-os="windows"]) #vyzkouset [data-stahnout="windows-x64"]::before,
+:where(html[data-os="windows"]) .install-page .hero [data-stahnout="mac-arm64"]::before {background-color:#BDB0FC;}
+:where(html[data-os="windows"]) #vyzkouset [data-stahnout="mac-arm64"]::before,
+:where(html[data-os="windows"]) .install-page .hero [data-stahnout="windows-x64"]::before {background-color:#6255C9;}
 @media(hover:hover) and (pointer:fine) {
   #vyzkouset [data-stahnout]:hover::before,.install-page [data-stahnout]:hover::before {background-color:#fff;}
 }
@@ -1609,7 +1576,7 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   font-size:29px;font-weight:400;line-height:1;
 }
 #vyzkouset ol.steps > li > .step-n .odo { color:inherit; }
-#vyzkouset ol.steps > li b { margin:0 0 12px; }
+#vyzkouset ol.steps > li > b { margin:0 0 12px; }
 #vyzkouset ol.steps > li p { margin:0; }
 @media(max-width:760px) {
   #vyzkouset ol.steps { grid-template-columns:1fr; }
@@ -1738,7 +1705,6 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
   }
   #vyzkouset #rozsireni[open] .detail-body {
     position:relative;
-    padding-right:clamp(105px,12vw,155px);
     min-height:178px;
   }
   #vyzkouset #rozsireni .extension-peek-robot {
@@ -2076,9 +2042,41 @@ html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!i
   }
 }
 
-/* Installation preview: full-body Scout, not a third repeated head logo. */
-.extension-received > .extension-received-robot {display:block;width:42px;height:44px;flex:0 0 42px;object-fit:contain;filter:drop-shadow(0 3px 5px rgba(0,0,0,.15));}
-@media(max-width:620px){.extension-received > .extension-received-robot{width:40px;height:42px;flex-basis:40px;}}
+/* Okno rozšíření na webu: skutečný snímek extension/popup.html (scripts/web-rozsireni-snimek.mjs,
+   2× pro retinu) pod tichou lištou prohlížeče, ze které se okno otevírá. Lišta nenese adresu ani
+   jinou stránku – ukazuje jen, odkud okno vychází. Světlý snímek ve světlé sekci úvodu, tmavý
+   na Instalaci, kde rám navazuje na tmavý úvod stránky. */
+.ext-okno { --ext-sirka:340px; position:relative; margin:0; width:100%; max-width:calc(var(--ext-sirka) + 40px); justify-self:center; }
+.ext-okno-ram { position:relative; overflow:hidden; padding:0 20px 24px; border-radius:var(--r-lg);
+  background:radial-gradient(120% 70% at 100% 0%,rgba(150,184,236,.42),transparent 62%),radial-gradient(90% 60% at 0% 100%,rgba(158,212,206,.34),transparent 70%),linear-gradient(180deg,#FFFFFF,#F4F5F9);
+  box-shadow:0 0 0 1px rgba(22,32,58,.09),0 40px 80px -48px rgba(29,20,73,.42); }
+.ext-okno-lista { display:flex; align-items:center; gap:12px; height:52px; margin:0 -20px 10px; padding:0 12px 0 18px; background:rgba(255,255,255,.66); border-bottom:1px solid rgba(22,32,58,.08); }
+.ext-okno-tecky { display:flex; gap:6px; flex:none; }
+.ext-okno-tecky i { width:10px; height:10px; border-radius:50%; background:rgba(22,32,58,.14); }
+.ext-okno-adresa { flex:1; min-width:0; height:28px; border-radius:var(--r-full); background:#FFFFFF; box-shadow:inset 0 0 0 1px rgba(22,32,58,.08); }
+.ext-okno-ikona { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:50%; background:rgba(98,85,201,.13); box-shadow:inset 0 0 0 1px rgba(98,85,201,.22); }
+.ext-okno-ikona img { width:20px; height:20px; }
+.ext-okno-snimek { display:block; width:100%; max-width:var(--ext-sirka); height:auto; margin-left:auto; border-radius:var(--r-sm);
+  box-shadow:0 0 0 1px rgba(22,32,58,.08),0 28px 56px -26px rgba(22,32,58,.38),0 6px 14px -8px rgba(22,32,58,.16); }
+.ext-okno figcaption { margin-top:14px; font-size:13px; line-height:1.4; text-align:center; color:var(--mute); }
+.ext-okno--tmave .ext-okno-ram { background:radial-gradient(120% 70% at 100% 0%,rgba(118,101,201,.32),transparent 62%),radial-gradient(90% 60% at 0% 100%,rgba(50,110,110,.22),transparent 70%),linear-gradient(180deg,#1A1824,#0F0E15);
+  box-shadow:0 0 0 1px rgba(255,255,255,.1),0 40px 80px -42px rgba(25,18,60,.62); }
+.ext-okno--tmave .ext-okno-lista { background:rgba(255,255,255,.04); border-bottom-color:rgba(255,255,255,.08); }
+.ext-okno--tmave .ext-okno-tecky i { background:rgba(255,255,255,.2); }
+.ext-okno--tmave .ext-okno-adresa { background:rgba(255,255,255,.07); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+.ext-okno--tmave .ext-okno-ikona { background:rgba(189,176,252,.18); box-shadow:inset 0 0 0 1px rgba(189,176,252,.32); }
+.ext-okno--tmave .ext-okno-snimek { box-shadow:0 0 0 1px rgba(255,255,255,.1),0 30px 64px -26px rgba(0,0,0,.85); }
+/* Scout vykukuje zpoza rámu vlevo dole, nikdy přes obsah okna. */
+.ext-okno-robot { position:absolute; left:-44px; bottom:40px; width:58px; height:auto; transform:rotate(-12deg); filter:drop-shadow(0 10px 14px rgba(29,20,73,.28)); pointer-events:none; }
+.install-page .extension-layout > .ext-okno { --ext-sirka:360px; align-self:center; }
+#vyzkouset #rozsireni[open] .extension-detail { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); align-items:center; column-gap:clamp(28px,4vw,56px); }
+#vyzkouset .extension-copy { display:grid; gap:16px; align-content:start; min-width:0; }
+#vyzkouset .extension-detail > .ext-okno { --ext-sirka:300px; }
+@media(max-width:900px) {
+  #vyzkouset #rozsireni[open] .extension-detail { grid-template-columns:minmax(0,1fr); row-gap:28px; }
+  .ext-okno-robot { display:none; }
+}
+@media(max-width:420px) { .ext-okno-ram { padding:0 12px 16px; } .ext-okno-lista { margin:0 -12px 8px; padding:0 8px 0 12px; } }
 
 
 /* Responsive resilience: logical CSS viewport, not hard-coded phone models.

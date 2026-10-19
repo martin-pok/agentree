@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
-import { tokensSince, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
+import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
@@ -295,7 +295,7 @@ function update(topics = new Set(['all'])) {
     .filter(needsYou)
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.lastAt - a.lastAt);
   const today = startOfDay(now);
-  const todayCount = all.filter((s) => s.lastAt >= today).length;
+  const todayCount = konverzaceOd(all, today);
   const running = state.runtimes.filter((r) => r.running).length;
   // Výpis procesů selhal: o běžících aplikacích víme jen to, co platilo naposledy. „0 aplikací
   // běží“ by tu byla nepravda – uživatel musí poznat, že se to nepodařilo zjistit.

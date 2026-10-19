@@ -31,3 +31,15 @@ test('ceník API: odhad sečte všechny druhy tokenů a řekne, co nepokryl', ()
   assert.deepEqual(o.modelyBezCeny, ['gpt-5']);
   assert.deepEqual(odhadCenyApi([]), { usd: 0, sCenou: 0, bezCeny: 0, modelyBezCeny: [] });
 });
+
+// Regrese: Sonnet 5.5 měl čtení z cache 0,20 $ podle starší tabulky, ceník Anthropicu (ověřeno
+// 18. 10. 2026) uvádí 0,10 $ – 0,05násobek vstupu jako u Opus 5.5. Odhad čtení cache vycházel dvojnásobný.
+test('ceník API: čtení z cache u Opus 5.5 a Sonnet 5.5 je 0,05násobek vstupu', () => {
+  for (const [model, vstup] of [['claude-opus-5-5', 4], ['claude-sonnet-5-5', 2]]) {
+    const [cVstup, , cCteni] = cenaModelu(model);
+    assert.equal(cVstup, vstup, model);
+    assert.equal(cCteni, vstup * 0.05, model);
+  }
+  const o = odhadCenyApi([{ model: 'claude-sonnet-5-5', hourlyUsage: { '2026-10-18T09': { 'claude-sonnet-5-5': [0, 0, 1e6, 0, 0] } } }]);
+  assert.equal(Math.round(o.usd * 100) / 100, 0.1);
+});

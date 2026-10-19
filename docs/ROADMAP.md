@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 18. 10. 2026:** veřejné Preview je [`v0.46.26`](https://github.com/martin-pok/agentree/releases/tag/v0.46.26); připravuje se `v0.46.27`. Stable Latest zůstává `v0.46.0`.
+**Stav 19. 10. 2026:** veřejné Preview je [`v0.46.27`](https://github.com/martin-pok/agentree/releases/tag/v0.46.27); připravuje se `v0.46.28`. Stable Latest zůstává `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 18. 10. 2026:** **0.46.27 Preview** (`v0.46.27`) nese roboty pevně na zemi, novou ikonu prázdných stavů, obnovu přes celou aplikaci a opravy z auditu bug reportu 14. 10. Předchozí `v0.46.26` je zveřejněné (klidné rozložení, tenký posuvník, pozdrav s dnešním dnem, roboti podle Figmy).
+**Aktuální release vlak 19. 10. 2026:** **0.46.28 Preview** (`v0.46.28`) nese pravdivé stavy při chybě API a výpadku Admin API, jedno upozornění na vyčerpaný limit, opravený ceník Sonnet 5.5 a Windows instalaci se skutečným oknem rozšíření na webu. Předchozí `v0.46.27` je zveřejněné (roboti na zemi, nová ikona prázdných stavů, obnova přes celou aplikaci).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

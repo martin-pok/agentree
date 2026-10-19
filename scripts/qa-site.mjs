@@ -131,9 +131,9 @@ try {
         await p.locator('[data-preview-mac]').scrollIntoViewIfNeeded();
         await p.waitForFunction((verze) => document.querySelector('[data-preview-mac]')?.getAttribute('href')
           ?.includes(`/releases/download/v${verze}/`), NOVEJSI_PREVIEW, { timeout: 5000 });
-        assert.equal(await p.locator('[data-preview-notes]').getAttribute('href'),
+        assert.equal(await p.locator('.preview-option[data-os-only="mac"] [data-preview-notes]').getAttribute('href'),
           `https://github.com/martin-pok/agentree/releases/tag/v${NOVEJSI_PREVIEW}`);
-        assert.ok((await p.locator('[data-preview-label]').innerText()).includes(NOVEJSI_PREVIEW));
+        assert.ok((await p.locator('.preview-option[data-os-only="mac"] [data-preview-label]').innerText()).includes(NOVEJSI_PREVIEW));
         assert.match(await p.locator('[data-stahnout="mac-arm64"]').first().getAttribute('href'),
           /releases\/latest\/download\/Agenteeq-macOS-arm64\.dmg/);
         assert.deepEqual(cizi, [], 'Preview must never fetch unrelated third-party resources');

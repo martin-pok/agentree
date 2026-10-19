@@ -1,21 +1,25 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import { latestPublicMacPreview, enableLivePreview, PREVIEW_API } from '../site/preview-release.js';
+import { latestPublicMacPreview, latestPublicPreview, enableLivePreview, PREVIEW_API } from '../site/preview-release.js';
 
 const REPO = 'https://github.com/martin-pok/agentree';
+const asset = (version, name) => ({
+  name,
+  size: 125_000_000,
+  digest: 'sha256:' + 'a'.repeat(64),
+  browser_download_url: `${REPO}/releases/download/v${version}/${name}`,
+});
 const make = (version, overrides = {}) => ({
   tag_name: 'v' + version,
   draft: false,
   prerelease: true,
-  assets: [{
-    name: `Agenteeq-${version}-macOS-arm64.dmg`,
-    size: 125_000_000,
-    digest: 'sha256:' + 'a'.repeat(64),
-    browser_download_url: `${REPO}/releases/download/v${version}/Agenteeq-${version}-macOS-arm64.dmg`,
-  }],
+  assets: [asset(version, `Agenteeq-${version}-macOS-arm64.dmg`)],
   ...overrides,
 });
+const withWindows = (version) => make(version, { assets: [
+  asset(version, `Agenteeq-${version}-macOS-arm64.dmg`), asset(version, `Agenteeq-${version}-Windows-x64.zip`),
+] });
 
 test('newest published Preview is chosen by semantic version, not GitHub list order', () => {
   const result = latestPublicMacPreview([make('0.46.8'), make('0.46.10'), make('0.46.9')]);
@@ -60,40 +64,63 @@ test('newest broken published candidate is skipped in favor of an older valid pu
   assert.equal(chosen.version, '0.46.11');
 });
 
+test('Windows Preview takes the exact Windows ZIP and never borrows a Mac-only release', () => {
+  const chosen = latestPublicPreview([withWindows('0.46.10'), make('0.46.11')], 'v0.46.6', 'windows');
+  assert.deepEqual(chosen, {
+    tag: 'v0.46.10', version: '0.46.10',
+    href: `${REPO}/releases/download/v0.46.10/Agenteeq-0.46.10-Windows-x64.zip`,
+    notes: `${REPO}/releases/tag/v0.46.10`,
+  });
+  assert.equal(latestPublicPreview([withWindows('0.46.10')], 'v0.46.6', 'linux'), null);
+  const tampered = withWindows('0.46.12');
+  tampered.assets[1] = { ...tampered.assets[1], browser_download_url: 'https://attacker.invalid/Agenteeq.zip' };
+  assert.equal(latestPublicPreview([tampered], 'v0.46.6', 'windows'), null);
+});
+
 test('site Preview and changelog always update atomically from one published release', async () => {
   const saved = globalThis.IntersectionObserver;
-  let reveal, observed, disconnected = false, requests = 0;
+  let reveal, disconnected = false, requests = 0;
+  const observed = [];
   globalThis.IntersectionObserver = class {
     constructor(callback, options) { reveal = callback; assert.ok(options.rootMargin.includes('400px')); }
-    observe(element) { observed = element; }
+    observe(element) { observed.push(element); }
     disconnect() { disconnected = true; }
   };
-  const label = { textContent: 'Stáhnout 0.46.6 Preview pro Mac' };
-  const container = {};
-  const link = {
-    href: `${REPO}/releases/download/v0.46.6/Agenteeq-0.46.6-macOS-arm64.dmg`,
-    dataset: { previewVersion: '0.46.6' },
-    closest() { return container; },
-    querySelector(selector) { return selector === '[data-preview-label]' ? label : null; },
+  const block = (platform, file, text) => {
+    const label = { textContent: text };
+    const notes = { href: `${REPO}/releases/tag/v0.46.6` };
+    const container = { querySelector(selector) { return selector === '[data-preview-notes]' ? notes : null; } };
+    const link = {
+      href: `${REPO}/releases/download/v0.46.6/${file}`,
+      dataset: { previewVersion: '0.46.6' },
+      closest(selector) { return selector === '.preview-option' ? container : null; },
+      querySelector(selector) { return selector === '[data-preview-label]' ? label : null; },
+    };
+    return { platform, link, notes, label, container };
   };
-  const notes = { href: `${REPO}/releases/tag/v0.46.6` };
-  const root = { querySelector(selector) { return selector === '[data-preview-mac]' ? link : selector === '[data-preview-notes]' ? notes : null; } };
+  const mac = block('mac', 'Agenteeq-0.46.6-macOS-arm64.dmg', 'Stáhnout 0.46.6 Preview pro Mac');
+  const win = block('windows', 'Agenteeq-0.46.6-Windows-x64.zip', 'Stáhnout 0.46.6 Preview pro Windows');
+  const root = { querySelector(selector) { return selector === '[data-preview-mac]' ? mac.link : selector === '[data-preview-windows]' ? win.link : null; } };
   try {
     enableLivePreview(root, async (url) => {
       requests++;
       assert.equal(url, PREVIEW_API);
-      return new Response(JSON.stringify([make('0.46.10')]), { status: 200 });
+      return new Response(JSON.stringify([make('0.46.11'), withWindows('0.46.10')]), { status: 200 });
     });
-    assert.equal(observed, container);
+    assert.deepEqual(observed, [mac.container, win.container]);
     assert.equal(requests, 0, 'do not block first paint with Github requests');
     reveal([{ isIntersecting: true }]);
     await new Promise(setImmediate);
     assert.equal(disconnected, true);
     assert.equal(requests, 1);
-    assert.match(link.href, /releases\/download\/v0\.46\.10\/Agenteeq-0\.46\.10-macOS-arm64\.dmg$/);
-    assert.equal(notes.href, `${REPO}/releases/tag/v0.46.10`);
-    assert.equal(label.textContent, 'Stáhnout 0.46.10 Preview pro Mac');
-    assert.equal(link.dataset.previewVersion, '0.46.10');
+    assert.match(mac.link.href, /releases\/download\/v0\.46\.11\/Agenteeq-0\.46\.11-macOS-arm64\.dmg$/);
+    assert.equal(mac.notes.href, `${REPO}/releases/tag/v0.46.11`);
+    assert.equal(mac.label.textContent, 'Stáhnout 0.46.11 Preview pro Mac');
+    assert.equal(mac.link.dataset.previewVersion, '0.46.11');
+    // 0.46.11 has no Windows ZIP: Windows keeps its own newest valid release and changelog.
+    assert.match(win.link.href, /releases\/download\/v0\.46\.10\/Agenteeq-0\.46\.10-Windows-x64\.zip$/);
+    assert.equal(win.notes.href, `${REPO}/releases/tag/v0.46.10`);
+    assert.equal(win.label.textContent, 'Stáhnout 0.46.10 Preview pro Windows');
     reveal([{ isIntersecting: true }]);
     await new Promise(setImmediate);
     assert.equal(requests, 1, 'IntersectionObserver may fire repeatedly; fetch only once');
@@ -108,6 +135,8 @@ test('all four public pages provide a real public fallback, notes and a stable p
     const html = await fs.readFile(new URL('../' + page, import.meta.url), 'utf8');
     assert.match(html, /data-preview-mac data-preview-version="0\.46\.12"/, page);
     assert.match(html, /data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.12"/, page);
+    assert.match(html, /data-preview-windows data-preview-version="0\.46\.12" href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/download\/v0\.46\.12\/Agenteeq-0\.46\.12-Windows-x64\.zip"/, page);
+    assert.equal(html.match(/data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.12"/g)?.length, 2, page + ': each system has its own release notes link');
     assert.match(html, /data-stahnout="mac-arm64"/, page + ' must retain distinct stable CTA');
   }
   const app = await fs.readFile(new URL('../site/lp.js', import.meta.url), 'utf8');

@@ -197,11 +197,10 @@ export function projectForm(existing = null) {
     size: 'project',
     body: `<div class="form-grid">
         <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
-        <label class="field field--wide"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
-        <label class="field field--wide"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
+        <label class="field"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
+        <label class="field"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
       </div>
-      ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')}</p>
-      <p class="modal-text">${tr('Předvyplní podklady projektu a štítek. Všechno jde později upravit.')}</p>
+      ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')} <small class="muted">${tr('předvyplní podklady a štítek')}</small></p>
       <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}
       <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
@@ -216,7 +215,7 @@ export function projectForm(existing = null) {
         </div>`).join('')}
       </div>
       <p class="form-sub">${tr('Složky projektu')}</p>
-      <p class="modal-text">${tr('Konverzace agentů spuštěných v těchto složkách (i podsložkách) se do projektu zařadí samy. Chaty z webu a ostatní přidáš ručně.')}</p>
+      <p class="modal-text">${tr('Konverzace ze složek projektu (i podsložek) se zařadí samy, ostatní přidáš ručně.')}</p>
       <ul class="folder-list" id="${id}-list"></ul>
       <input type="hidden" name="folders">
       <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}${tr('Přidat složku')}</button>
@@ -293,7 +292,7 @@ export function projectForm(existing = null) {
   const render = () => {
     listEl.innerHTML = folders.length
       ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="${tr('Odebrat složku')} ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
-      : `<li class="folder-empty">${tr('Zatím žádná složka – projekt bude jen pro ručně zařazené konverzace.')}</li>`;
+      : `<li class="folder-empty">${tr('Zatím žádná složka.')}</li>`;
   };
   listEl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove]');

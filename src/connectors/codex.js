@@ -193,6 +193,8 @@ export function createCodexConnector(ctx) {
   const windowMs = config.windowDays * DAY;
   const files = new Map();
   let exists = false;
+  // Kořeny, které existují, ale nejdou přečíst (koreny-prepisu.js#necitelne) – „nevím“, ne „nic“.
+  let necitelne = [];
   let lastEventAt = 0;
   const queue = createFileQueue(sync);
   const domovy = new Set(domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }));
@@ -248,13 +250,27 @@ export function createCodexConnector(ctx) {
     if (s.running && ts > s.runningAt) s.runningAt = Math.min(ts, Date.now());
   }
 
-  function rateLimits(s, rl, ts) {
-    for (const slot of ['primary', 'secondary']) {
+  // Ověřené účty podle domova (src/app.js z `account/rateLimits/read` téhož CODEX_HOME). Snímek
+  // limitů v přepisu účet nenese: se dvěma různými účty by se okna jedné licence přepisovala
+  // druhou. Snímek se proto přiřadí účtu svého domova; když to nejde, do limitů se nezapíše
+  // (čísla každého účtu dodá app-server zvlášť). S jedním účtem zůstává sdílený klíč.
+  let uctyDomovu = new Map();
+  const ucetSnimku = (st) => {
+    const ruzne = new Set(uctyDomovu.values());
+    if (ruzne.size <= 1) return { accountId: null, nejasne: false };
+    const accountId = uctyDomovu.get(st?.domov) || null;
+    return { accountId, nejasne: !accountId };
+  };
+
+  function rateLimits(s, rl, ts, st) {
+    const { accountId, nejasne } = ucetSnimku(st);
+    for (const slot of nejasne ? [] : ['primary', 'secondary']) {
       const w = rl[slot];
       if (!w || typeof w.used_percent !== 'number') continue;
       const resetsAt = toTs(w.resets_at) || (typeof w.resets_in_seconds === 'number' ? ts + w.resets_in_seconds * 1000 : null);
       store.setLimit({
-        id: `codex:${rl.limit_id || 'codex'}:${slot}`,
+        id: `codex:${rl.limit_id || 'codex'}:${slot}${accountId ? `:${accountId}` : ''}`,
+        ...(accountId ? { accountId } : {}),
         provider: 'openai',
         app: 'Codex',
         label: windowLabel(w.window_minutes),
@@ -271,7 +287,7 @@ export function createCodexConnector(ctx) {
     }
     const c = rl.credits;
     const zustatek = zustatekKreditu(c);
-    if (zustatek !== null) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
+    if (zustatek !== null && !nejasne) ulozKredit({ balance: zustatek, unlimited: Boolean(c.unlimited), at: ts, zdroj: s.id }, maKredity(c, zustatek));
     // The snapshot can report an exhausted primary/secondary window without
     // rate_limit_reached_type. The global quota tile already knows this, but
     // without a session limit deriveStatus wrongly says "čeká na zadání".
@@ -357,7 +373,7 @@ export function createCodexConnector(ctx) {
               const cur = applyCodexTokenUsage(st, t, ts, s.hourly, p.info?.last_token_usage);
               s.tokens = { input: cur.input, output: cur.output, cacheWrite: cur.cacheWrite, cacheRead: cur.cacheRead };
             }
-            if (p.rate_limits) rateLimits(s, p.rate_limits, ts);
+            if (p.rate_limits) rateLimits(s, p.rate_limits, ts, st);
             touch(s, ts);
             return;
           }
@@ -433,7 +449,7 @@ export function createCodexConnector(ctx) {
     if (st && st.size === stat.size && st.mtimeMs === stat.mtimeMs) return;
     if (!st) {
       const base = path.basename(file, '.jsonl');
-      st = { tail: new JsonlTail(file), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, ...createCodexTokenState() };
+      st = { tail: new JsonlTail(file), domov: path.resolve(path.dirname(koreny.najdi(file).koren)), localId: base.match(UUID_TAIL)?.[0] || base, useItems: false, ...createCodexTokenState() };
       files.set(file, st);
     }
     const s = store.ensure({ connector: 'codex', localId: st.localId, provider: 'openai', app: 'Codex' });
@@ -523,6 +539,7 @@ export function createCodexConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
     for (const koren of koreny.seznam()) for (const f of await scanKoren(koren, plny)) videne.add(f);
@@ -548,6 +565,14 @@ export function createCodexConnector(ctx) {
     verified: true,
     source: '~/.codex/sessions (a CODEX_HOME)',
     description: ui('Přepis v reálném čase, stav úlohy, tokeny, limity plánu a zůstatek kreditů.'),
+    /** [{ home, accountId }] – ověřené účty jednotlivých domovů (viz ucetSnimku). */
+    bindAccounts(ucty = []) {
+      uctyDomovu = new Map(ucty.filter((u) => u?.home && u.accountId).map((u) => [path.resolve(u.home), u.accountId]));
+      // Sdílená okna z doby jednoho účtu by po přidání druhého ukazovala čísla neznámo čí.
+      if (new Set(uctyDomovu.values()).size > 1) {
+        for (const l of store.limitList()) if (l.provider === 'openai' && l.id.startsWith('codex:') && !l.accountId) store.removeLimit(l.id);
+      }
+    },
     async start() {
       await scan();
       koreny.start();
@@ -566,9 +591,10 @@ export function createCodexConnector(ctx) {
     idle: () => queue.idle(),
     status() {
       const count = files.size;
+      const necteno = necitelne.length ? ui('Složku {0} nejde přečíst (chybí oprávnění), konverzace v ní nejsou vidět.', necitelne.join(', ')) : '';
       return {
-        state: count ? 'connected' : exists ? 'idle' : 'missing',
-        detail: count ? ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays) : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Na {0} nejsou žádné konverzace Codexu.', POCITAC.tomto),
+        state: necteno && !count ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        detail: necteno && !count ? necteno : count ? `${ui('Sleduji {0} konverzací za posledních {1} dní.', count, config.windowDays)}${necteno ? ` ${necteno}` : ''}` : exists ? ui('Složka existuje, zatím bez konverzací.') : ui('Na {0} nejsou žádné konverzace Codexu.', POCITAC.tomto),
         count,
         watching: koreny.sleduje(),
         lastEventAt,

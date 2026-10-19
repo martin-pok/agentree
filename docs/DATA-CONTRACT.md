@@ -250,7 +250,7 @@ interface SpendPayload {
   recurring: number; forecast: number;
   budgets: { scope: string; label: string; spent: number; budget: number; pct: number }[];
   ledger: LedgerEntry[];               // starší ruční záznamy, pouze historie a CSV
-  billing: { connected: boolean; at: number | null }; // alespoň jeden úspěšně načtený Admin API zdroj
+  billing: { connected: boolean; at: number | null; failed: { id: 'openai-admin' | 'anthropic-admin'; detail: string }[] }; // connected = alespoň jeden úspěšně načtený Admin API zdroj; failed = zdroje s klíčem, jejichž náklady se nepodařilo načíst (součet je bez nich neúplný)
   budgetsConfig: { total: number; services: Record<string, number> };
   rates: Record<string, number>;                     // Kč za 1 jednotku měny
   rateInfo: { source: 'cnb' | 'manual' | 'default'; date: string | null /* RRRR-MM-DD lístku ČNB */; live: object | null };

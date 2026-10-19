@@ -118,7 +118,8 @@ export class AlertEngine {
         key: `failed:${s.id}:${s.failure?.at || s.lastAt}`,
         level: 'critical',
         kind: 'failed',
-        title: `${s.app}: spuštění selhalo`,
+        // Chyba API uprostřed konverzace (src/connectors/claude-code.js) není selhání spuštění.
+        title: s.failure?.kind === 'chyba' ? `${s.app}: skončil chybou` : `${s.app}: spuštění selhalo`,
         body: s.reason || s.title,
         sessionId: s.id,
       });
@@ -132,7 +133,7 @@ export class AlertEngine {
         sessionId: s.id,
       });
     } else if (s.status === 'limited' && n.limits) {
-      this.raise({
+      this.vycerpano(s.provider, s.limit?.resetsAt, {
         key: `limit:${s.id}:${s.limit?.at || s.lastAt}`,
         level: 'critical',
         kind: 'limit',
@@ -162,7 +163,7 @@ export class AlertEngine {
     // Měření pořízené až po obnově svého okna patří minulému oknu a o současném stavu nic neříká.
     if (Number(limit.resetsAt) > 0 && Number(limit.at) > 0 && limit.resetsAt <= limit.at) return;
     if (limit.reached && !prev?.reached) {
-      this.raise({
+      this.vycerpano(limit.provider, limit.resetsAt, {
         key: `limit:${limit.resetsAt ? klicOkna(limit) : `${limit.id}:${limit.at}`}`,
         level: 'critical',
         kind: 'limit',
@@ -204,6 +205,19 @@ export class AlertEngine {
       });
       if (a) raised.push(a);
     }
+    return raised;
+  }
+
+  // Vyčerpané okno hlásí konverzace, která na ně narazila (stav „limit“), i samotné okno účtu
+  // (onLimit) – a na jedno okno jich může narazit několik konverzací naráz. Dřív z toho byla dvě
+  // i víc upozornění na tentýž limit. Upozornění patří oknu: poskytovatel a minuta obnovy. Bez času
+  // obnovy se zdroje spárovat nedají a platí jen vlastní klíč upozornění.
+  vycerpano(provider, resetsAt, a) {
+    const okno = Number(resetsAt) > 0 ? ['limit_okno', provider || 'other', Math.round(resetsAt / 60e3)].join(':') : null;
+    const keys = this.datastore.data.alertKeys;
+    if (okno && keys[okno]) return undefined;
+    const raised = this.raise(a);
+    if (raised && okno) keys[okno] = this.now();
     return raised;
   }
 

@@ -352,11 +352,23 @@ function onAssistant(st, s, o, ts, { onLimit, onSuccess, onQuota }) {
         provider: 'anthropic', app: 'Claude', label: model ? `${kind.label} · ${model}` : kind.label,
         usedPercent: null, windowMinutes: null, resetsAt, reached: true, plan: null, text, at: ts, model,
       });
+      return;
     }
+    // Jiná chyba API (500, přetížení, vypršelé přihlášení, příliš dlouhý prompt…) tah ukončila bez
+    // odpovědi. Dřív z toho bylo „Hotovo, čeká na další zadání“ – teď „selhalo“ s textem chyby, dokud
+    // nepřijde nové zadání nebo úspěšná odpověď. Zrušený požadavek není selhání, ale přerušení.
+    // Chyba pomocníka zapsaná v rodičovském přepisu (isSidechain) rodiče neshazuje.
+    if (o.isSidechain && !st.subagentFile) return;
+    if (/^request was aborted/i.test(text)) {
+      s.prerusenoAt = ts || Date.now();
+      return;
+    }
+    s.failure = { text, at: ts, kind: 'chyba' };
     return;
   }
 
   if (s.limit && ts > s.limit.at) s.limit = null;
+  if (s.failure?.kind === 'chyba' && ts > s.failure.at) s.failure = null;
   onSuccess?.(ts, m.model && !String(m.model).startsWith('<') ? m.model : null, s);
   if (m.model && !String(m.model).startsWith('<')) s.model = m.model;
 
@@ -494,6 +506,8 @@ export function createClaudeCodeConnector(ctx) {
   let lastEventAt = 0;
   let lastHookAt = 0;
   let exists = false;
+  // Kořeny, které existují, ale nejdou přečíst (koreny-prepisu.js#necitelne) – „nevím“, ne „nic“.
+  let necitelne = [];
   const queue = createFileQueue(sync, 40);
   const koreny = createKorenyPrepisu(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }), {
     zmena: (koren, soubor) => (soubor ? queue.schedule(soubor) : scanKoren(koren)),
@@ -680,6 +694,7 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scan() {
     exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
     konfliktyId.clear();
     const plny = pruchod++ % 6 === 0;
     const videne = new Set();
@@ -886,11 +901,12 @@ export function createClaudeCodeConnector(ctx) {
     ingestStatusline,
     status() {
       const count = files.size;
+      const necteno = necitelne.length ? ui('Složku {0} nejde přečíst (chybí oprávnění), konverzace v ní nejsou vidět.', necitelne.join(', ')) : '';
       return {
-        state: konfliktyId.size ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
+        state: konfliktyId.size || (necteno && !count) ? 'error' : count ? 'connected' : exists ? 'idle' : 'missing',
         collisions: konfliktyId.size,
-        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : count
-          ? (lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays))
+        detail: konfliktyId.size ? ui('Kolize ID konverzací mezi profily: {0}. Některé běhy nelze bezpečně přiřadit k účtu.', konfliktyId.size) : necteno && !count ? necteno : count
+          ? `${lastHookAt ? ui('Sleduji {0} sessions za {1} dní. Okamžité události jsou aktivní.', count, config.windowDays) : ui('Sleduji {0} sessions za {1} dní.', count, config.windowDays)}${necteno ? ` ${necteno}` : ''}`
           : exists
             ? ui('Složka existuje, zatím bez sessions.')
             : ui('Na {0} nejsou žádné konverzace Claude Code.', POCITAC.tomto),

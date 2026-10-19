@@ -220,20 +220,22 @@ function mount(el, _params, query) {
   el.addEventListener('click', v.onClick);
 }
 
-function update() {
-  const el = v.el;
-  const sp = state.spend;
-  if (!el || !sp) return;
+// Zdroje s klíčem, jejichž náklady se nepodařilo načíst (src/app.js#spendPayload). Selhání není
+// „nepřipojeno“ ani „0 Kč“: bez načtených zdrojů to hero řekne přímo, při jednom selhaném zdroji
+// upozorní, že součet, prognóza a rozpočet jsou bez něj neúplné.
+const VENDOR = { 'openai-admin': 'OpenAI', 'anthropic-admin': 'Anthropic' };
+const selhaneZdroje = (sp) => (Array.isArray(sp.billing?.failed) ? sp.billing.failed : []);
+const popisSelhani = (f) => `${VENDOR[f.id] || f.id}${f.detail ? ` (${f.detail})` : ''}`;
+
+export function spendHeroHtml(sp) {
   const billingConnected = sp.billing?.connected !== false;
   const total = sp.budgetsConfig?.total || 0;
   const pct = total ? (sp.month.total / total) * 100 : 0;
-  fill(el, 'month', esc(monthLabel(sp.monthKey)));
-  el.querySelector('[data-region="hero"]').classList.toggle('is-unavailable', !billingConnected);
-  el.querySelector('[data-region="budgets"]').hidden = !billingConnected;
-  el.querySelector('[data-region="analytics"]').hidden = !billingConnected;
-  el.querySelector('[data-region="ledger-section"]').hidden = !billingConnected && !sp.ledger?.length && !sp.automatic?.length;
-
-  fill(el, 'hero', billingConnected ? `
+  const failed = selhaneZdroje(sp);
+  if (!billingConnected && failed.length) {
+    return `${ICON.wallet}<div><strong>${tr('Náklady za API se nepodařilo načíst')}</strong><p class="muted small">${esc(failed.map(popisSelhani).join(' · '))}. ${tr('Útrata za tento měsíc proto není známá – nejde o nulu. Zkontroluj klíč v Nastavení, další pokus proběhne sám.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Zkontrolovat klíč')}</a>`;
+  }
+  return billingConnected ? `
     <div class="spend-ring">${gauge({
       pct: total ? pct : 0,
       color: pct >= 100 ? 'var(--velvet-ink)' : pct >= 80 ? 'var(--brass)' : 'var(--teal)',
@@ -248,8 +250,24 @@ function update() {
       <div><span class="eyebrow">${tr('Aktualizováno')}</span><span class="val val--soft">${sp.billing?.at ? `<span data-ago="${sp.billing.at}">${esc(rel(sp.billing.at))}</span>` : '–'}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
+      ${failed.length ? `<p class="spend-note spend-note--warn" data-billing-failed>${esc(tr('Bez nákladů od: {0}.', failed.map(popisSelhani).join(' · ')))} ${tr('Nepodařilo se je načíst, součet, prognóza i rozpočet jsou proto neúplné.')}</p>` : ''}
       ${sp.ledger?.length ? `<p class="spend-note">${tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')}</p>` : ''}
-    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatná mají pevnou měsíční cenu a do útraty se nepočítají.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`);
+    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatná mají pevnou měsíční cenu a do útraty se nepočítají.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`;
+}
+
+function update() {
+  const el = v.el;
+  const sp = state.spend;
+  if (!el || !sp) return;
+  const billingConnected = sp.billing?.connected !== false;
+  const total = sp.budgetsConfig?.total || 0;
+  fill(el, 'month', esc(monthLabel(sp.monthKey)));
+  el.querySelector('[data-region="hero"]').classList.toggle('is-unavailable', !billingConnected);
+  el.querySelector('[data-region="budgets"]').hidden = !billingConnected;
+  el.querySelector('[data-region="analytics"]').hidden = !billingConnected;
+  el.querySelector('[data-region="ledger-section"]').hidden = !billingConnected && !sp.ledger?.length && !sp.automatic?.length;
+
+  fill(el, 'hero', spendHeroHtml(sp));
 
   fill(el, 'plans', plansHtml(sp));
   fill(el, 'provider-accounts', providerAccountsHtml(sp));

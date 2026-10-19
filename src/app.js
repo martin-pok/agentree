@@ -168,6 +168,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         const zaznamy = connectors['cloud-billing'].autoEntries();
         return utrataPoMesicich(zaznamy, { mesice, prevod: (e) => convert(e.amount, e.currency, sp), mena: sp.currency || 'CZK' });
       },
+      // Služby s klíčem, jejichž náklady se nepodařilo načíst – jejich řádky v účtu se nemažou.
+      utrataNezjistena: () => connectors['cloud-billing'].failedServices(),
     },
   });
 
@@ -486,6 +488,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
     connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
+    connectors.codex.bindAccounts?.(codexHomes.map((home, i) => ({ home, accountId: codexResults[i]?.id || null })));
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
     for (const codexAccount of codexAccounts) history = observeAccount(history, codexAccount);
@@ -552,7 +555,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const sp = datastore.data.spend;
     const sources = connectors['cloud-billing'].providers();
     const connected = Object.values(sources).filter((source) => source.state === 'connected');
-    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    // Zdroj s klíčem, jehož náklady se nepodařilo načíst. Bez něj by Útrata neúplný součet ukázala
+    // jako celý (jeden zdroj selže, druhý platí) nebo selhání jako „nepřipojeno“ – nevíme ≠ nic.
+    const failed = Object.entries(sources).filter(([, source]) => source.state === 'error').map(([id, source]) => ({ id, detail: source.detail || '' }));
+    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null, failed }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {

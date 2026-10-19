@@ -1511,6 +1511,7 @@ html.is-cloud body { background: var(--paper); }
 .spend-stats .is-over { color: var(--velvet-ink); }
 .set-note.budget-api-note { margin: 0 0 16px; }
 .spend-stats .spend-note { grid-column: 1 / -1; margin: 0; font-size: 12px; line-height: 1.5; color: var(--mute); }
+.spend-stats .spend-note--warn { padding: 8px 12px; border-radius: var(--r-sm); background: var(--brass-tint); color: var(--ink); }
 .budget-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 32px 0; }
 .budget-card { padding: 18px 20px; display: grid; gap: 10px; }
 .budget-top { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
@@ -1798,6 +1799,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .modal-body { padding: 8px 24px 16px; }
 .modal-text { margin: 0 0 12px; font-size: 14px; color: var(--ink-2); }
 .form-sub { margin: 24px 0 12px; font: 500 13px/1 var(--f-body); color: var(--mute); }
+.form-sub:has(> small) { display: flex; align-items: center; gap: 6px; }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .form-grid--services { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
 .modal-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px 24px; }
