@@ -123,9 +123,10 @@ async function posli(text) {
     // otázky mimo Agenteeq poctivé „s tím neporadím“ (public/js/assistant-guide.js).
     const rada = odpovedPruvodce(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state, agenti: agentsList });
     // Otázky k aplikaci zodpoví AI ze znalostní báze (src/pomocnik-ai.js) vlastními slovy; odkazy
-    // na místa v aplikaci přidá průvodce. „Co na mě čeká?“ (živý stav) a hledání starého chatu
-    // (přepisy na disku) zůstávají deterministické. Bez AI na počítači odpoví průvodce.
-    if (!jeHledaniChatu(dotaz) && !(rada?.topic === 'cekani' && jeOtazkaNaCekani(dotaz))) {
+    // na místa v aplikaci přidá průvodce. „Co na mě čeká?“ a „Proč Codex nepracuje?“ (živý stav,
+    // který AI nezná) a hledání starého chatu (přepisy na disku) zůstávají deterministické. Bez AI
+    // na počítači odpoví průvodce.
+    if (!jeHledaniChatu(dotaz) && !(rada?.topic === 'cekani' && jeOtazkaNaCekani(dotaz)) && rada?.topic !== 'stav-nastroje') {
       const historie = zpravy.slice(0, -1).slice(-6).map((z) => ({ kdo: z.kdo, text: z.text || '' }));
       const ai = await request('POST', '/api/pomocnik/ai', { dotaz, historie, stranka: trasa(), znalosti: znalostiPruvodce(LOCALE) }).catch(() => null);
       if (ai?.engine) {

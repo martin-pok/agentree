@@ -1744,6 +1744,7 @@ export default {
     "Stav agentů se ještě načítá, takže se nepodařilo zjistit, jestli na tebe někdo čeká. Zkus to za chvíli znovu.": "Agent status is still loading, so it could not be determined whether anything is waiting for you. Try again in a moment.",
     "Živé spojení teď není potvrzené, údaje nemusí být aktuální.": "The live connection is not confirmed right now, so this may be out of date.",
     "Na tvé rozhodnutí teď nečeká žádný agent a žádný neselhal ani nenarazil na limit.": "No agent is waiting for your decision right now, and none has failed or hit a limit.",
+    "{0}: žádný agent teď neselhal, nenarazil na limit ani nečeká na tebe.": "{0}: no agent has failed, hit a limit or is waiting for you right now.",
     "Další najdeš v sekci Agenti.": "You will find the rest in Agents.",
     "Nabízené možnosti": "Offered options",
     "Příkaz je ve schránce – vlož ho do Terminálu ve složce projektu": "The command is on the clipboard – paste it into Terminal in the project folder",

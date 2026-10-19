@@ -10,7 +10,7 @@ Nezávislý průchod v Chromiu nad ukázkovými daty a navíc s agentem Codex s 
 | --- | --- | --- |
 | 1 Prázdné stavy | `qa:contrast` a `qa:tvary` procházejí prázdný profil (`scripts/qa-prazdny-profil.mjs`): každá obrazovka má robota, větu a hlavní akci, žádná falešná „0“ | v pořádku |
 | 2 Scroll v upozornění | stránka posunutá na 30 px, otevřený zvoneček, 10× kolečko v seznamu, v hlavičce okna i mimo okno: stránka zůstala na 30 px | v pořádku |
-| 3.1 Pomocník | „Jak spáruju telefon?“ vede na QR v Nastavení; „Jaké bude zítra počasí?“ odmítne a nabídne otázky k aplikaci; bez placeného API | v pořádku |
+| 3.1 Pomocník | „Jak spáruju telefon?“ vede na QR v Nastavení; „Jaké bude zítra počasí?“ odmítne a nabídne otázky k aplikaci; bez placeného API. **Nalezená mezera:** „Proč Codex nepracuje?“ dostalo obecný návod, i když Codex stál na limitu → v 0.46.33 odpoví ze živého stavu toho nástroje (limit s časem obnovy, selhání, čekání na tebe) | doplněno |
 | 3.2 QR párování | QR z párovací adresy v Nastavení → Aplikace na tomto počítači; v testu bez sítě je přepínač správně vypnutý | kód ano, telefon neověřen |
 | 4 Logo | hlava robota v hlavičce vyvážená k názvu (1440 px) | v pořádku |
 | 5, 8.5 Aktualizace | `qa:update` (macOS CI) od #262/#271; okno průběhu se skutečnými MB | CI ano, Mac majitele neověřen |
