@@ -10,7 +10,7 @@ import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolve
 import { qrSvg, parovaciAdresa, cileParovani } from '../qr.js';
 import { takeJump, vyvolejMisto } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
-import { radekNapojeni, spustNapojeni } from '../napojeni-ui.js';
+import { seznamNapojeni, spustNapojeni } from '../napojeni-ui.js';
 import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
 import { JE_MAC, SYSTEM, zkratka } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
@@ -1023,7 +1023,7 @@ function pushSekce() {
 function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
-    ${list ? `<ul class="model-list">${list.map(radekNapojeni).join('')}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
+    ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
     <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
 }
 

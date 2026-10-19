@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.30 – 2026-10-19 · Telefon bez useknutých textů
+
+- **Nastavení → Propojení:** webové chaty bez rozšíření jsou jeden řádek se seznamem služeb a jedním tlačítkem „Přidat rozšíření“ místo deseti stejných karet pod sebou. S rozšířením má každá služba dál svůj řádek a stav.
+- **Přehled na telefonu:** přepínač „V aplikaci / Na pozadí / V Terminálu“ se vejde celý (dřív byla třetí volba useknutá), i na šířce 320 px.
+- **Detail agenta:** nadpis „Agent“ místo „Detail agenta“, který se na telefonu usekl na „Detail age…“ (detail projektu má stejně krátké „Projekt“).
+- **Konverzace v projektu:** dlouhá činnost a podpis v okně přidání konverzací končí třemi tečkami, ne useknutým písmenem.
+
 ## 0.46.29 – 2026-10-19 · Pomocník uhne při čtení
 
 - **Pomocník na telefonu nezakrývá karty:** při posouvání dolů kulaté tlačítko sjede z cesty, při posunu nahoru a na konci stránky se vrátí. Otevřený chat ani tlačítko s fokusem z klávesnice neustupují; na počítači se nic nemění. Při omezeném pohybu jen zmizí, bez posunu.

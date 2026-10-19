@@ -218,3 +218,16 @@ test('P0 Codex limit appears in the overview attention inbox and does not masque
   const en = await zdroj('public/js/i18n/en.js');
   assert.match(en, /"Vyžaduje pozornost": "Needs attention"/);
 });
+
+test('Propojení: webové chaty bez rozšíření jsou jeden řádek, s rozšířením každý svůj', async () => {
+  globalThis.window ??= { addEventListener() {}, matchMedia: () => ({ matches: false }) };
+  const { seznamNapojeni } = await import('../public/js/napojeni-ui.js');
+  const agent = { druh: 'agent', id: 'codex', label: 'Codex', provider: 'openai', logo: 'openai', nainstalovano: true, napojeno: true, posledni: 0 };
+  const web = (id, label, nainstalovano) => ({ druh: 'web', id, label, provider: 'openai', logo: 'openai', nainstalovano, napojeno: null, posledni: 0 });
+  const bez = seznamNapojeni([agent, web('chatgpt', 'ChatGPT', false), web('gemini', 'Gemini', false), web('grok', 'Grok', false)]);
+  assert.equal((bez.match(/<li /g) || []).length, 2, 'agent + jeden souhrnný řádek');
+  assert.equal((bez.match(/data-action="extension-scroll"/g) || []).length, 1);
+  assert.match(bez, /ChatGPT, Gemini, Grok/);
+  const s = seznamNapojeni([agent, web('chatgpt', 'ChatGPT', true), web('gemini', 'Gemini', true)]);
+  assert.equal((s.match(/<li /g) || []).length, 3, 's rozšířením má každá služba vlastní stav');
+});

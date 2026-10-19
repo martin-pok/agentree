@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 19. 10. 2026:** veřejné Preview je [`v0.46.28`](https://github.com/martin-pok/agentree/releases/tag/v0.46.28); připravuje se `v0.46.29`. Stable Latest zůstává `v0.46.0`.
+**Stav 19. 10. 2026:** veřejné Preview je [`v0.46.29`](https://github.com/martin-pok/agentree/releases/tag/v0.46.29); připravuje se `v0.46.30`. Stable Latest zůstává `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,15 +8,15 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 19. 10. 2026:** **0.46.29 Preview** (`v0.46.29`) nese Pomocníka, který na telefonu uhne při čtení, oddělené kredity dvou účtů Codexu a úklid dočasných složek po testech. Předchozí `v0.46.28` je zveřejněné (pravdivé stavy při chybě API a výpadku Admin API, Windows instalace na webu).
+**Aktuální release vlak 19. 10. 2026:** **0.46.30 Preview** (`v0.46.30`) nese webové chaty bez rozšíření jako jeden řádek v Nastavení a telefon bez useknutých textů (přepínač spuštění, nadpis detailu agenta, konverzace v projektu). Předchozí `v0.46.29` je zveřejněné (Pomocník uhne při čtení, oddělené kredity dvou účtů Codexu).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
-**Stav vydávání 19. 10. 2026:** Preview vychází průběžně přes automatický Draft s auditem příloh a ruční zveřejnění (`publish.yml`); poslední veřejné je [`v0.46.28`](https://github.com/martin-pok/agentree/releases/tag/v0.46.28) se 7/7 otisky shodnými se `SHA256SUMS.txt`. Starší kandidáti 0.46.11–0.46.14 jsou historie (podrobnosti v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Zdokumentované fyzické UAT na Macu, v Chromu ani na Windows zatím neproběhlo** – to zůstává první P0.
+**Stav vydávání 19. 10. 2026:** Preview vychází průběžně přes automatický Draft s auditem příloh a ruční zveřejnění (`publish.yml`); poslední veřejné je [`v0.46.29`](https://github.com/martin-pok/agentree/releases/tag/v0.46.29) se 7/7 otisky shodnými se `SHA256SUMS.txt`. Starší kandidáti 0.46.11–0.46.14 jsou historie (podrobnosti v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Zdokumentované fyzické UAT na Macu, v Chromu ani na Windows zatím neproběhlo** – to zůstává první P0.
 
 | Priorita | Výsledek | Důkaz a stav | Dokončení |
 |---|---|---|---|
-| **P0** | **UAT zveřejněného Preview** | Poslední veřejné [v0.46.28](https://github.com/martin-pok/agentree/releases/tag/v0.46.28) (prerelease, otisky příloh ověřené při zveřejnění); Stable Latest `v0.46.0`. **Zdokumentované fyzické UAT na zařízení neproběhlo.** [#208](https://github.com/martin-pok/agentree/issues/208) | Mac z veřejného DMG/ZIP: instalace, aktualizace v aplikaci, Finder/Gatekeeper, Google SSO/avatar, rollback, živý stav vzdálených agentů Claude Code; Chrome a Windows UAT; nalezená závada = nová verze |
+| **P0** | **UAT zveřejněného Preview** | Poslední veřejné [v0.46.29](https://github.com/martin-pok/agentree/releases/tag/v0.46.29) (prerelease, otisky příloh ověřené při zveřejnění); Stable Latest `v0.46.0`. **Zdokumentované fyzické UAT na zařízení neproběhlo.** [#208](https://github.com/martin-pok/agentree/issues/208) | Mac z veřejného DMG/ZIP: instalace, aktualizace v aplikaci, Finder/Gatekeeper, Google SSO/avatar, rollback, živý stav vzdálených agentů Claude Code; Chrome a Windows UAT; nalezená závada = nová verze |
 | **P0** | **Aktualizovat skutečný Chrome Web Store** | Veřejný Store **0.31.4** (rozbité úzké okno) vs. rozšíření v každém Preview (`agenteeq-extension-<verze>.zip`). Nahrání se od 0.46.27 spouští samo po zveřejnění vydání (`chrome-web-store.yml`), ale končí varováním: v repozitáři chybí `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` (účet vydavatele, jen vlastník). [#172](https://github.com/martin-pok/agentree/issues/172) | Vlastník doplní tři secrets nebo jednou nahraje ZIP v Developer Console; pak obchod zveřejní aktuální verzi a ověří se live instalace a párování v Chromu |
 | **P0** | **Bezpečný nativní focus agenta a autentizace** | Zdrojový 403 bug již opraven. `POST /api/extension/focus-agent` validuje token, origin, viditelné ID a existující okno; testy prochází. [#174](https://github.com/martin-pok/agentree/issues/174) | Reálný párovaný Mac+Chrome, čekající/běžící agent kliknutím otevře původní session bez duplikace, offline/unpair/focus je přístupný |
 | **P0** | **Brand na každé platformě, bez trojzubce** | Staré tracked PNG/ICO/ICNS odstraněny, web/404 favicon a Windows ZIP QA hotovy; Mac Dock z 0.46.11 vizuálně ověřen; PWA/Apple PNG v Draftu **prokazatelně staré**, zdroj opravuje PR #231; Explorer a dashboard Vercel avatar neověřeny. [#213](https://github.com/martin-pok/agentree/issues/213) | Pixelová shoda zdrojů, malých ikon, promo i skutečně nainstalovaných UI a avataru |

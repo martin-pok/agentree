@@ -807,6 +807,9 @@ html.look-open { overflow: hidden; }
 .launch .launch-controls .lselect--btn { height: 44px; min-height: 44px; }
 .launch .launch-controls .seg--light { height: 44px; min-height: 44px; padding: 2px; align-items: stretch; }
 .launch .launch-controls .seg--light button { height: 40px; min-height: 40px; padding-inline: 16px; font-size: 14px; }
+/* Telefon: tři režimy spuštění se vejdou celé – přepínač má celý řádek a volby se dělí rovnoměrně. */
+@media (max-width: 560px) { .launch .launch-controls .seg--light { flex: 1 1 100%; } .launch .launch-controls .seg--light button { flex: 1 1 0; padding-inline: 8px; } }
+@media (max-width: 360px) { .launch .launch-controls .seg--light button { padding-inline: 4px; } }
 .launch .launch-bar .lpick-btn { padding: 0 12px 0 14px; font-size: 14px; gap: 10px; }
 .launch .launch-bar .lpick-btn :is(.logo, .glyph) { width: 18px; height: 18px; }
 .launch .launch-bar .launch-go { padding: 0 24px; font-size: 14px; gap: 8px; }
