@@ -952,6 +952,9 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .cell-title b { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell-sub { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .cell-sub code { font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+/* Flex položky výpustku z rodiče nedědí: bez tohohle se poslední údaj („právě teď“) na úzkém
+   telefonu usekl uprostřed slova. Zkracuje se on, ne název služby před ním. */
+.cell-sub > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .sub-alert { color: var(--velvet-ink); overflow: hidden; text-overflow: ellipsis; }
 .sub-live { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
 .sub-live > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

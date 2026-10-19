@@ -5,7 +5,7 @@ import { ICON } from '../icons.js';
 import { miniBars } from '../charts.js';
 import { fill, toast, emptyState } from '../ui.js';
 import { enableReorder } from '../reorder.js';
-import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark, vsechnyStitky } from '../projects-ui.js';
+import { projectHref, projectStats, logoStack, projectForm, projectCover, projectMark, vsechnyStitky, barvaProjektu } from '../projects-ui.js';
 import { tr } from '../i18n.js';
 import { ze } from '../predlozky.js';
 
@@ -81,14 +81,14 @@ function cardHtml(p, now) {
   const st = projectStats(p, now);
   const spark = dailyActivity(st.live, now);
   const hasSpark = spark.some((x) => x > 0);
-  return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(p.color)}" data-project-drop="${esc(p.id)}" data-pid="${esc(p.id)}">
+  return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(barvaProjektu(p.color))}" data-project-drop="${esc(p.id)}" data-pid="${esc(p.id)}">
     <span class="pcard-grip" data-grip aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
     ${projectCover(p)}
     <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="${tr('Potřebuje tvé rozhodnutí')}">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="${tr('Právě pracuje')}"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : tr('Ručně zařazené konverzace')))}</span>
     ${p.tags?.length ? `<span class="pcard-tags">${p.tags.map((t) => `<span class="ptag">${esc(t)}</span>`).join('')}</span>` : ''}
-    <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, p.color, { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
+    <span class="pcard-spark" aria-hidden="true">${hasSpark ? miniBars(spark, barvaProjektu(p.color), { height: 40 }) : '<i class="pcard-flat"></i>'}</span>
     <span class="pcard-foot">
       <span class="pcard-stat"><b data-odo>${st.total}</b> ${plural(st.total, 'konverzace', 'konverzace', 'konverzací')}</span>
       <span class="pcard-stat"><b data-odo>${st.tokens ? fmtTok(st.tokens) : '–'}</b> ${tr('tokenů / 30 dní')}</span>
