@@ -298,7 +298,7 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 /* Nástěnka widgetů (Průběh dne a spotřeba). Mřížka 12 sloupců, šířku widgetu nese --span
    (skládá ji board-pack.js tak, aby v řádku nezůstala díra). Výška je přirozená: natažená karta
    by uvnitř nesla prázdnou plochu. Do výšky řádku dorůstá jen Poslední aktivita (další řádky). */
-.home-board { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px 32px; align-items: start; margin-top: 28px; }
+.home-board { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 48px 32px; align-items: start; margin-top: 44px; }
 .home-board.is-measuring { align-items: start; }
 .widget { --glow: var(--brand); position: relative; grid-column: span var(--span, 12); min-width: 0; display: flex; flex-direction: column; gap: 28px; }
 .widget[hidden] { display: none; }
@@ -307,8 +307,9 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .widget > section > .sec-head :is(a, button, select, label) { cursor: pointer; }
 .home-board.is-reordering .widget > section > .sec-head, .is-dragging-card .widget .sec-head { cursor: grabbing; }
 
-/* Záře při najetí: jemný fialový lem kolem celého widgetu i s nadpisem, vně plochy (nic neposouvá). */
-.widget::after { content: ''; position: absolute; inset: -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
+/* Záře při najetí: jemný fialový lem kolem celého widgetu i s nadpisem, vně plochy (nic neposouvá).
+   Nahoře je lem vyšší (36 px), aby se do něj vešel úchyt s odstupem 8 px od lemu i od karty. */
+.widget::after { content: ''; position: absolute; inset: -36px -12px -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
   background: linear-gradient(45deg, color-mix(in srgb, var(--glow) 6%, transparent), transparent 55%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 26%, transparent), 0 0 0 1px color-mix(in srgb, var(--glow) 6%, transparent), 0 18px 48px -30px color-mix(in srgb, var(--glow) 70%, transparent);
   transition: opacity var(--motion-response) var(--ease); }
@@ -317,8 +318,9 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .widget.is-lifted { z-index: 30; }
 .widget.is-lifted::after { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 40%, transparent), 0 30px 70px -30px color-mix(in srgb, var(--glow) 80%, transparent); }
 
-/* Úchyt nahoře uprostřed: kapsle se šesti tečkami, vyjede při najetí. Je to tlačítko kvůli klávesnici. */
-.widget-grip { position: absolute; top: -12px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; padding: 0; border: 0; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); cursor: grab; opacity: 0; transform: translate(-50%, 4px); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+/* Úchyt nahoře uprostřed: kapsle se šesti tečkami, vyjede při najetí. Je to tlačítko kvůli klávesnici.
+   Stojí v horním pásu záře (−28 až −8 px): 8 px pod jejím lemem a 8 px nad kartou, nikde se nedotýká. */
+.widget-grip { position: absolute; top: -28px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; padding: 0; border: 0; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); cursor: grab; opacity: 0; transform: translate(-50%, 4px); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
 .widget-grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
 .widget-grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
 @media (hover: hover) { .home-board:not(.is-resizing) .widget:hover > .widget-grip { opacity: 1; transform: translate(-50%, 0); } }

@@ -682,3 +682,45 @@ test('vysvětlení za „i“ se zalamuje, jde přečíst odečítačem a Esc ho
   assert.match(css, /\.info-tip-btn \{[^}]*width: 32px; height: 32px;[^}]*border-radius: var\(--r-full\)/);
   assert.match(css, /\.info-tip-bubble \{[^}]*white-space: normal;/);
 });
+
+test('spouštěč nemá štítek „Na webu“, který vypadal jako tlačítko', async () => {
+  const js = await zdroj('public/js/launcher-ui.js');
+  assert.doesNotMatch(js, /class="lpill"/);
+});
+
+test('vybraný řádek agentů nese fialový tón značky, ne hnědou', async () => {
+  const css = await zdroj('public/styles.css');
+  const r = css.match(/^\.row--select\.is-selected \{[^}]+\}/m)?.[0] || '';
+  assert.doesNotMatch(r, /brass/);
+  assert.match(r, /var\(--brand/);
+});
+
+test('úchyt widgetu má odstup od lemu záře i od karty', async () => {
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.widget::after \{ content: ''; position: absolute; inset: -36px -12px -12px;/);
+  assert.match(css, /\.widget-grip \{ position: absolute; top: -28px;[^}]*height: 20px;/, 'úchyt −28 až −8 px: 8 px od lemu i od karty');
+});
+
+test('logo projektu: vlastní tvar bez dlaždice, průhledný znak na bílé dlaždici', async () => {
+  const src = await zdroj('public/js/projects-ui.js');
+  const kod = src.slice(src.indexOf('export function druhZPixelu'), src.indexOf('function zaradLogo'));
+  const druhZPixelu = new Function(`${kod.replace('export ', '')}; return druhZPixelu;`)();
+  const n = 12;
+  const obraz = (f) => Array.from({ length: n * n }, (_, i) => f(i % n, Math.floor(i / n)));
+  assert.equal(druhZPixelu(obraz(() => 255), n), 'plne');
+  const roh = (x, y) => (x === 0 || x === n - 1) && (y === 0 || y === n - 1);
+  assert.equal(druhZPixelu(obraz((x, y) => (roh(x, y) ? 0 : 255)), n), 'tvar', 'zaoblená ikona');
+  assert.equal(druhZPixelu(obraz((x, y) => (x > 4 && x < 7 ? 255 : 0)), n), 'znak', 'průhledný glyf');
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.plogo\.plogo--tvar \{ background: none; box-shadow: none;/);
+  assert.doesNotMatch(css.match(/^\.plogo \{[^}]+\}/m)[0], /0 0 0 4px/, 'bez dvojitého prstence');
+});
+
+test('vzácné věty robota jen v klidu, nikdy místo důležité zprávy', async () => {
+  const { vetaRobota } = await import('../public/js/robot-bubliny.js');
+  for (const stav of ['needs_input', 'failed', 'limited', 'working', 'ticho']) {
+    for (let i = 0; i < 10; i++) assert.doesNotMatch(vetaRobota(stav, { nahoda: () => 0 }), /Rada pro|konkrétnější|rozsekej|kafe|Projekt drží/);
+  }
+  const js = await zdroj('public/js/robot-bubliny.js');
+  assert.doesNotMatch(js, /droidi|Dave|Houstone/, 'žádné citáty bez souvislosti');
+});

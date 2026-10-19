@@ -179,13 +179,52 @@ export const projectCover = (p, cls = '') => {
   return `<span class="pcover cover--${esc(p?.cover?.preset || 'aurora')}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}</span>`;
 };
 
-// Logo klienta nahrazuje barevnou tečku; barva projektu z něj zbyde jako tenký kroužek.
+// Logo klienta nahrazuje barevnou tečku. Logo s vlastním tvarem (neprůhledná ikona se zaoblenými
+// rohy) se ukáže samo, bez dlaždice: dřív pod jeho kulatějšími rohy prosvítala bílá dlaždice
+// a dvojitý prstenec v jiném poloměru („rámování v rozích“). Průhledný znak dostane bílou dlaždici,
+// aby byl čitelný i v tmavém režimu. Druh loga se pozná z obrázku po načtení a pamatuje se.
+const druhLoga = new Map();
 export const projectMark = (p, cls = '') => {
   const url = mediaUrl(p, 'logo');
+  const druh = druhLoga.get(url);
   return url
-    ? `<span class="plogo${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false"></span>`
+    ? `<span class="plogo${druh ? ` plogo--${druh}` : ''}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false" data-plogo></span>`
     : pdot(p, cls);
 };
+
+/** Druh loga z pixelů: „tvar“ = rohy průhledné, střed plný (ikona s vlastním obrysem); „znak“ = převážně
+ *  průhledný glyf; „plne“ = vyplňuje celý čtverec. Čisté kvůli testům. */
+export function druhZPixelu(alfa, n) {
+  const a = (x, y) => alfa[y * n + x];
+  const rohy = [a(0, 0), a(n - 1, 0), a(0, n - 1), a(n - 1, n - 1)];
+  if (rohy.every((v) => v > 240)) return 'plne';
+  let plnych = 0;
+  for (let y = 1; y < n - 1; y += 1) for (let x = 1; x < n - 1; x += 1) if (a(x, y) > 240) plnych += 1;
+  return plnych / ((n - 2) * (n - 2)) > 0.85 ? 'tvar' : 'znak';
+}
+
+function zaradLogo(img) {
+  const url = img.getAttribute('src');
+  let druh = druhLoga.get(url);
+  if (!druh) {
+    try {
+      const n = 12;
+      const c = document.createElement('canvas');
+      c.width = n; c.height = n;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, n, n);
+      const d = ctx.getImageData(0, 0, n, n).data;
+      druh = druhZPixelu(Array.from({ length: n * n }, (_, i) => d[i * 4 + 3]), n);
+    } catch { druh = 'znak'; }
+    druhLoga.set(url, druh);
+  }
+  const tile = img.closest('.plogo');
+  tile?.classList.remove('plogo--plne', 'plogo--tvar', 'plogo--znak');
+  tile?.classList.add(`plogo--${druh}`);
+}
+if (typeof document !== 'undefined' && document.addEventListener) {
+  document.addEventListener('load', (e) => { if (e.target?.matches?.('img[data-plogo]')) zaradLogo(e.target); }, true);
+}
 
 /* ---------- Formulář projektu ---------- */
 
