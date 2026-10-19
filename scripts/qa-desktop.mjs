@@ -916,6 +916,17 @@ for (const engine of engines) {
     assert.ok(Math.abs(projectScrollAfter - projectScrollBefore) <= 1,
       `${engine}: zavření projektového modalu změnilo scroll z ${projectScrollBefore} na ${projectScrollAfter}`);
     results.push({ engine, check: 'zavření modalu projektu zachová přesnou pozici stránky' });
+    // Nevratné potvrzení nesmí mít fokus na potvrzovacím tlačítku: Enter hned po otevření by projekt smazal.
+    await page.evaluate(() => document.querySelector('.session-actions [data-action="delete"]').click());
+    await page.locator('.modal-scrim').waitFor();
+    await page.waitForFunction(() => document.activeElement?.closest('.modal-foot'));
+    assert.equal(await page.evaluate(() => document.activeElement.matches('.modal-foot [data-close]')), true,
+      `${engine}: dialog Smazat projekt má fokus na „Zrušit“, ne na nevratné akci`);
+    await page.keyboard.press('Enter');
+    await page.locator('.modal-scrim').waitFor({ state: 'detached' });
+    assert.equal((await api(server.url).get('/api/projects')).body.projects.items.some((p) => p.id === qaProjectId), true,
+      `${engine}: Enter v dialogu Smazat projekt projekt nesmazal`);
+    results.push({ engine, check: 'nevratné potvrzení má fokus na Zrušit a Enter nic nesmaže' });
     for (const width of [375, 900, 1180]) {
       await page.setViewportSize({ width, height: 900 });
       for (const route of ['prehled', 'agenti', 'projekty', 'statistiky', 'utrata', 'nastaveni']) {

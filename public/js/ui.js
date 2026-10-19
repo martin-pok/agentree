@@ -889,7 +889,10 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
         submit.classList.remove('is-busy');
       }
     });
-    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || submit || scrim.querySelector('button')).focus());
+    // Nevratná akce (smazat účet, projekt…) nedostane fokus sama: Enter hned po otevření by ji
+    // potvrdil. Fokus má „Zrušit“, potvrzení je vědomý krok (WAI-ARIA APG, alertdialog).
+    const bezpecne = danger ? form.querySelector('.modal-foot [data-close]') : null;
+    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || bezpecne || submit || scrim.querySelector('button')).focus());
   });
 }
 

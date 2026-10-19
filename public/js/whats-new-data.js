@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.32',
+    date: '2026-10-19',
+    title: 'Smazání se nepotvrdí omylem',
+    items: [
+      'Dialogy, které něco nevratně mažou (účet, projekt, výdaj, klíč), mají po otevření vybrané „Zrušit“. Enter je tak jen zavře.',
+    ],
+    en: {
+      title: 'No accidental deletes',
+      items: [
+        'Dialogs that delete something for good (account, project, cost, key) now open with “Cancel” selected, so Enter just closes them.',
+      ],
+    },
+  },
+  {
     version: '0.46.31',
     date: '2026-10-19',
     title: 'Útrata: tabulka nákladů srovnaná',

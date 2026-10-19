@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.32 – 2026-10-19 · Smazání se nepotvrdí omylem
+
+- **Nevratné potvrzení má fokus na „Zrušit“:** dialogy Smazat účet, Smazat projekt, Smazat výdaj, Odebrat licenci, klíč, agenta, zařízení a Smazat historii upozornění dřív po otevření nastavily fokus na červené potvrzovací tlačítko, takže stisk Enter rovnou mazal. Teď Enter dialog jen zavře; smazání je vědomé klepnutí nebo Tab na tlačítko (bug report 14. 10., bod 10).
+- `qa:desktop` v Chromiu i WebKitu otevře Smazat projekt, ověří fokus na „Zrušit“ a že Enter projekt nesmaže.
+- Nezávislá kontrola všech bodů bug reportu na 0.46.31 (1440 i 375 px): stav je zapsaný v `docs/NOTION-BUG-REPORT-AUDIT-2026-10-15.md`.
+
 ## 0.46.31 – 2026-10-19 · Útrata: tabulka nákladů srovnaná
 
 - **Koš u záznamu nákladu** je na počítači čtverec 44 × 44 px jako ostatní ikonová tlačítka (dřív 32 × 44) a od tlačítka „Ukončit“ ho dělí mezera 8 px – dřív se dotýkaly.
