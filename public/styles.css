@@ -165,7 +165,9 @@ body.has-modal { overflow: hidden; }
 b, strong { font-weight: 500; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-button:disabled { cursor: not-allowed; }
+/* Neaktivní prvek nemá přeškrtnuté kolečko: působí jako systémová chyba. Proč volba nic nedělá,
+   vysvětlí bublina (data-tip) nebo text u ní. */
+button:disabled, [aria-disabled='true'] { cursor: default; }
 /* Rozbalovací řádek je ovládací prvek na jeden řádek: kapsle, i když nemá plochu (tvar má obrys zaostření). */
 summary { border-radius: var(--r-full); }
 a { color: inherit; }
@@ -2243,7 +2245,9 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .lpill { display: inline-flex; align-items: center; height: 32px; padding: 0 14px; border-radius: var(--r-full); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); font-size: 13px; }
 /* Malá segmentová volba má i s rámem 32 px, stejně jako malé tlačítko. */
 .seg--sm { padding: 2px; }
-.seg--sm button { height: 28px; padding: 0 12px; font-size: 13px; }
+/* I malá volba drží cílovou plochu jako ostatní: tlačítko 40 px v rámu 44 px. 28 px bylo na klepnutí
+   i kliknutí příliš tenké (vlastník 19. 10. 2026). Zmenšuje se jen písmo a vnitřní odsazení. */
+.seg--sm button { height: 40px; padding: 0 14px; font-size: 13px; }
 .launch-controls .seg--light { background: var(--line-2); padding: 2px; border-radius: var(--r-full); }
 .launch-controls .seg--light button { border-radius: var(--r-full); }
 .launch-controls .seg--light button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-sm); }

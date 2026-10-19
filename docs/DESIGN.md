@@ -84,9 +84,10 @@ jako tlačítko vedle nich.
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |
 
-Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka 32 px a rám 4 px), malá 32 px
-(tlačítka 28 px a rám 2 px – `.seg--sm` v aplikaci, přepínač jazyka `.lang` na webu). Vnitřních
-28 px smí být jen uvnitř takového rámu. Volba jedné ze dvou (třeba jazyk v Nastavení) je taky
+Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka 32 px a rám 4 px), v aplikaci
+na počítači 44 px (tlačítka 40 px a rám 2 px). Malá volba `.seg--sm` v aplikaci od 19. 10. 2026 drží
+stejnou cílovou plochu (tlačítka 40 px v rámu 44 px), zmenšuje se jen písmo – 28 px bylo na klepnutí
+příliš tenké. Vnitřních 28 px v rámu 32 px zůstává jen přepínači jazyka `.lang` na webu. Volba jedné ze dvou (třeba jazyk v Nastavení) je taky
 segmentová volba: kapsle 40 px, ne karta. Přepínač má 48 × 28 px, v okně rozšíření malou velikost
 40 × 24 px. Tvar (kapsle) a barva zapnutého stavu (`--action`) jsou všude stejné.
 
@@ -172,7 +173,7 @@ v `qa:tvary` i `qa:contrast`.
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
   a upozornění), web a okno rozšíření a změří tvar každého ovládacího prvku. Stejným průchodem
   změří, že jednořádkový ovládací prvek s vlastní plochou má výšku ze stupnice (32 / 40 / 44 / 48 px, v aplikaci na počítači jen 44 / 48 px;
-  výjimky jsou jen vnitřních 28 px malé segmentové volby a výzva webu 56 px) a že vybraná volba
+  výjimky jsou jen vnitřních 28 px přepínače jazyka na webu a výzva webu 56 px) a že vybraná volba
   má stejný řez písma jako nevybraná vedle ní. Kruhy (avatar, ikonové tlačítko) a prvky uvnitř
   věty do stupnice nepatří. Porušení pravidla shodí CI.
 - `npm run qa:desktop-inset` v Chromiu a WebKitu simuluje `is-desktop` z WKWebView a měří,

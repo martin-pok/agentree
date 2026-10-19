@@ -6,7 +6,7 @@ import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank, chartColor } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
-import { watchBalance } from '../balance.js';
+import { enableBoard, widgetChrome } from '../widget-board.js';
 import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
@@ -19,6 +19,14 @@ import { ze } from '../predlozky.js';
 
 const AKTIVIT_MIN = 6; // kolik řádků poslední aktivity je vidět, než se dopočítá podle volného místa
 const AKTIVIT_MAX = 24;
+// Výchozí rozvržení nástěnky (šířky ve sloupcích z 12). Uživatel ho mění tažením; nový widget
+// v další verzi se přidá na konec s touto šířkou.
+const BOARD_DEFAULT = [
+  { id: 'smena', span: 7 }, { id: 'kam', span: 5 },
+  { id: 'tokeny', span: 7 }, { id: 'aktivita', span: 5 },
+  { id: 'naklady', span: 5 }, { id: 'bezi', span: 7 },
+  { id: 'limity', span: 12 },
+];
 const TIMELINE_MAX = 7; // víc řádků se do osy nevejde; zbytek se vypíše pod ní jako odkaz
 const CHART_UPDATE_MS = 500;
 const v = { period: 'week', aktivit: AKTIVIT_MIN, doplnRaf: 0, aktivnichCelkem: 0, hidden: new Set(), drawn: false, el: null, launcher: null, chartAt: 0, chartTimer: null, timelineNow: 0 };
@@ -28,25 +36,27 @@ const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor',
 
 const changed = (topics, ...names) => topics.has('all') || names.some((name) => topics.has(name));
 
-// Sloupce Přehledu nejsou stejně vysoké – rozbalený seznam limitů nebo delší graf jeden z nich
-// protáhne a pod tím druhým zůstane prázdno. Poslední aktivita je jediný blok, který umí růst,
-// tak se jím díra zaplní. Počítá se z naměřené výšky, ne odhadem: při jiných datech nebo jiné
-// velikosti okna vyjde jiné číslo.
+// Widgety mají přirozenou výšku. Poslední aktivita je jediný widget, který umí růst, tak dostane
+// tolik řádků, kolik se vejde do výšky nejvyššího souseda ve stejném řádku nástěnky – místo
+// prázdné plochy pod seznamem. Výšky se měří, ne odhadují.
 function doplnAktivitu(el, celkem) {
-  // The workbench uses a shared grid rather than two independently balanced columns.
-  if (getComputedStyle(el.querySelector('.ov')).display === 'contents') return;
-  const sloupce = el.querySelectorAll('.ov > .bal-col');
+  const board = el.querySelector('[data-board]');
+  const w = board?.querySelector('.widget[data-card="aktivita"]');
   const seznam = el.querySelector('[data-region="activity"]');
-  if (sloupce.length !== 2 || !seznam || !celkem) return;
+  if (!w || w.hidden || !seznam || !celkem || !board.offsetParent) return;
   const radek = seznam.firstElementChild;
-  if (!radek || getComputedStyle(el.querySelector('.ov')).gridTemplateColumns.trim().split(/\s+/).length < 2) {
+  const jedenSloupec = getComputedStyle(board).gridTemplateColumns.trim().split(/\s+/).length < 2;
+  const sousede = [...board.children].filter((x) => x !== w && !x.hidden && x.dataset.row === w.dataset.row);
+  if (!radek || jedenSloupec || !sousede.length) {
     if (v.aktivit !== AKTIVIT_MIN) { v.aktivit = AKTIVIT_MIN; update(new Set(['dopln'])); }
     return;
   }
-  const mujSloupec = seznam.closest('.bal-col');
-  const druhy = [...sloupce].find((c) => c !== mujSloupec);
+  board.classList.add('is-measuring');
+  const moje = w.getBoundingClientRect().height;
+  const cil = Math.max(...sousede.map((x) => x.getBoundingClientRect().height));
+  board.classList.remove('is-measuring');
   const vyskaRadku = radek.getBoundingClientRect().height + parseFloat(getComputedStyle(seznam).rowGap || 0);
-  const mezera = druhy.getBoundingClientRect().height - mujSloupec.getBoundingClientRect().height;
+  const mezera = cil - moje;
   if (!vyskaRadku) return;
   const zmena = mezera > vyskaRadku ? Math.floor(mezera / vyskaRadku) : mezera < -vyskaRadku ? -Math.floor(-mezera / vyskaRadku) : 0;
   if (!zmena) return;
@@ -54,6 +64,12 @@ function doplnAktivitu(el, celkem) {
   if (chci === v.aktivit) return;
   v.aktivit = chci;
   update(new Set(['dopln']));
+}
+
+// Až po vykreslení a složení řádků: teprve tehdy je vidět, kolik místa zbylo.
+function planDopln(el) {
+  cancelAnimationFrame(v.doplnRaf);
+  v.doplnRaf = requestAnimationFrame(() => requestAnimationFrame(() => doplnAktivitu(el, v.aktivnichCelkem)));
 }
 
 function queueChart(now) {
@@ -149,17 +165,25 @@ function mount(el) {
   <section class="card launch" data-enter style="--i:1" aria-labelledby="launch-h" data-launch></section>
   <div data-region="onboard"></div>
   <div data-region="newtools"></div>
-  <div class="ov">
-    <div class="ov-col bal-col">
-      <section data-enter style="--i:2" aria-labelledby="dec-h">
+  <section data-enter style="--i:2" aria-labelledby="dec-h">
         <div class="sec-head"><h2 id="dec-h">${tr('Vyžaduje pozornost')}</h2><a class="link" href="#/agenti">${tr('Všechny')}</a></div>
         <div data-region="decisions"></div>
       </section>
+  <div class="home-board" data-board>
+    <div class="widget" data-card="smena">${widgetChrome(tr('Dnešní směna'))}
       <section data-enter style="--i:2" aria-labelledby="tl-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="tl-h">${tr('Dnešní směna')}</h2><span class="muted small">${tr('posledních 12 hodin')}</span></div>
         <div class="card tl-card" data-region="timeline"></div>
       </section>
       <section data-enter style="--i:3" data-region="meter" data-jen-s-daty aria-label="${tr('Zaznamenané tokeny dnes')}"></section>
+    </div>
+    <div class="widget" data-card="kam">${widgetChrome(tr('Kam dnes šly tokeny'))}
+      <section data-enter style="--i:4" aria-labelledby="td-h" data-jen-s-daty>
+        <div class="sec-head"><h2 id="td-h">${tr('Kam dnes šly tokeny')}</h2><a class="link" href="#/statistiky">${tr('Statistiky')}</a></div>
+        <div class="card pad" data-region="today-apps"></div>
+      </section>
+    </div>
+    <div class="widget" data-card="tokeny">${widgetChrome(tr('Tokeny z přepisů'))}
       <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="chart-h">${tr('Tokeny z přepisů')}</h2>
           <label class="select"><span class="sr-only">${tr('Období')}</span><select data-action="period"><option value="today">${tr('Dnes')}</option><option value="day">${tr('24 hodin')}</option><option value="week">${tr('Týden')}</option><option value="fortnight">${tr('14 dní')}</option><option value="month">${tr('30 dní')}</option></select></label>
@@ -168,26 +192,28 @@ function mount(el) {
         <div class="legend" data-region="legend"></div>
       </section>
     </div>
-    <div class="ov-col bal-col">
-      <section data-enter style="--i:4" aria-labelledby="td-h" data-jen-s-daty>
-        <div class="sec-head"><h2 id="td-h">${tr('Kam dnes šly tokeny')}</h2><a class="link" href="#/statistiky">${tr('Statistiky')}</a></div>
-        <div class="card pad" data-region="today-apps"></div>
-      </section>
-      <section data-enter style="--i:4" data-region="limits" aria-label="${tr('Limity předplatných')}"></section>
-      <section data-enter style="--i:4" aria-labelledby="sp-h" data-float>
-        <div class="sec-head"><h2 id="sp-h">${tr('Náklady z API')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
-        <div class="card spend-mini" data-region="spend"></div>
-      </section>
-      <section data-enter style="--i:5" aria-labelledby="act-h" data-float data-jen-s-daty>
+    <div class="widget" data-card="aktivita">${widgetChrome(tr('Poslední aktivita'))}
+      <section data-enter style="--i:5" aria-labelledby="act-h" data-jen-s-daty>
         <div class="sec-head"><h2 id="act-h">${tr('Poslední aktivita')}</h2><a class="link" href="#/agenti">${tr('Zobrazit vše')}</a></div>
         <ul class="activity" data-region="activity"></ul>
       </section>
     </div>
-  </div>
-  <section class="ov-wide" data-enter style="--i:5" aria-labelledby="rt-h">
+    <div class="widget" data-card="naklady">${widgetChrome(tr('Náklady z API'))}
+      <section data-enter style="--i:4" aria-labelledby="sp-h">
+        <div class="sec-head"><h2 id="sp-h">${tr('Náklady z API')}</h2><a class="link" href="#/utrata">${tr('Detail')}</a></div>
+        <div class="card spend-mini" data-region="spend"></div>
+      </section>
+    </div>
+    <div class="widget" data-card="bezi">${widgetChrome(tr('Běží na tomto počítači'))}
+      <section data-enter style="--i:5" aria-labelledby="rt-h">
     <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}', tomtoPocitaci())}</h2><a class="link" href="#/nastaveni" data-karta="moje">${tr('Zdroje dat')}</a></div>
     <div class="rt-grid" data-region="runtimes"></div>
   </section>
+    </div>
+    <div class="widget" data-card="limity">${widgetChrome(tr('Okna limitů'))}
+      <section data-enter style="--i:4" data-region="limits" aria-label="${tr('Limity předplatných')}"></section>
+    </div>
+  </div>
 `;
   // A task-first workspace; existing regions retain their live data and actions.
   const workspace = document.createElement('div');
@@ -207,14 +233,21 @@ function mount(el) {
   prazdno.dataset.region = 'prazdno';
   prazdno.className = 'home-prazdno';
   desk.append(el.querySelector('[data-launch]'), dvojice, prazdno);
-  live.append(el.querySelector('[data-region="hero"]'), el.querySelector('[data-region="limits"]'));
+  live.append(el.querySelector('[data-region="hero"]'));
   const history = document.createElement('details');
   history.className = 'home-history';
   history.innerHTML = `<summary>${tr('Průběh dne a spotřeba')}<span>${tr('Aktivita, tokeny a náklady')}</span></summary>`;
-  history.append(el.querySelector('.ov'), el.querySelector('.ov-wide'));
-  history.append(live.querySelector('[data-region="limits"]'));
+  history.append(el.querySelector('[data-board]'));
   el.append(workspace, history);
-  v.unwatch = watchBalance(el.querySelector('.ov'), () => doplnAktivitu(el, v.aktivnichCelkem));
+  v.board = enableBoard(el.querySelector('[data-board]'), {
+    name: 'home',
+    defaults: BOARD_DEFAULT,
+    onLayout: () => planDopln(el),
+    announce: (text) => { const r = el.querySelector('[data-board-live]'); if (r) r.textContent = text; },
+  });
+  history.insertAdjacentHTML('beforeend', `<p class="sr-only" aria-live="polite" data-board-live></p>`);
+  // Zavřená sekce nemá rozměry; po rozbalení se znovu dopočítá, kolik řádků aktivity se vejde.
+  history.addEventListener('toggle', () => { if (history.open) v.board?.relayout(); });
   const sel = el.querySelector('[data-action="period"]');
   sel.value = v.period;
   sel.addEventListener('change', () => {
@@ -304,7 +337,6 @@ function update(topics = new Set(['all'])) {
   // mezi „prázdno“ nepatří – tam se ukáže stav agentů s větou „nepodařilo se zjistit“.
   const prazdno = !everything.length && !all.length && !procesyNevim;
   for (const n of el.querySelectorAll('[data-jen-s-daty]')) n.hidden = prazdno;
-  el.querySelector('.ov').classList.toggle('ov--prazdno', prazdno);
   fill(el, 'prazdno', prazdno ? `<div class="card">${prazdnyProfil()}</div>` : '');
 
   // Počty v pruhu = přesně stejná pravidla jako filtry v sekci Agenti. Proces bez přepisu není
@@ -384,6 +416,7 @@ function update(topics = new Set(['all'])) {
   }
 
   const hooks = state.integrations?.claudeHooks;
+  if (changed(topics, 'settings')) v.board?.reload();
   if (changed(topics, 'sessions', 'integrations', 'limits', 'tick')) zivy(el, 'decisions', attention.length
     ? `<ul class="decisions">${attention.slice(0, 4).map(decisionCard).join('')}</ul>${attention.length > 4 ? `<a class="link more" href="#/agenti">${plural(attention.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', attention.length - 4)}</a>` : ''}`
     : klid(all, hooks, now));
@@ -532,11 +565,10 @@ function update(topics = new Set(['all'])) {
   }
   v.studio?.refresh();
   v.aktivnichCelkem = all.length;
-  // Až po vykreslení a vyvážení sloupců: teprve tehdy je vidět, kolik místa dole zbylo.
-  if (!topics.has('dopln')) {
-    cancelAnimationFrame(v.doplnRaf);
-    v.doplnRaf = requestAnimationFrame(() => requestAnimationFrame(() => doplnAktivitu(el, all.length)));
-  }
+  // Obsah widgetů se mohl vyprázdnit nebo naplnit: řádky nástěnky se složí znovu (bez animace,
+  // jen šířky). Doplnění aktivity běží až po složení; vlastní překreslení ('dopln') ho nespouští.
+  if (!v.board?.isBusy()) v.board?.relayout();
+  if (topics.has('dopln')) cancelAnimationFrame(v.doplnRaf);
 }
 
 export default {
@@ -547,9 +579,9 @@ export default {
   unmount: () => {
     clearTimeout(v.chartTimer);
     cancelAnimationFrame(v.doplnRaf);
-    v.unwatch?.();
+    v.board?.destroy();
     v.studio?.destroy();
     v.launcher?.destroy();
-    Object.assign(v, { el: null, launcher: null, unwatch: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
+    Object.assign(v, { el: null, launcher: null, board: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
   },
 };

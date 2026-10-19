@@ -150,7 +150,7 @@ function mount(el) {
     <div data-enter style="--i:0" data-region="sum"></div>
     <div class="toolbar sk-toolbar" data-enter style="--i:1" data-blok="hledani">
       <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat dovednost')}</span><input type="search" data-q placeholder="${tr('Název, popis nebo cesta…')}" autocomplete="off"></label>
-      <div class="sk-sort" data-blok="razeni"><span class="sk-filtr-popis" id="sk-r">${tr('Řadit')}</span><div class="seg seg--light seg--sm" role="group" aria-labelledby="sk-r" data-region="sort"></div></div>
+      <div class="sk-sort" data-blok="razeni"><span class="sk-filtr-popis" id="sk-r">${tr('Řadit')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-r" data-region="sort"></div></div>
     </div>
     <section class="sk-filters" data-enter data-sk-filters style="--i:2" aria-label="${tr('Filtry dovedností')}">
       <div class="sk-filtr" data-blok="zdroje"><span class="sk-filtr-popis" id="sk-z">${tr('Zdroj')}</span><div class="seg seg--light" role="group" aria-labelledby="sk-z" data-region="sources"></div></div>

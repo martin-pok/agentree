@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 19. 10. 2026:** veřejné Preview je [`v0.46.33`](https://github.com/martin-pok/agentree/releases/tag/v0.46.33); připravuje se `v0.46.38` (obsahuje i nezveřejněné `v0.46.34`–`v0.46.37`). Stable Latest zůstává `v0.46.0`.
+**Stav 19. 10. 2026:** veřejné Preview je [`v0.46.33`](https://github.com/martin-pok/agentree/releases/tag/v0.46.33); připravuje se `v0.46.39` (obsahuje i nezveřejněné `v0.46.34`–`v0.46.38`). Stable Latest zůstává `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 19. 10. 2026:** **0.46.38 Preview** (`v0.46.38`) nese jemnější dlaždice stavu agentů a poznámky bez hnědé, z `v0.46.37` projekty a grafy čitelné v tmavém režimu, z `v0.46.35` čistší karty agentů a hlavičku přepisu na telefonu a z `v0.46.34` Pomocníka, který bez výslovného zapnutí neposílá dotazy žádné AI. Předchozí `v0.46.33` je zveřejněné (Pomocník se živým stavem nástroje, z `v0.46.32` fokus na „Zrušit“ u mazání).
+**Aktuální release vlak 19. 10. 2026:** **0.46.39 Preview** (`v0.46.39`) nese přesouvatelné a zvětšitelné widgety na Přehledu, z `v0.46.38` jemnější dlaždice stavu agentů a poznámky bez hnědé, z `v0.46.37` projekty a grafy čitelné v tmavém režimu, z `v0.46.35` čistší karty agentů a hlavičku přepisu na telefonu a z `v0.46.34` Pomocníka, který bez výslovného zapnutí neposílá dotazy žádné AI. Předchozí `v0.46.33` je zveřejněné (Pomocník se živým stavem nástroje, z `v0.46.32` fokus na „Zrušit“ u mazání).
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

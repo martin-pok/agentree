@@ -374,16 +374,17 @@ test('průvodce drží vodorovný tvar a na nízkém okně ustoupí', async () =
   assert.match(css, /@media \(min-width: 721px\) and \(max-height: 700px\) \{[^@]*\.welcome-dialog \{ height: calc\(100dvh - 32px\)/s, 'na nízkém okně se karta stáhne');
 });
 
-// Rozbalený seznam limitů protáhl pravý sloupec a pod levým zůstalo prázdno (naměřeno 253 px).
-test('poslední aktivita doplní řádky podle volného místa pod sloupcem', async () => {
+// Vedle vysokého widgetu by pod krátkým seznamem aktivity zůstalo prázdno.
+test('poslední aktivita doplní řádky do výšky nejvyššího souseda v řádku nástěnky', async () => {
   const src = await zdroj('public/js/views/overview.js');
   assert.match(src, /function doplnAktivitu\(el, celkem\)/);
-  assert.match(src, /const mezera = druhy\.getBoundingClientRect\(\)\.height - mujSloupec\.getBoundingClientRect\(\)\.height;/, 'počítá se z naměřené výšky, ne odhadem');
+  assert.match(src, /x\.dataset\.row === w\.dataset\.row/, 'porovnává se jen se sousedy ve stejném řádku');
+  assert.match(src, /board\.classList\.add\('is-measuring'\);[\s\S]*?board\.classList\.remove\('is-measuring'\);/, 'měří přirozenou výšku, ne natažení');
   assert.match(src, /Math\.max\(AKTIVIT_MIN, Math\.min\(AKTIVIT_MAX, celkem, v\.aktivit \+ zmena\)\)/, 'počet řádků má dolní i horní mez');
-  assert.match(src, /watchBalance\(el\.querySelector\('\.ov'\), \(\) => doplnAktivitu/, 'spouští se i při změně výšky, ne jen při nových datech');
+  assert.match(src, /onLayout: \(\) => planDopln\(el\)/, 'spouští se po každém složení nástěnky, ne jen při nových datech');
   assert.doesNotMatch(src, /all\.slice\(0, 6\)/, 'napevno zapsaná šestka');
-  const balance = await zdroj('public/js/balance.js');
-  assert.match(balance, /export function watchBalance\(box, onZmena\)/);
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.home-board\.is-measuring \{ align-items: start; \}/);
 });
 
 // Plynulé posouvání kolečkem má web i aplikace stejné. Dřív ho web nesl ve vlastní kopii –

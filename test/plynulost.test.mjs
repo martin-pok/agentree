@@ -98,7 +98,8 @@ test('změna motivu je jeden okamžitý krok bez View Transitions (WebKit je skl
 test('přetahování karet po sobě uklidí posluchač na window (únik celé mřížky)', async () => {
   const r = await zdroj('public/js/reorder.js');
   assert.match(r, /window\.addEventListener\('keydown', [\s\S]*?signal: konec\.signal \}\)/);
-  assert.match(r, /zrus: \(\) => konec\.abort\(\)/);
+  assert.match(r, /zrus: \(\) => \{ konec\.abort\(\); konecTahu\.abort\(\); \}/, 'zrus() uklidí i posluchače konce tahu');
+  assert.match(r, /window\.addEventListener\('pointerup', [\s\S]*?signal: konecTahu\.signal \}\)/, 'konec tahu se slyší i mimo mřížku');
   assert.match(await zdroj('public/js/views/projects.js'), /unmount: \(\) => \{ v\.reorder\?\.zrus\(\);/);
   assert.match(await zdroj('public/js/views/project.js'), /v\.reorder\?\.zrus\(\);/);
   assert.match(await zdroj('public/js/views/session.js'), /v\.sideDrag\?\.zrus\(\);/);

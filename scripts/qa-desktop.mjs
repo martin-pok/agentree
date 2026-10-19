@@ -594,6 +594,51 @@ for (const engine of engines) {
     await page.goto(`${server.url}/#/prehled`);
     await page.locator('.home-history > summary').click();
     await page.locator('.token-card').waitFor();
+    // Nástěnka widgetů: řádky bez děr; tažení hranice mění šířku obou sousedů (součet drží);
+    // přesun za hlavičku s puštěním mimo nástěnku se uloží a po obnovení stránky platí dál.
+    const nastenka = page.locator('.home-board');
+    const sirky = () => nastenka.evaluate((b) => [...b.querySelectorAll(':scope > .widget:not([hidden])')].map((w) => ({ id: w.dataset.card, span: Number(getComputedStyle(w).getPropertyValue('--span')), row: Number(w.dataset.row) })));
+    const plne = (list) => { const r = {}; for (const w of list) r[w.row] = (r[w.row] || 0) + w.span; return Object.values(r).every((n) => n === 12); };
+    const pred = await sirky();
+    assert.ok(pred.length >= 4 && plne(pred), `${engine}: řádky nástěnky musí být plné: ${JSON.stringify(pred)}`);
+    const [a, b] = pred;
+    assert.equal(a.row, b.row, `${engine}: první dva widgety sdílejí řádek`);
+    const okraj = page.locator(`.widget[data-card="${a.id}"] > .widget-resize`);
+    await okraj.scrollIntoViewIfNeeded();
+    const ob = await okraj.boundingBox();
+    const sloupec = (await nastenka.boundingBox()).width / 12;
+    await page.mouse.move(ob.x + ob.width / 2, ob.y + ob.height / 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) await page.mouse.move(ob.x + ob.width / 2 - (sloupec * 2 * i) / 8, ob.y + ob.height / 2);
+    await page.mouse.up();
+    const poOkraji = await sirky();
+    const a2 = poOkraji.find((w) => w.id === a.id);
+    const b2 = poOkraji.find((w) => w.id === b.id);
+    assert.equal(a2.span, a.span - 2, `${engine}: tažení hranice o dva sloupce zúží widget`);
+    assert.equal(a2.span + b2.span, a.span + b.span, `${engine}: soused převezme uvolněné sloupce`);
+    assert.ok(plne(poOkraji), `${engine}: po změně šířky zůstanou řádky plné`);
+    const posledni = pred[pred.length - 1].id;
+    const hlava = page.locator(`.widget[data-card="${posledni}"] .sec-head h2`).first();
+    await hlava.scrollIntoViewIfNeeded();
+    const hb = await hlava.boundingBox();
+    const cil = await page.locator(`.widget[data-card="${a.id}"]`).boundingBox();
+    await page.mouse.move(hb.x + 10, hb.y + hb.height / 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 20; i++) await page.mouse.move(hb.x + 10 + ((cil.x + 30 - hb.x - 10) * i) / 20, hb.y + hb.height / 2 + ((cil.y + 30 - hb.y - hb.height / 2) * i) / 20);
+    await page.mouse.move(4, 4); // puštění mimo nástěnku (u horního okraje okna)
+    await page.mouse.up();
+    await page.waitForFunction(() => !document.querySelector('.widget.is-lifted'));
+    const poradi = (await sirky()).map((w) => w.id);
+    assert.ok(poradi.indexOf(posledni) < poradi.indexOf(a.id) || poradi.indexOf(posledni) === 0, `${engine}: přesunutý widget je vpředu: ${poradi.join(',')}`);
+    const ulozene = () => server.app.datastore.data.settings.layout?.home || [];
+    for (let i = 0; i < 40 && !ulozene().length; i++) await page.waitForTimeout(50);
+    assert.equal(ulozene()[0]?.split('-')[0], poradi[0], `${engine}: rozvržení se uložilo na server`);
+    await page.reload();
+    await page.locator('.home-history > summary').waitFor();
+    await page.evaluate(() => { document.querySelector('details.home-history').open = true; });
+    await page.locator('.token-card').waitFor();
+    assert.deepEqual((await sirky()).map((w) => w.id), poradi, `${engine}: po obnovení stránky drží rozvržení`);
+    server.app.datastore.data.settings.layout = {};
     // Změna, kterou server sám nevyslal do SSE, se po návratu nativního okna do popředí musí
     // propsat bez kliknutí na obnovu. Simulujeme ji přímo v úložišti testovacího serveru.
     server.app.datastore.data.settings.avatar = 7;
