@@ -4,6 +4,8 @@
 
 **Aktuální inventář automatických testů:** 1255 deklarovaných testů v `test/*.test.mjs` (podle volání `test()` a `t.test()`). Inventář zdrojových testů není tvrzení o počtu testů, které prošly v CI; výsledky níže jsou historické protokoly a nerozšiřují se zpětně.
 
+**Dočasné složky:** `npm test` (`scripts/test.mjs`) spouští testy s vlastní dočasnou složkou (`TMPDIR`, `TEMP`, `TMP`) a po doběhnutí ji smaže – testy si v ní zakládají stovky složek a bez úklidu zaplnily disk. Kdo pouští jednotlivý soubor přímo přes `node --test`, uklízí si `os.tmpdir()` sám.
+
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
 | Kontrola | Výsledek |

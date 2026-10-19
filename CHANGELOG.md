@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.29 – 2026-10-19 · Pomocník uhne při čtení
+
+- **Pomocník na telefonu nezakrývá karty:** při posouvání dolů kulaté tlačítko sjede z cesty, při posunu nahoru a na konci stránky se vrátí. Otevřený chat ani tlačítko s fokusem z klávesnice neustupují; na počítači se nic nemění. Při omezeném pohybu jen zmizí, bez posunu.
+- **Filtr projektů na Agentech:** místo useknuté věty „Založ první projekt a t…“ krátké „Založit projekt“.
+- **Kredity Codexu u dvou účtů:** zůstatky dvou účtů se už nemíchají do jedné řady kreditů – ani z živých přepisů, ani z historie starších souborů. Aktuální kredit každého účtu dál ukazuje Codex sám.
+- **Testy po sobě uklízí:** `npm test` běží ve vlastní dočasné složce a po doběhnutí ji smaže (dřív po sobě nechával tisíce složek).
+- **Roadmapa podle skutečnosti:** úvod už neuvádí 0.46.12–0.46.14 jako aktuální kandidáty a řádek Chrome Web Store říká, co přesně chybí.
+
 ## 0.46.28 – 2026-10-19 · Pravdivá data i při výpadku
 
 - **Chyba API už není „hotovo“:** konverzace Claude Code, jejíž tah skončil chybou API (výpadek serveru, přetížení, vypršelé přihlášení, příliš dlouhý prompt), se ukáže jako „selhalo“ s textem chyby a upozornění řekne „skončil chybou“ místo „spuštění selhalo“. Nové zadání nebo další odpověď stav vrátí.
