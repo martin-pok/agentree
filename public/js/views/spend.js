@@ -1,8 +1,9 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtMoney, fmtNum, fmtTok, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
-import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
+import { glyph, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut } from '../charts.js';
+import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge } from '../ui.js';
 import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 import { ze } from '../predlozky.js';
@@ -17,7 +18,8 @@ const KIND_COLORS = { subscription: '#16141D', extra: '#C2335A', credits: '#C99A
 // by na to byla jen zkrácená historie, ze které vycházejí jiné částky.
 
 const money = (x) => fmtMoney(x, state.spend?.currency || 'CZK');
-const serviceColor = (sp, k) => PROVIDERS[pkey(sp.services[k]?.provider)].color;
+// Paleta grafů drží kontrast v obou režimech; barva značky (OpenAI skoro černá) by v tmavém zmizela.
+const serviceColor = (sp, k) => chartColor(pkey(sp.services[k]?.provider));
 const monthLabel = (key) => {
   const [y, m] = key.split('-').map(Number);
   return `${MONTHS[m - 1]} ${y}`;

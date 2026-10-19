@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.36',
+    date: '2026-10-19',
+    title: 'Grafy čitelné i v tmavém režimu',
+    items: [
+      'U agentů Codex a Cursor jsou v tmavém režimu vidět sloupce aktivity i výstup ve složení tokenů – grafy mají stejné barvy jako Statistiky.',
+      'Časová osa na Přehledu a grafy útraty podle služby drží v tmavém režimu kontrast.',
+    ],
+    en: {
+      title: 'Charts readable in dark mode too',
+      items: [
+        'For Codex and Cursor agents, the activity bars and the output share are now visible in dark mode – charts use the same colours as Statistics.',
+        'The timeline on Overview and the spend-by-service charts keep their contrast in dark mode.',
+      ],
+    },
+  },
+  {
     version: '0.46.35',
     date: '2026-10-19',
     title: 'Čistší karty agentů',

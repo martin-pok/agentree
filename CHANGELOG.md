@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.36 – 2026-10-19 · Grafy čitelné i v tmavém režimu
+
+- **Detail agenta Codex nebo Cursor v tmavém režimu:** sloupce „Aktivita za 24 hodin“ a výplň „Výstup“ ve Složení tokenů splývaly s kartou (kontrast zhruba 1 : 1), protože braly téměř černou barvu značky. Teď berou ověřenou paletu grafů jako Statistiky – Codex je zelený, Cursor fialový – a drží grafický kontrast nad 3 : 1 v obou režimech.
+- Stejně se opravila časová osa agentů na Přehledu a grafy útraty podle služby (Přehled i Útrata).
+
 ## 0.46.35 – 2026-10-19 · Čistší karty agentů a přepis na telefonu
 
 - Karta agenta, u kterého neznáme model, už za názvem aplikace neukazuje osamocenou pomlčku („Codex –“), která vypadala jako useknutý text. V tabulkovém zobrazení pomlčka ve sloupci modelu zůstává.
