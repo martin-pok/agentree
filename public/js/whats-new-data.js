@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.31',
+    date: '2026-10-19',
+    title: 'Útrata: tabulka nákladů srovnaná',
+    items: [
+      'Koš u záznamu nákladu má stejnou velikost jako ostatní tlačítka a nedotýká se „Ukončit“.',
+      'Logo a název služby sedí v řádku na stejné ose jako ostatní údaje.',
+    ],
+    en: {
+      title: 'Spend: cost table aligned',
+      items: [
+        'The delete button on a cost record matches the other buttons and no longer touches “End”.',
+        'The service logo and name sit on the same line as the other values.',
+      ],
+    },
+  },
+  {
     version: '0.46.30',
     date: '2026-10-19',
     title: 'Telefon bez useknutých textů',

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.31 – 2026-10-19 · Útrata: tabulka nákladů srovnaná
+
+- **Koš u záznamu nákladu** je na počítači čtverec 44 × 44 px jako ostatní ikonová tlačítka (dřív 32 × 44) a od tlačítka „Ukončit“ ho dělí mezera 8 px – dřív se dotýkaly.
+- **Služba v řádku** (logo a název) sedí na stejné ose jako datum, typ a poznámka; dřív byla o několik pixelů výš.
+- Kontrola tmavého vzhledu a angličtiny na všech obrazovkách (375 i 1440 px): žádný useknutý text, žádná čeština v anglickém rozhraní, čistá konzole.
+
 ## 0.46.30 – 2026-10-19 · Telefon bez useknutých textů
 
 - **Nastavení → Propojení:** webové chaty bez rozšíření jsou jeden řádek se seznamem služeb a jedním tlačítkem „Přidat rozšíření“ místo deseti stejných karet pod sebou. S rozšířením má každá služba dál svůj řádek a stav.
