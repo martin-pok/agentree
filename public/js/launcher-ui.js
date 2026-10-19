@@ -239,8 +239,10 @@ export function createLauncher(root) {
     const active = state.projects.items.filter((x) => !x.archived);
     const modes = state.launch.modes || {};
 
+    // Jediný způsob spuštění se neukazuje: štítek „Na webu“ vypadal jako tlačítko, ale nic nedělal.
+    // Kam se agent spustí, říká poznámka pod polem; volba se ukáže jen tam, kde opravdu je.
     fill(root, 'controls', `
-      ${t.modes.length > 1 ? `<div class="seg seg--light seg--sm" role="group" aria-label="${tr('Kde spustit')}">${t.modes.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mode}">${esc(modes[m] || m)}</button>`).join('')}</div>` : `<span class="lpill">${esc(modes[mode] || mode)}</span>`}
+      ${t.modes.length > 1 ? `<div class="seg seg--light seg--sm" role="group" aria-label="${tr('Kde spustit')}">${t.modes.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mode}">${esc(modes[m] || m)}</button>`).join('')}</div>` : ''}
       <label class="lselect">${p ? pdot(p) : ICON.folder}<span class="sr-only">${tr('Projekt')}</span><select data-l-project>
         <option value="">${tr('Bez projektu')}</option>${active.map((x) => `<option value="${esc(x.id)}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
       </select></label>

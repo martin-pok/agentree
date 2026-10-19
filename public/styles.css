@@ -2366,11 +2366,14 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 .cover--orchid { --c0: #2c1740; --c1: #e878e0; --c2: #8562ff; --c3: #ffb0d0; }
 .cover--graphite { --c0: #1d2026; --c1: #7a8494; --c2: #aab4c4; --c3: #414753; }
 .cover--sage { --c0: #1c2f25; --c1: #9fd49f; --c2: #d6e6a8; --c3: #48917a; }
-.plogo { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--r-logo); overflow: hidden; background: #fff; box-shadow: 0 0 0 2px var(--card), 0 0 0 4px color-mix(in srgb, var(--pc) 55%, transparent), var(--shadow-sm); }
+.plogo { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--r-logo); overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px rgb(22 20 29 / .08), 0 6px 16px -10px rgb(12 11 16 / .45); }
+/* Logo s vlastním tvarem: žádná dlaždice ani linka, jen jemný stín pod tvarem samotného obrázku. */
+.plogo.plogo--tvar { background: none; box-shadow: none; overflow: visible; border-radius: 0; }
+.plogo.plogo--tvar img { filter: drop-shadow(0 6px 10px rgb(12 11 16 / .28)); }
 .plogo img { width: 100%; height: 100%; object-fit: cover; }
 .pcard-top.has-logo { margin-top: -30px; }
 .pcard-top.has-logo .pcard-name { padding-top: 30px; }
-.project-kicker .plogo { width: 32px; height: 32px; border-radius: var(--r-logo); box-shadow: 0 0 0 2px var(--card), 0 0 0 3px color-mix(in srgb, var(--pc) 55%, transparent); }
+.project-kicker .plogo { width: 32px; height: 32px; border-radius: var(--r-logo); }
 .media-picks { display: grid; gap: 12px; }
 .media-pick { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 12px; border-radius: var(--r-md); background: var(--paper); }
 .media-thumb { position: relative; display: block; width: 140px; height: 40px; border-radius: var(--r-sm); overflow: hidden; background: var(--line-2); }
@@ -2554,7 +2557,10 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .chip .count { font: 500 12px/1 var(--f-mono); color: var(--mute); }
 .chip .pdot { width: 8px; height: 8px; box-shadow: none; }
 .row--select { cursor: pointer; }
-.row--select.is-selected { background: var(--brass-tint); }
+/* Vybraný řádek nese tón značky (fialová), ne hnědou: jemný přechod 45° a akcent 3 px vlevo
+   (obvodová linka by mezi dvěma vybranými řádky dělala dvojitou čáru). Text zůstává barvou textu, takže je čitelný stejně jako bez výběru. */
+.row--select.is-selected { background: linear-gradient(45deg, color-mix(in srgb, var(--brand, #6260d8) 16%, var(--card)), color-mix(in srgb, var(--brand, #6260d8) 6%, var(--card)) 70%); box-shadow: inset 3px 0 0 var(--brand, #6260d8); }
+.row--select.is-selected .icon-tile--check input { accent-color: var(--brand, #6260d8); }
 .icon-tile--check input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; }
 .row[data-session-drag] { -webkit-user-drag: element; }
 .selbar:not(:empty) { position: sticky; bottom: 24px; z-index: 20; display: flex; justify-content: center; margin-top: 16px; pointer-events: none; }

@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.41',
+    date: '2026-10-19',
+    title: 'Čistší detaily a roboti, kteří mluví k věci',
+    items: [
+      'Logo projektu už nemá podivný rámeček v rozích.',
+      'U spouštění agenta zmizel matoucí štítek „Na webu“.',
+      'Roboti v bublinách říkají srozumitelně, co se děje a co máš udělat.',
+      'Vybrané řádky v Agentech mají jemný fialový tón místo hnědé a úchyt widgetu na Přehledu má kolem sebe vzduch.',
+    ],
+    en: {
+      title: 'Cleaner details and robots that get to the point',
+      items: [
+        'Project logos no longer have an odd frame in the corners.',
+        'The confusing “On the web” label next to the agent picker is gone.',
+        'Robot speech bubbles now say clearly what is happening and what you should do.',
+        'Selected rows in Agents use a soft violet tint instead of brown, and the widget handle on Overview has room to breathe.',
+      ],
+    },
+  },
+  {
     version: '0.46.40',
     date: '2026-10-19',
     title: 'Jasné ovládání a robot bez uletěné ruky',

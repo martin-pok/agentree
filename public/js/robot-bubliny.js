@@ -8,58 +8,58 @@ import { tr } from './i18n.js';
 // Bublina je jedna pro celou aplikaci, drží se v okně (nahoře/dole podle místa) a nikdy nepřekryje
 // robota, ke kterému patří. Omezení pohybu a přepínač „Ztišit pohyb“ vypnou gesta i samovolné bubliny.
 
+// Texty píše „robot“, ale čtou je lidé: každá věta řekne, co se děje, a co z toho plyne pro tebe
+// (počkat, rozhodnout, podívat se do detailu, zadat další úkol). Vtip jen tam, kde nic nehoří.
+// Rod uživatele ani robota se neodhaduje – věty jsou psané tak, aby ho nepotřebovaly.
 const STAV = {
   working: () => [
-    tr('Makám na tom. Ventilátory zpívají.'),
-    tr('Píšu kód. Klidně ruš, zvládnu obojí.'),
-    tr('Ještě chvilku, ladím detaily.'),
-    tr('Přemýšlím. Potichu, ať to nespletu.'),
-    tr('Jedu naplno. Hlásím se, až budu mít výsledek.'),
+    tr('Pracuju na tom. Výsledek uvidíš tady, jakmile bude.'),
+    tr('Jsem v tom až po anténu. Ozvu se, až to dodělám.'),
+    tr('Píšu a zkouším. Klidně si mezitím dělej svoje.'),
+    tr('Běží to. Kdyby něco potřebovalo tebe, zamávám.'),
   ],
   needs_input: () => [
-    tr('Potřebuju tvoje rozhodnutí.'),
-    tr('Haló! Tady bez tebe nepohnu.'),
-    tr('Jedno klepnutí a jedu dál.'),
-    tr('Čekám na tvoje „ano“. Nebo „ne“.'),
+    tr('Dál bez tebe nemůžu. Stačí jedno rozhodnutí.'),
+    tr('Mám otázku, na kterou odpovíš jen ty.'),
+    tr('Čekám na tvoje slovo. Pak hned pokračuju.'),
+    tr('Tady potřebuju souhlas. Otevři mě a rozhodni.'),
   ],
   failed: () => [
-    tr('Tohle se nepovedlo. Detail řekne proč.'),
-    tr('Zakopl jsem. Mrkni, co se stalo.'),
+    tr('Tohle se nepovedlo. V detailu je přesně proč.'),
+    tr('Zasekla se mi práce. Detail ukáže, kde a proč.'),
   ],
   limited: () => [
-    tr('Došel mi limit. Chvíli dobíjím baterky.'),
-    tr('Limit vyčerpán. Až se obnoví, jedu dál.'),
+    tr('Došel limit služby. Jakmile se obnoví, můžu pokračovat.'),
+    tr('Na chvíli stojím kvůli limitu. Čas obnovení je v detailu.'),
   ],
   waiting: () => [
-    tr('Hotovo. Co dál?'),
-    tr('Mám volné ruce. Zadej další úkol.'),
-    tr('Připraven. Stačí říct.'),
+    tr('Hotovo. Výsledek je v detailu, další úkol klidně hned.'),
+    tr('Úkol je za mnou. Co uděláme dál?'),
+    tr('Hotovo a předáno. Mám volné ruce.'),
   ],
   // Čeká, ale nedoběhl: tah vypršel, proces agenta skončil uprostřed práce, nebo agent na zadání
   // zatím neodpověděl (s.done z modelu).
   // „Hotovo“ by tu byla nepravda, proto věta jen o tom, co je opravdu vidět.
   ticho: () => [
-    tr('Práce se tu zastavila. Mrkni do detailu.'),
-    tr('Konec práce tu nezazněl. Detail ukáže, kde to stojí.'),
+    tr('Práce se tu zastavila a konec nezazněl. Detail ukáže, kde to stojí.'),
+    tr('Od posledního kroku je ticho. Mrkni do detailu, jak to dopadlo.'),
   ],
   idle: () => [
-    tr('Odpočívám. Zadej práci a jdu na to.'),
-    tr('Klid na palubě.'),
-    tr('Tady jsem, kdybys mě potřeboval.'),
+    tr('Mám volno. Napiš, co se má udělat, a jdu na to.'),
+    tr('Jsem tady. Stačí zadání a pustím se do práce.'),
+    tr('Klid na palubě. Další úkol vezmu hned.'),
   ],
 };
 
-// Vzácné: odkazy na kultovní filmy a knihy. Krátké, laskavé, nikdy místo důležité zprávy.
+// Vzácné (jen v klidu, nikdy místo důležité zprávy): drobné rady k práci s agenty, s úsměvem.
 const VZACNE = () => [
-  tr('„Já se vrátím.“ Hned po téhle úloze.'),
-  tr('Ať tě provází Síla. A čisté commity.'),
-  tr('Tohle nejsou ti droidi, které hledáš.'),
-  tr('Odpověď je 42. Otázku ještě dohledávám.'),
-  tr('Houstone, tentokrát žádný problém.'),
-  tr('Promiň, Dave. Tohle udělat můžu.'),
-  tr('Ještě jedna věc… Ne, hotovo.'),
-  tr('Bip bup. R2 by mi rozuměl.'),
+  tr('Rada pro dobré zadání: napiš, podle čeho poznáš, že je hotovo.'),
+  tr('Čím konkrétnější zadání, tím méně otázek ode mě.'),
+  tr('Velký úkol klidně rozsekej. Malé kroky doběhnou rychleji.'),
+  tr('Tokeny počítám pečlivěji než kafe v kuchyňce.'),
+  tr('Projekt drží podklady pohromadě. Nemusíš je psát pokaždé znovu.'),
 ];
+const KLIDNE = new Set(['idle', 'waiting']);
 
 const GESTA = ['mavnuti', 'poskok', 'naklon'];
 const DOBA_HOVER = 320;
@@ -81,7 +81,7 @@ export function stavRobota(el) {
 }
 
 export function vetaRobota(stav, { nahoda = Math.random, posledni = '' } = {}) {
-  if (nahoda() < 0.04) return vyber(VZACNE(), posledni);
+  if (KLIDNE.has(stav) && nahoda() < 0.06) return vyber(VZACNE(), posledni);
   return vyber((STAV[stav] || STAV.idle)(), posledni);
 }
 

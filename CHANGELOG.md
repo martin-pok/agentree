@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.41 – 2026-10-19 · Čistší detaily a roboti, kteří mluví k věci
+
+- **Logo projektu** už nemá zvláštní rámeček v rozích. Logo s vlastním tvarem (zaoblená ikona) se ukáže samo, jen s jemným stínem. Průhledný znak dostane čistou bílou dlaždici s tenkou linkou. Dřív pod kulatějšími rohy ikony prosvítala bílá dlaždice a kolem byl dvojitý barevný prstenec.
+- **Spouštění agenta:** zmizel štítek „Na webu“ vedle výběru služby. Vypadal jako tlačítko, ale nic nedělal. Volba, kde agenta spustit, se ukáže jen tam, kde opravdu je.
+- **Bubliny robotů** mají nové texty. Každá věta řekne, co se děje a co z toho plyne pro tebe: počkat, rozhodnout, podívat se do detailu nebo zadat další úkol. Citáty z filmů nahradily krátké rady k zadávání a ukážou se jen v klidu, nikdy místo důležité zprávy.
+- **Vybrané řádky v Agentech** mají místo hnědé jemný fialový tón značky s akcentem vlevo. Text zůstává stejně čitelný.
+- **Úchyt widgetu** na Přehledu má kolem sebe vzduch. Leží 8 px pod lemem záře a 8 px nad kartou a nikde se nedotýká.
+
 ## 0.46.40 – 2026-10-19 · Jasné ovládání a robot bez uletěné ruky
 
 - **Průběh dne a spotřeba** se rozbaluje výraznou kapslí přes celou šířku: šipka v kroužku, název, popis a vpravo „Zobrazit“ / „Skrýt“. Po najetí se jemně podsvítí značkovou fialovou, takže je vidět, že jde o akci.
