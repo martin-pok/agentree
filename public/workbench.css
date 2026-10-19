@@ -314,6 +314,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .table.table--roboti .sub-live .live-dot { margin-top: 6px; }
 .table.table--roboti .cell-app { display: block; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
 .table.table--roboti .cell-app small { display: inline; margin-left: 8px; }
+.table.table--roboti .cell-app small.cell-empty { display: none; }
 .table.table--roboti .cell-num { display: block; text-align: left; font-size: 14px; }
 .cell-unit { display: none; }
 .table.table--roboti .cell-unit { display: inline; color: var(--mute); }

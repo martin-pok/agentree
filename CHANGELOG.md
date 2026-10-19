@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.35 – 2026-10-19 · Čistší karty agentů a přepis na telefonu
+
+- Karta agenta, u kterého neznáme model, už za názvem aplikace neukazuje osamocenou pomlčku („Codex –“), která vypadala jako useknutý text. V tabulkovém zobrazení pomlčka ve sloupci modelu zůstává.
+- Hlavička přepisu v detailu agenta se na úzkém telefonu zalamuje po celcích: „2 záznamy“ a „Zobrazit nástroje“ už se nerozpadají na dva řádky.
+
 ## 0.46.34 – 2026-10-19 · Pomocník bez AI, dokud ji nezapneš
 
 - **Pomocník ve výchozím stavu odpovídá jen z návodů k Agenteeq a ze živého stavu agentů, dotaz nikam neodchází.** Odpovědi přes AI (Ollama, jinak Claude Code – otázka pak odejde do Anthropicu) se zapínají v Nastavení → Účet a vzhled → Pomocník odpovídá jako AI. Dřív byly zapnuté, dokud je člověk nevypnul (bug report 14. 10., bod 3: žádná otevřená AI v aplikaci). Kdo si AI už výslovně zapnul, tomu zůstane.
