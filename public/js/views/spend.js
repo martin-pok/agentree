@@ -4,7 +4,7 @@ import { esc, fmtMoney, fmtNum, fmtTok, localDate, dateLong, dateOnlyTs, rel, MO
 import { glyph, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut } from '../charts.js';
 import { chartColor } from '../data.js';
-import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge } from '../ui.js';
+import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, infoTip } from '../ui.js';
 import { tr, LOCALE, mnozne as plural } from '../i18n.js';
 import { ze } from '../predlozky.js';
 
@@ -44,10 +44,9 @@ function openBudgets(opener = null) {
     opener,
     submitLabel: tr('Uložit rozpočty'),
     // Rozpočet se počítá jen z nákladů z připojeného Admin API. Bez něj by se nastavený rozpočet nikde
-    // neukázal ani neupozornil – dialog to říká rovnou. Měna a kurzy platí i pro ruční záznamy a ceník,
-    // proto se dialog nezakazuje.
-    body: `<p class="modal-text">${tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.')}</p>
-      ${sp.billing?.connected === false ? `<p class="set-note budget-api-note" data-budget-api>${tr('Rozpočet se počítá z nákladů za API. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní.')}</p>` : ''}
+    // neukázal ani neupozornil – dialog to řekne pod „i“ u úvodní věty, ať formulář zůstane čistý.
+    // Měna a kurzy platí i pro ruční záznamy a ceník, proto se dialog nezakazuje.
+    body: `<p class="modal-text">${tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.')}${sp.billing?.connected === false ? `<span data-budget-api>${infoTip(tr('Rozpočet se počítá z nákladů za API. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní.'))}</span>` : ''}</p>
       <div class="form-grid">
         <label class="field"><span>${tr('Celkový měsíční rozpočet')}</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="${tr('bez limitu')}" value="${cfg.total || ''}"></label>
         <label class="field"><span>${tr('Hlavní měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>

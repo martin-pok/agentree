@@ -8,6 +8,10 @@ export default {
   server,
   texty: {
     "Vzhled agenta": "Agent appearance",
+    "Zobrazit": "Show",
+    "Skrýt": "Hide",
+    "Více informací": "More information",
+    "Otevřít nastavení účtu": "Open account settings",
     "Upravit vzhled": "Customize appearance",
     "Vzhled robota": "Robot look",
     "Bez doplňku": "None",

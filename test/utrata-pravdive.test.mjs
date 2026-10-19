@@ -180,5 +180,7 @@ test('Útrata: u ručních záznamů i u součtů stojí, že se nepočítají; 
   assert.match(spendHeroHtml(sp), /<p class="spend-note">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/p>/);
   assert.doesNotMatch(spendHeroHtml({ ...sp, ledger: [] }), /Starší ruční záznamy/);
   const dialog = kod.slice(kod.indexOf('function openBudgets('), kod.indexOf('onSubmit:', kod.indexOf('function openBudgets(')));
-  assert.match(dialog, /sp\.billing\?\.connected === false \? `<p class="set-note budget-api-note" data-budget-api>\$\{tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\)\}/);
+  // Vysvětlení je schované za „i“ (rozhodnutí vlastníka 19. 10. 2026), ne jako box v dialogu.
+  assert.match(dialog, /sp\.billing\?\.connected === false \? `<span data-budget-api>\$\{infoTip\(tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\)\)\}<\/span>`/);
+  assert.doesNotMatch(dialog, /set-note/);
 });

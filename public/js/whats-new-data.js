@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.40',
+    date: '2026-10-19',
+    title: 'Jasné ovládání a robot bez uletěné ruky',
+    items: [
+      'Průběh dne a spotřeba se rozbaluje výraznou kapslí s nápisem Zobrazit nebo Skrýt, takže je hned jasné, že na ni jde klepnout.',
+      'Robot u pozdravu mává, poskakuje a otáčí se plynule a ruka mu při mávnutí už neuletí.',
+      'Klepnutím na své jméno v profilu se dostaneš do nastavení účtu.',
+      'Vysvětlení u rozpočtů je schované za decentním „i“ a ukáže se po najetí.',
+    ],
+    en: {
+      title: 'Clearer controls and a robot that keeps its arm',
+      items: [
+        'Activity and usage now expands from a clear full-width pill labelled Show or Hide, so it is obvious you can click it.',
+        'The robot next to the greeting waves, hops and spins smoothly, and its arm no longer flies off while waving.',
+        'Click your name in the profile to open account settings.',
+        'The note in Budgets now sits behind a subtle “i” and appears on hover.',
+      ],
+    },
+  },
+  {
     version: '0.46.39',
     date: '2026-10-19',
     title: 'Widgety, které si poskládáš',

@@ -648,3 +648,37 @@ test('poznámky v kartách jsou skleněné, ne hnědé; „Zjištění ještě n
   assert.doesNotMatch(settings, /Zjištění ještě neproběhlo/);
   assert.match(settings, /t\.list\.length \? '' : `<span class="badge">\$\{tr\('nezjištěno'\)\}<\/span>`/, 'nezjištěný stav zůstává vidět');
 });
+
+test('mávnutí robota otáčí paži kolem ramene, ruka neodlétá', async () => {
+  const css = await zdroj('public/workbench.css');
+  const blok = css.slice(css.indexOf('/* Gesta robotů'), css.indexOf('.robot[data-gesto] * { animation: none !important; }'));
+  assert.ok(blok.length > 200, 'blok gest existuje');
+  assert.match(blok, /\.robot\[data-gesto\] :is\([^)]*\.robot-arm-right[^)]*\) \{ transform-box: view-box; \}/);
+  assert.doesNotMatch(blok, /\[data-gesto='mavnuti'\] \.robot-arm-right \{[^}]*(fill-box|transform-origin)/, 'kotva ramene zůstává z inline stylu, v souřadnicích robota');
+  const js = await zdroj('public/js/robot-bubliny.js');
+  assert.match(js, /delete svg\.dataset\.gesto; \}, 1600\)/, 'gesto se neutne před koncem animace');
+});
+
+test('rozbalení „Průběh dne a spotřeba“ je výrazná kapsle s akcí', async () => {
+  const ov = await zdroj('public/js/views/overview.js');
+  assert.match(ov, /<summary><span class="hh-ikona" aria-hidden="true">\$\{ICON\.chev\}<\/span><span class="hh-nazev">/);
+  assert.match(ov, /<span class="hh-zobrazit">\$\{tr\('Zobrazit'\)\}<\/span><span class="hh-skryt">\$\{tr\('Skrýt'\)\}<\/span>/);
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /html\[data-theme\] \.home-history > summary \{ display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; height: 48px;[^}]*border-radius: var\(--r-full\)/);
+});
+
+test('jméno v profilu vede do Nastavení → Účet a při najetí se podtrhne', async () => {
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /<a class="welcome-name" href="#\/nastaveni" data-karta="account" title="\$\{tr\('Otevřít nastavení účtu'\)\}"><b>\$\{esc\(name\)\}<\/b><\/a>/);
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.welcome-name:hover b, \.welcome-name:focus-visible b \{ background-size: 100% 1\.5px; \}/);
+});
+
+test('vysvětlení za „i“ se zalamuje, jde přečíst odečítačem a Esc ho zavře', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /aria-describedby="\$\{id\}">\$\{ICON\.info\}<\/button><span class="info-tip-bubble" role="tooltip" id="\$\{id\}">\$\{esc\(text\)\}<\/span>/);
+  assert.match(ui, /if \(e\.key !== 'Escape'\) return;[\s\S]{0,400}tip\.dataset\.skryto = ''/);
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.info-tip-btn \{[^}]*width: 32px; height: 32px;[^}]*border-radius: var\(--r-full\)/);
+  assert.match(css, /\.info-tip-bubble \{[^}]*white-space: normal;/);
+});

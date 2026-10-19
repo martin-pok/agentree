@@ -522,16 +522,64 @@ html[data-theme='dark'] .rb[data-strana='dole']::after { border-color: color-mix
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .rb { background: var(--card); } }
 @media (prefers-reduced-motion: reduce) { .rb { transition: opacity .12s linear; scale: 1; } }
 
-/* Gesta robotů: mávnutí, poskok, náklon hlavy, otočka (easter egg). Jen transform, 1 s. */
+/* Gesta robotů: mávnutí, poskok, náklon hlavy, otočka (easter egg). Jen transform.
+   Každá část se otáčí kolem svého kloubu v souřadnicích celého robota (transform-box: view-box,
+   kotva v inline stylu z robot-svg.js): paže kolem ramene, hlava kolem krku. Dřív mávnutí
+   přepnulo paži na fill-box, kotva ramene se pak počítala od rohu paže a ruka „ulétla“.
+   Pohyb má nádech, hlavní akci, dokmit a usazení; žádný skok mezi koncem gesta a klidem. */
 .home-robot { cursor: pointer; }
-.robot[data-gesto='mavnuti'] .robot-arm-right { transform-box: fill-box; transform-origin: 0 0; animation: rb-mavat .9s ease-in-out; }
-.robot[data-gesto='poskok'] .robot-body { animation: rb-poskok .7s cubic-bezier(.34, 1.4, .64, 1); }
-.robot[data-gesto='naklon'] .robot-head { transform-origin: 54px 65px; animation: rb-naklon .9s ease-in-out; }
-.robot[data-gesto='otocka'] .robot-body { transform-box: fill-box; transform-origin: 50% 60%; animation: rb-otocka 1s cubic-bezier(.65, 0, .35, 1); }
-@keyframes rb-mavat { 0%, 100% { rotate: 0deg; } 20%, 60% { rotate: -38deg; } 40%, 80% { rotate: -14deg; } }
-@keyframes rb-poskok { 0%, 100% { translate: 0 0; } 40% { translate: 0 -10px; } 70% { translate: 0 1px; } }
-@keyframes rb-naklon { 0%, 100% { rotate: 0deg; } 35% { rotate: -10deg; } 70% { rotate: 6deg; } }
-@keyframes rb-otocka { 0% { rotate: 0deg; } 100% { rotate: 360deg; } }
+.robot[data-gesto] :is(.robot-body, .robot-head, .robot-arm-left, .robot-arm-right, .robot-shadow) { transform-box: view-box; }
+/* Mávnutí: paže se nadechne dolů, zvedne se ven do strany (nejvýš 25° nad vodorovnou – výš by
+   zmizela pod hlavou), dvakrát zamává a plynule klesne. Hlava se lehce nakloní k mávající ruce. */
+.robot[data-gesto='mavnuti'] .robot-arm-right { animation: rb-mavat 1.45s both; }
+.robot[data-gesto='mavnuti'] .robot-head { animation: rb-mavat-hlava 1.45s cubic-bezier(.45, 0, .2, 1) both; }
+@keyframes rb-mavat {
+  0% { rotate: 0deg; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  9% { rotate: 7deg; animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+  30% { rotate: -60deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  42% { rotate: -40deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  54% { rotate: -60deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  66% { rotate: -42deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  76% { rotate: -54deg; animation-timing-function: cubic-bezier(.5, 0, .3, 1); }
+  93% { rotate: 3deg; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  100% { rotate: 0deg; }
+}
+@keyframes rb-mavat-hlava { 0%, 100% { rotate: 0deg; } 30%, 72% { rotate: 4deg; } }
+/* Poskok: přikrčení (squash), odraz s protažením, dopad s pružným usazením. Stín se ve výšce zmenší
+   (jen měřítkem – průhlednost stínu je jeho barva, animace na ni nesahá). */
+.robot[data-gesto='poskok'] .robot-body { transform-origin: 54px 103px; animation: rb-poskok .95s both; }
+.robot[data-gesto='poskok'] .robot-shadow { transform-origin: 54px 104px; animation: rb-stin .95s both; }
+@keyframes rb-poskok {
+  0% { translate: 0 0; scale: 1 1; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  16% { translate: 0 0; scale: 1.05 .93; animation-timing-function: cubic-bezier(.15, .75, .35, 1); }
+  44% { translate: 0 -12px; scale: .97 1.04; animation-timing-function: cubic-bezier(.6, 0, .85, .4); }
+  64% { translate: 0 0; scale: 1.06 .93; animation-timing-function: cubic-bezier(.25, .8, .4, 1); }
+  80% { translate: 0 -1.5px; scale: .99 1.015; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  100% { translate: 0 0; scale: 1 1; }
+}
+@keyframes rb-stin { 0%, 16%, 64%, 100% { scale: 1 1; } 44% { scale: .72 .8; } }
+/* Náklon: zvědavé naklonění hlavy, chvilka držení, krátký protipohyb a usazení. */
+.robot[data-gesto='naklon'] .robot-head { animation: rb-naklon 1.2s both; }
+@keyframes rb-naklon {
+  0% { rotate: 0deg; animation-timing-function: cubic-bezier(.3, .7, .3, 1); }
+  28%, 52% { rotate: -11deg; animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+  76% { rotate: 4deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  100% { rotate: 0deg; }
+}
+/* Otočka (vzácná): pirueta na místě. Přikrčení, odraz a otočení kolem svislé osy (měřítko X jde
+   1 → 0 → −1 → 0 → 1 s náběhy jako kosinus), dopad s pružným usazením. Tělo se nepřeklápí hlavou dolů. */
+.robot[data-gesto='otocka'] .robot-body { transform-origin: 54px 103px; animation: rb-otocka 1.3s both; }
+.robot[data-gesto='otocka'] .robot-shadow { transform-origin: 54px 104px; animation: rb-otocka-stin 1.3s both; }
+@keyframes rb-otocka {
+  0% { translate: 0 0; scale: 1 1; animation-timing-function: cubic-bezier(.4, 0, .6, 1); }
+  12% { translate: 0 0; scale: 1.05 .93; animation-timing-function: cubic-bezier(.12, 0, .39, 0); }
+  31% { translate: 0 -8px; scale: 0 1.03; animation-timing-function: cubic-bezier(.61, 1, .88, 1); }
+  50% { translate: 0 -11px; scale: -1 1.03; animation-timing-function: cubic-bezier(.12, 0, .39, 0); }
+  69% { translate: 0 -8px; scale: 0 1.03; animation-timing-function: cubic-bezier(.61, 1, .88, 1); }
+  84% { translate: 0 0; scale: 1.05 .94; animation-timing-function: cubic-bezier(.25, .8, .4, 1); }
+  100% { translate: 0 0; scale: 1 1; }
+}
+@keyframes rb-otocka-stin { 0%, 12%, 84%, 100% { scale: 1 1; } 50% { scale: .76 .82; } }
 @media (prefers-reduced-motion: reduce) { .robot[data-gesto] * { animation: none !important; } }
 
 /* Toast: kulatá ikona je vždy soustředná s rohem. Poloměr 22 px = poloměr ikony 14 + odsazení 8 ze

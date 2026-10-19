@@ -184,7 +184,8 @@ export function initRobotBubliny() {
     const svg = robot.querySelector('.robot');
     if (!svg || !smiGesto()) return;
     svg.dataset.gesto = druh;
-    setTimeout(() => { if (svg.dataset.gesto === druh) delete svg.dataset.gesto; }, 1100);
+    // Nejdelší gesto trvá 1,45 s (workbench.css); atribut se smaže až po jeho konci.
+    setTimeout(() => { if (svg.dataset.gesto === druh) delete svg.dataset.gesto; }, 1600);
   }
 
   // Najetí a fokus: věta podle stavu, se zpožděním, ať bubliny neblikají při přejetí myší přes stránku.
