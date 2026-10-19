@@ -187,7 +187,8 @@ try {
       await page.locator('.pm-cil').first().waitFor();
       await page.screenshot({ path: `${out}/${typ}-pomocnik-jak.png` });
       // Pomalý stroj: Nastavení dočte data až po chvíli, mezitím člověk píše další dotaz.
-      // Zpožděný požadavek může doběhnout až po vypnutí zpomalení – pak ho už Playwright nechá projít sám.
+      // Zpomalení se vypíná až po doběhnutí zpožděných požadavků (unrouteAll 'wait'): WebKit jinak požadavek,
+      // který se pustí dál po odebrání trasy, zruší a do konzole zapíše „due to access control checks“.
       const pokracuj = (route) => route.continue().catch(() => {});
       const pomalu = (route) => (route.request().method() === 'GET' ? new Promise((r) => setTimeout(r, 700)).then(() => pokracuj(route)) : pokracuj(route));
       await page.route('**/api/**', pomalu);
@@ -200,7 +201,7 @@ try {
       await page.waitForTimeout(600);
       const fokus = await page.evaluate(() => { const a = document.activeElement; return a === document.querySelector('.pm-vstup') ? 'ok' : `${a?.tagName}.${a?.className} ${a?.id || ''} ${a?.getAttribute?.('data-setting') || ''}`; });
       assert.equal(fokus, 'ok', 'psaní v pomocníkovi drží fokus i po skoku do Nastavení');
-      await page.unroute('**/api/**', pomalu);
+      await page.unrouteAll({ behavior: 'wait' });
       await page.keyboard.press('Enter');
       await page.locator('.pm-vysledek').first().waitFor({ timeout: 10000 }).catch(async () => {
         const stav = await page.evaluate(() => ({
