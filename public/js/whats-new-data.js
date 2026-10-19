@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.35',
+    date: '2026-10-19',
+    title: 'Čistší karty agentů',
+    items: [
+      'Karta agenta s neznámým modelem už za názvem aplikace neukazuje osamocenou pomlčku.',
+      'Hlavička přepisu se na telefonu zalamuje po celcích, takže „Zobrazit nástroje“ zůstane pohromadě.',
+    ],
+    en: {
+      title: 'Cleaner agent cards',
+      items: [
+        'An agent card with an unknown model no longer shows a stray dash after the app name.',
+        'On a phone the transcript header wraps as whole items, so “Show tools” stays together.',
+      ],
+    },
+  },
+  {
     version: '0.46.34',
     date: '2026-10-19',
     title: 'Pomocník bez AI, dokud ji nezapneš',

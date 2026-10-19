@@ -567,3 +567,16 @@ test('nevratné potvrzení má po otevření fokus na Zrušit, ne na smazání',
   const potvrzeni = ui.slice(ui.indexOf('export const confirmDialog'), ui.indexOf('/* ---------- Paleta'));
   assert.match(potvrzeni, /submitLabel: confirmLabel, danger \}\)/, 'confirmDialog předává danger do modalu');
 });
+
+test('karta agenta bez známého modelu neukazuje osamocenou pomlčku za aplikací', async () => {
+  const agents = await zdroj('public/js/views/agents.js');
+  assert.match(agents, /<small class="cell-empty">–<\/small>/, 'neznámý model nese vlastní třídu');
+  const css = await zdroj('public/workbench.css');
+  assert.match(css, /\.table\.table--roboti \.cell-app small\.cell-empty \{ display: none; \}/, 'karta ji skryje, tabulka ji drží');
+});
+
+test('hlavička přepisu se na telefonu zalamuje po celcích, ne po slovech', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.transcript-bar \{ display: flex; flex-wrap: wrap;/);
+  assert.match(css, /\.transcript-bar > span, \.transcript-bar \.check-inline \{ white-space: nowrap; \}/);
+});

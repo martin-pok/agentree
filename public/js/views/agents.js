@@ -148,6 +148,13 @@ function applyQuery(q) {
   else if (proj) f.project = proj;
 }
 
+// Neznámý model je v tabulce pomlčka ve vlastním sloupci. Na kartě stojí hned za aplikací a
+// osamocená pomlčka („Codex –“) tam vypadá jako useknutý text – karta ji proto skryje.
+function modelCell(s) {
+  const text = s.model || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '');
+  return text ? `<small>${esc(text)}</small>` : '<small class="cell-empty">–</small>';
+}
+
 function rowHtml(s) {
   let sub;
   // Tečka a text jsou jeden prvek: v kartě se podpis zalamuje a samostatná tečka by zůstala
@@ -167,7 +174,7 @@ function rowHtml(s) {
   const runs = taskRunCount(s);
   const cells = `
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
-    <span class="cell-app">${esc(s.app)}<small>${esc(s.model || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '–'))}</small></span>
+    <span class="cell-app">${esc(s.app)}${modelCell(s)}</span>
     <span class="cell-status">${statusPill(s.status)}</span>
     <span class="cell-num">${total ? `${fmtTok(total)} <span class="cell-unit">${tr('tokenů')}</span>` : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;

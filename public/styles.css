@@ -1024,7 +1024,9 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .session-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; margin-top: 32px; align-items: stretch; }
 .transcript-misto { min-width: 0; min-height: clamp(420px, calc(100dvh - 400px), 900px); contain: size; }
 .transcript { position: relative; display: flex; flex-direction: column; max-height: 100%; overflow: hidden; }
-.transcript-bar { display: flex; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line-2); }
+/* Na telefonu se přepínač nástrojů zalomí celý na další řádek, nikdy ne slovo po slově. */
+.transcript-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 16px 24px; border-bottom: 1px solid var(--line-2); }
+.transcript-bar > span, .transcript-bar .check-inline { white-space: nowrap; }
 .transcript-bar h2 { margin: 0; font: 500 16px/1.3 var(--f-body); }
 .transcript-bar .check-inline { margin-left: auto; }
 /* Přepis nekrade kolečko myši: scrolluje se až poté, co do něj uživatel klikne nebo na něj přejde tabulátorem. */
