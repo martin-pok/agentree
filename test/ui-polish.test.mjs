@@ -580,3 +580,17 @@ test('hlavička přepisu se na telefonu zalamuje po celcích, ne po slovech', as
   assert.match(css, /\.transcript-bar \{ display: flex; flex-wrap: wrap;/);
   assert.match(css, /\.transcript-bar > span, \.transcript-bar \.check-inline \{ white-space: nowrap; \}/);
 });
+
+test('grafy u agentů, na Přehledu a v Útratě berou paletu grafů, ne skoro černou barvu značky', async () => {
+  // OpenAI (#16141D) a Cursor (#4A4855) mají značku téměř černou: v tmavém režimu pruhy
+  // „Aktivita za 24 hodin“ a výplň „Výstup“ splývaly s kartou (kontrast ~1 : 1).
+  const session = await zdroj('public/js/views/session.js');
+  assert.doesNotMatch(session, /PROVIDERS\[/, 'detail agenta nebere barvu značky do grafů');
+  assert.match(session, /miniBars\(spark, barva,/);
+  assert.match(session, /tokenBreakdown\(tok, \{ outputColor: barva \}\)/);
+  assert.match(session, /const barva = chartColor\(pkey\(s\.provider\)\)/);
+  const overview = await zdroj('public/js/views/overview.js');
+  assert.doesNotMatch(overview, /color: PROVIDERS\[[^\]]+\]\.color/, 'časová osa ani útrata na Přehledu');
+  const spend = await zdroj('public/js/views/spend.js');
+  assert.match(spend, /const serviceColor = \(sp, k\) => chartColor\(/);
+});

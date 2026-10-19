@@ -3,10 +3,10 @@ import { editAgentAppearance } from '../agent-appearance.js';
 import { state, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
-import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
+import { glyph, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
 import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState } from '../ui.js';
-import { sessionTotal } from '../data.js';
+import { sessionTotal, chartColor } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
@@ -402,7 +402,9 @@ function update() {
       </div>`
     : s.progress?.total ? `<div class="live-strip is-static">${progressHtml(s.progress)}</div>` : '');
 
-  const color = PROVIDERS[pkey(s.provider)];
+  // Grafy berou barvu z ověřené palety grafů, ne barvu značky: OpenAI i Cursor mají značku
+  // skoro černou a v tmavém režimu by pruhy na kartě zmizely (kontrast ~1 : 1).
+  const barva = chartColor(pkey(s.provider));
   const h0 = Math.floor(now / H) * H - 23 * H;
   const spark = new Array(24).fill(0);
   for (const k in s.hourly) {
@@ -509,8 +511,8 @@ function update() {
           <div class="wide"><dt>ID</dt><dd class="mono-sm">${esc(s.id)}</dd></div>
         </dl>
       </section>
-      ${hasTokens ? `<section class="card side-card" data-card="tokens" aria-labelledby="tok-h">${GRIP}<h3 id="tok-h">${tr('Složení tokenů')}</h3>${tokenBreakdown(tok, { outputColor: color.color })}</section>` : ''}
-      ${hasTokens ? `<section class="card side-card" data-card="spark" aria-labelledby="spark-h">${GRIP}<h3 id="spark-h">${tr('Aktivita za 24 hodin')} · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, color.ink, { height: 64 })}</div></section>` : ''}
+      ${hasTokens ? `<section class="card side-card" data-card="tokens" aria-labelledby="tok-h">${GRIP}<h3 id="tok-h">${tr('Složení tokenů')}</h3>${tokenBreakdown(tok, { outputColor: barva })}</section>` : ''}
+      ${hasTokens ? `<section class="card side-card" data-card="spark" aria-labelledby="spark-h">${GRIP}<h3 id="spark-h">${tr('Aktivita za 24 hodin')} · ${fmtTok(spark.reduce((a, b) => a + b, 0))}</h3><div class="side-spark">${miniBars(spark, barva, { height: 64 })}</div></section>` : ''}
       ${limits.length ? `<section class="card side-card" data-card="limits" aria-labelledby="lim-h">${GRIP}<h3 id="lim-h">${tr('Limity')}</h3><div class="gauges gauges--sm">${limits.slice(0, 2).join('')}</div></section>` : ''}
       ${lastPrompt ? `<section class="card side-card" data-card="prompt" aria-labelledby="lp-h">${GRIP}<h3 id="lp-h">${tr('Poslední zadání')}</h3><blockquote class="quote${longPrompt && !v.quoteOpen ? ' is-clamped' : ''}" id="lp-text">${esc(lastPrompt)}</blockquote>${longPrompt ? `<button class="link link--block" type="button" data-quote-toggle aria-expanded="${v.quoteOpen}" aria-controls="lp-text">${v.quoteOpen ? tr('Sbalit zadání') : tr('Zobrazit celé zadání')}</button>` : ''}</section>` : ''}`;
   fill(el, 'side', processDetails);

@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
-import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank } from '../data.js';
+import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank, chartColor } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
 import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
@@ -443,7 +443,7 @@ function update(topics = new Set(['all'])) {
       .sort((a, b) => rank(a) - rank(b) || lastSpan(b) - lastSpan(a));
     const rows = vybrane
       .slice(0, TIMELINE_MAX)
-      .map((s) => ({ id: s.id, title: s.title, fullTitle: s.fullTitle, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: PROVIDERS[pkey(s.provider)].color, glyph: glyph(s) }));
+      .map((s) => ({ id: s.id, title: s.title, fullTitle: s.fullTitle, app: s.app, status: s.status, lastAt: s.lastAt, spans: s.spans || [], color: chartColor(pkey(s.provider)), glyph: glyph(s) }));
     const skryto = vybrane.length - rows.length;
     zivy(el, 'timeline', rows.length
       ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
@@ -484,7 +484,7 @@ function update(topics = new Set(['all'])) {
         </div>
       </div>
       ${top.length
-        ? hbars(top.map(([k, val]) => ({ label: sp.services[k]?.label || k, value: val, color: PROVIDERS[pkey(sp.services[k]?.provider)].color })), { format: (x) => fmtMoney(x, sp.currency) })
+        ? hbars(top.map(([k, val]) => ({ label: sp.services[k]?.label || k, value: val, color: chartColor(pkey(sp.services[k]?.provider)) })), { format: (x) => fmtMoney(x, sp.currency) })
         : `<p class="muted small">${tr('Zatím žádné API náklady.')}</p>`}`);
     }
   }
