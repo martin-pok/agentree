@@ -202,7 +202,9 @@ function normalizeDataInner(raw) {
       avatar: Number.isInteger(s.avatar) && s.avatar >= 0 && s.avatar < 64 ? s.avatar : null,
       layout: normalizeLayout(s.layout),
       // Pomocník: plovoucí tlačítko s chatem a volitelné formulování odpovědí lokálním modelem (Ollama).
-      pomocnik: { zobrazit: s.pomocnik?.zobrazit !== false, model: s.pomocnik?.model !== false, ai: s.pomocnik?.ai !== false },
+      // Odpovědi přes AI (Ollama, jinak Claude Code – otázka pak odejde do Anthropicu) jen po výslovném
+      // zapnutí; ve výchozím stavu odpovídá průvodce z návodů a nic neodchází (bug report 14. 10., bod 3).
+      pomocnik: { zobrazit: s.pomocnik?.zobrazit !== false, model: s.pomocnik?.model !== false, ai: s.pomocnik?.ai === true },
     },
     projects: normalizeProjects(d.projects),
     license: d.license && typeof d.license.key === 'string' && d.license.key.length < 4000 ? { key: d.license.key, activatedAt: Number(d.license.activatedAt) || Date.now() } : null,
