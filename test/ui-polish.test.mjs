@@ -555,3 +555,15 @@ test('doplňkový text drží 4,5:1 i přímo nad nejsytějším místem atmosf�
     }
   }
 });
+
+// Bug report 14. 10. (bod 10): smazání účtu musí potvrdit člověk. Dialog s nevratnou akcí proto
+// nesmí dát fokus potvrzovacímu tlačítku – Enter hned po otevření by účet či projekt smazal.
+test('nevratné potvrzení má po otevření fokus na Zrušit, ne na smazání', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  const modal = ui.slice(ui.indexOf('export function modal('), ui.indexOf('export const confirmDialog'));
+  assert.match(modal, /const bezpecne = danger \? form\.querySelector\('\.modal-foot \[data-close\]'\) : null;/);
+  assert.match(modal, /\.modal-body textarea'\) \|\| bezpecne \|\| submit \|\|/,
+    'pole formuláře mají přednost, u nebezpečné akce pak Zrušit, teprve potom potvrzení');
+  const potvrzeni = ui.slice(ui.indexOf('export const confirmDialog'), ui.indexOf('/* ---------- Paleta'));
+  assert.match(potvrzeni, /submitLabel: confirmLabel, danger \}\)/, 'confirmDialog předává danger do modalu');
+});
