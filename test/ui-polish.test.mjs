@@ -619,3 +619,8 @@ test('detail projektu barví „Tokeny podle služby“ barvou služby z palety 
   assert.match(projekt, /color: chartColor\(r\.provider\)/);
   assert.doesNotMatch(projekt, /color: p\.color/);
 });
+
+test('poslední údaj pod názvem konverzace se na úzkém telefonu zkracuje výpustkou, ne uprostřed slova', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.cell-sub > span:last-child \{ min-width: 0; overflow: hidden; text-overflow: ellipsis; \}/);
+});
