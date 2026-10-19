@@ -447,7 +447,7 @@ function update(topics = new Set(['all'])) {
       nastroje.set(klic, d);
     }
     const polozky = [...nastroje.entries()]
-      .map(([label, d]) => ({ label, value: d.value, icon: glyph({ app: label, provider: d.provider, runtime: d.runtime }) }))
+      .map(([label, d]) => ({ label, value: d.value, icon: glyph({ app: label, provider: d.provider, runtime: d.runtime }), color: chartColor(pkey(d.provider)) }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
     zivy(el, 'today-apps', polozky.length

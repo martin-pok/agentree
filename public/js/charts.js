@@ -378,7 +378,7 @@ export function hbars(items, { format = fmtTok, max } = {}) {
     .map((i) => `<li>
       <span class="hb-label">${i.icon || ''}<span class="hb-name">${esc(i.label)}</span>${i.sub ? `<small>${esc(i.sub)}</small>` : ''}</span>
       <span class="hb-value">${esc(format(i.value))}</span>
-      <span class="hb-track"><i style="width:${Math.max(1, (i.value / m) * 100).toFixed(1)}%;background:${i.color}"></i></span>
+      <span class="hb-track"><i style="width:${Math.max(1, (i.value / m) * 100).toFixed(1)}%;background:${esc(i.color || 'var(--brand, #6260d8)')}"></i></span>
     </li>`)
     .join('')}</ul>`;
 }

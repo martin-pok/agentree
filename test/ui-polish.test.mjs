@@ -676,11 +676,14 @@ test('jméno v profilu vede do Nastavení → Účet a při najetí se podtrhne'
 
 test('vysvětlení za „i“ se zalamuje, jde přečíst odečítačem a Esc ho zavře', async () => {
   const ui = await zdroj('public/js/ui.js');
-  assert.match(ui, /aria-describedby="\$\{id\}">\$\{ICON\.info\}<\/button><span class="info-tip-bubble" role="tooltip" id="\$\{id\}">\$\{esc\(text\)\}<\/span>/);
+  assert.match(ui, /aria-describedby="\$\{id\}" aria-expanded="false">\$\{ICON\.info\}<\/button><span class="info-tip-bubble" role="tooltip" id="\$\{id\}">\$\{esc\(text\)\}<\/span>/);
   assert.match(ui, /if \(e\.key !== 'Escape'\) return;[\s\S]{0,400}tip\.dataset\.skryto = ''/);
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.info-tip-btn \{[^}]*width: 32px; height: 32px;[^}]*border-radius: var\(--r-full\)/);
   assert.match(css, /\.info-tip-bubble \{[^}]*white-space: normal;/);
+  assert.match(css, /\.info-tip-btn::before \{ content: ''; position: absolute; inset: -6px;/, 'cílová plocha 44 px');
+  assert.match(css, /:is\(:hover, :focus-within, \[data-otevreno\]\) \.info-tip-bubble/, 'na dotyk se přepíná klepnutím');
+  assert.match(ui, /nastav\(t, !t\.hasAttribute\('data-otevreno'\)\)/);
 });
 
 test('spouštěč nemá štítek „Na webu“, který vypadal jako tlačítko', async () => {
@@ -758,4 +761,19 @@ test('hledání najde agenta podle projektu, větve i posledního zadání; Agen
   assert.match(ag, /const q = norm\(f\.q\.trim\(\)\)\.split\(\/\\s\+\/\)\.filter\(Boolean\);/);
   assert.match(ag, /q\.every\(\(w\) => text\.includes\(w\)\)/);
   assert.match(ag, /s\.lastPrompt[^\n]*projectById\(s\.projectId\)\?\.name/);
+});
+
+test('vodorovné pruhy nikdy nevypíšou background:undefined', async () => {
+  const { hbars } = await import('../public/js/charts.js');
+  const html = hbars([{ label: 'Codex', value: 10 }, { label: 'Claude', value: 5, color: '#123456' }]);
+  assert.doesNotMatch(html, /undefined/);
+  assert.match(html, /background:var\(--brand, #6260d8\)/);
+  const ov = await zdroj('public/js/views/overview.js');
+  assert.match(ov, /color: chartColor\(pkey\(d\.provider\)\) \}\)\)/, 'Kam dnes šly tokeny má barvy služeb');
+});
+
+test('Detekované procesy: vypnuté sledování segment skryje, selhání ukáže pomlčku, ne nulu', async () => {
+  const ag = await zdroj('public/js/views/agents.js');
+  assert.match(ag, /const procesy = proc\?\.state === 'connected' \? 'ok' : proc\?\.state === 'error' \? 'nevim' : 'vypnuto';/);
+  assert.match(ag, /k === 'observed' && !count && procesy !== 'ok'[\s\S]{0,300}<span class="count">–<\/span>/);
 });
