@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.38',
+    date: '2026-10-19',
+    title: 'Jemnější stav agentů',
+    items: [
+      'Dlaždice Stav agentů na Přehledu mají místo syté plochy jemný barevný přechod a po najetí kurzorem se lehce zvednou.',
+      'Poznámky v Nastavení, Statistikách a Útratě už nejsou v hnědém boxu – nápověda je klidná a jen skutečné varování má teplý tón.',
+      'U přístupu mimo domov ukazuje nezjištěný stav štítek přímo u tlačítka.',
+    ],
+    en: {
+      title: 'A calmer agent status',
+      items: [
+        'The Agent status tiles on Overview use a soft colour gradient instead of a solid fill and lift slightly on hover.',
+        'Notes in Settings, Statistics and Spend no longer sit in a brown box – hints stay calm and only real warnings get a warm tone.',
+        'Remote access now shows an “unknown” label right next to the button when it has not been checked.',
+      ],
+    },
+  },
+  {
     version: '0.46.37',
     date: '2026-10-19',
     title: 'Projekty čitelné i v tmavém režimu',
