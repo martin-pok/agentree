@@ -43,7 +43,7 @@ const ALERTS_MAX = 300;
 
 // Pořadí karet, které si uživatel nastavil tažením. Jen známé seznamy a krátké identifikátory:
 // z uloženého souboru se nikdy nepřebírá nic jiného.
-export const LAYOUT_KEYS = ['agentSide', 'projectSide'];
+export const LAYOUT_KEYS = ['agentSide', 'projectSide', 'home'];
 export function normalizeLayout(input) {
   const out = {};
   if (!input || typeof input !== 'object') return out;

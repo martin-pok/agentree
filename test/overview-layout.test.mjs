@@ -2,50 +2,66 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
-// Přehled měl dřív sloupcovou sazbu (`columns: 2`). O tom, co skončí nahoře v pravém sloupci,
-// rozhodoval prohlížeč podle výšky bloků – takže se s jinou šířkou okna nebo jinými daty nad
-// widget „Kam dnes šly tokeny" vysunul cizí blok i s prázdnou mezerou. Tyhle testy hlídají,
-// že rozvržení zůstane určené kódem, ne náhodou.
+// Přehled (Průběh dne a spotřeba) je nástěnka widgetů: uživatel je přesouvá a mění jim šířku.
+// Rozvržení ale pořád určuje kód (board-pack.js), ne prohlížeč: řádky se skládají v pořadí,
+// které zvolil uživatel, a v žádném řádku nesmí zůstat díra.
 
 const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
 const html = await zdroj('public/js/views/overview.js');
-const css = await zdroj('public/styles.css');
+const css = await zdroj('public/refinement.css');
+const { pack, decodeLayout, encodeLayout, mergeLayout, spanFromWidth, COLS, MIN_SPAN } = await import('../public/js/board-pack.js');
 
-const mrizka = html.slice(html.indexOf('<div class="ov">'), html.indexOf('<section class="ov-wide"'));
+const widgety = [...html.matchAll(/<div class="widget" data-card="([a-z]+)">/g)].map((m) => m[1]);
+const vychozi = [...html.slice(html.indexOf('const BOARD_DEFAULT'), html.indexOf('];', html.indexOf('const BOARD_DEFAULT'))).matchAll(/id: '([a-z]+)', span: (\d+)/g)].map((m) => ({ id: m[1], span: Number(m[2]) }));
 
-test('Přehled má dva sloupce s pevně daným obsahem', () => {
-  const sloupce = mrizka.split('<div class="ov-col bal-col">').slice(1);
-  assert.equal(sloupce.length, 2, 'sloupce musí být právě dva');
-  for (const s of sloupce) assert.match(s, /<section/, 'prázdný sloupec nedává smysl');
+test('každý blok Průběhu dne je widget a výchozí rozvržení pokrývá všechny', () => {
+  assert.deepEqual(widgety, ['smena', 'kam', 'tokeny', 'aktivita', 'naklady', 'bezi', 'limity']);
+  assert.deepEqual(vychozi.map((x) => x.id).sort(), [...widgety].sort());
+  const mezi = html.slice(html.indexOf('<div class="home-board" data-board>'), html.indexOf('</div>\n`;', html.indexOf('data-board>')));
+  assert.doesNotMatch(mezi.replace(/<div class="widget"[\s\S]*?\n {4}<\/div>/g, ''), /<section/, 'žádná sekce mimo widget – její místo by určil prohlížeč');
 });
 
-test('žádný blok nevisí v mřížce mimo sloupec', () => {
-  const mimo = mrizka.split('<div class="ov-col bal-col">')[0];
-  assert.doesNotMatch(mimo, /<section/, 'sekce patří do sloupce, jinak si její místo určí prohlížeč');
+test('výchozí rozvržení: řádky bez děr, Kam dnes šly tokeny vedle Dnešní směny', () => {
+  const p = pack(vychozi);
+  const radky = {};
+  for (const x of p) radky[x.row] = (radky[x.row] || 0) + x.span;
+  assert.ok(Object.values(radky).every((n) => n === COLS), JSON.stringify(radky));
+  assert.equal(p.find((x) => x.id === 'kam').row, p.find((x) => x.id === 'smena').row);
 });
 
-test('widget „Kam dnes šly tokeny" je první v pravém sloupci', () => {
-  const pravy = mrizka.split('<div class="ov-col bal-col">')[2];
-  const prvni = pravy.indexOf('<section');
-  assert.ok(prvni >= 0, 'pravý sloupec má mít sekce');
-  assert.match(pravy.slice(prvni, prvni + 400), /Kam dnes šly tokeny/, 'nahoře v pravém sloupci má být tenhle widget');
+test('skládání: pořadí zůstává, každý řádek je plný a žádná šířka není pod minimem (náhodné rozvržení)', () => {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  for (let k = 0; k < 500; k++) {
+    const items = Array.from({ length: 1 + Math.floor(rnd() * 9) }, (_, i) => ({ id: `w${i}`, span: Math.floor(rnd() * 16) - 2 }));
+    const p = pack(items);
+    assert.deepEqual(p.map((x) => x.id), items.map((x) => x.id), 'pořadí se nemění');
+    const radky = {};
+    for (const x of p) { assert.ok(x.span >= MIN_SPAN && x.span <= COLS); radky[x.row] = (radky[x.row] || 0) + x.span; }
+    assert.ok(Object.values(radky).every((n) => n === COLS), `díra v řádku: ${JSON.stringify(items)}`);
+  }
 });
 
-test('mřížka Přehledu nepoužívá sloupcovou sazbu', () => {
-  const pravidlo = css.match(/^\.ov \{[^}]*\}/m)?.[0] || '';
-  assert.match(pravidlo, /display: grid/, 'sloupce určuje mřížka');
-  assert.doesNotMatch(pravidlo, /[{;]\s*columns:/, 'sloupcová sazba rozhazovala bloky sama');
+test('uložené rozvržení: neznámé a poškozené položky se zahodí, nový widget přibude na konec', () => {
+  assert.deepEqual(decodeLayout(['kam-6', 'smena-x', '<b>-6', 'tokeny-40', 'kam-6', 7, null]), [{ id: 'kam', span: 6 }, { id: 'tokeny', span: 12 }, { id: 'kam', span: 6 }]);
+  const merged = mergeLayout(decodeLayout(['bezi-12', 'stary-6', 'kam-6', 'kam-8']), vychozi);
+  assert.deepEqual(merged.map((x) => x.id), ['bezi', 'kam', 'smena', 'tokeny', 'aktivita', 'naklady', 'limity']);
+  assert.equal(merged.find((x) => x.id === 'kam').span, 6, 'první výskyt platí');
+  assert.ok(encodeLayout(merged).every((x) => /^[\w-]{1,40}$/.test(x)), 'server pouští jen [\\w-]{1,40}');
 });
 
-// Blok bez obsahu (žádná okna limitů) je neviditelný, ale v pružném sloupci by po sobě nechal
-// mezeru 40 px – díru uprostřed stránky, kterou uživatel vidí a nepozná její příčinu.
-test('blok bez obsahu ve sloupci zmizí i s mezerou', () => {
-  assert.match(css, /\.ov-col > section:empty \{ display: none; \}/);
+test('tažení za okraj se přichytí k celým sloupcům v mezích', () => {
+  assert.equal(spanFromWidth(0, 80, 32), MIN_SPAN);
+  assert.equal(spanFromWidth(6 * 80 + 5 * 32, 80, 32), 6);
+  assert.equal(spanFromWidth(6 * 80 + 5 * 32 + 50, 80, 32), 6, 'méně než půl sloupce se nepřichytí');
+  assert.equal(spanFromWidth(99999, 80, 32), COLS);
 });
 
-test('karty mají přirozenou výšku bez natahování grafu podle druhého sloupce', () => {
-  assert.match(css, /\.ov \{[^}]*align-items: start/);
-  assert.doesNotMatch(css, /\.ov-col > \*:last-child \{[^}]*flex: 1 1 auto/);
+test('nástěnka je mřížka 12 sloupců, prázdný widget zmizí i s místem, na telefonu jeden sloupec', () => {
+  assert.match(css, /\.home-board \{ display: grid; grid-template-columns: repeat\(12, minmax\(0, 1fr\)\);/);
+  assert.match(css, /\.widget\[hidden\] \{ display: none; \}/);
+  assert.match(css, /@media \(max-width: 880px\) \{\s*\.home-board \{ grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{ \.widget::after, \.widget-grip, \.widget-resize::before, \.widget-size \{ transition: none; \} \}/);
 });
 
 // Sloupce mají podle dat různou výšku. Pohyblivé sekce (data-float) proto sedí tam, kde je míň

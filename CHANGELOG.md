@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.46.39 – 2026-10-19 · Widgety, které si poskládáš
+
+- **Průběh dne a spotřeba je nástěnka widgetů.**
+  - Widget přesuneš tažením za nadpis nebo za úchyt nahoře. Šířku změníš tažením za pravý okraj.
+  - Šířka se přichytává k celým sloupcům, sousední widget se plynule přizpůsobí a v řádku nikdy nezůstane díra.
+  - Dotažením okraje skoro na konec pošleš souseda na další řádek. Dvojklikem na okraj vrátíš výchozí šířku.
+  - Při najetí se widget jemně podsvítí značkovou fialovou.
+  - Rozvržení se ukládá a platí i po restartu.
+  - Klávesnicí: Alt + šipky mění pořadí, Alt + Shift + ←/→ šířku. Na telefonu je nástěnka jeden sloupec a přesouvá se za úchyt.
+- **Vyžaduje pozornost** ukazuje jako hlavní to, o čem se rozhoduje (otázku agenta nebo důvod selhání). Stav je čip ve stejném tónu jako Stav agentů a akce drží spodní hranu karty, takže karta nemá prázdná místa.
+- **Úvodní panel Přehledu** má živější a plastičtější fialový přechod s hloubkou a znatelnějším pohybem. Pohyb běží na grafické kartě, takže nebere výkon. Kdo má omezený pohyb, tomu zůstane v klidu.
+- **Prázdný archiv projektů** už neukazuje přeškrtnuté kolečko. Po najetí vysvětlí jemná bublina, že v archivu zatím nic není. Neaktivní prvky v celé aplikaci mají obyčejný kurzor.
+- **Řazení na Dovednostech** a další malé volby mají pohodlnou cílovou plochu 44 px místo tenkých 32 px.
+- Oprava: karta puštěná při přetahování mimo mřížku (stránka se u okraje posouvala) zůstala „viset“ a pořadí se neuložilo.
+
 ## 0.46.38 – 2026-10-19 · Jemnější stav agentů a poznámky bez hnědé
 
 - **Dlaždice „Stav agentů“ na Přehledu** už nemají sytou barevnou plochu. Stav nese jemný přechod 45° z barvy stavu do neutrální plochy a číslo v jeho barvě, bez rámečku. Po najetí kurzorem se dlaždice o kousek zvedne a tón v rohu zesílí; při omezeném pohybu zůstane na místě.

@@ -141,14 +141,36 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 .home-desk .home-intro { position: relative; isolation: isolate; overflow: hidden; grid-template-columns: auto minmax(0, 1fr) auto; }
 .home-intro::before, .home-intro::after {
   content: ''; position: absolute; z-index: -1; pointer-events: none; border-radius: 46% 54% 42% 58% / 55% 45% 55% 45%;
-  filter: blur(48px); will-change: transform;
+  filter: blur(40px) saturate(1.15); will-change: transform;
 }
-.home-intro::before { width: 46%; height: 160%; right: -10%; top: -40%; background: color-mix(in srgb, #6260d8 22%, transparent); animation: pozdrav-mesh-a 9s ease-in-out infinite alternate; }
-.home-intro::after { width: 38%; height: 150%; right: 8%; top: -10%; background: color-mix(in srgb, #8b7cf6 18%, transparent); animation: pozdrav-mesh-b 12s ease-in-out infinite alternate; }
-:root[data-theme='dark'] .home-intro::before { background: color-mix(in srgb, #6260d8 30%, transparent); }
-:root[data-theme='dark'] .home-intro::after { background: color-mix(in srgb, #8b7cf6 22%, transparent); }
-@keyframes pozdrav-mesh-a { 0% { transform: translate(0, 0) rotate(0deg) scale(1); } 50% { transform: translate(-14%, 10%) rotate(18deg) scale(1.12); } 100% { transform: translate(-4%, -8%) rotate(-10deg) scale(.94); } }
-@keyframes pozdrav-mesh-b { 0% { transform: translate(0, 0) rotate(0deg) scale(1.05); } 50% { transform: translate(16%, -12%) rotate(-16deg) scale(.92); } 100% { transform: translate(-8%, 10%) rotate(12deg) scale(1.1); } }
+/* Vlastník, 19. 10. 2026: živější, organičtější, plastický, s hloubkou a znatelným pohybem. Dvě
+   skvrny měnící tvar i polohu, pod nimi pevné světlo vpravo nahoře, lesk u horní hrany a vnitřní
+   stín dole. Text vlevo zůstává na klidné ploše; skvrny se drží pravé poloviny. */
+.home-intro::before { width: 48%; height: 170%; right: -12%; top: -45%; background: radial-gradient(closest-side, color-mix(in srgb, #6260d8 34%, transparent), color-mix(in srgb, #6260d8 10%, transparent) 70%, transparent); animation: pozdrav-mesh-a 5.5s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
+.home-intro::after { width: 40%; height: 160%; right: 10%; top: -20%; background: radial-gradient(closest-side, color-mix(in srgb, #9a8cff 30%, transparent), color-mix(in srgb, #c06ad8 8%, transparent) 72%, transparent); animation: pozdrav-mesh-b 7s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
+:root[data-theme='dark'] .home-intro::before { background: radial-gradient(closest-side, color-mix(in srgb, #6260d8 46%, transparent), color-mix(in srgb, #6260d8 14%, transparent) 70%, transparent); }
+:root[data-theme='dark'] .home-intro::after { background: radial-gradient(closest-side, color-mix(in srgb, #8b7cf6 36%, transparent), color-mix(in srgb, #c06ad8 10%, transparent) 72%, transparent); }
+.home-desk .home-intro {
+  background-image: radial-gradient(34% 90% at 86% 24%, color-mix(in srgb, #b7aaff 14%, transparent), transparent 70%), linear-gradient(180deg, rgb(255 255 255 / .05), transparent 38%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .10), inset 0 -28px 56px -40px color-mix(in srgb, #2a2580 55%, transparent), 0 24px 48px -36px color-mix(in srgb, #6260d8 45%, transparent);
+}
+:root[data-theme='dark'] .home-desk .home-intro { box-shadow: inset 0 1px 0 rgb(255 255 255 / .07), inset 0 -28px 56px -36px rgb(6 4 30 / .7), 0 24px 48px -36px rgb(98 96 216 / .5); }
+/* Pohyb jen přes transform (posun, otočení, nestejné měřítko na šířku a výšku): běží na grafické
+   kartě bez překreslování rozmazané vrstvy, takže je plynulý a nebere procesor. Organický tvar
+   dělá právě nestejné měřítko, ne animované zaoblení. */
+@keyframes pozdrav-mesh-a {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1, 1); }
+  33% { transform: translate(-16%, 12%) rotate(24deg) scale(1.2, .9); }
+  66% { transform: translate(-6%, -10%) rotate(-14deg) scale(.92, 1.12); }
+  100% { transform: translate(-20%, 4%) rotate(16deg) scale(1.1, .96); }
+}
+@keyframes pozdrav-mesh-b {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1.05, 1); }
+  33% { transform: translate(18%, -14%) rotate(-22deg) scale(.88, 1.14); }
+  66% { transform: translate(-10%, 12%) rotate(18deg) scale(1.18, .9); }
+  100% { transform: translate(8%, -4%) rotate(-8deg) scale(1, 1.06); }
+}
+@media (prefers-reduced-motion: reduce) { .home-intro::before, .home-intro::after { animation: none; } }
 .home-dnes { display: grid; justify-items: end; gap: 6px; margin-right: 4px; color: var(--ink); }
 .home-dnes:empty { display: none; }
 .home-desk .home-intro .home-dnes p { color: var(--ink); max-width: none; }
@@ -194,3 +216,109 @@ html { scrollbar-gutter: stable; }
 *::-webkit-scrollbar-track, *::-webkit-scrollbar-corner { background: transparent; }
 *::-webkit-scrollbar-thumb { min-height: 40px; border: 2px solid transparent; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 18%, transparent); background-clip: padding-box; }
 *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ink) 34%, transparent); background-clip: padding-box; }
+
+/* Značková fialová (tlačítko pomocníka) pro jemnou záři u ovládacích prvků. */
+:root { --brand: #6260d8; }
+html[data-theme='dark'] { --brand: #8c88f4; }
+
+/* Bublina zprava: vysvětlí, proč volba teď nic neukáže (prázdný archiv). Skleněná plocha s jemnou
+   značkovou září, vyjíždí o 4 px. Rodičovská volba ji nesmí oříznout, proto .seg--tips. */
+.seg--tips { overflow: visible; }
+.seg--tips.je-vpravo, .seg--tips.je-vlevo { -webkit-mask-image: none; mask-image: none; }
+[data-tip][data-tip-side='right']::before { bottom: auto; left: calc(100% + 12px); top: 50%; transform: translate(-4px, -50%); padding: 8px 12px; border-radius: var(--r-sm); background: color-mix(in srgb, var(--brand) 9%, var(--card)); color: var(--ink); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 26%, var(--line)), 0 14px 30px -16px color-mix(in srgb, var(--brand) 70%, transparent); font: 400 13px/1.4 var(--f-body); white-space: nowrap; z-index: 20; }
+:where(html:not(.is-scrolling)) [data-tip][data-tip-side='right']:hover::before, [data-tip][data-tip-side='right']:focus-visible::before { transform: translate(0, -50%); }
+.seg button[aria-disabled='true'] { color: var(--mute); }
+.seg button[aria-disabled='true']:hover { color: var(--mute); background: transparent; }
+/* Na telefonu napravo není místo: bublina vyjede pod tlačítko, na střed. */
+@media (max-width: 720px) {
+  [data-tip][data-tip-side='right']::before { left: 50%; top: calc(100% + 10px); transform: translate(-50%, -4px); }
+  :where(html:not(.is-scrolling)) [data-tip][data-tip-side='right']:hover::before, [data-tip][data-tip-side='right']:focus-visible::before { transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) { [data-tip][data-tip-side='right']::before { transition: opacity var(--motion-response) linear; } }
+
+/* Vyžaduje pozornost: o čem se rozhoduje (otázka agenta, důvod selhání) je největší text karty,
+   název konverzace je kontext pod ním, akce drží spodní hranu. Stav nese čip s tečkou a jemný
+   přechod 45° ve stejném tónu jako dlaždice Stavu agentů. Barva plochy zůstává --card. */
+html[data-theme] .home-desk .decision, .decision { --ton: var(--sky); --ton-text: var(--sky); display: flex; flex-direction: column; gap: 14px; padding: 22px 24px; border: 0; border-radius: var(--r-lg); background-color: var(--card); background-image: linear-gradient(45deg, color-mix(in srgb, var(--ton) 11%, transparent) 0%, color-mix(in srgb, var(--ton) 3%, transparent) 45%, transparent 75%); box-shadow: inset 0 0 0 1px var(--line-2); }
+html[data-theme] .home-desk .decision[data-ton='problem'], .decision[data-ton='problem'] { --ton: var(--velvet); --ton-text: var(--velvet-ink); }
+html[data-theme] .home-desk .decision[data-ton='limit'], .decision[data-ton='limit'] { --ton: var(--brass); --ton-text: var(--brass-ink); }
+.decision-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+html[data-theme] .decision-kicker, .decision-kicker { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px 0 10px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ton) 14%, transparent); color: var(--ton-text); font: 500 var(--type-caption)/1 var(--f-body); white-space: nowrap; }
+.decision-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ton); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ton) 22%, transparent); }
+.decision-src { display: inline-flex; align-items: center; gap: 8px; min-width: 0; color: var(--mute); font-size: var(--type-caption); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.decision-logo { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: none; }
+.decision-logo .logo, .decision-logo svg { width: 18px; height: 18px; }
+html[data-theme] .home-desk .decision-body, .decision-body { display: grid; gap: 6px; min-width: 0; }
+html[data-theme] .home-desk .decision-reason, .decision-reason { margin: 0; color: var(--ink); font: 400 20px/1.4 var(--f-display); letter-spacing: -.015em; -webkit-line-clamp: 3; }
+html[data-theme] .home-desk .decision-title, .decision-title { justify-self: start; max-width: 100%; color: var(--ink-2); font: 400 var(--type-body)/1.5 var(--f-body); letter-spacing: 0; }
+html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: auto; padding-top: 4px; }
+.decision-detail { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); font-size: var(--type-small); }
+.decision-detail .icon { width: 14px; height: 14px; transition: transform var(--motion-response) var(--ease); }
+.decision-detail:hover .icon { transform: translateX(2px); }
+/* Víc položek: kompaktní karty, otázka menší, aby se vešly pod sebe bez rolování. */
+.decisions:has(> li:nth-child(2)) .decision { padding: 16px 20px; gap: 10px; }
+.decisions:has(> li:nth-child(2)) .decision-reason { font-size: var(--type-lead); -webkit-line-clamp: 2; }
+@media (max-width: 560px) {
+  html[data-theme] .home-desk .decision, .decision { padding: 18px; }
+  .decision-head { flex-wrap: wrap; }
+  html[data-theme] .home-desk .decision-reason, .decision-reason { font-size: var(--type-lead); }
+}
+@media (prefers-reduced-motion: reduce) { .decision-detail .icon { transition: none; } }
+.decision-src-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Nástěnka widgetů (Průběh dne a spotřeba). Mřížka 12 sloupců, šířku widgetu nese --span
+   (skládá ji board-pack.js tak, aby v řádku nezůstala díra). Výška je přirozená: natažená karta
+   by uvnitř nesla prázdnou plochu. Do výšky řádku dorůstá jen Poslední aktivita (další řádky). */
+.home-board { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px 32px; align-items: start; margin-top: 28px; }
+.home-board.is-measuring { align-items: start; }
+.widget { --glow: var(--brand); position: relative; grid-column: span var(--span, 12); min-width: 0; display: flex; flex-direction: column; gap: 28px; }
+.widget[hidden] { display: none; }
+.widget > section { margin: 0; min-width: 0; }
+.widget > section > .sec-head { cursor: grab; user-select: none; }
+.widget > section > .sec-head :is(a, button, select, label) { cursor: pointer; }
+.home-board.is-reordering .widget > section > .sec-head, .is-dragging-card .widget .sec-head { cursor: grabbing; }
+
+/* Záře při najetí: jemný fialový lem kolem celého widgetu i s nadpisem, vně plochy (nic neposouvá). */
+.widget::after { content: ''; position: absolute; inset: -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
+  background: linear-gradient(45deg, color-mix(in srgb, var(--glow) 6%, transparent), transparent 55%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 26%, transparent), 0 0 0 1px color-mix(in srgb, var(--glow) 6%, transparent), 0 18px 48px -30px color-mix(in srgb, var(--glow) 70%, transparent);
+  transition: opacity var(--motion-response) var(--ease); }
+@media (hover: hover) { .home-board:not(.is-reordering):not(.is-resizing) .widget:hover::after { opacity: 1; } }
+.widget:focus-within::after, .widget.is-resizing::after, .widget.is-lifted::after { opacity: 1; }
+.widget.is-lifted { z-index: 30; }
+.widget.is-lifted::after { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 40%, transparent), 0 30px 70px -30px color-mix(in srgb, var(--glow) 80%, transparent); }
+
+/* Úchyt nahoře uprostřed: kapsle se šesti tečkami, vyjede při najetí. Je to tlačítko kvůli klávesnici. */
+.widget-grip { position: absolute; top: -12px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; padding: 0; border: 0; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); cursor: grab; opacity: 0; transform: translate(-50%, 4px); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+.widget-grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
+.widget-grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
+@media (hover: hover) { .home-board:not(.is-resizing) .widget:hover > .widget-grip { opacity: 1; transform: translate(-50%, 0); } }
+.widget-grip:focus-visible, .widget.is-lifted > .widget-grip { opacity: 1; transform: translate(-50%, 0); outline: 2px solid var(--ink); outline-offset: 2px; }
+.widget.is-lifted > .widget-grip { cursor: grabbing; outline: 0; }
+
+/* Okraj pro změnu šířky: v mezeře vpravo od widgetu, při najetí svislá kapsle ve značkové barvě. */
+.widget-resize { position: absolute; top: 0; bottom: 0; right: -22px; z-index: 3; width: 12px; cursor: ew-resize; touch-action: none; }
+.widget-resize::before { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 44px; border-radius: var(--r-full); background: var(--glow); opacity: 0; transform: translate(-50%, -50%) scaleY(.6); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), height var(--motion-response) var(--ease); box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 60%, transparent); }
+@media (hover: hover) { .home-board:not(.is-reordering) .widget:hover > .widget-resize::before { opacity: .55; transform: translate(-50%, -50%) scaleY(1); } }
+.widget-resize:hover::before, .widget.is-resizing > .widget-resize::before { opacity: 1 !important; height: 64px; transform: translate(-50%, -50%) scaleY(1) !important; }
+.is-resizing-widget, .is-resizing-widget * { cursor: ew-resize !important; user-select: none; }
+
+/* Štítek šířky při tažení za okraj („polovina“, „dvě třetiny“…). */
+.widget-size { position: absolute; top: -12px; right: 24px; z-index: 4; padding: 6px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 14%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 36%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--glow) 80%, transparent); color: var(--ink); font: 500 var(--type-caption)/1 var(--f-body); white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%) scale(.96); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+.widget-size.is-on { opacity: 1; transform: translateY(-50%) scale(1); }
+
+/* Úzká obrazovka: jeden sloupec, šířka se nemění; přesouvá se za úchyt (vždy vidět, prstem). */
+@media (max-width: 880px) {
+  .home-board { grid-template-columns: minmax(0, 1fr); gap: 36px; }
+  .widget { grid-column: 1 / -1; }
+  .widget-resize, .widget-size { display: none; }
+  .widget > section > .sec-head { cursor: auto; user-select: auto; }
+  .widget-grip { opacity: .7; transform: translate(-50%, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .widget::after, .widget-grip, .widget-resize::before, .widget-size { transition: none; } }
+.widget[data-bez-okraje] > .widget-resize { display: none; }
+
+/* Šířku časové osy určuje widget, ne okno: v úzkém widgetu se popisky ubírají a kratší je i sloupec názvů. */
+.widget[data-card='smena'] .tl-card { container-type: inline-size; }
+@container (max-width: 560px) { .tl-ticks span.is-minor { display: none; } .tl { --tl-label: 136px; } }
+@container (max-width: 400px) { .tl { --tl-label: 112px; } }

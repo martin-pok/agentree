@@ -521,15 +521,21 @@ export function decisionCard(s) {
   const limited = s.status === 'limited';
   const failed = s.status === 'failed';
   const since = s.failure?.at || s.pending?.at || s.limit?.at || s.lastAt;
-  return `<li class="decision${limited ? ' is-limit' : ''}" data-key="${esc(s.id)}">
-    <span class="icon-tile">${glyph(s)}</span>
+  const druh = failed ? (s.observation ? tr('Vzdálený agent selhal') : s.failure?.kind === 'chyba' ? tr('Skončil chybou') : tr('Spuštění selhalo')) : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind);
+  // Hlavní je to, o čem se rozhoduje (otázka agenta, důvod selhání), proto je největší. Název
+  // konverzace je kontext pod ním; akce drží spodní hranu karty, takže karta využije výšku řádku.
+  return `<li class="decision${limited ? ' is-limit' : ''}" data-key="${esc(s.id)}" data-ton="${failed ? 'problem' : limited ? 'limit' : 'pozor'}">
+    <div class="decision-head">
+      <span class="decision-kicker"><i class="decision-dot" aria-hidden="true"></i>${druh}</span>
+      <span class="decision-src"><span class="decision-logo">${glyph(s)}</span><span class="decision-src-text">${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span></span>
+    </div>
     <div class="decision-body">
-      <span class="decision-kicker">${failed ? (s.observation ? tr('Vzdálený agent selhal') : s.failure?.kind === 'chyba' ? tr('Skončil chybou') : tr('Spuštění selhalo')) : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind)} · ${esc(s.app)} · <span data-ago="${since}">${rel(since)}</span></span>
-      <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
       <p class="decision-reason">${esc(s.reason)}</p>
+      <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
     </div>
     <div class="decision-actions">
       ${s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
+      ${s.open?.length ? `<a class="link decision-detail" href="${agentHref(s.id)}">${tr('Detail agenta')}${ICON.arrow || ''}</a>` : ''}
     </div>
   </li>`;
 }

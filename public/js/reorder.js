@@ -7,7 +7,9 @@
 
 const DIST = 6; // px pohybu myši, než se klik změní v tah
 
-export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, handle = null }) {
+// afterMove: zavolá se hned po přesunu v DOM, ještě před animací – nástěnka v něm přeskládá
+// šířky v řádcích, aby se ostatní karty animovaly rovnou na svá nová místa.
+export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, handle = null, afterMove = null }) {
   let st = null;
   let dragging = false;
   const items = () => [...box.querySelectorAll(itemSelector)];
@@ -70,7 +72,10 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     const before = new Map(others.map((o) => [o, o.getBoundingClientRect()]));
     if (list.indexOf(target) > list.indexOf(st.el)) target.after(st.el);
     else target.before(st.el);
+    afterMove?.();
     flip(others, before);
+    // Přesun v DOM prvku sebere zachycení ukazatele; bez něj by puštění mimo mřížku nikdo neslyšel.
+    try { st.el.setPointerCapture(st.id); } catch { /* ukazatel už není stisknutý */ }
   };
 
   const scrollEdge = () => {
@@ -130,8 +135,11 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     const t = overTarget();
     if (t) { move(t); follow(); }
   });
-  box.addEventListener('pointerup', (e) => { if (st && e.pointerId === st.id) finish(true); });
-  box.addEventListener('pointercancel', (e) => { if (st && e.pointerId === st.id) finish(true); });
+  // Konec tahu se poslouchá na celém okně: ukazatel může být při puštění kdekoli (stránka se u
+  // okraje posouvá), a karta by jinak zůstala zvednutá. Posluchač ruší zrus() níž.
+  const konecTahu = new AbortController();
+  window.addEventListener('pointerup', (e) => { if (!box.isConnected) { konecTahu.abort(); return; } if (st && e.pointerId === st.id) finish(true); }, { capture: true, signal: konecTahu.signal });
+  window.addEventListener('pointercancel', (e) => { if (!box.isConnected) { konecTahu.abort(); return; } if (st && e.pointerId === st.id) finish(true); }, { capture: true, signal: konecTahu.signal });
   box.addEventListener('contextmenu', (e) => { if (dragging) e.preventDefault(); });
   // Posluchač na window přežije obrazovku. Dřív se nikdy neodebral a držel celou starou mřížku:
   // každá návštěva Projektů nechala v paměti ~500 uzlů a 11 posluchačů navíc. Obrazovka ho
@@ -156,11 +164,12 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     const others = list.filter((x) => x !== el);
     const before = new Map(others.map((o) => [o, o.getBoundingClientRect()]));
     if (j > i) list[j].after(el); else list[j].before(el);
+    afterMove?.();
     flip(others, before);
     el.focus();
     onMoveKey?.(j + 1, list.length);
     onCommit(items().map(idOf).filter(Boolean));
   });
 
-  return { isDragging: () => dragging, zrus: () => konec.abort() };
+  return { isDragging: () => dragging, zrus: () => { konec.abort(); konecTahu.abort(); } };
 }

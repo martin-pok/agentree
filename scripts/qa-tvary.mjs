@@ -38,14 +38,14 @@ const MAX_JEDNORADKOVY = 48;
 // Řádek služby v okně rozšíření (.site) nese pod názvem i „naposledy …“, je to tedy taky řádek seznamu.
 const RADKY = ['.choice', '.pick', '.theme-pick', '.site'];
 // Stupnice výšek ovládacích prvků (docs/DESIGN.md, oddíl Tlačítka) a jediné povolené výjimky:
-// vnitřní kapsle malé segmentové volby (28 px v rámu 32 px; v aplikaci `.seg--sm`, na webu
-// přepínač jazyka `.lang`) a hlavní výzva webu `.btn--lg` (56 px).
+// na webu vnitřní kapsle malé segmentové volby a přepínač jazyka `.lang` (28 px v rámu 32 px)
+// a hlavní výzva webu `.btn--lg` (56 px). V aplikaci výjimka pro malou volbu není (19. 10. 2026).
 const STUPNICE = [32, 40, 44, 48];
-const VYJIMKY_APLIKACE = [{ vyber: '.seg--sm button', vyska: 28 }];
+const VYJIMKY_APLIKACE = [];
 // Aplikace na počítači (šířka nad 720 px): každý jednořádkový ovládací prvek s vlastní plochou má
 // aspoň 44 px (rozhodnutí vlastníka, Figma 18. 10. 2026). Uvnitř segmentové volby jsou tlačítka
-// 40 px v rámu 44 (malá volba 28 v rámu 32) – rám je ten prvek, na který se cílí.
-const POCITAC_APLIKACE = { od: 721, stupnice: [44, 48], vyjimky: [{ vyber: '.seg--sm button', vyska: 28 }, { vyber: '.seg button', vyska: 40 }] };
+// 40 px v rámu 44 (i malá volba) – rám je ten prvek, na který se cílí.
+const POCITAC_APLIKACE = { od: 721, stupnice: [44, 48], vyjimky: [{ vyber: '.seg button', vyska: 40 }] };
 const VYJIMKY_WEBU = [{ vyber: '.seg--sm button, .lang a', vyska: 28 }, { vyber: '.btn--lg', vyska: 56 }];
 
 function zmer({ maxJednoradkovy, radky, stupnice, vyjimky, pocitac }) {

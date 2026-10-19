@@ -103,7 +103,7 @@ function mount(el, _params, query) {
   if (query?.has('stitek')) { v.tag = query.get('stitek') || ''; v.tab = 'active'; }
   el.innerHTML = `
     <div class="toolbar" data-enter style="--i:1" data-region="toolbar">
-      <div class="seg" role="group" aria-label="${tr('Zobrazit projekty')}" data-region="tabs"></div>
+      <div class="seg seg--tips" role="group" aria-label="${tr('Zobrazit projekty')}" data-region="tabs"></div>
       <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat projekt')}</span><input type="search" data-q placeholder="${tr('Hledat projekt nebo složku…')}" autocomplete="off"></label>
       <button class="btn btn--primary" type="button" data-action="new">${ICON.plus}${tr('Nový projekt')}</button>
     </div>
@@ -132,7 +132,7 @@ function mount(el, _params, query) {
   });
   el.addEventListener('click', async (e) => {
     const tab = e.target.closest('[data-tab]');
-    if (tab) { v.tab = tab.dataset.tab; update(); return; }
+    if (tab) { if (tab.getAttribute('aria-disabled') !== 'true') { v.tab = tab.dataset.tab; update(); } return; }
     const stitek = e.target.closest('[data-tag-filter]');
     if (stitek) { v.tag = stitek.dataset.tagFilter; update(); return; }
     if (e.target.closest('[data-action="new"]')) {
@@ -167,7 +167,7 @@ function update() {
   // Bez projektu nejsou záložky, hledání ani druhé „Nový projekt“ k ničemu: hlavní akce je v prázdném stavu.
   el.querySelector('[data-region="toolbar"]').hidden = !items.length;
   fill(el, 'tabs', [['active', tr('Aktivní'), active.length], ['archived', tr('Archiv'), archived.length]]
-    .map(([k, label, n]) => `<button type="button" data-tab="${k}" aria-pressed="${v.tab === k}"${k === 'archived' && !n ? ' disabled' : ''}>${label}<span class="count">${n}</span></button>`).join(''));
+    .map(([k, label, n]) => `<button type="button" data-tab="${k}" aria-pressed="${v.tab === k}"${k === 'archived' && !n ? ` aria-disabled="true" data-tip="${tr('V archivu zatím nic není')}" data-tip-side="right"` : ''}>${label}<span class="count">${n}</span></button>`).join(''));
 
   const q = norm(v.q.trim());
   // Pořadí karet určuje uživatel (tažením); pořadí v seznamu projektů je jeho pořadí.

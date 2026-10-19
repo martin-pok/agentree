@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.39',
+    date: '2026-10-19',
+    title: 'Widgety, které si poskládáš',
+    items: [
+      'V Průběhu dne a spotřebě přesuneš widget tažením za nadpis a šířku změníš tažením za jeho pravý okraj. Sousedé se přizpůsobí a v řádku nezůstane díra. Rozvržení si Agenteeq zapamatuje.',
+      'Vyžaduje pozornost ukazuje jako hlavní otázku agenta nebo důvod selhání, akce jsou dole a karta nemá prázdná místa.',
+      'Úvodní panel Přehledu má živější přechod s hloubkou a pohyb, který nebere výkon.',
+      'Prázdný archiv projektů po najetí vysvětlí bublina místo přeškrtnutého kolečka a tlačítka řazení na Dovednostech jsou větší.',
+    ],
+    en: {
+      title: 'Widgets you arrange yourself',
+      items: [
+        'In Activity and usage, drag a widget by its title to move it and drag its right edge to resize it. Neighbours adjust, rows never leave a gap, and Agenteeq remembers the layout.',
+        'Needs attention puts the agent’s question or the failure reason first, keeps the actions at the bottom and leaves no empty space.',
+        'The Overview banner has a livelier gradient with depth and motion that doesn’t cost performance.',
+        'An empty project archive now explains itself in a tooltip instead of a blocked cursor, and the sort buttons in Skills are larger.',
+      ],
+    },
+  },
+  {
     version: '0.46.38',
     date: '2026-10-19',
     title: 'Jemnější stav agentů',
