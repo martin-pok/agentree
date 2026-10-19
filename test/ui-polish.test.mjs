@@ -594,3 +594,28 @@ test('grafy u agentů, na Přehledu a v Útratě berou paletu grafů, ne skoro �
   const spend = await zdroj('public/js/views/spend.js');
   assert.match(spend, /const serviceColor = \(sp, k\) => chartColor\(/);
 });
+
+test('černá barva projektu se kreslí barvou textu, aby v tmavém režimu nezmizela', async () => {
+  // projects-ui.js potřebuje při importu DOM, proto se funkce ověří vytažená ze zdroje.
+  const ui = await zdroj('public/js/projects-ui.js');
+  const { PROJECT_COLORS } = await import('../src/projects.js');
+  const inkoust = ui.match(/export const INKOUST_PROJEKTU = '(#[0-9A-F]{6})';/)?.[1];
+  assert.ok(PROJECT_COLORS.includes(inkoust), 'inkoust je pořád v paletě projektů');
+  const telo = ui.match(/export const barvaProjektu = (\(c\) => .+);/)?.[1];
+  const barvaProjektu = new Function('INKOUST_PROJEKTU', `return ${telo}`)(inkoust);
+  assert.equal(barvaProjektu('#16141D'), 'var(--ink)');
+  assert.equal(barvaProjektu('#C2335A'), '#C2335A', 'ostatní barvy zůstávají');
+  assert.equal(barvaProjektu(undefined), '#B3AEBA');
+  // Všechna místa, která kreslí barvu projektu, jdou přes barvaProjektu (tečka, obálka, logo, vzorek, karta, sparkline).
+  assert.equal((ui.match(/--pc:\$\{esc\(barvaProjektu\(/g) || []).length, 4, 'tečka, obálka, logo a vzorek');
+  assert.doesNotMatch(ui, /--pc:\$\{esc\((p\??\.color|c)\b/, 'žádné --pc přímo z uložené barvy');
+  const karty = await zdroj('public/js/views/projects.js');
+  assert.match(karty, /--pc:\$\{esc\(barvaProjektu\(p\.color\)\)\}/);
+  assert.match(karty, /miniBars\(spark, barvaProjektu\(p\.color\)/);
+});
+
+test('detail projektu barví „Tokeny podle služby“ barvou služby z palety grafů', async () => {
+  const projekt = await zdroj('public/js/views/project.js');
+  assert.match(projekt, /color: chartColor\(r\.provider\)/);
+  assert.doesNotMatch(projekt, /color: p\.color/);
+});

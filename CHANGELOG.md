@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.37 – 2026-10-19 · Projekty čitelné i v tmavém režimu
+
+- **Projekt s černou barvou** měl v tmavém režimu tečku, aktivitu na kartě i obálku neviditelnou (kontrast zhruba 1 : 1). Černá se teď kreslí barvou textu, která se s režimem obrací: v tmavém je světlá, ve světlém tmavá. Uložená barva projektu se nemění.
+- **„Tokeny podle služby“ v detailu projektu** mají každou službu ve vlastní barvě z palety grafů (jako Statistiky), místo aby byly všechny v barvě projektu. Pruhy jsou rozlišené a drží kontrast nad 3 : 1 v obou režimech.
+
 ## 0.46.36 – 2026-10-19 · Grafy čitelné i v tmavém režimu
 
 - **Detail agenta Codex nebo Cursor v tmavém režimu:** sloupce „Aktivita za 24 hodin“ a výplň „Výstup“ ve Složení tokenů splývaly s kartou (kontrast zhruba 1 : 1), protože braly téměř černou barvu značky. Teď berou ověřenou paletu grafů jako Statistiky – Codex je zelený, Cursor fialový – a drží grafický kontrast nad 3 : 1 v obou režimech.

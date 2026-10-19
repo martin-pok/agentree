@@ -25,7 +25,13 @@ const CESTA_RADA = () => (jeWindowsHost()
 
 export const projectHref = (id) => `#/projekt/${encodeURIComponent(id)}`;
 
-export const pdot = (p, cls = '') => `<i class="pdot${cls ? ` ${cls}` : ''}" style="--pc:${esc(p?.color || '#B3AEBA')}" aria-hidden="true"></i>`;
+// Barva projektu, jak se kreslí na kartě. Nejtmavší vzorek palety (#16141D) by v tmavém režimu
+// splynul s kartou (kontrast ~1 : 1) – kreslí se proto barvou textu, která se s režimem obrací.
+// Uložená hodnota projektu zůstává beze změny.
+export const INKOUST_PROJEKTU = '#16141D';
+export const barvaProjektu = (c) => (c === INKOUST_PROJEKTU ? 'var(--ink)' : c || '#B3AEBA');
+
+export const pdot = (p, cls = '') => `<i class="pdot${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true"></i>`;
 
 export function projectTag(s) {
   const p = s.projectId ? projectById(s.projectId) : null;
@@ -170,14 +176,14 @@ export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeU
 // jen jako jemný pruh při spodní hraně, aby se karty dál rozlišily i bez obrázku.
 export const projectCover = (p, cls = '') => {
   const url = mediaUrl(p, 'cover');
-  return `<span class="pcover cover--${esc(p?.cover?.preset || 'aurora')}${cls ? ` ${cls}` : ''}" style="--pc:${esc(p?.color || '#B3AEBA')}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}</span>`;
+  return `<span class="pcover cover--${esc(p?.cover?.preset || 'aurora')}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}</span>`;
 };
 
 // Logo klienta nahrazuje barevnou tečku; barva projektu z něj zbyde jako tenký kroužek.
 export const projectMark = (p, cls = '') => {
   const url = mediaUrl(p, 'logo');
   return url
-    ? `<span class="plogo${cls ? ` ${cls}` : ''}" style="--pc:${esc(p.color || '#B3AEBA')}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false"></span>`
+    ? `<span class="plogo${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false"></span>`
     : pdot(p, cls);
 };
 
@@ -203,7 +209,7 @@ export function projectForm(existing = null) {
       ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')} <small class="muted">${tr('předvyplní podklady a štítek')}</small></p>
       <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}
       <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
-      <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
+      <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(barvaProjektu(c))}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
       <p class="form-sub">${tr('Vzhled v přehledu')}</p>
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">

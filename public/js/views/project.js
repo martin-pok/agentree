@@ -2,10 +2,10 @@ import { state, setProjects, agentsList, projectById, projectSessions, launchInt
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, rel, norm, plural, shortPath, dateLong } from '../format.js';
 import { odhadCenyApi, CENIK_API_OVERENO, CENIK_API_ZDROJ } from '../cenik-api.js';
-import { glyph, ICON } from '../icons.js';
+import { glyph, pkey, ICON } from '../icons.js';
 import { hbars } from '../charts.js';
 import { fill, toast, statusPill, emptyState, agentHref, confirmDialog, modal, copy, vetaStavu } from '../ui.js';
-import { sessionTotal, tokensSince, needsYou } from '../data.js';
+import { sessionTotal, tokensSince, needsYou, chartColor } from '../data.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
 import { enableReorder } from '../reorder.js';
 import { projectMark, projectStats, logoStack, projectForm, projectTag } from '../projects-ui.js';
@@ -285,11 +285,17 @@ function update() {
          <p class="small muted">${tr('Agenti spuštění v těchto složkách se zařadí automaticky.')}</p>`
       : `<p class="small muted">${tr('Bez složky – do projektu patří jen ručně zařazené konverzace.')}</p>`}`);
 
+  // Každá služba má barvu z palety grafů (jako ve Statistikách): pruhy jsou rozlišené a drží
+  // kontrast v obou režimech, což barva projektu (třeba tmavě šedá) nezaručí.
   const byApp = new Map();
-  for (const s of st.liveAll) byApp.set(s.app, (byApp.get(s.app) || 0) + tokensSince([s], now - 30 * 864e5));
-  const bars = [...byApp.entries()].filter(([, val]) => val > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  for (const s of st.liveAll) {
+    const radek = byApp.get(s.app) || { value: 0, provider: pkey(s.provider) };
+    radek.value += tokensSince([s], now - 30 * 864e5);
+    byApp.set(s.app, radek);
+  }
+  const bars = [...byApp.entries()].filter(([, r]) => r.value > 0).sort((a, b) => b[1].value - a[1].value).slice(0, 5);
   fill(el, 'services', `<div class="side-head"><h3>${tr('Tokeny podle služby')}</h3></div>
-    ${bars.length ? hbars(bars.map(([label, value]) => ({ label, value, color: p.color }))) : `<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`}`);
+    ${bars.length ? hbars(bars.map(([label, r]) => ({ label, value: r.value, color: chartColor(r.provider) }))) : `<p class="small muted">${tr('Za posledních 30 dní zatím žádné tokeny.')}</p>`}`);
 
   fill(el, 'cost', odhadHtml(st.liveAll, now - 30 * 864e5));
 
