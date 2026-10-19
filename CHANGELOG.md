@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.34 – 2026-10-19 · Pomocník bez AI, dokud ji nezapneš
+
+- **Pomocník ve výchozím stavu odpovídá jen z návodů k Agenteeq a ze živého stavu agentů, dotaz nikam neodchází.** Odpovědi přes AI (Ollama, jinak Claude Code – otázka pak odejde do Anthropicu) se zapínají v Nastavení → Účet a vzhled → Pomocník odpovídá jako AI. Dřív byly zapnuté, dokud je člověk nevypnul (bug report 14. 10., bod 3: žádná otevřená AI v aplikaci). Kdo si AI už výslovně zapnul, tomu zůstane.
+- Podtitul okna Pomocníka je „Průvodce aplikací“ místo „AI průvodce aplikací“.
+
 ## 0.46.33 – 2026-10-19 · Pomocník zná stav konkrétního nástroje
 
 - **„Proč Codex nepracuje?“ odpoví ze živého stavu:** Pomocník dřív na otázku o konkrétním nástroji vrátil obecný návod k propojení (nebo ho přeformulovala AI, která stav agentů nezná), i když Codex právě stál na vyčerpaném limitu. Teď vypíše agenty toho nástroje, kteří selhali, narazili na limit nebo čekají na tebe – s důvodem, časem obnovy a tlačítkem Otevřít. Když žádný problém nemá, řekne to; nenačtený stav nevydává za „nic“ (bug report 14. 10., body 3 a 11).

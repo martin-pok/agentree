@@ -240,7 +240,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function pomocnikOdpoved({ dotaz, historie, stranka, znalosti, zTohotoPocitace }) {
     const text = String(dotaz || '').trim().slice(0, 500);
     if (!text) return { status: 400, error: ui('Napiš, co hledáš.') };
-    if (datastore.data.settings.pomocnik?.ai === false) return { engine: null, vypnuto: true };
+    if (datastore.data.settings.pomocnik?.ai !== true) return { engine: null, vypnuto: true };
     // Claude Code smí spustit jen dotaz z tohoto počítače – telefon ho na předplatné nespustí.
     return pomocnikAi.odpovez({
       dotaz: text,

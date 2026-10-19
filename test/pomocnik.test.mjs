@@ -135,7 +135,7 @@ test('HTTP: /api/pomocnik hledá na Macu v přepisech, telefonu přepisy nevydá
 
   assert.equal((await api(s.url).send('PUT', '/api/settings', { pomocnik: { zobrazit: 'ne' } })).status, 422);
   const ok = await api(s.url).send('PUT', '/api/settings', { pomocnik: { zobrazit: false } });
-  assert.deepEqual(ok.body.settings.pomocnik, { zobrazit: false, model: true, ai: true });
+  assert.deepEqual(ok.body.settings.pomocnik, { zobrazit: false, model: true, ai: false }, 'AI jen po výslovném zapnutí');
 });
 
 test('pomocník: český tvar slova nevadí – „fakturaci“ najde faktury, „platby“ platbu; krátká slova nezaplaví', async () => {
@@ -339,4 +339,22 @@ test('pomocník: texty bez první osoby a bez mužského rodu („Možná jsi my
 test('volitelný lokální model má krátký časový limit, aby neblokoval odpověď pomocníka', async () => {
   const app = await fs.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   assert.match(app, /formulujLokalne\(\{[^\n]*casMs: 4500 \}\)/);
+});
+
+// Bug report 14. 10. (bod 3): žádná otevřená AI bez výslovného souhlasu. Ve výchozím stavu odpovídá
+// Pomocník z návodů a dotaz nikam neodchází; kdo si AI zapnul, tomu volba zůstane.
+test('Pomocník jako AI je ve výchozím stavu vypnutý a dotaz bez zapnutí nikam neodejde', async () => {
+  const s = await startTestServer();
+  try {
+    assert.equal((await api(s.url).get('/api/state')).body.settings.pomocnik.ai, false, 'nová instalace má AI vypnutou');
+    const vypnuto = await api(s.url).send('POST', '/api/pomocnik/ai', { dotaz: 'Kde zapnu upozornění?' });
+    assert.equal(vypnuto.status, 200);
+    assert.equal(vypnuto.body.engine, null);
+    assert.equal(vypnuto.body.vypnuto, true, 'bez zapnutí se nespustí Ollama ani Claude Code');
+
+    const zapnuto = await api(s.url).send('PUT', '/api/settings', { pomocnik: { ai: true } });
+    assert.equal(zapnuto.body.settings.pomocnik.ai, true, 'výslovné zapnutí se uloží');
+    const jinaZmena = await api(s.url).send('PUT', '/api/settings', { pomocnik: { model: false } });
+    assert.equal(jinaZmena.body.settings.pomocnik.ai, true, 'jiná změna Pomocníka volbu AI nepřepíše');
+  } finally { await s.close(); }
 });

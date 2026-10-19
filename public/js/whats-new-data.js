@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.34',
+    date: '2026-10-19',
+    title: 'Pomocník bez AI, dokud ji nezapneš',
+    items: [
+      'Pomocník ve výchozím stavu odpovídá z návodů k Agenteeq a ze stavu tvých agentů – otázky nikam neodcházejí. Odpovědi přes AI zapneš v Nastavení → Účet a vzhled.',
+    ],
+    en: {
+      title: 'The assistant skips AI until you turn it on',
+      items: [
+        'By default the assistant answers from the Agenteeq guides and your agents’ status – questions stay on this computer. Turn on AI answers in Settings → Account and appearance.',
+      ],
+    },
+  },
+  {
     version: '0.46.33',
     date: '2026-10-19',
     title: 'Pomocník zná stav konkrétního nástroje',
