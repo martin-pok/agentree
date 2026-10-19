@@ -10,6 +10,7 @@
 - **Počet aktivních konverzací v pozdravu a v pruhu Přehledu** nepočítá program, který jen běží bez přepisu (ten se ukazuje mezi běžícími aplikacemi).
 - **Nečitelná složka s konverzacemi:** když Claude Code nebo Codex mají přepisy ve složce, kterou Agenteeq nesmí číst, Propojení to řekne jako chybu s cestou – dřív stálo „Složka existuje, zatím bez konverzací“.
 - **Odhad ceny přes API u Claude Sonnet 5.5:** čtení z cache se počítá 0,10 $ za milion tokenů podle aktuálního ceníku Anthropicu (dřív 0,20 $ ze starší tabulky), odhad u konverzací se Sonnetem 5.5 tak už nevychází vyšší.
+- **Limity Codexu u dvou účtů:** se dvěma složkami Codexu (`CODEX_HOME`) přihlášenými k různým účtům se okna 5 h a týden jedné licence přepisovala čísly druhé. Každé okno teď patří svému účtu; přepis, jehož účet nejde ověřit, limit nevydává za zjištěný.
 - **Web: Windows se stejnou péčí jako Mac:** instalační stránka pro Windows má vlastní kroky, požadavky a řešení potíží; rozšíření ukazuje skutečné okno z aktuální verze místo atrapy.
 - **Projekty a Nastavení:** Popis a Štítky v dialogu projektu jsou vedle sebe, takže se dialog na počítači vejde bez posouvání; kratší popisy u Pomocníka, synchronizace souhrnů a Dovedností; ikonová tlačítka mají na počítači 44 px.
 

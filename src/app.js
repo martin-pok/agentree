@@ -488,6 +488,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
     connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
+    connectors.codex.bindAccounts?.(codexHomes.map((home, i) => ({ home, accountId: codexResults[i]?.id || null })));
     let history = datastore.data.providerAccounts;
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) history = observeAccount(history, claudeAccount);
     for (const codexAccount of codexAccounts) history = observeAccount(history, codexAccount);
