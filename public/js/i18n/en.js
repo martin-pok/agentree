@@ -9,6 +9,7 @@ export default {
   texty: {
     "Vzhled agenta": "Agent appearance",
     "Zobrazit": "Show",
+    "Dnešní konverzace najdeš v Agentech": "Find today’s conversations in Agents",
     "Skrýt": "Hide",
     "Více informací": "More information",
     "Otevřít nastavení účtu": "Open account settings",
@@ -420,7 +421,6 @@ export default {
     "V účtu jsou jen čísla, která tam poslal tvůj Mac. Konverzace, kód ani názvy složek ne.": "The account only holds numbers your Mac sent there. No conversations, code or folder names.",
     "Chceš se připojit rovnou k Macu?": "Want to connect straight to your Mac?",
     "Zadej jeho adresu.": "Enter its address.",
-    "dnes": "today",
     "Agenti teď": "Agents now",
     "aktualizováno": "updated",
     "zatím bez dat": "no data yet",
@@ -1789,7 +1789,6 @@ export default {
     "sledovaná konverzace|sledované konverzace|sledovaných konverzací": ["tracked conversation","tracked conversations"],
     "vybraná|vybrané|vybraných": ["selected","selected"],
     "agent pracuje|agenti pracují|agentů pracuje": ["agent working","agents working"],
-    "aktivní konverzace|aktivní konverzace|aktivních konverzací": ["active conversation","active conversations"],
     "aplikace běží|aplikace běží|aplikací běží": ["app running","apps running"],
     "konverzace přidána|konverzace přidány|konverzací přidáno": ["conversation added","conversations added"],
     "čeká|čekají|čeká": ["is waiting","are waiting"],

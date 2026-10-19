@@ -695,7 +695,9 @@ const palette = createPalette(
       .sort((a, b) => b.s - a.s || a.i - b.i)
       .slice(0, max)
       .map((r) => r.x);
-    const agentiNalez = podle(agenti, (a) => [[a.title, 3], [[a.project, a.app, a.model, STATUS[a.status]?.label].join(' '), 2], [a.cwd, 1]], 6).map((a) => polozkaAgenta(a));
+    // Agent se najde i podle projektu v Agenteeq (dřív jen podle názvu složky – „Studio Atlas“
+    // nenašlo jeho agenty), větve, repozitáře a toho, co se mu naposledy zadalo.
+    const agentiNalez = podle(agenti, (a) => [[a.title, 3], [[projectById(a.projectId)?.name, a.project, a.app, a.model, STATUS[a.status]?.label, a.branch, a.repo].join(' '), 2], [[a.fullTitle, a.lastPrompt, a.reason, a.cwd].join(' '), 1]], 8).map((a) => polozkaAgenta(a));
     const projektyNalez = podle(projekty, (p) => [[p.name, 3], [[p.description, ...(p.tags || [])].join(' '), 2], [p.folders.join(' '), 1]], 5).map((p) => polozkaProjektu(p));
     const cileNalez = hledejCile(dotaz, cile).slice(0, 10);
     const stranky = cileNalez.filter((c) => c.druh !== 'nastaveni').map((c) => polozkaCile(c));
@@ -722,7 +724,7 @@ const palette = createPalette(
 // a čtečce obrazovky stav řekne skrytá oblast role="status". Odlesk vždy dojede aspoň jednou celý,
 // i když obnova skončí dřív.
 const HLAVA = 'M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z';
-const ODLESK_MS = 1100;
+const ODLESK_MS = 1800;
 // Ruční obnova se týká celé aplikace, a tak ji ukazuje celá aplikace: přes rozhraní se položí
 // jemný fialový závoj a uprostřed bílá hlava robota s přejíždějícím odleskem – stejný motiv jako
 // načítací scéna. Závoj nic neblokuje (pointer-events: none) a rozepsaný formulář zůstane.
@@ -749,7 +751,7 @@ function spustObnovu(button) {
       const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
       setTimeout(() => {
         zavoj.classList.remove('is-on');
-        setTimeout(() => zavoj.remove(), 300);
+        setTimeout(() => zavoj.remove(), 650);
         button.classList.remove('is-refreshing');
         button.removeAttribute('aria-busy');
       }, zbyva < 60 ? 0 : zbyva);

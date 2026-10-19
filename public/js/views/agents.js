@@ -1,7 +1,7 @@
 import { agentRobot } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, shortPath, plural, timeHM } from '../format.js';
+import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu } from '../ui.js';
@@ -297,12 +297,14 @@ function update() {
   // Filtry nad prázdným seznamem nemají co filtrovat – devět nul ve stavech by vypadalo jako data.
   for (const n of el.querySelectorAll('[data-jen-s-agenty]')) n.hidden = !all.length;
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
-  const q = norm(f.q.trim());
+  // Každé slovo dotazu musí sedět někde v agentovi (pořadí nehraje roli): „atlas portál“ najde
+  // „navigace klientského portálu“ v projektu Studio Atlas. Prohledává i plný název a poslední zadání.
+  const q = norm(f.q.trim()).split(/\s+/).filter(Boolean);
   // Zdroj, poskytovatel a hledání platí i pro počty u projektů – jsou to nadřazené filtry.
   const matchFacets = (s) =>
     (f.source === 'all' || (f.source === 'web' ? jeCloud(s) : !jeCloud(s)))
     && (!f.providers.size || f.providers.has(pkey(s.provider)))
-    && (!q || norm([s.title, s.project, s.cwd, s.app, s.model, s.branch, s.url, projectById(s.projectId)?.name].join(' ')).includes(q));
+    && (!q.length || ((text) => q.every((w) => text.includes(w)))(norm([s.title, s.fullTitle, s.lastPrompt, s.project, s.cwd, s.app, s.model, s.branch, s.repo, s.url, STATUS[s.status]?.label, projectById(s.projectId)?.name].join(' '))));
   const scoped = all.filter(matchFacets);
   const base = scoped.filter(matchProject);
 

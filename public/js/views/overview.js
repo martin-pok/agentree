@@ -364,7 +364,7 @@ function update(topics = new Set(['all'])) {
       <span class="pb-live" aria-hidden="true"></span>
       <span class="pb-num">${tween('ov-working', working.length)}</span>
       <span class="pb-label"><b>${plural(working.length, 'agent pracuje', 'agenti pracují', 'agentů pracuje')}</b>
-        <small>${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')} ${tr('dnes')}${procesyNevim ? ` · ${tr('nepodařilo se zjistit, co běží')}` : state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
+        <small>${tr('Dnes')}: ${todayCount} ${plural(todayCount, 'konverzace', 'konverzace', 'konverzací')}${procesyNevim ? ` · ${tr('nepodařilo se zjistit, co běží')}` : state.runtimes.length ? ` · ${running} ${plural(running, 'aplikace běží', 'aplikace běží', 'aplikací běží')}` : ''}</small></span>
     </div>
     <div class="pb-stats">
       <a class="pb-stat${decideCount ? ' is-alert' : ''}" href="#/agenti?stav=needs_input"><b data-odo>${decideCount}</b><span>${popisPoctu('needs_input', decideCount)}</span></a>
@@ -382,20 +382,22 @@ function update(topics = new Set(['all'])) {
           <span class="pb-agent-text"><b${s.fullTitle ? ` title="${esc(s.fullTitle)}"` : ''}>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
       }).join('')}${live.length > STRIP_MAX ? pbDalsi(live.length - STRIP_MAX) : ''}</ul>`
-      : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}</p>`}</div>`);
+      : `<p class="pb-empty">${tr('Žádný agent teď nepracuje ani nečeká na zadání.')}${todayCount ? ` <a class="link-inline" href="#/agenti">${tr('Dnešní konverzace najdeš v Agentech')} ${ICON.arrow}</a>` : ''}</p>`}</div>`);
   }
 
   // Pravá strana pozdravu: dnešní den jako kalendářní značka a pod ním, co se dnes dělo
-  // (aktivní konverzace a tokeny z přepisů). Počty agentů podle stavu nese box Stav agentů –
+  // (konverzace s aktivitou dnes a tokeny z přepisů). Počty agentů podle stavu nese box Stav agentů –
   // tady by se jen opakovaly. Den platí vždy; aktivita se ukáže, jen když dnes nějaká byla.
   if (changed(topics, 'sessions', 'tick')) {
     const den = Object.fromEntries(new Intl.DateTimeFormat(LOCALE, { weekday: 'long', day: 'numeric', month: 'long' }).formatToParts(now).map((p) => [p.type, p.value]));
     const dnesTok = tokensSince(everything, today);
     const aktivita = [
-      todayCount ? `${todayCount} ${plural(todayCount, 'aktivní konverzace', 'aktivní konverzace', 'aktivních konverzací')}` : '',
+      // „Aktivní“ by sugerovalo, že konverzace běží teď – a „Právě teď“ vedle ukazovalo 0 (19. 10.
+      // 2026). Počítají se konverzace, které dnes měly aktivitu, i ty už nečinné; proto „Dnes:“.
+      todayCount ? `${todayCount} ${plural(todayCount, 'konverzace', 'konverzace', 'konverzací')}` : '',
       dnesTok ? `${fmtTok(dnesTok)} ${tr('tokenů')}` : '',
     ].filter(Boolean).join(' · ');
-    zivy(el, 'pozdrav-dnes', `<p class="home-den"><b>${esc(den.day)}</b><span><span>${esc(den.month)}</span><span>${esc(den.weekday)}</span></span></p>${aktivita ? `<p class="home-aktivita"><span class="sr-only">${esc(tr('dnes'))}: </span>${esc(aktivita)}</p>` : ''}`);
+    zivy(el, 'pozdrav-dnes', `<p class="home-den"><b>${esc(den.day)}</b><span><span>${esc(den.month)}</span><span>${esc(den.weekday)}</span></span></p>${aktivita ? `<p class="home-aktivita">${esc(tr('Dnes'))}: ${esc(aktivita)}</p>` : ''}`);
   }
 
   // Stav agentů: jedna věta (v pořádku / pozor / problém / nepodařilo se zjistit), počty a problémy.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.42 – 2026-10-19 · Cloud jako cloud a hledání, které najde
+
+- **Cloudové relace Claude Code** už nejsou označené jako „na tomto počítači“. Přepis relace z claude.ai/code nese značku vzdáleného spuštění. Agenteeq ji teď čte a ukáže takovou konverzaci jako Cloud s aplikací „Claude Desktop · vzdálený Code“. Filtr Zdroj na Agentech ji zařadí správně.
+- **Pozdrav na Přehledu** říká „Dnes: 1 konverzace“ místo „1 aktivní konverzace“. Počítá konverzace, které dnes měly aktivitu, i ty už nečinné. Vedle prázdného „Právě teď“ to dřív vypadalo jako rozpor. Když teď nikdo nepracuje, „Právě teď“ odkáže na dnešní konverzace v Agentech.
+- **Hledání** najde agenta i podle projektu v Agenteeq (dřív jen podle názvu složky), větve, repozitáře, plného názvu a posledního zadání. Na Agentech se slova dotazu hledají každé zvlášť, takže „atlas portál“ najde „navigace klientského portálu“ v projektu Studio Atlas. Dvouřádkové výsledky hledání mají vzduch a nejsou natlačené na sebe.
+- **Obnova dat** je klidné nadechnutí místo fialového záblesku přes celou obrazovku. Tón je slabý jen kolem středu, náběh i dojezd trvají 0,6 s a hlava robota pomalu dýchá.
+- **Detail projektu → Služby:** loga služeb jsou větší a dobře vidět i na tmavé kartě.
+
 ## 0.46.41 – 2026-10-19 · Čistší detaily a roboti, kteří mluví k věci
 
 - **Logo projektu** už nemá zvláštní rámeček v rozích. Logo s vlastním tvarem (zaoblená ikona) se ukáže samo, jen s jemným stínem. Průhledný znak dostane čistou bílou dlaždici s tenkou linkou. Dřív pod kulatějšími rohy ikony prosvítala bílá dlaždice a kolem byl dvojitý barevný prstenec.

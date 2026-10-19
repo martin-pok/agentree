@@ -724,3 +724,38 @@ test('vzácné věty robota jen v klidu, nikdy místo důležité zprávy', asyn
   const js = await zdroj('public/js/robot-bubliny.js');
   assert.doesNotMatch(js, /droidi|Dave|Houstone/, 'žádné citáty bez souvislosti');
 });
+
+test('pozdrav říká „Dnes: N konverzace“, ne „aktivní“ (vedle Právě teď = 0 to mátlo)', async () => {
+  const ov = await zdroj('public/js/views/overview.js');
+  assert.doesNotMatch(ov, /'aktivní konverzace'/);
+  assert.match(ov, /<p class="home-aktivita">\$\{esc\(tr\('Dnes'\)\)\}: \$\{esc\(aktivita\)\}<\/p>/);
+  assert.match(ov, /Dnešní konverzace najdeš v Agentech/, 'prázdné Právě teď ukáže, kde dnešní konverzace jsou');
+});
+
+test('obnova je klidné nadechnutí, ne fialový záblesk přes celou obrazovku', async () => {
+  const css = await zdroj('public/styles.css');
+  const z = css.match(/^\.obnova-zavoj \{[^}]+\}/m)?.[0] || '';
+  assert.match(z, /#6260d8 9%, transparent\), transparent 100%\)/, 'slabý tón jen u středu, okraje průhledné');
+  assert.match(z, /transition: opacity var\(--motion-calm\)/);
+  assert.match(css, /@keyframes oz-dech/);
+});
+
+test('hledání: dvouřádková položka má vzduch a není natlačená do 44 px', async () => {
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /html\[data-theme\] \.palette-list li:has\(\.pl-text small\) \{ height: auto; min-height: 56px; padding: 10px 14px;/);
+});
+
+test('detail projektu: loga služeb jsou čitelně velká', async () => {
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.kpi-logos \.discs--sm \.disc :is\(\.logo, \.glyph\) \{ width: 22px; height: 22px; \}/);
+});
+
+test('hledání najde agenta podle projektu, větve i posledního zadání; Agenti berou slova zvlášť', async () => {
+  const app = await zdroj('public/js/app.js');
+  const radek = app.split('\n').find((l) => l.includes('const agentiNalez = podle(agenti')) || '';
+  for (const pole of ['projectById(a.projectId)?.name', 'a.branch', 'a.repo', 'a.fullTitle', 'a.lastPrompt', 'a.reason']) assert.ok(radek.includes(pole), `hledání agenta bere ${pole}`);
+  const ag = await zdroj('public/js/views/agents.js');
+  assert.match(ag, /const q = norm\(f\.q\.trim\(\)\)\.split\(\/\\s\+\/\)\.filter\(Boolean\);/);
+  assert.match(ag, /q\.every\(\(w\) => text\.includes\(w\)\)/);
+  assert.match(ag, /s\.lastPrompt[^\n]*projectById\(s\.projectId\)\?\.name/);
+});

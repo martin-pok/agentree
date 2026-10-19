@@ -280,3 +280,20 @@ test('chyba API mimo limit: „selhalo“ s textem chyby, nové zadání nebo ú
   ]);
   assert.equal(d2.s.failure, null);
 });
+
+// Přepis cloudové relace (claude.ai/code) leží na disku stejně jako místní, ale agent běžel v cloudu.
+// Tvar ověřený 19. 10. 2026 na skutečném přepisu: entrypoint „remote_desktop“, cwd kontejneru.
+test('přepis vzdálené relace Claude Code se hlásí jako cloud, ne jako tento počítač', async () => {
+  const { jeCloud } = await import('../public/js/icons.js');
+  const radek = (entrypoint) => ({ type: 'user', timestamp: at(0), cwd: '/home/user/agentree', entrypoint, message: { role: 'user', content: 'Ahoj' } });
+  const vzdaleny = feed([radek('remote_desktop')]).s;
+  assert.equal(vzdaleny.source, 'remote');
+  assert.equal(vzdaleny.app, 'Claude Desktop · vzdálený Code');
+  assert.equal(jeCloud(vzdaleny), true);
+  assert.equal(feed([radek('remote_mobile')]).s.app, 'Claude Code · vzdálený');
+  for (const e of ['cli', 'claude-desktop', 'sdk-ts', 'remotely', undefined]) {
+    const s = feed([radek(e)]).s;
+    assert.equal(s.source, 'local', `entrypoint ${e} zůstává místní`);
+    assert.equal(jeCloud(s), false);
+  }
+});

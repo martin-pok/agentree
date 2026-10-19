@@ -186,6 +186,7 @@ export default {
 
   // src/connectors/claude-desktop-code.js
   "Claude Desktop · vzdálený Code": "Claude Desktop · remote Code",
+  "Claude Code · vzdálený": "Claude Code · remote",
   "Pracuje podle stavu v Claude Desktopu": "Working, according to Claude Desktop",
   "Pracuje · podle otevřené karty v prohlížeči": "Working · according to the open browser tab",
   "Při posledním načtení pracoval · novější stav Claude Desktop neuložil": "Was working when last loaded · Claude Desktop has not saved a newer status",
