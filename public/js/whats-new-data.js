@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.33',
+    date: '2026-10-19',
+    title: 'Pomocník zná stav konkrétního nástroje',
+    items: [
+      'Na „Proč Codex nepracuje?“ Pomocník ukáže agenty toho nástroje, kteří narazili na limit, selhali nebo čekají na tebe – i s časem obnovy limitu.',
+    ],
+    en: {
+      title: 'The assistant knows each tool’s status',
+      items: [
+        'Ask “Why is Codex not working?” and the assistant lists that tool’s agents that hit a limit, failed or are waiting for you – including when the limit resets.',
+      ],
+    },
+  },
+  {
     version: '0.46.32',
     date: '2026-10-19',
     title: 'Smazání se nepotvrdí omylem',

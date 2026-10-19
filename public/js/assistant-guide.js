@@ -6,7 +6,7 @@
 // jde do hledání v konverzacích na serveru (src/pomocnik.js). Regresní sada 20 nejčastějších
 // dotazů: test/pomocnik-dotazy.test.mjs.
 import { cileHledani, hledejCile, jedenPreklep } from './hledani.js';
-import { jeOtazkaNaCekani, coNaMeCeka } from './co-ceka.js';
+import { jeOtazkaNaCekani, coNaMeCeka, nastrojVOtazce, stavNastroje } from './co-ceka.js';
 
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -301,6 +301,12 @@ export function odpovedPruvodce(dotaz, { agenti = [], snapshot = null, ...ctx } 
   if (jeOtazkaNaCekani(dotaz) && !/\b(jak|how)\b/.test(q) && (!rada || rada.topic == null || ['agents', 'decisions', 'nevim'].includes(rada.topic))) {
     const seznam = typeof agenti === 'function' ? agenti() : agenti;
     return { topic: 'cekani', ...coNaMeCeka({ agenti: seznam, nacteno: Boolean(snapshot?.loaded), spojeni: snapshot?.connection }) };
+  }
+  // „Proč Codex nepracuje?“ – stav konkrétního nástroje ze živého seznamu, odkazy z průvodce.
+  const nastroj = nastrojVOtazce(dotaz, typeof agenti === 'function' ? agenti() : agenti);
+  if (nastroj) {
+    const stav = stavNastroje({ ...nastroj, nacteno: Boolean(snapshot?.loaded), spojeni: snapshot?.connection });
+    return { topic: 'stav-nastroje', ...stav, cile: stav.cile?.length ? stav.cile : (rada?.cile || []) };
   }
   return rada;
 }

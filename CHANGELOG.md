@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.33 – 2026-10-19 · Pomocník zná stav konkrétního nástroje
+
+- **„Proč Codex nepracuje?“ odpoví ze živého stavu:** Pomocník dřív na otázku o konkrétním nástroji vrátil obecný návod k propojení (nebo ho přeformulovala AI, která stav agentů nezná), i když Codex právě stál na vyčerpaném limitu. Teď vypíše agenty toho nástroje, kteří selhali, narazili na limit nebo čekají na tebe – s důvodem, časem obnovy a tlačítkem Otevřít. Když žádný problém nemá, řekne to; nenačtený stav nevydává za „nic“ (bug report 14. 10., body 3 a 11).
+- Otázky „jak/kde“ („Jak propojím Codex?“) a hledání starého chatu zůstávají u průvodce. O nástroji, jehož agenty Agenteeq nezná, Pomocník stav netvrdí.
+
 ## 0.46.32 – 2026-10-19 · Smazání se nepotvrdí omylem
 
 - **Nevratné potvrzení má fokus na „Zrušit“:** dialogy Smazat účet, Smazat projekt, Smazat výdaj, Odebrat licenci, klíč, agenta, zařízení a Smazat historii upozornění dřív po otevření nastavily fokus na červené potvrzovací tlačítko, takže stisk Enter rovnou mazal. Teď Enter dialog jen zavře; smazání je vědomé klepnutí nebo Tab na tlačítko (bug report 14. 10., bod 10).

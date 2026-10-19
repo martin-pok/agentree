@@ -6,6 +6,7 @@
 
 ## Zdroj pravdy
 
+- **v0.46.33: Preview s Pomocníkem, který zná stav nástroje.** „Proč Codex nepracuje?“ odpoví ze živého stavu agentů toho nástroje; obsahuje i `v0.46.32`.
 - **v0.46.32: Preview s bezpečným potvrzením mazání.** Dialogy s nevratnou akcí mají po otevření fokus na „Zrušit“; ověřuje `qa:desktop` v Chromiu i WebKitu.
 - **v0.46.31: zveřejněné Preview se srovnanou tabulkou nákladů.** Koš 44 px s mezerou od „Ukončit“, služba na ose řádku; tmavý vzhled a angličtina zkontrolované na všech obrazovkách.
 - **v0.46.30: Preview bez useknutých textů na telefonu.** Webové chaty bez rozšíření jako jeden řádek, celý přepínač spuštění, krátký nadpis detailu agenta.
@@ -76,7 +77,7 @@
 
 1. `v0.46.14` je poslední sestavený neveřejný Draft (8 příloh, nezávislý byte audit oddělený), nikoli veřejná aktualizace ani nejnovější zdroj. `v0.46.13` zůstává starším neveřejným Draftem. Historický `v0.46.11` zůstává kvůli nesouladu PWA/Apple ikon **zablokovaný pro publikaci**; Drafty 0.46.7–0.46.11 nikdy nepřepisovat ani postupně nepublikovat.
 2. Dokončit otevřené scénáře [#208](https://github.com/martin-pok/agentree/issues/208): čistá instalace a Gatekeeper/quarantine cesta, Google OAuth a fotografie včetně selhání, rollback, návrat do konkrétní relace, párované Chrome rozšíření stejné verze jako zkoušený release a reálný Windows beta smoke. Vizuální brand gate sleduje [#213](https://github.com/martin-pok/agentree/issues/213).
-3. Připravit `v0.46.32` jako Preview: po zeleném PR a přesném postmerge `main` CI nechat `prepare-preview-draft.yml` sestavit **nový, samostatně verzovaný neveřejný Draft** a nezávisle ověřit všech 8 příloh. Poté ručně spustit `publish.yml` pro **`v0.46.32` jako Preview**; na Macu ověřit **aktualizaci z `0.46.31` uvnitř aplikace**. Stabilní `Latest` zůstává `v0.46.0`.
+3. Připravit `v0.46.33` jako Preview: po zeleném PR a přesném postmerge `main` CI nechat `prepare-preview-draft.yml` sestavit **nový, samostatně verzovaný neveřejný Draft** a nezávisle ověřit všech 8 příloh. Poté ručně spustit `publish.yml` pro **`v0.46.33` jako Preview**; na Macu ověřit **aktualizaci z `0.46.31` uvnitř aplikace**. Stabilní `Latest` zůstává `v0.46.0`.
 4. `v0.46.12` jako Preview je zveřejněné (14. 10. 2026) bez dokončeného fyzického UAT. Další krok: na skutečném Macu z veřejného releasu ověřit instalaci, aktualizaci z 0.46.x, Gatekeeper/quarantine, Google přihlášení a živý stav vzdálených agentů Claude Code; výsledky zapsat sem a do #208. Nalezená závada = nová verze, zveřejněné přílohy se nepřepisují. Stabilní `Latest` zůstává `v0.46.0`; Chrome Web Store se aktualizuje samostatně.
 
 ## Co zůstává mimo automatickou garanci

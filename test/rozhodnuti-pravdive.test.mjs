@@ -192,3 +192,41 @@ test('Pomocník se na čekání ptá živého stavu dřív, než začne hledat v
   assert.match(pruvodce, /coNaMeCeka\(\{ agenti: seznam, nacteno: Boolean\(snapshot\?\.loaded\), spojeni: snapshot\?\.connection \}\)/);
   assert.match(kod, /tr\('Co na mě čeká\?'\)/, 'nabízí se i jako návrh');
 });
+
+// Bug report 14. 10. (bod 11): Codex narazil na limit a Pomocník na „Proč Codex nepracuje?“
+// odpověděl obecným návodem k propojení. Otázka na stav konkrétního nástroje patří živému stavu.
+test('Pomocník: „Proč Codex nepracuje?“ odpoví ze živého stavu toho nástroje', async () => {
+  const { nastrojVOtazce, stavNastroje } = await import('../public/js/co-ceka.js');
+  const { odpovedPruvodce } = await import('../public/js/assistant-guide.js');
+  const agenti = [
+    { id: 'codex:x', title: 'Refaktor plateb', app: 'Codex', status: 'limited', reason: 'Limit 5 h vyčerpán · obnoví se 13:12', limit: { at: 50 }, lastAt: 50 },
+    { id: 'claude-code:a', title: 'Logo', app: 'Claude Code', status: 'working', reason: 'Spouští příkaz', lastAt: 60 },
+    { id: 'claude-desktop:b', title: 'Chat', app: 'Claude Desktop', status: 'waiting', lastAt: 40 },
+  ];
+  const snapshot = { connection: 'live', loaded: true, sessions: new Map() };
+
+  const r = odpovedPruvodce('Proč Codex nepracuje?', { snapshot, agenti });
+  assert.equal(r.topic, 'stav-nastroje');
+  assert.equal(r.text, 'Codex: Selhal nebo narazil na limit 1 agent.');
+  assert.deepEqual(r.vysledky.map((v) => [v.sessionId, v.ukazka]), [['codex:x', 'Limit 5 h vyčerpán · obnoví se 13:12']]);
+  assert.equal(odpovedPruvodce('codexu nejde nic', { snapshot, agenti: () => agenti }).topic, 'stav-nastroje', 'agenti i jako funkce (agentsList)');
+
+  // Celý název má přednost, samotné „claude“ zahrne všechny nástroje Claude.
+  assert.deepEqual(nastrojVOtazce('why is claude code stuck', agenti).agenti.map((s) => s.id), ['claude-code:a']);
+  assert.deepEqual(nastrojVOtazce('co je s claude?', agenti).agenti.map((s) => s.id).sort(), ['claude-code:a', 'claude-desktop:b']);
+  assert.equal(odpovedPruvodce('why is claude code stuck', { snapshot, agenti }).text, 'Claude Code: žádný agent teď neselhal, nenarazil na limit ani nečeká na tebe.');
+
+  // Návod, hledání chatu a nástroj bez agentů zůstávají u průvodce.
+  assert.notEqual(odpovedPruvodce('Jak propojím Codex?', { snapshot, agenti })?.topic, 'stav-nastroje');
+  assert.equal(nastrojVOtazce('Najdi chat, proč Codex nejde', agenti), null);
+  assert.equal(nastrojVOtazce('Proč nefunguje Cursor?', agenti), null, 'o Cursoru nic nevíme – žádné tvrzení o jeho stavu');
+
+  // Nenačtený stav se nevydává za „nic nestojí“; nepotvrzené spojení se přizná.
+  const nenacteno = stavNastroje({ nazev: 'Codex', agenti, nacteno: false });
+  assert.match(nenacteno.text, /nepodařilo zjistit/);
+  assert.match(stavNastroje({ nazev: 'Claude Code', agenti: agenti.slice(1, 2), nacteno: true, spojeni: 'offline' }).pozn, /není potvrzené/);
+
+  // Odpověď ze živého stavu nesmí přeformulovat AI, která stav agentů nezná.
+  const kod = await zdroj('public/js/robot-guide.js');
+  assert.match(kod, /rada\?\.topic !== 'stav-nastroje'/);
+});
