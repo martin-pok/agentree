@@ -8,7 +8,7 @@ import { tr } from './i18n.js';
 
 export const TARGETS = {
   cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), hint: tr('1400 × 400 px · PNG, JPG nebo WebP do 4 MB') },
-  logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), hint: tr('Doporučeno 512 × 512 px, nejlépe PNG s průhledným pozadím, do 1,5 MB.') },
+  logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), hint: tr('512 × 512 px · ideálně PNG s průhledností, do 1,5 MB') },
 };
 const TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_ZOOM = 4;

@@ -96,7 +96,7 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
   :is(.btn, .chip, .lchip, .picker-trigger, .link):not(.btn--lg) { height: 44px; min-height: 44px; }
   .sidebar .nav a { height: 44px; min-height: 44px; }
   /* Kulaté ikonové tlačítko stojí v řadě vedle 44px tlačítek (Smazat výdaj vedle Ukončit) – stejně vysoké. */
-  .icon-btn { width: 44px; height: 44px; min-height: 44px; }
+  .icon-btn, .btn.btn--ico { width: 44px; height: 44px; min-height: 44px; padding: 0; }
   .seg--light:not(.seg--sm):not(.launch-controls *) button, .set-nav button, .appearance-options--lang .appearance-option, .palette-list li { height: 44px; min-height: 44px; }
   :is(input[type='text'], input[type='password'], input[type='search'], input[type='email'], input[type='url'], input:not([type])):not(.palette-input input, .lpick-search input) { height: 44px; min-height: 44px; }
   .sec-head :is(h2, h3), .home-live > h2 { font-size: var(--type-section); line-height: 1.3; }
