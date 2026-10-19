@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.30',
+    date: '2026-10-19',
+    title: 'Telefon bez useknutých textů',
+    items: [
+      'Webové chaty bez rozšíření jsou v Nastavení jeden řádek místo deseti stejných.',
+      'Přepínač režimu spuštění na Přehledu se na telefonu vejde celý.',
+      'Detail agenta má krátký nadpis „Agent“, který se na telefonu neusekne.',
+    ],
+    en: {
+      title: 'No cut-off text on phones',
+      items: [
+        'Web chats without the extension are one row in Settings instead of ten identical ones.',
+        'The launch mode switch on Overview fits on phones.',
+        'Agent details have a short “Agent” title that is not cut off on phones.',
+      ],
+    },
+  },
+  {
     version: '0.46.29',
     date: '2026-10-19',
     title: 'Pomocník uhne při čtení',

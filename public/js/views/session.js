@@ -520,7 +520,7 @@ function update() {
 
 export default {
   id: 'agent',
-  title: tr('Detail agenta'),
+  title: tr('Agent'),
   mount,
   update,
   unmount() {

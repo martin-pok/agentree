@@ -1049,7 +1049,9 @@ for (const engine of engines) {
     // a cizí posun (přepnutí obrazovky volá scrollTo) má před dojezdem přednost.
     assert.equal(await page.evaluate(() => 'plynule' in document.documentElement.dataset), false, `${engine}: plynulé posouvání se zapnulo i s „omezit pohyb“`);
     {
-      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+      // Nižší okno (notebook): zkouška potřebuje přes 1000 px posunu a Nastavení už nejsou uměle
+      // dlouhá (webové chaty bez rozšíření jsou jeden řádek).
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 700 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
       await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
       const p = await ctx.newPage();
       p.on('pageerror', (e) => errors.push(`plynulé posouvání: ${e.message}`));

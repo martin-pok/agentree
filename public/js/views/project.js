@@ -32,7 +32,7 @@ function rowHtml(s, now) {
   return `<li class="prow">
     <a class="prow-link" href="${agentHref(s.id)}">
       <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
-      <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="live-dot"></span>${esc(vetaStavu(s))}` : sub}</span></span>
+      <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="sub-live"><span class="live-dot" aria-hidden="true"></span><span>${esc(vetaStavu(s))}</span></span>` : sub}</span></span>
     </a>
     <span class="prow-meta">${statusPill(s.status)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '–'}</span></span>
     <span class="prow-actions">${actions}</span>
@@ -55,7 +55,7 @@ async function addSessionsDialog(p) {
       <ul class="pick-list" id="${id}-list">${candidates.map((s) => `<li data-hay="${esc(norm([s.title, s.app, s.cwd, s.url].join(' ')))}"><label class="pick">
         <input type="checkbox" name="sid" value="${esc(s.id)}">
         <span class="icon-tile">${glyph(s)}</span>
-        <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${esc(s.app)} · <span data-ago="${s.lastAt}">${rel(s.lastAt)}</span>${s.cwd ? ` · ${esc(shortPath(s.cwd))}` : ''}</span></span>
+        <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub"><span class="sub-text">${esc(s.app)} · <span data-ago="${s.lastAt}">${rel(s.lastAt)}</span>${s.cwd ? ` · ${esc(shortPath(s.cwd))}` : ''}</span></span></span>
         ${projectTag(s)}
       </label></li>`).join('')}</ul>`,
     onSubmit: async (form) => {

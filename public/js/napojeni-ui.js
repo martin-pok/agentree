@@ -49,6 +49,20 @@ export function radekNapojeni(n) {
     ${stav}${akce}</li>`;
 }
 
+// Webové chaty bez rozšíření mají všechny stejný stav i stejnou akci; deset stejných řádků pod
+// sebou byla jen zeď opakování (na telefonu přes celou obrazovku). Proto jeden řádek se všemi
+// službami. Jakmile rozšíření běží, má každá služba vlastní řádek se svým stavem.
+export function seznamNapojeni(list) {
+  const bezRozsireni = list.filter((n) => n.druh === 'web' && !n.nainstalovano);
+  if (bezRozsireni.length < 2) return list.map(radekNapojeni).join('');
+  const prvni = list.indexOf(bezRozsireni[0]);
+  const loga = bezRozsireni.slice(0, 3).map((n) => `<span class="model-logo">${glyph({ logo: n.logo, provider: n.provider })}</span>`).join('');
+  const souhrn = `<li class="model-row model-row--skupina"><span class="model-loga">${loga}</span>
+    <div class="model-main"><b>${tr('Webové chaty')}</b><span>${bezRozsireni.map((n) => esc(n.label)).join(', ')}</span></div>
+    ${stateBadge('missing', tr('Potřebuje rozšíření'))}<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button></li>`;
+  return list.map((n, i) => (i === prvni ? souhrn : bezRozsireni.includes(n) ? '' : radekNapojeni(n))).join('');
+}
+
 // Tokeny i stav se berou z přepisů na tomhle Macu. Když tu agent nepracoval (třeba běžel
 // v cloudu), je to vidět přímo u něj – jinak nulové tokeny vypadají jako chyba.
 function posledniPrace(n) {
