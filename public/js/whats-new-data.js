@@ -10,12 +10,14 @@ export const RELEASES = [
     items: [
       'Projekt s černou barvou je v tmavém režimu vidět – tečka i aktivita se kreslí světle.',
       'Tokeny podle služby v detailu projektu mají každou službu ve vlastní barvě, stejně jako Statistiky.',
+      'Na nejužším telefonu se čas u konverzace v projektu zkracuje výpustkou místo useknutí uprostřed slova.',
     ],
     en: {
       title: 'Projects readable in dark mode too',
       items: [
         'A project with the black colour is now visible in dark mode – its dot and activity are drawn light.',
         'Tokens by service in the project detail give each service its own colour, just like Statistics.',
+        'On the narrowest phones the time next to a project conversation is shortened with an ellipsis instead of being cut mid-word.',
       ],
     },
   },
