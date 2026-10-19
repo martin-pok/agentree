@@ -802,6 +802,31 @@ function markErrors(form, errors) {
   (first?.classList.contains('picker-source') ? first.nextElementSibling : first)?.focus();
 }
 
+// Doplňující vysvětlení schované za decentní „i“: text se ukáže při najetí nebo fokusu (i klepnutím
+// na telefonu), čte ho odečítač přes aria-describedby a Esc ho zavře, aniž by zavřel dialog.
+let infoTipId = 0;
+let infoTipEsc = false;
+export function infoTip(text, label = tr('Více informací')) {
+  if (!infoTipEsc) { infoTipEsc = true; hlidejInfoTip(); }
+  const id = `info-tip-${++infoTipId}`;
+  return `<span class="info-tip"><button type="button" class="info-tip-btn" aria-label="${esc(label)}" aria-describedby="${id}">${ICON.info}</button><span class="info-tip-bubble" role="tooltip" id="${id}">${esc(text)}</span></span>`;
+}
+function hlidejInfoTip() {
+  // Na window v zachytávací fázi: proběhne dřív než Esc dialogu (document, také zachytávání),
+  // takže zavře jen bublinu a dialog zůstane otevřený.
+  window.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const tip = [...document.querySelectorAll('.info-tip:not([data-skryto])')].find((t) => t.matches(':hover, :focus-within'));
+    if (!tip) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    tip.dataset.skryto = '';
+  }, true);
+  const odkryj = (e) => { const t = e.target.closest?.('.info-tip'); if (t && !t.contains(e.relatedTarget)) delete t.dataset.skryto; };
+  document.addEventListener('pointerout', odkryj);
+  document.addEventListener('focusout', odkryj);
+}
+
 // `size` přidá variantu okna (např. 'reader' pro čtení souboru), `footer` nahradí výchozí dvojici
 // tlačítek vlastním obsahem a `onOpen` dostane kořen okna hned po vložení do stránky –
 // díky tomu má i vlastní patička kde navěsit obsluhu, aniž by se duplikovala práce s Esc,

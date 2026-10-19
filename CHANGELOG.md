@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.40 – 2026-10-19 · Jasné ovládání a robot bez uletěné ruky
+
+- **Průběh dne a spotřeba** se rozbaluje výraznou kapslí přes celou šířku: šipka v kroužku, název, popis a vpravo „Zobrazit“ / „Skrýt“. Po najetí se jemně podsvítí značkovou fialovou, takže je vidět, že jde o akci.
+- **Robot u pozdravu** má propracovanější gesta. Mávnutí drží paži v rameni (dřív se při něm ruka utrhla a uletěla), poskok má přikrčení, odraz a pružný dopad se zmenšujícím se stínem, náklon hlavy zvědavě podrží a vzácná otočka je pirueta na místě. Zvednutá ruka agenta, který čeká na tebe, míří do strany, takže už nemizí za hlavou.
+- **Jméno v profilu** vede do Nastavení → Účet. Při najetí se pod ním plynule rozběhne podtržení.
+- **Rozpočty:** vysvětlení, že se rozpočet počítá z nákladů za API, je schované za decentním „i“ u úvodní věty. Ukáže se po najetí, fokusu nebo klepnutí a Esc ho zavře, aniž by zavřel dialog.
+
 ## 0.46.39 – 2026-10-19 · Widgety, které si poskládáš
 
 - **Průběh dne a spotřeba je nástěnka widgetů.**

@@ -236,7 +236,9 @@ function mount(el) {
   live.append(el.querySelector('[data-region="hero"]'));
   const history = document.createElement('details');
   history.className = 'home-history';
-  history.innerHTML = `<summary>${tr('Průběh dne a spotřeba')}<span>${tr('Aktivita, tokeny a náklady')}</span></summary>`;
+  // Rozbalení je výrazná kapsle přes celou šířku: šipka v kroužku, název, popis a vpravo slovo,
+  // co klepnutí udělá (Zobrazit / Skrýt) – aby bylo vidět, že jde o akci, ne o nadpis.
+  history.innerHTML = `<summary><span class="hh-ikona" aria-hidden="true">${ICON.chev}</span><span class="hh-nazev">${tr('Průběh dne a spotřeba')}</span><span class="hh-popis">${tr('Aktivita, tokeny a náklady')}</span><span class="hh-akce" aria-hidden="true"><span class="hh-zobrazit">${tr('Zobrazit')}</span><span class="hh-skryt">${tr('Skrýt')}</span></span></summary>`;
   history.append(el.querySelector('[data-board]'));
   el.append(workspace, history);
   v.board = enableBoard(el.querySelector('[data-board]'), {
