@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.28',
+    date: '2026-10-19',
+    title: 'Pravdivá data i při výpadku',
+    items: [
+      'Konverzace, kterou ukončila chyba API, se ukáže jako „selhalo“, ne „hotovo“.',
+      'Když náklady z Admin API nejde načíst, Útrata to řekne a synchronizace je nesmaže.',
+      'Jeden vyčerpaný limit pošle jedno upozornění.',
+      'Dialog projektu se na počítači vejde bez posouvání a texty v Nastavení jsou kratší.',
+    ],
+    en: {
+      title: 'Truthful data even during outages',
+      items: [
+        'A conversation ended by an API error shows as “failed”, not “done”.',
+        'When Admin API costs can’t be loaded, Spend says so and sync doesn’t delete them.',
+        'One exhausted limit sends one notification.',
+        'The project dialog fits on desktop without scrolling and Settings texts are shorter.',
+      ],
+    },
+  },
+  {
     version: '0.46.27',
     date: '2026-10-18',
     title: 'Roboti na zemi a obnova přes celou aplikaci',

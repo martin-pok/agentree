@@ -200,8 +200,7 @@ export function projectForm(existing = null) {
         <label class="field"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
         <label class="field"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
       </div>
-      ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')}</p>
-      <p class="modal-text">${tr('Předvyplní podklady projektu a štítek. Všechno jde později upravit.')}</p>
+      ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')} <small class="muted">${tr('předvyplní podklady a štítek')}</small></p>
       <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}
       <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(c)}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
