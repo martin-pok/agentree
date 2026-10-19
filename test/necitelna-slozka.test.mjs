@@ -23,8 +23,9 @@ test('kořeny přepisů: existující složku bez oprávnění ke čtení hlás�
   assert.deepEqual((await k.existujici()).sort(), [citelna, zakazana].sort());
 });
 
-// Skutečné oprávnění: root čte všechno, proto se tenhle krok pod rootem přeskočí (kontejnery CI).
-test('Claude Code a Codex: nečitelná složka = stav chyby s důvodem, ne „zatím bez konverzací“', { skip: process.getuid?.() === 0 && 'root čte i složku bez oprávnění' }, async (t) => {
+// Skutečné oprávnění: root čte všechno a na Windows chmod nemění ACL, proto se tenhle krok
+// pod rootem (kontejnery CI) a na Windows přeskočí.
+test('Claude Code a Codex: nečitelná složka = stav chyby s důvodem, ne „zatím bez konverzací“', { skip: (process.getuid?.() === 0 && 'root čte i složku bez oprávnění') || (process.platform === 'win32' && 'chmod 000 složku na Windows nezamkne (ACL); logiku hlídá test výše') }, async (t) => {
   const home = await tempDir('agenteeq-necitelne-src-');
   const claude = path.join(home, '.claude', 'projects');
   const codex = path.join(home, '.codex', 'sessions');
