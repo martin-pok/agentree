@@ -534,6 +534,8 @@ export default {
     "Projekt sdruží práci agentů pro jednoho klienta nebo zakázku. Konverzace ze složky projektu se do něj zařadí samy.": "A project groups agent work for one client or job. Conversations from the project folder are added automatically.",
     "Agenta se nepodařilo načíst": "Couldn't load the agent",
     "Zobrazit všechny agenty": "Show all agents",
+    "Zobrazit všechny ({0})": "Show all ({0})",
+    "Sbalit": "Collapse",
     "Žádná dovednost zatím nepřibyla": "No new skills yet",
     "Agenteeq ukáže každý soubor SKILL.md ze složek .agents, .claude a .codex – dovednosti, pluginy i plánované úlohy.": "Agenteeq shows every SKILL.md file from the .agents, .claude and .codex folders – skills, plugins and scheduled tasks.",
     "Zatím není co měřit": "Nothing to measure yet",

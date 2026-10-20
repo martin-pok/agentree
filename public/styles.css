@@ -2375,6 +2375,18 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .avatar-mini { display: block; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; }
 .avatar-mini svg { width: 100%; height: 100%; display: block; }
 .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; margin-top: 8px; }
+/* Sbalený výběr: první řada celá, z druhé jen náznak pod přechodem v barvě značky a tlačítko
+   „Zobrazit všechny“. Okraj 6 px kolem mřížky drží kroužek vybraného obrázku uvnitř ořezu. */
+.avatar-vyber { position: relative; display: grid; justify-items: center; gap: 4px; }
+.avatar-okno { position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; max-height: calc(var(--avatar-radek, 56px) * 1.45 + 12px + 12px); overflow: hidden; transition: max-height var(--motion-move) var(--ease-settle); }
+.avatar-okno > .avatar-grid { padding: 6px 0; margin-top: 0; }
+.avatar-vyber[data-rozbaleno] .avatar-okno { max-height: 1200px; }
+.avatar-okno::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--avatar-radek, 56px) * .95); background: linear-gradient(180deg, color-mix(in srgb, var(--card) 0%, transparent) 0%, color-mix(in srgb, var(--brand) 10%, var(--card)) 62%, var(--card) 100%); pointer-events: none; transition: opacity var(--motion-move) var(--ease); }
+.avatar-vyber[data-rozbaleno] .avatar-okno::after { opacity: 0; }
+.avatar-vice { position: relative; z-index: 1; gap: 6px; }
+.avatar-vice .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--motion-move) var(--ease-settle); }
+.avatar-vyber[data-rozbaleno] .avatar-vice .icon { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .avatar-okno, .avatar-okno::after, .avatar-vice .icon { transition: none; } }
 .avatar-pick { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); overflow: hidden; display: grid; place-items: center; font: 400 18px/1 var(--f-display); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .avatar-pick svg { width: 100%; height: 100%; }
 :where(html:not(.is-scrolling)) .avatar-pick:hover { transform: translateY(-2px); }
