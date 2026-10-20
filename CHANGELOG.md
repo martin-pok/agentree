@@ -4,7 +4,7 @@
 
 - **Tlačítka** se při najetí už neposouvají nahoru, změní jen barvu. Platí pro všechna tlačítka v aplikaci včetně „Spustit“ a „Poslat“ v Pomocníkovi.
 - **Přepis agenta** je pro čtečku obrazovky zase seznam zpráv: oblast přebíjela roli seznamu, takže jednotlivé zprávy nebyly ohlášené jako položky.
-- **Kontrola přístupnosti (axe)** prochází kromě osmi hlavních obrazovek i detail agenta, detail projektu a dialogy Nový projekt, Rozpočty, Co je nového, Rychlé hledání, Upozornění a Pomocník, ve světlém i tmavém vzhledu na počítači i telefonu.
+- **Kontrola přístupnosti (axe)** prochází kromě osmi hlavních obrazovek i detail agenta, detail projektu a dialogy Nový projekt, Rozpočty, Co je nového, Rychlé hledání, Upozornění a Pomocník, ve světlém i tmavém vzhledu na počítači i telefonu. Nově kontroluje i čtyři stránky webu a okno rozšíření v devíti stavech.
 - Obsahuje i nezveřejněné 0.46.49 a 0.46.50.
 ## 0.46.50 – 2026-10-20 · Zadání nahoře a méně prázdných míst
 

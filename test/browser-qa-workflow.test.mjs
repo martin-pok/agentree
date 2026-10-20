@@ -36,3 +36,13 @@ test('každý job s playwright install --with-deps má připnutou verzi Ubuntu',
     assert.doesNotMatch(job, /runs-on: ubuntu-latest/, job.split('\n')[0]);
   }
 });
+
+test('web a okno rozšíření se kontrolují axe-core a CI ho pro ně instaluje', async () => {
+  const web = workflow.slice(workflow.indexOf('  browser-web-qa:\n'), workflow.indexOf('  chrome-store:\n'));
+  assert.match(web, /npm install --no-save --package-lock=false playwright@1\.62\.1 axe-core@4\.10\.3$/m);
+  for (const f of ['qa-site.mjs', 'qa-extension.mjs', 'qa-axe.mjs']) {
+    const src = await fs.readFile(new URL(`../scripts/${f}`, import.meta.url), 'utf8');
+    assert.match(src, /import \{ nactiAxe, axePoruseni \} from '\.\/axe-kontrola\.mjs';/, f);
+    assert.match(src, /axePoruseni\(page, AXE|axePoruseni\(page, axe/, f);
+  }
+});

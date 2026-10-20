@@ -7,9 +7,11 @@ import path from 'node:path';
 import http from 'node:http';
 import assert from 'node:assert/strict';
 import { atrapa, fixtura, OKNO } from './qa-rozsireni.mjs';
+import { nactiAxe, axePoruseni } from './axe-kontrola.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const root = path.resolve('extension');
+const AXE = nactiAxe();
 const server = http.createServer(async (req, res) => {
   const file = path.resolve(root, '.' + new URL(req.url, 'http://localhost').pathname);
   if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
@@ -116,6 +118,8 @@ try {
         await page.goto(`${base}/popup.html`);
         await page.waitForFunction(() => document.body.dataset.stav !== 'nacitam');
         const kde = `${engine} ${theme} ${state}`;
+        // WCAG 2.2 A/AA (axe-core) v každém stavu okna, ve světlém i tmavém vzhledu.
+        assert.deepEqual(await axePoruseni(page, AXE), [], `${kde}: porušení WCAG 2.2 A/AA (axe)`);
         const text = () => page.evaluate(() => document.body.innerText);
         if (state === 'paired') {
           await page.locator('#refresh-popup').click();
