@@ -771,6 +771,12 @@ for (const engine of engines) {
     assert.equal(await page.evaluate(() => { const n = document.querySelector('.nav'); return n.scrollHeight > n.clientHeight + 1; }), false, `${engine} nabídka se na výšku musí vejít bez rolování`);
     await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
     await page.setViewportSize({ width: 1440, height: 1000 });
+    // Full-page screenshots, project pickers and viewport changes can leave the document
+    // scrolled. The auto-hiding topbar deliberately makes its search button inert offscreen.
+    // Reset to the top before exercising the *visible* search button; keyboard search
+    // while scrolled is verified independently below.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(() => document.documentElement.dataset.lista === 'nahore');
     assert.equal(await page.locator('.launch-kbd').isVisible(), false, `${engine}: simplified composer keeps the shortcut decoration hidden`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');
