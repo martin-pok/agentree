@@ -804,11 +804,13 @@ function markErrors(form, errors) {
 
 // Doplňující vysvětlení schované za decentní „i“: text se ukáže při najetí nebo fokusu (i klepnutím
 // na telefonu), čte ho odečítač přes aria-describedby a Esc ho zavře, aniž by zavřel dialog.
-let infoTipId = 0;
 let infoTipEsc = false;
+// ID bubliny je odvozené z textu, ne z počítadla: stejný obsah dá stejné HTML, takže fill() kartu
+// zbytečně nepřekresluje (překreslení zavřelo otevřenou bublinu a smazalo zvýraznění z hledání).
+const otisk = (s) => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
 export function infoTip(text, label = tr('Více informací')) {
   if (!infoTipEsc) { infoTipEsc = true; hlidejInfoTip(); }
-  const id = `info-tip-${++infoTipId}`;
+  const id = `info-tip-${otisk(`${label}|${text}`)}`;
   return `<span class="info-tip"><button type="button" class="info-tip-btn" aria-label="${esc(label)}" aria-describedby="${id}" aria-expanded="false">${ICON.info}</button><span class="info-tip-bubble" role="tooltip" id="${id}">${esc(String(text).replace(/(\d) (?=[A-Za-z%])/g, '$1\u00a0'))}</span></span>`;
 }
 function hlidejInfoTip() {

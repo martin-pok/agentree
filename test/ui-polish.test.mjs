@@ -799,3 +799,9 @@ test('Nastavení: vysvětlení bez stavu jsou pod „i“, stav a varování zů
   const { sTipem } = await import('../public/js/ui.js');
   assert.match(sTipem('Docházející limit předplatného', 'x'), /^Docházející limit <span class="tip-glue">předplatného<span class="info-tip">/);
 });
+
+test('„i“ dá při stejném textu stejné HTML (fill() kartu nepřekresluje a nezavře bublinu)', async () => {
+  const { infoTip } = await import('../public/js/ui.js');
+  assert.equal(infoTip('Stejný text'), infoTip('Stejný text'));
+  assert.notEqual(infoTip('Jeden'), infoTip('Druhý'));
+});
