@@ -6,6 +6,8 @@
 - **Statistiky:** karta „Tokeny podle složky“ nebo „podle modelu“, která v období nic nemá, se schová celá místo nadpisu nad „Bez dat.“.
 - **Projekty:** karta bez nahraného obrázku nemá nahoře prázdný barevný pruh. Logo pak sedí v řádku s názvem.
 - **Detail agenta a projektu:** jedno tlačítko zpět. Když je „zpět“ v hlavičce, odkaz „Všichni agenti“ nebo „Všechny projekty“ v obsahu se schová; při otevření přímým odkazem zůstane.
+- **Načítání** v seznamu dovedností, v přepisu a ve výběru složky ukazuje malou hlavu robota s odleskem jako velká načítací scéna, ne obecný kroužek. Čtečka obrazovky oznámí, že se načítá, i ve výběru složky.
+- **Ukázka:** pracující Claude Code a Codex jsou v Propojení „Napojeno“. Dřív tam vedle nich stálo „Nepodařilo se zjistit“, podle toho, co bylo na počítači s prohlídkou.
 ## 0.46.49 – 2026-10-20 · Spolehlivější server a CI
 
 - **Server spuštěný z Terminálu** (`agenteeq`, LaunchAgent) se po neočekávané chybě řádně ukončí: zastaví agenty, které spustil, smaže klíč okna z disku a do logu zapíše příčinu. Dřív spadl bez úklidu. LaunchAgent ho pak spustí znovu. Aplikace pro Mac tuto pojistku už měla.

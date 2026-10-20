@@ -12,6 +12,7 @@ export const RELEASES = [
       'Statistiky schovají karty, které v období nemají data.',
       'Projekt bez obrázku nemá na kartě prázdný pruh.',
       'V detailu agenta a projektu je jen jedno tlačítko zpět.',
+      'Načítání ukazuje malou hlavu robota místo obecného kroužku.',
     ],
     en: {
       title: 'Task first and fewer empty spots',
@@ -20,6 +21,7 @@ export const RELEASES = [
         'Statistics hide cards that have no data for the period.',
         'A project without an image no longer has an empty strip on its card.',
         'Agent and project details have a single back button.',
+        'Loading shows a small robot head instead of a generic spinner.',
       ],
     },
   },

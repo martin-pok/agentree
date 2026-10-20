@@ -510,7 +510,12 @@ h2[tabindex='-1']:focus, h3[tabindex='-1']:focus { outline: none; }
 @keyframes fade { from { opacity: 0; } }
 @keyframes pop { from { transform: translateY(-6px) scale(.98); opacity: 0; } }
 .loading { display: flex; align-items: center; gap: 12px; color: var(--mute); padding: 32px 0; }
-.loader { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--ink); animation: spin .8s linear infinite; }
+/* Malé načítání (seznam, přepis, výběr složky): hlava robota ze značky, ztlumená, a přes ni
+   přejíždí stejný fialový odlesk jako ve velké načítací scéně (public/loader.css). Tvar je maska,
+   takže odlesk je oříznutý přesně hlavou, anténou a výřezy očí. */
+.loader { display: inline-block; flex: none; width: 22px; height: 22px; vertical-align: middle; background: linear-gradient(105deg, transparent 30%, rgb(82 84 216 / .7) 42%, #b7b8ff 50%, rgb(82 84 216 / .7) 58%, transparent 70%) 100% 0 / 300% 100% no-repeat, color-mix(in srgb, currentColor 18%, transparent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z'/%3E%3C/svg%3E") center / contain no-repeat; animation: loader-lesk 2.4s cubic-bezier(.45, 0, .25, 1) infinite; }
+@keyframes loader-lesk { 0%, 15% { background-position: 100% 0, 0 0; } 85%, 100% { background-position: 0 0, 0 0; } }
+@media (prefers-reduced-motion: reduce) { .loader { animation: none; background-position: 50% 0, 0 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 /* Posouvání `background-position` překresluje kostru v každém snímku – a to zrovna ve chvíli,
    kdy se aplikace načítá a procesor má nejvíc práce. Posouvá se proto vrstva transformací. */

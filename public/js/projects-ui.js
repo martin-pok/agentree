@@ -79,11 +79,14 @@ export function recentFolders(limit = 6) {
 
 /* ---------- Procházení složek ---------- */
 
+// Načítání seznamu složek: malá hlava robota a stav i pro čtečku obrazovky.
+const NACITANI_SLOZEK = () => `<li class="fb-empty" role="status"><span class="loader" aria-hidden="true"></span><span class="sr-only">${tr('Načítám…')}</span></li>`;
+
 // Vloží prohlížeč složek do `root`. onPick(path) se zavolá po výběru.
 export function folderBrowser(root, { onPick, start = '' }) {
   root.innerHTML = `<div class="fb">
     <div class="fb-crumbs" data-fb-crumbs></div>
-    <ul class="fb-list" data-fb-list><li class="fb-empty"><span class="loader"></span></li></ul>
+    <ul class="fb-list" data-fb-list>${NACITANI_SLOZEK()}</ul>
     <div class="fb-foot">
       <button class="btn btn--sm btn--primary" type="button" data-fb-pick disabled>${ICON.check}${tr('Vybrat tuto složku')}</button>
       <div class="fb-manual"><label class="sr-only" for="fb-in-${root.id}">${tr('Vlastní cesta')}</label>
@@ -100,7 +103,7 @@ export function folderBrowser(root, { onPick, start = '' }) {
 
   async function go(p) {
     const my = ++seq;
-    list.innerHTML = '<li class="fb-empty"><span class="loader"></span></li>';
+    list.innerHTML = NACITANI_SLOZEK();
     try {
       const r = await api.folders(p);
       if (my !== seq) return;

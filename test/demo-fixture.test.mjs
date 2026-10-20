@@ -21,3 +21,18 @@ test('ukázková scéna: angličtina zachová stejná data a přeloží obsah v�
     } finally { await demo.close(); }
   }
 });
+
+test('ukázková scéna: pracující Claude Code a Codex jsou v Propojení napojené, ne „nepodařilo se zjistit“', async () => {
+  const demo = await pripravUkazku({});
+  try {
+    const { body } = await api(demo.url).get('/api/napojeni');
+    const agenti = Object.fromEntries(body.napojeni.filter((n) => n.druh === 'agent').map((n) => [n.id, n]));
+    for (const id of ['claude-code', 'codex']) {
+      assert.equal(agenti[id].nainstalovano, true, id);
+      assert.equal(agenti[id].napojeno, true, id);
+      assert.equal(agenti[id].ceka, false, id);
+    }
+    // Webové chaty ukázka nepřepisuje: bez rozšíření zůstávají „potřebuje rozšíření“.
+    assert.ok(body.napojeni.filter((n) => n.druh === 'web').every((n) => n.napojeno !== true));
+  } finally { await demo.close(); }
+});

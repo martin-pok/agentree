@@ -219,7 +219,7 @@ function update() {
     return;
   }
   if (!v.items) {
-    fill(el, 'list', `<div class="loading" role="status"><span class="loader"></span>${tr('Hledám dovednosti na {0}…', tomtoPocitaci())}</div>`);
+    fill(el, 'list', `<div class="loading" role="status"><span class="loader" aria-hidden="true"></span>${tr('Hledám dovednosti na {0}…', tomtoPocitaci())}</div>`);
     return;
   }
   fill(el, 'sum', v.items.length ? souhrnHtml(v.items) : '');
