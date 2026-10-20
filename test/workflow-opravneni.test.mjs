@@ -20,6 +20,7 @@ const ZAPIS = {
   'prune-drafts.yml': { uklid: 'smazání nezveřejněných Draftů starších než nejvyšší verze; zveřejněná vydání a tagy nemění' },
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
+  'release-request-v0.46.51-once.yml': { prepare: 'jednorázová výslovně vyžádaná příprava Draftu, spouští jen prepare-preview-draft.yml a nemůže publikovat' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
   'scorecard.yml': { scorecard: 'nahrání výsledků do code scanning (security-events) a ověření původu přes OIDC (id-token); do repozitáře nezapisuje' },
   'codeql.yml': { analyze: 'nahrání výsledků CodeQL do code scanning (security-events); do repozitáře nezapisuje' },
