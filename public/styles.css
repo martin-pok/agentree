@@ -987,6 +987,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 /* ---------- Detail agenta ---------- */
 .back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--mute); text-decoration: none; margin-bottom: 16px; }
 .back:hover { color: var(--ink); }
+[data-zpet-v-hlavicce] .view .back { display: none; }
 .back .icon { width: 16px; height: 16px; }
 .session-kicker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--ink-2); }
 .dot-sep { width: 4px; height: 4px; border-radius: 50%; background: var(--line); }

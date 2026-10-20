@@ -79,6 +79,19 @@ export async function projdiPrazdnyProfil(browser, { sirky, rezimy = ['light'], 
           chyby(popis, await page.evaluate(zkontroluj, { cta, falesna: FALESNA_CISLA }));
           await mer(page, popis);
           if (trasa === 'prehled') {
+            // Zadání agenta je na prázdném Přehledu to hlavní: celé v prvním okně a průvodce až pod ním
+            // (dřív ho na telefonu čtyři kroky průvodce odsunuly pod přehyb).
+            chyby(`${popis} › zadání nad přehybem`, await page.evaluate(() => {
+              const pole = document.querySelector('[data-launch] textarea');
+              const pruvodce = document.querySelector('.onboard');
+              const e = [];
+              if (!pole) return ['chybí pole pro zadání agenta'];
+              const r = pole.getBoundingClientRect();
+              if (r.bottom > innerHeight) e.push(`pole pro zadání končí na ${Math.round(r.bottom)} px, okno má ${innerHeight} px`);
+              if (!pruvodce) e.push('chybí průvodce „Začni s Agenteeq“');
+              else if (!(pole.compareDocumentPosition(pruvodce) & Node.DOCUMENT_POSITION_FOLLOWING)) e.push('průvodce stojí před zadáním');
+              return e;
+            }));
             await page.evaluate(() => { const d = document.querySelector('details.home-history'); if (d) d.open = true; });
             await page.waitForTimeout(300);
             chyby(`${popis} › průběh dne`, await page.evaluate(zkontroluj, { cta: null, falesna: FALESNA_CISLA }));

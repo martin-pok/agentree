@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.50 – 2026-10-20 · Zadání nahoře a méně prázdných míst
+
+- **Přehled na telefonu:** pole pro zadání agenta je hned pod pozdravem, celé v prvním okně. Průvodce „Začni s Agenteeq“ stojí až pod ním a pod tím, co čeká na tebe. Dřív ho na prázdném Přehledu čtyři kroky průvodce odsunuly pod přehyb.
+- **Statistiky:** karta „Tokeny podle složky“ nebo „podle modelu“, která v období nic nemá, se schová celá místo nadpisu nad „Bez dat.“.
+- **Projekty:** karta bez nahraného obrázku nemá nahoře prázdný barevný pruh. Logo pak sedí v řádku s názvem.
+- **Detail agenta a projektu:** jedno tlačítko zpět. Když je „zpět“ v hlavičce, odkaz „Všichni agenti“ nebo „Všechny projekty“ v obsahu se schová; při otevření přímým odkazem zůstane.
 ## 0.46.49 – 2026-10-20 · Spolehlivější server a CI
 
 - **Server spuštěný z Terminálu** (`agenteeq`, LaunchAgent) se po neočekávané chybě řádně ukončí: zastaví agenty, které spustil, smaže klíč okna z disku a do logu zapíše příčinu. Dřív spadl bez úklidu. LaunchAgent ho pak spustí znovu. Aplikace pro Mac tuto pojistku už měla.

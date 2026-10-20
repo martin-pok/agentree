@@ -90,6 +90,9 @@ function zapisHistorii(title) {
   if (historie.length > 50) historie.splice(0, historie.length - 50);
   const predchozi = historie[historie.length - 2];
   backEl.hidden = !predchozi;
+  // Jedno „zpět“: když je v hlavičce, odkaz zpět v obsahu detailu (agent, projekt) se schová.
+  // Bez historie (přímý odkaz, obnovení) zůstane odkaz v obsahu jedinou cestou zpět.
+  document.documentElement.toggleAttribute('data-zpet-v-hlavicce', Boolean(predchozi));
   if (predchozi) {
     const popis = tr('Zpět na {0}', predchozi.title);
     backEl.setAttribute('aria-label', popis);

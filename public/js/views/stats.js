@@ -205,19 +205,16 @@ function update() {
   fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
 
   const apps = groupTotals(all, since, (s) => s.app).slice(0, 8);
-  zivy(el, 'apps', apps.length
-    ? hbars(apps.map((a) => ({ label: a.key, sub: `${tokens ? Math.round((a.value / tokens) * 100) : 0} %`, value: a.value, color: chartColor(a.provider), icon: glyph(a.provider) })))
-    : `<p class="muted">${tr('Bez dat.')}</p>`);
+  kartaRozpadu(el, 'apps', apps.length
+    && hbars(apps.map((a) => ({ label: a.key, sub: `${tokens ? Math.round((a.value / tokens) * 100) : 0} %`, value: a.value, color: chartColor(a.provider), icon: glyph(a.provider) }))));
 
   const projects = groupTotals(all, since, (s) => s.project).slice(0, 8);
-  zivy(el, 'projects', projects.length
-    ? hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: chartColor(p.provider), icon: glyph(p.provider) })))
-    : `<p class="muted">${tr('Bez dat.')}</p>`);
+  kartaRozpadu(el, 'projects', projects.length
+    && hbars(projects.map((p) => ({ label: p.key, sub: `${p.count} ${plural(p.count, 'konverzace', 'konverzace', 'konverzací')}`, value: p.value, color: chartColor(p.provider), icon: glyph(p.provider) }))));
 
   const models = groupTotals(all, since, (s) => s.model).slice(0, 8);
-  zivy(el, 'models', models.length
-    ? hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) })))
-    : `<p class="muted">${tr('Bez dat.')}</p>`);
+  kartaRozpadu(el, 'models', models.length
+    && hbars(models.map((m) => ({ label: m.key, value: m.value, color: chartColor(m.provider), icon: glyph(m.provider) }))));
 
   aktualizujLimity(el, now);
 }
@@ -244,9 +241,16 @@ function aktualizujLimity(el, now) {
     && !gauges.length && !creditCharts.length && !historie;
 }
 
-const hbarRadky = (radky, celkem, sPocty) => (radky.length
-  ? hbars(radky.slice(0, 8).map((r) => ({ label: r.key, sub: sPocty ? `${r.count} ${plural(r.count, 'konverzace', 'konverzace', 'konverzací')}` : `${celkem ? Math.round((r.value / celkem) * 100) : 0} %`, value: r.value, color: chartColor(r.provider), icon: glyph(r.provider) })))
-  : `<p class="muted">${tr('Bez dat.')}</p>`);
+const hbarRadky = (radky, celkem, sPocty) => radky.length > 0
+  && hbars(radky.slice(0, 8).map((r) => ({ label: r.key, sub: sPocty ? `${r.count} ${plural(r.count, 'konverzace', 'konverzace', 'konverzací')}` : `${celkem ? Math.round((r.value / celkem) * 100) : 0} %`, value: r.value, color: chartColor(r.provider), icon: glyph(r.provider) })));
+
+// Karta rozpadu tokenů (aplikace, složky, modely), která v období nic nemá, se schová celá:
+// nadpis nad „Bez dat.“ by jen zabíral místo. `html` je false, když rozpad nemá řádky.
+function kartaRozpadu(el, region, html) {
+  const karta = el.querySelector(`[data-region="${region}"]`).closest('section');
+  karta.hidden = !html;
+  zivy(el, region, html || '');
+}
 
 // 90 dní a 12 měsíců: stejné karty jako krátká období, ale z uložených denních souhrnů. Mapa
 // aktivity, limity a kredity se nemění – mají vlastní období.
@@ -277,9 +281,9 @@ function updateDlouhe() {
     ? `<p class="set-note set-note--warn">${tr('Uloženou historii se nepodařilo načíst. Zkus to za chvíli znovu.')}</p>`
     : d.chybiDo ? `<p class="set-note">${esc(tr('Historii Agenteeq ukládá od {0}. Dny před tím v grafu chybí – nejsou to nuly, Agenteeq je neviděl.', dateLong(Date.parse(`${d.chybiDo}T12:00:00`))))}</p>` : '');
   fill(el, 'api-tokens', '');
-  zivy(el, 'apps', hbarRadky(d.aplikace, d.tokeny));
-  zivy(el, 'projects', hbarRadky(d.slozky, d.tokeny, true));
-  zivy(el, 'models', hbarRadky(d.modely, d.tokeny));
+  kartaRozpadu(el, 'apps', hbarRadky(d.aplikace, d.tokeny));
+  kartaRozpadu(el, 'projects', hbarRadky(d.slozky, d.tokeny, true));
+  kartaRozpadu(el, 'models', hbarRadky(d.modely, d.tokeny));
   const all = sessionsList();
   fill(el, 'heat', heatmap(heatGrid(all, now, 30), { details: heatDetails(all, now, 30) }));
   aktualizujLimity(el, now);
