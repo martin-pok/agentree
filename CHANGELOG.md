@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.46 – 2026-10-20 · Pravdivé limity a stručný detail agenta
+
+- **Všechny nástroje a služby** (rozbalení limitů na Přehledu a ve Statistikách): nástroj, ze kterého máme konverzace nebo dnešní tokeny, se už nikdy nehlásí jako „na tomto Macu není“. Dřív stálo vedle „287 tis. tokenů dnes“ zároveň „nejsou žádné konverzace Codexu“.
+- Nástroje, které na počítači nejsou, jsou v jednom ztlumeném řádku „Na tomto Macu nenalezeno: …“ místo samostatného řádku pro každý. Selhané čtení dat se hlásí jako „Data se nepodařilo načíst“, ne jako nepřítomnost. U webových chatů je pomlčka a důvod pod „i“.
+- **Detail agenta:** místo dlouhých poznámek o propojení stojí u stavu štítek „Stav odhadem“ nebo „Neúplný přepis“ s vysvětlením pod „i“. Detekovaný proces ukazuje „Běží od …, zatím bez přepisu“, PID je pod „i“. Varování, že propojení nic nehlásí, zůstává vidět i s tlačítkem.
+- **Dialogy** po přihlášení, při zapnutí propojení s Claude Code a spouštění po přihlášení mají jednu viditelnou větu. Podrobnosti a cesty k souborům jsou pod „i“.
+- **Poznámky v Nastavení** jsou prostý text bez rámečku, takže nevypadají jako pole nebo tlačítko. Rámeček a teplé pozadí mají jen chyby a stavy, které potřebují zásah. Pravidlo je zapsané v `docs/DESIGN.md`.
+
 ## 0.46.45 – 2026-10-20 · Klidnější Nastavení
 
 - **Nastavení** už nemá pod každou kartou a přepínačem vysvětlující odstavec. Co karta dělá a jak funguje, je pod „i“ u nadpisu nebo u popisku. Týká se to třeba Mimo domov, Tailscale, Telefonu, Soukromí, Vzhledu, Jazyka, Zdrojů agentů a všech přepínačů upozornění. Stránka je tak výrazně kratší.

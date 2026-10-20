@@ -7,7 +7,7 @@ import { api, connectStream } from './api.js';
 import { loaderHtml } from './loader.js';
 import { esc, rel, clock, initials, startOfDay, plural, fmtTok, STATUS } from './format.js';
 import { glyph, ICON } from './icons.js';
-import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel, kotva } from './ui.js';
+import { toast, copy, modal, tween, tweenAll, nastupCisel, dokonciCisla, createPalette, alertIcon, alertHref, agentHref, untilLabel, kotva, sTipem } from './ui.js';
 import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
@@ -1032,8 +1032,8 @@ function udalostUctu(u) {
       title: tr('Přihlášení proběhlo v pořádku'),
       body: `<div class="account-welcome"><span class="account-avatar" aria-hidden="true">${esc(initials(kdo || '?'))}</span>
         <b>${esc(kdo)}</b>${u.jmeno && u.email ? `<span>${esc(u.email)}</span>` : ''}
-        <p>${tr('Přihlášení přes Google je ověřené. Synchronizace souhrnů – tokenů, útraty, limitů a počtů agentů – se spustí zvlášť. Na webu se data zobrazí až po úspěšném přenosu. Konverzace a kód zůstávají na {0}. Stav synchronizace ověříš v Nastavení → Účet.', tomtoPocitaci())}</p></div>`,
-      footer: '<button type="submit" class="btn btn--primary">Hotovo</button>',
+        <p>${sTipem(tr('Konverzace a kód zůstávají na {0}.', tomtoPocitaci()), tr('Synchronizace souhrnů – tokenů, útraty, limitů a počtů agentů – se spustí zvlášť. Na webu se data zobrazí až po úspěšném přenosu. Stav ověříš v Nastavení → Účet.'))}</p></div>`,
+      footer: `<button type="submit" class="btn btn--primary">${tr('Hotovo')}</button>`,
     });
   } else if (u.udalost === 'chyba' && u.chyba) {
     toast(u.chyba, { tone: 'err', timeout: 8000 });

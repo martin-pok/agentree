@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.46',
+    date: '2026-10-20',
+    title: 'Pravdivé limity a stručný detail agenta',
+    items: [
+      'Nástroj, ze kterého máš konverzace nebo dnešní tokeny, se v přehledu limitů už nehlásí jako nepřítomný.',
+      'Nástroje, které na počítači nejsou, jsou v jednom řádku a selhané čtení se hlásí jako selhání.',
+      'Detail agenta ukazuje štítky „Stav odhadem“ a „Neúplný přepis“ s vysvětlením pod „i“ místo dlouhých poznámek.',
+      'Dialogy mají jednu větu a poznámky v Nastavení už nevypadají jako tlačítka.',
+    ],
+    en: {
+      title: 'Honest limits and a concise agent detail',
+      items: [
+        'A tool you have conversations or tokens from today is no longer shown as missing in the limits overview.',
+        'Tools that aren’t on the computer share one row, and a failed read is reported as a failure.',
+        'Agent detail shows “Estimated status” and “Partial transcript” tags with the explanation behind an “i” instead of long notes.',
+        'Dialogs have one sentence, and notes in Settings no longer look like buttons.',
+      ],
+    },
+  },
+  {
     version: '0.46.45',
     date: '2026-10-20',
     title: 'Klidnější Nastavení',
