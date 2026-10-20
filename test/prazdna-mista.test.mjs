@@ -85,3 +85,13 @@ test('varování bez hnědého boxu, dlaždice stavu stejně vysoké, karta mode
   assert.match(settings, /: kostraNapojeni\(\)\}/, 'místo věty „Zjišťuji…“ kostra ve výšce seznamu');
   assert.match(css, /\.model-row--kostra \{ min-height: 63px; \}/);
 });
+
+test('okno upozornění: dlaždice s obrysem, bez hnědé, patička vždy vidět a mimo Pomocníka', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.pop-item \{[^}]*box-shadow: inset 0 0 0 1px var\(--line-2\);/, 'každé upozornění má obrys');
+  assert.match(css, /\.pop-item\.is-unread \{ background: linear-gradient\(90deg, color-mix\(in srgb, var\(--uroven\) 12%/, 'nepřečtené má nádech úrovně');
+  assert.doesNotMatch(css.match(/\.pop-item[^{]*\{[^}]*\}/g).join('\n'), /brass/, 'v okně upozornění žádná hnědá');
+  assert.match(css, /\.pop-foot \{[^}]*height: 44px;[^}]*border-radius: var\(--r-full\);[^}]*box-shadow: inset 0 0 0 1px var\(--line\);/, 'patička je viditelné tlačítko');
+  assert.match(css, /\.notif-pop \{ max-height: calc\(100dvh - 120px\); \}/, 'okno se vejde do výšky, patička nezajede pod okraj');
+  assert.match(css, /html\.notif-open \.pomocnik \{ opacity: 0; pointer-events: none; \}/);
+});

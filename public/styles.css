@@ -439,13 +439,23 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .bell-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 12px/20px var(--f-body); font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--paper); }
 .bell-wrap { position: relative; }
 html.notif-open { overflow: hidden; }
-.notif-pop { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 32px)); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
-.pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
+/* Okno upozornění: plocha karty s jemným přechodem od značky nahoře a vlasovým obrysem; každé
+   upozornění je vlastní dlaždice s obrysem, nepřečtené má nádech barvy své úrovně zleva. */
+.notif-pop { position: absolute; right: 0; top: calc(100% + 12px); display: flex; flex-direction: column; width: min(400px, calc(100vw - 32px)); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--card)) 0%, var(--card) 140px); border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
+.pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 14px; }
 .notif-pop { overscroll-behavior: contain; }
-.pop-list { list-style: none; margin: 0; padding: 8px; max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
-.pop-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 10px 12px; border-radius: var(--r-sm); text-decoration: none; position: relative; }
-.pop-item:hover { background: var(--paper); }
-.pop-item.is-unread::after { content: ''; position: absolute; right: 12px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--velvet-ink); }
+.pop-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 4px 12px 12px; max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
+.pop-item { --uroven: var(--ink-2); display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-radius: var(--r-sm); background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 3%, var(--card)), var(--card)); box-shadow: inset 0 0 0 1px var(--line-2); text-decoration: none; position: relative; transition: box-shadow var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
+.pop-item:hover { box-shadow: inset 0 0 0 1px var(--line); background-color: var(--paper); }
+.pop-item.is-unread { background: linear-gradient(90deg, color-mix(in srgb, var(--uroven) 12%, var(--card)) 0%, var(--card) 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--uroven) 28%, var(--line-2)); }
+.pop-item.is-unread::after { content: ''; position: absolute; right: 14px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--uroven); box-shadow: 0 0 0 4px color-mix(in srgb, var(--uroven) 18%, transparent); }
+.pop-item.level-action, .pop-item.level-critical { --uroven: var(--velvet-ink); }
+.pop-item.level-warning { --uroven: var(--sky); }
+/* Varování v okně bez hnědé: tlumená modrá jako ikonka „pozor“ jinde v aplikaci (docs/DESIGN.md). */
+.pop-item.level-warning .pop-icon { background: color-mix(in srgb, var(--sky) 16%, var(--card)); color: var(--sky); }
+/* Otevřené upozornění nepřekrývá tlačítko Pomocníka (patička okna by byla pod ním). */
+html.notif-open .pomocnik { opacity: 0; pointer-events: none; }
+.pop-item.level-info { --uroven: var(--teal-ink); }
 .pop-icon, .alert-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--line-2); color: var(--ink-2); }
 .pop-icon .icon { width: 16px; height: 16px; }
 .pop-text { display: grid; min-width: 0; padding-right: 16px; }
@@ -453,9 +463,14 @@ html.notif-open { overflow: hidden; }
 .pop-body { font-size: 13px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .pop-time { font-size: 12px; color: var(--mute); }
 .pop-empty { padding: 24px; text-align: center; color: var(--mute); }
-.pop-foot { display: block; margin: 4px 8px 8px; padding: 12px 20px; border-radius: var(--r-full); text-align: center; font-size: 14px; font-weight: 500; text-decoration: none; transition: background-color var(--motion-response) var(--ease); }
-.pop-foot:hover { background: var(--paper); }
+/* Patička: viditelné tlačítko (kapsle 44 px s obrysem), oddělené od seznamu linkou. */
+.pop-foot { display: flex; align-items: center; justify-content: center; flex: none; height: 44px; margin: 0 12px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 5%, var(--card)); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: 500 14px/1 var(--f-body); text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.pop-foot:hover { background: color-mix(in srgb, var(--ink) 9%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 24%, transparent); }
+/* Okno se vejde do okna prohlížeče vždy celé: seznam se zkrátí a roluje, patička zůstane vidět. */
+.notif-pop { max-height: calc(100dvh - 120px); }
+.notif-pop > .pop-list { flex: 1 1 auto; min-height: 0; max-height: none; border-bottom: 1px solid var(--line-2); margin-bottom: 12px; }
 .level-action .pop-icon, .level-action .alert-icon, .level-critical .pop-icon, .level-critical .alert-icon { background: var(--velvet-tint); color: var(--velvet-ink); }
+.pop-icon { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); }
 .level-warning .pop-icon, .level-warning .alert-icon { background: var(--brass-tint); color: var(--brass-ink); }
 .level-info .pop-icon, .level-info .alert-icon { background: var(--teal-tint); color: var(--teal-ink); }
 
@@ -2045,7 +2060,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
   .transcript-list { padding: 16px; max-height: clamp(360px, 70dvh, 720px); }
   .live-strip { flex-wrap: wrap; }
   .indeterminate { width: 100%; }
-  .notif-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; }
+  .notif-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; max-height: calc(100dvh - 72px - 112px - env(safe-area-inset-bottom)); }
 }
 @media (max-width: 560px) {
   .chart-x span.is-minor, .tl-ticks span.is-minor { display: none; }
