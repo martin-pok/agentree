@@ -97,7 +97,7 @@ html[data-theme]:not(.is-scrolling) .home-history > summary:hover .hh-ikona { ba
 .guide-toggle { width: 32px; height: 32px; }
 .mascot-motion-toggle { height: 32px; min-height: 32px; padding-block: 0; }
 html[data-theme] .home-live .pb-agent { color: var(--ink); }
-html[data-theme] .home-live .pb-agent[data-state='waiting'] small { color: var(--brass-ink); }
+html[data-theme] .home-live .pb-agent[data-state='waiting'] small { color: var(--ink-2); }
 html[data-theme] .home-live .pb-agent[data-status='working'] small { color: var(--teal-ink); }
 html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--velvet-ink); }
 .sidebar .welcome { font-size: 12px; line-height: 1.4; }
@@ -378,12 +378,15 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .info-tip-bubble { position: absolute; top: calc(100% + 6px); right: -8px; z-index: 30; width: max-content; max-width: min(300px, 72vw); padding: 10px 14px; border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 7%, var(--card)); color: var(--ink); font: 400 13px/1.5 var(--f-body); text-align: left; white-space: normal;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 24%, var(--line)), 0 16px 34px -18px color-mix(in srgb, var(--brand) 70%, transparent), 0 2px 8px -4px rgb(0 0 0 / .18);
-  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
-  transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), visibility 0s linear var(--motion-response); }
+  display: none; opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
+  transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), visibility 0s linear var(--motion-response), display var(--motion-response) allow-discrete; }
 .info-tip-bubble::before { content: ''; position: absolute; inset: -8px 0 auto; height: 8px; }
 .info-tip[data-strana='vpravo'] .info-tip-bubble { right: auto; left: -8px; }
 .info-tip-bubble { translate: var(--tip-dx, 0) 0; }
-.info-tip:not([data-skryto]):is(:hover, :focus-within, [data-otevreno]) .info-tip-bubble { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
+/* Zavřená bublina je display: none – jinak by i neviditelná u spodního okraje dialogu prodlužovala
+   jeho rolování. Náběh drží @starting-style, odchod allow-discrete. */
+.info-tip:not([data-skryto]):is(:hover, :focus-within, [data-otevreno]) .info-tip-bubble { display: block; opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
+@starting-style { .info-tip:not([data-skryto]):is(:hover, :focus-within, [data-otevreno]) .info-tip-bubble { opacity: 0; transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .info-tip-bubble { transform: none; transition: opacity var(--motion-response) linear, visibility 0s linear var(--motion-response); } }
 
 /* Detail projektu → karta Služby: loga jsou obsah karty, ne doplněk řádku, proto větší disky

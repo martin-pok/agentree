@@ -80,5 +80,7 @@ export const tvemPocitaci = () => pocitac('tvém Macu', 'tvém počítači', `yo
  * Jména systémů se neskloňují, takže stačí jeden tvar.
  */
 export const podleSystemu = () => (SYSTEM === 'macos' ? 'macOS' : SYSTEM === 'windows' ? 'Windows' : podleJazyka('systému', 'the system'));
+/** Systém jako podmět („přepne {0} sám“): macOS, Windows, jinde „systém“ (the system). */
+export const systemPodmet = () => (SYSTEM === 'macos' ? 'macOS' : SYSTEM === 'windows' ? 'Windows' : podleJazyka('systém', 'the system'));
 /** Velké první písmeno pro začátek věty: sVelkym(tentoPocitac()) → „Tento Mac“ / „This Mac“. */
 export const sVelkym = (s) => String(s).charAt(0).toUpperCase() + String(s).slice(1);

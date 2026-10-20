@@ -22,7 +22,7 @@ const GLYPH = `<svg class="pm-glyph" viewBox="11 15 86 76" aria-hidden="true"><p
 import { zkratka } from './system.js';
 
 const TIPY = () => ({
-  prehled: tr('Nový úkol zadáš v poli dole. Přehled nahoře ti ukáže, jestli některý agent čeká na tvoje rozhodnutí.'),
+  prehled: tr('Nový úkol napiš do pole pod pozdravem. Kdo z agentů čeká na tvoje rozhodnutí, uvidíš hned pod ním.'),
   agenti: tr('Filtr „Potřebuje tebe“ ukáže agenty čekající na rozhodnutí. Otevři agenta a pokračuj v jeho nástroji.'),
   agent: tr('Přepis ukazuje kontext. Tlačítko „Pokračovat“ tě přenese do nástroje, kde agent čeká na odpověď.'),
   projekty: tr('Projekt propojí konverzace z různých nástrojů. V Nezařazených najdeš práci, která zatím projekt nemá.'),

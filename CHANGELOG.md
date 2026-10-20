@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.46.47 – 2026-10-20 · Dialog projektu bez rolování a sjednocené barvy
+
+- **Nový projekt** se vejde do okna na počítači i na telefonu. Výběr složky je samostatný krok: zbytek formuláře se na tu chvíli schová a tlačítko „Zpět k projektu“ vede zpátky. Obrázek karty a logo klienta jsou sbalené pod jedním řádkem, vysvětlení složek je pod „i“. Na telefonu se barvy vejdou do dvou řádků.
+- **Bublina „i“** v zavřeném stavu nezabírá místo, takže dialogy u spodního okraje zbytečně nerolují.
+- **Vybraná volba** (jazyk, kanál a způsob aktualizací) má stejný tón jako vybraný vzhled, ne zelenou. Zelená zůstává jen pro „v pořádku“.
+- **Klidové stavy** jako „Čeká na zadání“, „Nenainstalováno“ nebo štítky nástrojů už nejsou v hnědé varovné barvě. Ta zůstává jen pro varování.
+- **Útrata:** starší ruční záznamy, které se nezapočítávají, nemají tlačítko „Ukončit“. Potvrzení smazání říká, že se do součtů nepočítaly.
+- **Co je nového** ukazuje jen poslední verzi, starší jsou pod „Starší změny“. „Raději přes Terminál?“ má šipku místo nativního trojúhelníku. Průvodce na prázdném Přehledu má tolik sloupců, kolik má kroků. Na Linuxu stojí „přepne systém sám“. Tip Pomocníka správně říká, že pole pro úkol je pod pozdravem.
+
 ## 0.46.46 – 2026-10-20 · Pravdivé limity a stručný detail agenta
 
 - **Všechny nástroje a služby** (rozbalení limitů na Přehledu a ve Statistikách): nástroj, ze kterého máme konverzace nebo dnešní tokeny, se už nikdy nehlásí jako „na tomto Macu není“. Dřív stálo vedle „287 tis. tokenů dnes“ zároveň „nejsou žádné konverzace Codexu“.

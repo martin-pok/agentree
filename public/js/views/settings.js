@@ -11,7 +11,7 @@ import { qrSvg, parovaciAdresa, cileParovani } from '../qr.js';
 import { takeJump, vyvolejMisto } from '../jump.js';
 import { resetLayout } from '../layout-prefs.js';
 import { seznamNapojeni, spustNapojeni } from '../napojeni-ui.js';
-import { tr, LOCALE, jazyk, podleSystemu, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
+import { tr, LOCALE, jazyk, podleSystemu, systemPodmet, sVelkym, tentoPocitac, tohotoPocitace, tomtoPocitaci, tomutoPocitaci, tvemPocitaci } from '../i18n.js';
 import { JE_MAC, SYSTEM, zkratka } from '../system.js';
 import { skocNa } from '../plynule-posouvani.js';
 import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
@@ -1061,7 +1061,7 @@ function update(topics) {
     <div class="theme-picks" role="radiogroup" aria-label="${tr('Vyber vzhled aplikace')}">
       ${THEMES.map(motiv).join('')}
     </div>
-    ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', podleSystemu())), checked: system })}
+    ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', systemPodmet())), checked: system })}
     <div class="set-divider"></div>
     ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
     ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}

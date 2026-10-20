@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.47',
+    date: '2026-10-20',
+    title: 'Dialog projektu bez rolování a sjednocené barvy',
+    items: [
+      'Nový projekt se vejde do okna. Výběr složky je samostatný krok a obrázek s logem jsou sbalené.',
+      'Vybraná volba má všude stejný tón a klidové stavy už nejsou v hnědé varovné barvě.',
+      'Starší ruční záznamy v Útratě nemají tlačítko „Ukončit“, protože se nezapočítávají.',
+      'Co je nového ukazuje jen poslední verzi a pár drobností v textech a rozvržení je opravených.',
+    ],
+    en: {
+      title: 'A project dialog without scrolling and consistent colours',
+      items: [
+        'New project fits the window. Choosing a folder is its own step and the image and logo are collapsed.',
+        'The selected option has the same tone everywhere and calm states are no longer in the brown warning colour.',
+        'Older manual records in Spend no longer have an “End” button, since they aren’t counted.',
+        'What’s new shows only the latest version, and a few small text and layout issues are fixed.',
+      ],
+    },
+  },
+  {
     version: '0.46.46',
     date: '2026-10-20',
     title: 'Pravdivé limity a stručný detail agenta',

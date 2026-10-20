@@ -101,7 +101,7 @@ function onboardingHtml() {
     <div class="onboard-head"><div><h2 id="ob-h">${tr('Začni s Agenteeq')}</h2><p class="muted small">${ze(steps.length) ? tr('{0} ze {1} hotovo', done, steps.length) : tr('{0} z {1} hotovo', done, steps.length)}</p></div>
       <div class="onboard-track" role="progressbar" aria-valuemin="0" aria-valuemax="${steps.length}" aria-valuenow="${done}" aria-label="${tr('Průvodce nastavením')}"><i style="width:${((done / steps.length) * 100).toFixed(0)}%"></i></div>
       <button class="link" type="button" data-onboard-dismiss>${tr('Skrýt průvodce')}</button></div>
-    <ol class="onboard-steps">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
+    <ol class="onboard-steps" style="--kroky:${steps.length}">${steps.map((s) => `<li class="onboard-step${s.done ? ' is-done' : ''}"><span class="onboard-mark" aria-hidden="true">${s.done ? ICON.check : ''}</span>
       <span class="onboard-text"><span>${s.label}</span><small>${s.sub}</small></span>${s.done ? `<span class="sr-only">${tr('hotovo')}</span>` : s.cta}</li>`).join('')}</ol>
   </section>`;
 }

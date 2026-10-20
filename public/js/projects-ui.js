@@ -2,7 +2,7 @@ import { state, setProjects, agentsList, projectSessions, projectById } from './
 import { api } from './api.js';
 import { esc, shortPath, plural, jeAbsolutniCesta, castiCesty } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
-import { modal, toast, infoTip } from './ui.js';
+import { modal, toast, infoTip, sTipem } from './ui.js';
 import { openCropper, TARGETS } from './cropper.js';
 import { tokensSince, needsYou } from './data.js';
 import { tr } from './i18n.js';
@@ -240,7 +240,7 @@ export function projectForm(existing = null) {
     submitLabel: existing ? tr('Uložit změny') : tr('Vytvořit projekt'),
     wide: true,
     size: 'project',
-    body: `<div class="form-grid">
+    body: `<div class="pf-hlavni"><div class="form-grid">
         <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
         <label class="field"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
         <label class="field"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
@@ -249,7 +249,7 @@ export function projectForm(existing = null) {
       <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}
       <p class="form-sub" id="${id}-color">${tr('Barva')}</p>
       <div class="swatches" role="radiogroup" aria-labelledby="${id}-color">${colors.map((c) => `<label class="swatch-opt" style="--pc:${esc(barvaProjektu(c))}"><input type="radio" name="color" value="${esc(c)}"${c === color ? ' checked' : ''}><span class="sr-only">${esc(c)}</span></label>`).join('')}</div>
-      <p class="form-sub">${tr('Vzhled v přehledu')}</p>
+      <details class="src-fold pf-vzhled"${existing?.cover?.file || existing?.logo?.file ? ' open' : ''}><summary>${tr('Obrázek karty a logo klienta')}</summary>
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
           <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
@@ -258,12 +258,11 @@ export function projectForm(existing = null) {
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
           <div class="media-crop" data-media-crop hidden></div>
         </div>`).join('')}
-      </div>
-      <p class="form-sub">${tr('Složky projektu')}</p>
-      <p class="modal-text">${tr('Konverzace ze složek projektu (i podsložek) se zařadí samy, ostatní přidáš ručně.')}</p>
+      </div></details></div>
+      <div class="pf-slozky-head"><p class="form-sub">${sTipem(tr('Složky projektu'), tr('Konverzace ze složek projektu (i podsložek) se zařadí samy, ostatní přidáš ručně.'))}</p>
+        <button class="btn btn--sm" type="button" id="${id}-add" aria-expanded="false">${ICON.plus}${tr('Přidat složku')}</button></div>
       <ul class="folder-list" id="${id}-list"></ul>
       <input type="hidden" name="folders">
-      <button class="btn btn--sm" type="button" id="${id}-add">${ICON.plus}${tr('Přidat složku')}</button>
       <div class="folder-browser" id="${id}-fb" hidden></div>`,
     onSubmit: async (form) => {
       if ([...document.querySelectorAll('[data-media-crop]')].some((h) => !h.hidden)) throw new Error(tr('Dokonči výřez obrázku: Použít výřez, nebo Zrušit.'));
@@ -337,7 +336,7 @@ export function projectForm(existing = null) {
   const render = () => {
     listEl.innerHTML = folders.length
       ? folders.map((f, i) => `<li>${ICON.folder}<code title="${esc(f)}">${esc(shortPath(f))}</code><button type="button" class="icon-btn" data-remove="${i}" aria-label="${tr('Odebrat složku')} ${esc(shortPath(f))}">${ICON.close}</button></li>`).join('')
-      : `<li class="folder-empty">${tr('Zatím žádná složka.')}</li>`;
+      : '';
   };
   listEl.addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove]');
@@ -345,13 +344,22 @@ export function projectForm(existing = null) {
     folders.splice(Number(b.dataset.remove), 1);
     render();
   });
+  // Výběr složky je samostatný krok: zbytek formuláře se na tu chvíli schová, aby se prohlížeč
+  // vešel do okna bez rolování celého dialogu. Stejné tlačítko vede zpátky.
+  const hlavni = add.closest('.modal')?.querySelector('.pf-hlavni');
+  const vyber = (otevrit) => {
+    fb.hidden = !otevrit;
+    if (hlavni) hlavni.hidden = otevrit;
+    add.setAttribute('aria-expanded', String(otevrit));
+    add.innerHTML = otevrit ? `${ICON.back}${tr('Zpět k projektu')}` : `${ICON.plus}${tr('Přidat složku')}`;
+  };
   add.addEventListener('click', () => {
-    if (!fb.hidden) { fb.hidden = true; return; }
-    fb.hidden = false;
+    if (!fb.hidden) { vyber(false); return; }
+    vyber(true);
     folderBrowser(fb, {
       onPick: (p) => {
         if (!folders.includes(p)) folders.push(p);
-        fb.hidden = true;
+        vyber(false);
         render();
         add.focus();
       },
