@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.51',
+    date: '2026-10-20',
+    title: 'Klidná tlačítka',
+    items: [
+      'Tlačítka se při najetí neposouvají nahoru, jen změní barvu.',
+      'Čtečka obrazovky čte přepis agenta jako seznam zpráv.',
+    ],
+    en: {
+      title: 'Calm buttons',
+      items: [
+        'Buttons no longer jump up on hover, they only change colour.',
+        'Screen readers read the agent transcript as a list of messages.',
+      ],
+    },
+  },
+  {
     version: '0.46.50',
     date: '2026-10-20',
     title: 'Zadání nahoře a méně prázdných míst',
