@@ -38,6 +38,11 @@ try {
       page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
       await page.goto(`${demo.url}/#/prehled`);
       await page.locator('.lpick-btn').waitFor();
+      // Do not inject alerts while the initial snapshot can still replace them.
+      await page.waitForFunction(() => document.querySelector('#conn-pill .dot--live'), null, { timeout: 10000 });
+      // A laptop-height viewport must exercise the real popover scroll area.
+      // On a tall 1000px viewport the eight most recent alerts can fit without overflow.
+      await page.setViewportSize({ width: 1440, height: 720 });
       // Okno upozornění: seznam se při překreslení shellu (změna spojení, agentů…) nesmí postavit
       // znovu, jinak posuvník uprostřed rolování skočí nahoru.
       await page.evaluate(async () => {
@@ -57,6 +62,7 @@ try {
       assert.equal(await seznam.evaluate((l) => l.scrollTop), predPrekreslenim, `${typ}: překreslení shellu vrátilo seznam upozornění nahoru`);
       await page.keyboard.press('Escape');
       await page.locator('.pop-list').waitFor({ state: 'hidden' });
+      await page.setViewportSize({ width: 1440, height: 1000 });
       await page.evaluate(() => document.fonts.ready);
 
       // Při otevřeném zvonečku se smí posouvat seznam, nikdy dlouhá stránka pod ním.
