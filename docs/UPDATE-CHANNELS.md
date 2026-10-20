@@ -9,7 +9,7 @@ Aktualizace v aplikaci mají dva explicitní kanály. Nastavení se ukládá lok
 
 ## Od zeleného CI k připravenému instalačnímu balíčku
 
-Workflow `.github/workflows/prepare-preview-draft.yml` po **úspěšném kompletním CI na `main`** automaticky ověří přesné SHA zdroje, verzi `package.json`, verzi Chrome manifestu a existenci odpovídajícího `CHANGELOG.md` / „Co je nového“. Jen pokud se verze ještě netagovala, odešle existujícímu `release.yml` požadavek sestavit nový **neveřejný draft** z tohoto konkrétního SHA. Nečeká na ruční vytvoření tagu ani kliknutí na build. Pokud se `main` mezitím změnil, automatizace starší commit přeskočí; po dalším zeleném CI přijde na řadu aktuální.
+Workflow `.github/workflows/prepare-preview-draft.yml` („Připravit vydání“) se spouští **jen ručně**, když se vydání opravdu chystá (rozhodnutí vlastníka 20. 10. 2026: po merge do `main` už žádný Draft sám nevzniká). Ověří, že na aktuálním `main` prošly kompletní Testy, a dále přesné SHA zdroje, verzi `package.json`, verzi Chrome manifestu a existenci odpovídajícího `CHANGELOG.md` / „Co je nového“. Jen pokud se verze ještě netagovala, odešle existujícímu `release.yml` požadavek sestavit **neveřejný Draft** z tohoto SHA. Po auditu příloh se Draft hned zveřejní (`publish.yml`), nebo ho nahradí novější; starší nezveřejněné Drafty maže `prune-drafts.yml`.
 
 Toto **nikdy samo nezveřejňuje vydání** ani neinstaluje software. GitHub Preview se objeví v aktualizačním kanálu teprve po úspěšném buildu, ověření checksumů, reálném UAT a výslovném publikování pomocí `publish.yml`. Stable `Latest` zůstává oddělené. Existující tag a release přílohy se nesmějí přepsat novou verzí stejného čísla.
 

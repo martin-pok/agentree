@@ -160,9 +160,9 @@ Co se změnilo a proč:
   hned předtím nainstalovaný ve verzi `playwright@1.62.1`, chování je stejné a při jeho chybě krok
   selže, místo aby `npx` stáhl libovolnou verzi. `npm install --no-save --package-lock=false playwright@1.62.1`
   zůstává: verze je pevná, ale bez lockfile (projekt záměrně nemá závislosti) nejde připnout otiskem.
-- **`prepare-preview-draft.yml`.** Checkout už nemá `ref: workflow_run.head_sha`. U `workflow_run` je výchozí
-  checkout nejnovější commit `main`; brána pořád vyžaduje `git rev-parse HEAD` = `TESTED_SHA` = aktuální `main`,
-  jinak se nic nespustí. Chování je stejné, jen už se nevykonává obsah zadaný z cizího běhu.
+- **`prepare-preview-draft.yml`.** Spouští se jen ručně nad `main` (od 20. 10. 2026), checkout nemá `ref:`.
+  Brána vyžaduje `git rev-parse HEAD` = aktuální `main` a úspěšné Testy po push na přesně tomto commitu,
+  jinak se nic nespustí. Nevykonává se žádný obsah zadaný z cizího běhu.
 - **`audit-release-draft.yml`.** Checkout už nemá `ref:` s `workflow_run.head_sha`. Skripty běží z důvěryhodného
   commitu (volající u `workflow_call`, `push` a ručního spuštění, nejnovější `main` u `workflow_run`). Přesná
   kontrola zdroje zůstala: SHA tagu musí sedět s `workflow_run.head_sha` (`EXPECTED_RELEASE_SHA`), pro tag

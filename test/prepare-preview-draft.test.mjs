@@ -4,13 +4,13 @@ import fs from 'node:fs/promises';
 
 const file = await fs.readFile(new URL('../.github/workflows/prepare-preview-draft.yml', import.meta.url), 'utf8');
 
-test('green main alone may prepare an immutable draft but never publish a release', () => {
-  assert.match(file, /workflow_run:/);
-  assert.match(file, /workflows: \['Testy'\]/);
-  assert.match(file, /branches: \[main\]/);
-  assert.match(file, /workflow_run\.conclusion == 'success'/);
-  assert.match(file, /workflow_run\.event == 'push'/);
-  assert.match(file, /workflow_run\.head_branch == 'main'/);
+// Kandidát vzniká jen na pokyn (rozhodnutí vlastníka 20. 10. 2026): po merge do main už žádný Draft
+// sám nevznikne, takže v seznamu vydání nevisí nedokončené koncepty.
+test('draft is prepared only on explicit request, from green main, and never published here', () => {
+  assert.match(file, /^on:\n  workflow_dispatch:\n\npermissions:/m, 'jediný spouštěč je ruční');
+  assert.doesNotMatch(file, /workflow_run|^  push:/m, 'merge do main nic nesestaví');
+  assert.match(file, /github\.ref == 'refs\/heads\/main'/);
+  assert.match(file, /actions\/workflows\/test\.yml\/runs\?head_sha=\$TESTED_SHA&event=push&status=success/, 'jen ze zeleného CI na přesném commitu');
   assert.match(file, /CURRENT_MAIN.*TESTED_SHA/);
   assert.match(file, /git rev-parse HEAD/);
   assert.match(file, /extension\/manifest\.json/);

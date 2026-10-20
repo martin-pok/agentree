@@ -158,8 +158,8 @@ test('automatic draft preparation has only workflow dispatch rights, never relea
   const draft = workflowy.find(({ f }) => f === 'prepare-preview-draft.yml')?.yml || '';
   assert.match(draft, /^  prepare:\n[\s\S]*?^    permissions:\n      contents: read\n      actions: write /m);
   assert.doesNotMatch(draft, /contents: write|packages: write|issues: write|pull-requests: write/);
-  assert.match(draft, /workflow_run:\n    workflows: \['Testy'\]/);
-  assert.match(draft, /github\.event\.workflow_run\.conclusion == 'success'/);
+  assert.match(draft, /^on:\n  workflow_dispatch:\n/m, 'kandidát jen na pokyn');
+  assert.match(draft, /test\.yml\/runs\?head_sha=\$TESTED_SHA&event=push&status=success/, 'a jen ze zeleného CI');
   assert.match(draft, /inputs\[expected_sha\]=\$TESTED_SHA/);
   assert.doesNotMatch(skripty(draft).join('\n'), /gh release (create|edit)|--draft=false|--latest/);
 });
