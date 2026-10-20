@@ -7,7 +7,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank, chartColor } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { enableBoard, widgetChrome } from '../widget-board.js';
-import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState, infoTip } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -484,7 +484,8 @@ function update(topics = new Set(['all'])) {
     const skryto = vybrane.length - rows.length;
     zivy(el, 'timeline', rows.length
       ? `${timeline({ rows, from, to: timelineNow + 20 * MIN, now: timelineNow })}${skryto > 0
-        ? `<p class="tl-more"><span>${esc(tr('Na ose je {0} nejdůležitějších agentů.', TIMELINE_MAX))} ${esc(plural(skryto, 'Další je v sekci Agenti.', 'Další {0} jsou v sekci Agenti.', 'Dalších {0} je v sekci Agenti.').replace('{0}', skryto))}</span><a class="link" href="#/agenti">${tr('Všichni agenti')}</a></p>` : ''}`
+        // Kolik agentů se na osu nevešlo, stojí vidět přímo v odkazu; proč, říká „i“ (nic se nezamlčí).
+        ? `<p class="tl-more"><a class="link" href="#/agenti">${esc(plural(skryto, '+{0} další agent', '+{0} další agenti', '+{0} dalších agentů').replace('{0}', skryto))} ${ICON.arrow}</a>${infoTip(`${tr('Na ose je {0} nejdůležitějších agentů.', TIMELINE_MAX)} ${plural(skryto, 'Další je v sekci Agenti.', 'Další {0} jsou v sekci Agenti.', 'Dalších {0} je v sekci Agenti.').replace('{0}', skryto)}`)}</p>` : ''}`
       : `<div class="empty-inline">${tr('Za posledních 12 hodin žádná aktivita agentů.')}</div>`);
   }
 
