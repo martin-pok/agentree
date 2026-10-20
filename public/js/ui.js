@@ -826,14 +826,21 @@ function hlidejInfoTip() {
     tip.querySelector('.info-tip-btn')?.setAttribute('aria-expanded', 'false');
   }, true);
   const odkryj = (e) => { const t = e.target.closest?.('.info-tip'); if (t && !t.contains(e.relatedTarget)) delete t.dataset.skryto; };
-  // Bublina roste od tlačítka doleva; kdyby tím vyjela z dialogu nebo okna, poroste doprava.
+  // Bublina roste od tlačítka doprava (čte se od „i“ dál); kdyby tím vyjela z dialogu nebo okna, poroste doleva.
   const umisti = (tip) => {
     const btn = tip.querySelector('.info-tip-btn');
     if (!btn) return;
     const r = btn.getBoundingClientRect();
     const okraj = tip.closest('.modal')?.getBoundingClientRect() || { left: 0, right: innerWidth };
     const sirka = Math.min(300, innerWidth * 0.72);
-    tip.dataset.strana = r.right + 8 - sirka < okraj.left + 8 ? 'vpravo' : 'vlevo';
+    tip.dataset.strana = r.left - 8 + sirka > okraj.right - 8 && r.right + 8 - sirka >= okraj.left + 8 ? 'vlevo' : 'vpravo';
+    // Kdyby ani tak nevyšla do okna (úzký telefon), posune se o chybějící kus; nikdy nevyjede ven.
+    const b = tip.querySelector('.info-tip-bubble');
+    if (!b) return;
+    b.style.removeProperty('--tip-dx');
+    const br = b.getBoundingClientRect();
+    const dx = br.right > innerWidth - 8 ? innerWidth - 8 - br.right : br.left < 8 ? 8 - br.left : 0;
+    if (dx) b.style.setProperty('--tip-dx', `${Math.round(dx)}px`);
   };
   for (const typ of ['pointerover', 'focusin']) document.addEventListener(typ, (e) => { const t = e.target.closest?.('.info-tip'); if (t) umisti(t); });
   // Klepnutí (dotyk, kde hover není a Safari tlačítku fokus nedá) bublinu přepne; klepnutí mimo ji zavře.
@@ -1111,9 +1118,18 @@ export function createPalette(getItems, onPick) {
   };
 }
 
-export function switchRow({ key, label, desc = '', checked, disabled = false }) {
+// Poslední slovo textu a „i“ drží spolu na jednom řádku – ikona nikdy neosiří na novém řádku.
+// `text` je už bezpečné HTML (escapované nebo z tr()).
+export function sTipem(text, tip) {
+  const s = String(text);
+  const i = s.lastIndexOf(' ');
+  return i < 0 ? `<span class="tip-glue">${s}${infoTip(tip)}</span>` : `${s.slice(0, i)} <span class="tip-glue">${s.slice(i + 1)}${infoTip(tip)}</span>`;
+}
+
+// `tip` je vysvětlení bez stavu: ukáže se pod „i“ u popisku. `desc` zůstává viditelný (stav, varování).
+export function switchRow({ key, label, desc = '', tip = '', checked, disabled = false }) {
   return `<div class="set-row">
-    <div class="set-row-text"><span class="set-label" id="lbl-${esc(key)}">${esc(label)}</span>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>
+    <div class="set-row-text"><span class="set-label${tip ? ' eyebrow--tip' : ''}" id="lbl-${esc(key)}">${tip ? sTipem(esc(label), tip) : esc(label)}</span>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>
     <button class="switch" type="button" role="switch" aria-checked="${Boolean(checked)}" aria-labelledby="lbl-${esc(key)}" data-setting="${esc(key)}"${disabled ? ' disabled' : ''}></button>
   </div>`;
 }

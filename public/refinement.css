@@ -382,6 +382,7 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
   transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), visibility 0s linear var(--motion-response); }
 .info-tip-bubble::before { content: ''; position: absolute; inset: -8px 0 auto; height: 8px; }
 .info-tip[data-strana='vpravo'] .info-tip-bubble { right: auto; left: -8px; }
+.info-tip-bubble { translate: var(--tip-dx, 0) 0; }
 .info-tip:not([data-skryto]):is(:hover, :focus-within, [data-otevreno]) .info-tip-bubble { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
 @media (prefers-reduced-motion: reduce) { .info-tip-bubble { transform: none; transition: opacity var(--motion-response) linear, visibility 0s linear var(--motion-response); } }
 
@@ -415,4 +416,7 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 @media (prefers-reduced-motion: reduce) { .budget-fold > summary, .budget-fold > summary::after { transition: none; } }
 
 /* Nadpis nebo popisek s „i“: ikona drží na stejném řádku jako text. */
-.eyebrow--tip { display: inline-flex; align-items: center; gap: 2px; }
+.eyebrow--tip .info-tip { margin-left: 4px; }
+.tip-glue { white-space: nowrap; }
+/* Nadpis karty s „i“ teče jako text (flex by „i“ odsunul pod nadpis). */
+.set-card-head h3.eyebrow--tip { display: block; }

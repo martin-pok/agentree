@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.45 – 2026-10-20 · Klidnější Nastavení
+
+- **Nastavení** už nemá pod každou kartou a přepínačem vysvětlující odstavec. Co karta dělá a jak funguje, je pod „i“ u nadpisu nebo u popisku. Týká se to třeba Mimo domov, Tailscale, Telefonu, Soukromí, Vzhledu, Jazyka, Zdrojů agentů a všech přepínačů upozornění. Stránka je tak výrazně kratší.
+- Viditelné zůstává všechno, co nese stav nebo varování: adresa v domácí síti, stav licence a aktualizací, blokovaná oznámení a upozornění před odhlášením a smazáním účtu.
+- „i“ se drží posledního slova nadpisu a nikdy neosiří na novém řádku. Bublina na úzkém telefonu nevyjede z obrazovky.
+
 ## 0.46.44 – 2026-10-20 · Vysvětlení pod „i“, ne v odstavcích
 
 - **Měsíční rozpočty** začínají rovnou formulářem. Kdy Agenteeq upozorní a proč se bez připojeného API rozpočet neukáže, je pod „i“ u celkového rozpočtu. Kurzy měn a rozpočty jednotlivých služeb jsou sbalené (otevřené, když v nich už něco máš). Dialog se tak vejde i na telefon bez rolování, dřív měl dvojnásobnou výšku.
