@@ -187,7 +187,7 @@ test('volby v přepínačích mají stálý řez písma a tlačítko na tmavém 
 test('zelená plocha s textem používá bílé písmo na tmavší zelené', async () => {
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.nav-badge \{[^}]*background: var\(--action\); color: var\(--on-action\)/, 'odznak je plná plocha akce s kontrastním písmem');
-  assert.match(css, /\.appearance-icon \{ background: var\(--teal-solid\); color: #fff/);
+  assert.match(css, /\.appearance-option\[aria-pressed='true'\] \.appearance-icon \{ background: var\(--action\); color: var\(--on-action\)/, 'vybraná volba má tón akce s kontrastním písmem, ne zelenou');
   assert.doesNotMatch(css, /\.nav-badge \{[^}]*background: var\(--teal\);/);
 });
 
@@ -856,4 +856,48 @@ test('detail agenta a dialogy: jedna viditelná věta, podrobnosti pod „i“',
   const settings = await zdroj('public/js/views/settings.js');
   assert.doesNotMatch(settings, /<ul class="checklist"><li>\$\{tr\('Původní nastavení/, 'propojení s Claude Code bez seznamu odrážek');
   assert.doesNotMatch(settings, /<p class="small muted">\$\{tr\('Soubor:'\)\}/, 'cesty k souborům jsou pod „i“');
+});
+
+// Dialog Nový projekt rostl přes okno (1440×900 i telefon). Výběr složky je samostatný krok,
+// obrázek a logo jsou sbalené a vysvětlení složek je pod „i“.
+test('dialog projektu: výběr složky jako samostatný krok, obrázek a logo sbalené', async () => {
+  const src = await zdroj('public/js/projects-ui.js');
+  assert.match(src, /<div class="pf-hlavni">/);
+  assert.match(src, /<details class="src-fold pf-vzhled"/);
+  assert.match(src, /sTipem\(tr\('Složky projektu'\), tr\('Konverzace ze složek projektu/);
+  assert.match(src, /if \(hlavni\) hlavni\.hidden = otevrit;/, 'při výběru složky se zbytek formuláře schová');
+  assert.doesNotMatch(src, /<p class="modal-text">\$\{tr\('Konverzace ze složek/);
+});
+
+// Zavřená bublina „i“ u spodního okraje dialogu prodlužovala rolování (scrollHeight o 23 px víc).
+test('zavřená bublina „i“ nezabírá místo v rolování', async () => {
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.info-tip-bubble \{[^}]*display: none;/);
+  assert.match(css, /\[data-otevreno\]\) \.info-tip-bubble \{ display: block;/);
+  assert.match(css, /@starting-style/);
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /const skryta = getComputedStyle\(b\)\.display === 'none';/, 'umístění se měří i u zavřené bubliny');
+});
+
+test('drobnosti: šipka u „Raději přes Terminál?“, Co je nového, průvodce, Útrata, klidné stavy', async () => {
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.details summary \{[^}]*list-style: none;/, 'bez nativního trojúhelníku');
+  assert.match(css, /\.details summary::-webkit-details-marker \{ display: none; \}/);
+  assert.match(css, /\.onboard-steps \{[^}]*repeat\(var\(--kroky, 5\)/, 'sloupce podle počtu kroků');
+  assert.match(await zdroj('public/js/views/overview.js'), /<ol class="onboard-steps" style="--kroky:\$\{steps\.length\}">/);
+  assert.match(await zdroj('public/js/whats-new.js'), /installed\.slice\(0, 1\)/, 'Co je nového ukáže jen poslední verzi');
+  const spend = await zdroj('public/js/views/spend.js');
+  assert.doesNotMatch(spend, /data-action="end"/, 'nezapočítávané záznamy nemají Ukončit');
+  for (const pravidlo of [/\.pill\[data-status='waiting'\] \{[^}]*\}/, /\.state\[data-state='missing'\] \{[^}]*\}/, /\.rt-flag \{[^}]*\}/, /\.pill--link \{[^}]*\}/, /\.cloud-stale \{[^}]*\}/]) {
+    assert.doesNotMatch(css.match(pravidlo)?.[0] || 'chybí', /brass|chybí/, `${pravidlo}: klidový stav bez varovné barvy`);
+  }
+});
+
+test('Linux: „přepne systém sám“, ne „systému“', async () => {
+  const kod = `globalThis.document = { documentElement: { lang: 'cs', dataset: { system: 'linux' } } }; const i = await import('./public/js/i18n.js'); console.log(JSON.stringify([i.podleSystemu(), i.systemPodmet()]));`;
+  const { execFileSync } = await import('node:child_process');
+  const [podle, podmet] = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', kod], { encoding: 'utf8' }).trim().split('\n').at(-1));
+  assert.equal(podle, 'systému', 'za „podle“ zůstává 3. pád');
+  assert.equal(podmet, 'systém', 'podmět je 1. pád');
+  assert.match(await zdroj('public/js/views/settings.js'), /přepne \{0\} sám\.', systemPodmet\(\)\)/);
 });

@@ -70,7 +70,7 @@ test('CZ/EN: odpovědi, kontext a reálná verze fungují také pro en-GB locale
     assert.match(overview.text, /kdo pracuje a kdo čeká na tvoje rozhodnutí/);
     assert.match(overview.text, /Projekty seskupují/);
     assert.match(overview.text, /Právě jsi v Přehledu/);
-    assert.match(overview.text, /nový úkol zadáš v poli dole/);
+    assert.match(overview.text, /nový úkol napiš do pole pod pozdravem/);
   }
   const englishOverview = guide('How does this app work?', { language: 'en-GB', route: 'agenti', snapshot: { connection: 'offline' } });
   assert.equal(englishOverview.topic, 'overview');

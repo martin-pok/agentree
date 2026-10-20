@@ -37,7 +37,7 @@ export async function showWhatsNew({ releases } = {}) {
   if (open) return;
   open = true;
   const installed = installedReleaseHistory(state.version);
-  const list = releases?.length ? releases.filter((r) => installed.includes(r)) : installed.slice(0, 3);
+  const list = releases?.length ? releases.filter((r) => installed.includes(r)) : installed.slice(0, 1);
   const older = installed.filter((r) => !list.includes(r));
   const ext = state.integrations?.extension;
   const offerExtension = list.some((r) => r.extension) && (!ext || ext.state === 'missing' || ext.outdated);

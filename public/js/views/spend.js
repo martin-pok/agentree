@@ -1,6 +1,6 @@
 import { state } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtMoney, fmtNum, fmtTok, localDate, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
+import { esc, fmtMoney, fmtNum, fmtTok, dateLong, dateOnlyTs, rel, MONTHS, MONTHS_SHORT } from '../format.js';
 import { glyph, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut } from '../charts.js';
 import { chartColor } from '../data.js';
@@ -214,11 +214,8 @@ function mount(el, _params, query) {
     const id = a.dataset.id;
     try {
       if (a.dataset.action === 'budgets') openBudgets(a);
-      else if (a.dataset.action === 'end') {
-        const ok = await confirmDialog({ title: tr('Ukončit předplatné'), message: tr('Od příštího měsíce se platba přestane započítávat. Historie zůstane.'), confirmLabel: tr('Ukončit předplatné') });
-        if (ok) { applySpend(await api.endLedger(id, localDate())); toast(tr('Předplatné ukončeno')); }
-      } else if (a.dataset.action === 'delete') {
-        const ok = await confirmDialog({ title: tr('Smazat výdaj'), message: tr('Výdaj zmizí z grafů i rozpočtů. Tuto akci nelze vrátit.'), confirmLabel: tr('Smazat výdaj'), danger: true });
+      else if (a.dataset.action === 'delete') {
+        const ok = await confirmDialog({ title: tr('Smazat výdaj'), message: tr('Starší ruční záznam se smaže. Do součtů ani rozpočtu se už nepočítal. Tuto akci nelze vrátit.'), confirmLabel: tr('Smazat výdaj'), danger: true });
         if (ok) { applySpend(await api.deleteLedger(id)); toast(tr('Výdaj smazán')); }
       }
     } catch (err) {
@@ -375,14 +372,13 @@ export function ledgerHtml(sp, openSet = v.otevrene) {
   const groupRow = (title, extra = '') => `<tr class="ledger-group"><th scope="rowgroup" colspan="6"><div class="ledger-group-head"><span class="ledger-group-title">${title}</span>${extra}</div></th></tr>`;
   const manualRows = rows.map((e) => {
     const svc = sp.services[e.service];
-    const running = e.recurring === 'monthly' && !e.endDate;
     return `<tr>
             <td>${dateLong(dateOnlyTs(e.date))}</td>
             <td><span class="svc">${glyph(svc?.provider)}${esc(svc?.label || e.service)}</span></td>
             <td>${esc(sp.kinds[e.kind] || e.kind)}${e.recurring === 'monthly' ? ` <span class="badge">${e.endDate ? tr('do {0}', dateLong(dateOnlyTs(e.endDate))) : tr('měsíčně')}</span>` : ''}</td>
             <td class="muted">${esc(e.note || '')}</td>
             <td class="num">${fmtMoney(e.amount, e.currency)}${converted(sp, toApp(sp, e.amount, e.currency), e.currency)}</td>
-            <td class="actions">${running ? `<button class="btn btn--sm" type="button" data-action="end" data-id="${esc(e.id)}">${tr('Ukončit')}</button>` : ''}<button class="icon-btn" type="button" data-action="delete" data-id="${esc(e.id)}" aria-label="${tr('Smazat výdaj')} ${esc(svc?.label || '')} ${esc(e.date)}">${ICON.trash}</button></td>
+            <td class="actions"><button class="icon-btn" type="button" data-action="delete" data-id="${esc(e.id)}" aria-label="${tr('Smazat výdaj')} ${esc(svc?.label || '')} ${esc(e.date)}">${ICON.trash}</button></td>
           </tr>`;
   }).join('');
   const autoRows = auto.map((r) => {

@@ -235,7 +235,7 @@ export function guideAnswer(question, { previousTopic = null, language = 'cs', r
     let text = en
       ? 'Agenteeq brings activity from connected AI tools together on this computer. The Overview shows which agents are working or waiting for you; open a conversation to see available context and continue in its source tool. Projects group related work across tools. Recorded tokens are activity, not billed costs; billed amounts appear only when a supported provider supplies them.'
       : 'Agenteeq na tomto počítači spojuje aktivitu připojených AI nástrojů. V Přehledu vidíš, kdo pracuje a kdo čeká na tvoje rozhodnutí; v detailu konverzace najdeš dostupný kontext a můžeš pokračovat ve zdrojovém nástroji. Projekty seskupují související práci napříč nástroji. Zaznamenané tokeny nejsou účtované náklady; ty se ukazují jen s podporovanými daty poskytovatele.';
-    if (route === 'prehled') text += en ? ' You are on the Overview now; enter a new task in the field below.' : ' Právě jsi v Přehledu; nový úkol zadáš v poli dole.';
+    if (route === 'prehled') text += en ? ' You are on the Overview now; type a new task in the field under the greeting.' : ' Právě jsi v Přehledu; nový úkol napiš do pole pod pozdravem.';
     if (snapshot && snapshot.connection !== 'live') text += en ? ' The current live connection is not confirmed, so agent activity may be stale.' : ' Živé spojení teď není potvrzené, takže údaje o agentech nemusí být aktuální.';
     return { topic: 'overview', cile: [], text };
   }

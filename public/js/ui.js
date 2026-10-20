@@ -840,7 +840,11 @@ function hlidejInfoTip() {
     const b = tip.querySelector('.info-tip-bubble');
     if (!b) return;
     b.style.removeProperty('--tip-dx');
+    // Zavřená bublina má display: none; na změření se na okamžik vykreslí (je pořád neviditelná).
+    const skryta = getComputedStyle(b).display === 'none';
+    if (skryta) b.style.display = 'block';
     const br = b.getBoundingClientRect();
+    if (skryta) b.style.removeProperty('display');
     const dx = br.right > innerWidth - 8 ? innerWidth - 8 - br.right : br.left < 8 ? 8 - br.left : 0;
     if (dx) b.style.setProperty('--tip-dx', `${Math.round(dx)}px`);
   };
