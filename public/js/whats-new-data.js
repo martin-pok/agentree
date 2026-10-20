@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.44',
+    date: '2026-10-20',
+    title: 'Vysvětlení pod „i“, ne v odstavcích',
+    items: [
+      'Měsíční rozpočty začínají rovnou formulářem, kurzy a rozpočty služeb jsou sbalené a dialog se vejde i na telefon.',
+      'Orientační kurz na Útratě už není béžový varovný pruh.',
+      'Pod časovou osou je odkaz „+N dalších agentů“ místo dvou vět.',
+      'Vysvětlující věty v Útratě, Statistikách a na Agentech jsou schované pod „i“.',
+    ],
+    en: {
+      title: 'Explanations behind the “i”, not in paragraphs',
+      items: [
+        'Monthly budgets start straight with the form, exchange rates and per-service budgets are collapsed, and the dialog fits on a phone.',
+        'The indicative exchange rate in Spend is no longer a beige warning bar.',
+        'Below the timeline there is a “+N more agents” link instead of two sentences.',
+        'Explanatory sentences in Spend, Statistics and Agents now sit behind an “i”.',
+      ],
+    },
+  },
+  {
     version: '0.46.43',
     date: '2026-10-20',
     title: 'Kompaktní nahrávání a „i“ i na telefonu',

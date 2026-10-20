@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.44 – 2026-10-20 · Vysvětlení pod „i“, ne v odstavcích
+
+- **Měsíční rozpočty** začínají rovnou formulářem. Kdy Agenteeq upozorní a proč se bez připojeného API rozpočet neukáže, je pod „i“ u celkového rozpočtu. Kurzy měn a rozpočty jednotlivých služeb jsou sbalené (otevřené, když v nich už něco máš). Dialog se tak vejde i na telefon bez rolování, dřív měl dvojnásobnou výšku.
+- **Útrata:** orientační kurz už není béžový varovný pruh, ale krátký údaj s „i“, které řekne, že se kurz ČNB nenačetl a kde ho nastavíš. Vysvětlení k součtům a k nepřipojenému API jsou pod „i“ u nadpisů. Hlášení o selhání načítání zůstává viditelné.
+- **Časová osa na Přehledu:** místo dvou vět je pod osou odkaz „+N dalších agentů“, vysvětlení je pod „i“. Kolik agentů se nevešlo, je vidět vždy.
+- **Statistiky:** věta o tokenech organizace z Admin API je pod „i“ u nadpisu.
+- **Agenti:** karta „Konverzace v prohlížeči se nesledují“ je jeden řádek s nadpisem, „i“ a tlačítkem „Nastavit rozšíření“ místo tří vět, které říkaly totéž.
+
 ## 0.46.43 – 2026-10-20 · Kompaktní nahrávání a „i“ i na telefonu
 
 - **Obrázek karty a logo klienta** v dialogu projektu mají náhled, název a „Nahrát“ v jednom řádku. Karta už není trojnásobně vysoká. Pod názvem zůstal jen rozměr a limit („1400 × 400 px · 4 MB“), formáty a doporučení jsou v bublině „i“.
