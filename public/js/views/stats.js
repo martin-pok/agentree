@@ -6,7 +6,7 @@ import { stackedColumns, heatmap, hbars, timeLine } from '../charts.js';
 import { providerSeries, heatGrid, heatDetails, groupTotals, activeHours, isActiveSince, chartColor } from '../data.js';
 import { limitsAll } from '../limits-ui.js';
 import { watchBalance } from '../balance.js';
-import { fill, tween, legendHtml, limitGauges, emptyState, creditAgeHtml } from '../ui.js';
+import { fill, tween, legendHtml, limitGauges, emptyState, creditAgeHtml, infoTip } from '../ui.js';
 import { tr, LOCALE } from '../i18n.js';
 import { dlouheObdobi, DLOUHA_OBDOBI } from '../historie-stats.js';
 
@@ -144,7 +144,7 @@ export function apiTokensHtml(period, now = Date.now(), cloud = state.integratio
     return `<li><span class="svc">${glyph(provider)}${esc(label)}</span>${hodnota}</li>`;
   });
   if (!radky.length) return '';
-  return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title">${tr('Organizace přes API')}</span> <span class="muted">${tr('Tokeny z Admin API za posledních {0} dní (dny UTC). Celá organizace, nejsou v grafu ani v součtu výše.', dny)}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
+  return `<div class="api-tok"><p class="api-tok-head"><span class="api-tok-title eyebrow--tip">${tr('Organizace přes API')}${infoTip(tr('Tokeny z Admin API za posledních {0} dní (dny UTC). Celá organizace, nejsou v grafu ani v součtu výše.', dny))}</span></p><ul class="api-tok-list">${radky.join('')}</ul></div>`;
 }
 
 // Prázdný profil: žádná živá konverzace ani uložený den historie. Místo čtyř nul, prázdné mapy

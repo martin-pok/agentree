@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, attentionRank } from '../data.js';
-import { fill, statusPill, emptyState, agentHref, toast, vetaStavu } from '../ui.js';
+import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
@@ -74,12 +74,8 @@ function webBezRozsireniHtml() {
   if (!web || web.state !== 'missing') return '';
   return `<aside class="card pad runtime-note runtime-web" aria-labelledby="rt-web-h">
     <span class="icon-tile">${ICON.cloud}</span>
-    <div class="runtime-main">
-      <b id="rt-web-h">${tr('Konverzace v prohlížeči se nesledují')}</b>
-      <span class="muted small">${tr('rozšíření zatím neposlalo žádná data')}</span>
-      <p class="small">${tr('Chaty z ChatGPT, Claude.ai, Gemini a dalších webových služeb sleduje rozšíření pro Chrome.')}</p>
-      <a class="link-inline" href="#/nastaveni" data-karta="extension">${tr('Nastavit rozšíření')} ${ICON.arrow}</a>
-    </div>
+    <b id="rt-web-h" class="eyebrow--tip">${tr('Konverzace v prohlížeči se nesledují')}${infoTip(`${tr('Chaty z ChatGPT, Claude.ai, Gemini a dalších webových služeb sleduje rozšíření pro Chrome.')} ${tr('Rozšíření zatím neposlalo žádná data.')}`)}</b>
+    <a class="btn btn--sm" href="#/nastaveni" data-karta="extension">${tr('Nastavit rozšíření')}</a>
   </aside>`;
 }
 

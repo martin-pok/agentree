@@ -1376,7 +1376,9 @@ html.is-cloud body { background: var(--paper); }
 
 .steps--compact { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
 .runtime-note { margin-top: 16px; }
-.runtime-web { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 16px; }
+/* Jeden řádek: ikona, nadpis s „i“ (proč a co chybí) a akce. Dřív tři věty říkaly totéž. */
+.runtime-web { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; }
+@media (max-width: 560px) { .runtime-web { grid-template-columns: auto minmax(0, 1fr); } .runtime-web > .btn { grid-column: 1 / -1; justify-self: start; } }
 .runtime-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .runtime-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 16px; padding: 16px; border-radius: var(--r-md); background: var(--surface-2); }
 /* Dlaždice běžící aplikace je tlačítko – vizuálně stejná jako ostatní, jen reaguje. */

@@ -87,15 +87,15 @@ test('popisky počtů agentů se shodují s číslem (1 pracuje, 3 pracují, 5 p
 });
 
 // Tvary se berou přímo z volání plural() v kódu obrazovek, takže test hlídá skutečný text.
-async function tvary(soubor, promenna) {
+async function tvary(soubor, promenna, zacatek = '') {
   const src = await fs.readFile(path.join(ROOT, soubor), 'utf8');
-  const m = src.match(new RegExp(`plural\\(${promenna}, ('[^']*'), ('[^']*'), ('[^']*')\\)`));
+  const m = src.match(new RegExp(`plural\\(${promenna}, ('${zacatek}[^']*'), ('[^']*'), ('[^']*')\\)`));
   assert.ok(m, `${soubor}: plural(${promenna}, …) chybí`);
   return m.slice(1).join(', ');
 }
 
 test('Přehled: „Další 3 jsou v sekci Agenti“, ne „Dalších 3 je“; uvítání: „1 nalezená konverzace“', async () => {
-  const osa = await tvary('public/js/views/overview.js', 'skryto');
+  const osa = await tvary('public/js/views/overview.js', 'skryto', 'Další je');
   const nalezeno = await tvary('public/js/welcome.js', 'n');
   const cs = JSON.parse(vKlientu('cs', `const { plural } = await import('./public/js/format.js');
     const osa = (n) => plural(n, ${osa}).replace('{0}', n);
@@ -108,7 +108,7 @@ test('časová osa a „Právě teď“ při mnoha agentech: kapsle s textem, ne
   const prehled = await fs.readFile(path.join(ROOT, 'public/js/views/overview.js'), 'utf8');
   const css = await fs.readFile(path.join(ROOT, 'public/styles.css'), 'utf8');
   // Odkaz pod osou je kapsle .link (32 px, --r-full); věta s počtem stojí vedle něj jako text.
-  assert.match(prehled, /<p class="tl-more"><span>[^]*?<\/span><a class="link" href="#\/agenti">/);
+  assert.match(prehled, /<p class="tl-more"><a class="link" href="#\/agenti">/);
   assert.doesNotMatch(prehled, /<a class="tl-more"/);
   // Karta „+5“ bez popisku je pryč: kapsle říká, kolik agentů a kde jsou.
   assert.doesNotMatch(prehled, /pb-agent--more|>\+\$\{live\.length - STRIP_MAX\}</);
