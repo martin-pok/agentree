@@ -1,8 +1,8 @@
-# One-time GitHub Actions bridge for the owner's explicit request to test v0.46.51.
-# No automatic publication: uses the existing tested prepare workflow, which makes an audited draft.
-# Remove this helper after the draft is assembled. A second push cannot start a release.
-# Security exception for this *specific* one-time bridge is reviewed in test/workflow-opravneni.test.mjs.
-name: One-time v0.46.51 draft request
+# One-time publication explicitly requested by the repository owner on 2026-10-20.
+# Guard: exact audited GitHub Actions release run must complete successfully first.
+# This job cannot edit any release directly. The existing publish.yml re-verifies exact tag, bytes, SHA-256, CI and channel.
+# Delete this helper after the Preview is published.
+name: One-time audited v0.46.51 Preview publication
 on:
   push:
     branches: [main]
@@ -12,46 +12,45 @@ permissions:
   contents: read
 jobs:
   prepare:
+    if: contains(github.event.head_commit.message, 'publish audited v0.46.51 preview')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
     permissions:
       contents: read
       actions: write
-    if: contains(github.event.head_commit.message, 'request one-time v0.46.51 candidate')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 40
     steps:
-      - name: Wait for green tests on this exact main commit
+      - name: Check exact audited Draft release and request verified Preview publication
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_SHA: ${{ github.sha }}
+          TESTED_SHA: 7009455a0bb4be7f578040328a148234d276df45
+          RELEASE_RUN_ID: '39499962662'
+          TAG: v0.46.51
         shell: bash
         run: |
           set -euo pipefail
           test "${GITHUB_REF}" = "refs/heads/main"
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" = "${SOURCE_SHA}"
-          for n in $(seq 1 130); do
-            runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SOURCE_SHA}&event=push&per_page=20")
-            outcome=$(jq -r --arg sha "${SOURCE_SHA}" '[.workflow_runs[] | select(.head_sha == $sha)] | if any(.[]; .conclusion == "success" and .status == "completed") then "success" elif any(.[]; .status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) then "failure" else "pending" end' <<<"${runs}")
-            if [ "${outcome}" = success ]; then
-              echo "Verified full main CI succeeded for ${SOURCE_SHA}"
-              exit 0
+          # Guard against concurrent product changes. The source tag remains immutable.
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" --jq .object.type)" = "tag"
+          for n in $(seq 1 150); do
+            data=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RELEASE_RUN_ID}")
+            source=$(jq -r '.head_sha' <<<"${data}")
+            status=$(jq -r '.status' <<<"${data}")
+            conclusion=$(jq -r '.conclusion' <<<"${data}")
+            test "${source}" = "${TESTED_SHA}" || { echo "::error::Source mismatch"; exit 1; }
+            if [ "${status}" = completed ]; then
+              test "${conclusion}" = success || { echo "::error::Release build/audit did not pass"; exit 1; }
+              break
             fi
-            if [ "${outcome}" = failure ]; then
-              echo "::error::Main CI failed; no release is requested."
+            if [ "${n}" = 150 ]; then
+              echo "::error::Audited release did not finish within the window."
               exit 1
             fi
             sleep 15
           done
-          echo "::error::Main CI did not finish within the verification window."
-          exit 1
-      - name: Request existing verified preview draft workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_SHA: ${{ github.sha }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" = "${SOURCE_SHA}"
-          version=$(gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${SOURCE_SHA}" --jq .content | base64 -d | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
-          test "${version}" = "0.46.51" || { echo "::error::Unexpected version ${version}"; exit 1; }
-          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/prepare-preview-draft.yml/dispatches" -f ref=main
-          echo "Requested audited Draft v0.46.51 from ${SOURCE_SHA}. No public release was published."
+          # Independently check for exactly one private draft with all 8 release files.
+          releases=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30")
+          count=$(jq --arg tag "${TAG}" '[.[] | select(.tag_name == $tag and .draft == true and (.assets | length) == 8)] | length' <<<"${releases}")
+          test "${count}" = 1 || { echo "::error::Audited Draft not found or incomplete"; exit 1; }
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=${TAG}" -f 'inputs[channel]=preview'
+          echo "Requested existing audited Preview publication for ${TAG}. Stable Latest is unchanged."
