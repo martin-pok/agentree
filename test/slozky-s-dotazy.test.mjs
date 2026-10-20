@@ -21,7 +21,8 @@ test('chráněné složky macOS: domov, kořen, Library, média a přímo Plocha
   assert.equal(slozkaSDotazySystemu('relativni', H, 'macos'), false);
 });
 
-test('spuštění na pozadí v domovské složce se odmítne, v Terminálu projde', async () => {
+// Skutečné složky z tempDir: pravidlo počítá s cestami macOS, na Windows by D:\… nebyla absolutní POSIX cesta.
+test('spuštění na pozadí v domovské složce se odmítne, v Terminálu projde', { skip: process.platform === 'win32' && 'cesty macOS (POSIX); pravidlo samo ověřuje test výše' }, async () => {
   const home = await tempDir('dotazy-home-');
   const env = { bins: { claude: '/usr/local/bin/claude', codex: '/usr/local/bin/codex' }, ollama: [] };
   for (const agent of ['claude-code', 'codex']) {

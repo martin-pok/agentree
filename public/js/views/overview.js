@@ -510,7 +510,7 @@ function update(topics = new Set(['all'])) {
   if (chartImmediate || (topics.has('sessions') && now - v.chartAt >= CHART_UPDATE_MS)) {
     const ser = providerSeries(everything, v.period, now, v.hidden);
     const chartChanged = fill(el, 'chart', ser.series.length
-      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: tr('Tokeny'), partialLast: true })
+      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: tr('Tokeny'), partialLast: true, nulaNeznama: tr('– = žádné změřené tokeny. Chaty v aplikaci a na webu tokeny nehlásí.') })
       : `<div class="empty-inline">${tr('V tomto období žádné tokeny.')}</div>`);
     if (chartChanged && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
     v.drawn = true;

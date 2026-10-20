@@ -535,6 +535,7 @@ export default {
     "Agenta se nepodařilo načíst": "Couldn't load the agent",
     "Zobrazit všechny agenty": "Show all agents",
     "Zobrazit všechny ({0})": "Show all ({0})",
+    "– = žádné změřené tokeny. Chaty v aplikaci a na webu tokeny nehlásí.": "– = no measured tokens. Chats in apps and on the web don't report tokens.",
     "Sbalit": "Collapse",
     "Žádná dovednost zatím nepřibyla": "No new skills yet",
     "Agenteeq ukáže každý soubor SKILL.md ze složek .agents, .claude a .codex – dovednosti, pluginy i plánované úlohy.": "Agenteeq shows every SKILL.md file from the .agents, .claude and .codex folders – skills, plugins and scheduled tasks.",

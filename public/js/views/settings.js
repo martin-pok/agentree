@@ -18,26 +18,19 @@ import { mujRadek, ignorovanyRadek, mojeZive } from '../detekce-ui.js';
 import { umiInstalovat, nainstalujAktualizaci } from '../aktualizace.js';
 import { nactiPush, zapniPush, vypniPush, zkusPush, zrusOdber } from '../push-ui.js';
 
-// Sbalený výběr profilového obrázku ukáže první řadu a kousek druhé pod přechodem. Výška řady
-// závisí na šířce karty (mřížka auto-fill), proto se měří a drží v proměnné --avatar-radek.
-function vyskaRadkuAvataru(el) {
+// Tab na profilový obrázek schovaný pod přechodem sbalený výběr rozbalí – fokus nikdy nezmizí v ořezu.
+// Posluchač visí na mřížce, takže zmizí spolu s ní (žádný ResizeObserver: ten by po odchodu
+// z Nastavení držel celou odpojenou obrazovku v paměti).
+function hlidejFokusAvataru(el) {
   const grid = el.querySelector('.avatar-grid');
   const prvni = grid?.querySelector('.avatar-pick');
-  if (!prvni) return;
-  const okno = grid.closest('.avatar-okno');
-  const nastav = () => okno.style.setProperty('--avatar-radek', `${Math.round(prvni.getBoundingClientRect().height)}px`);
-  nastav();
-  v.avatarPozorovatel?.disconnect();
-  v.avatarPozorovatel = typeof ResizeObserver === 'function' ? new ResizeObserver(nastav) : null;
-  v.avatarPozorovatel?.observe(grid);
-  // Tab na obrázek schovaný pod přechodem výběr rozbalí – fokus nikdy nezmizí v ořezu.
-  grid.addEventListener('focusin', (e) => {
+  grid?.addEventListener('focusin', (e) => {
     if (v.avatarRozbaleno || e.target.offsetTop <= prvni.offsetTop) return;
     el.querySelector('[data-avatar-vice]')?.click();
   });
 }
 
-const v = { avatarRozbaleno: false, avatarPozorovatel: null, folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pinTimer: 0, parovaniCil: '', ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '', push: null, pushChyba: '', pushNacita: false };
+const v = { avatarRozbaleno: false, folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pinTimer: 0, parovaniCil: '', ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '', push: null, pushChyba: '', pushNacita: false };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
 const FEATURE_LABEL = { launchBackground: tr('Spouštění agentů na pozadí'), localChat: tr('Chat s lokálními modely v Ollamě'), projectsUnlimited: tr('Neomezený počet projektů'), projectExport: tr('Export projektů do CSV') };
 const DONE_OPTIONS = [[0, tr('každou')], [60, tr('delší než 1 minuta')], [120, tr('delší než 2 minuty')], [300, tr('delší než 5 minut')], [900, tr('delší než 15 minut')]];
@@ -1288,7 +1281,7 @@ function update(topics) {
       </div></div>
       <button class="btn btn--sm avatar-vice" type="button" data-avatar-vice aria-controls="avatar-grid" aria-expanded="${Boolean(v.avatarRozbaleno)}">${v.avatarRozbaleno ? tr('Sbalit') : tr('Zobrazit všechny ({0})', AVATAR_COUNT + 1)}<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     </div>`);
-  vyskaRadkuAvataru(el);
+  hlidejFokusAvataru(el);
 
   /* Licence */
   const lic = state.license;
