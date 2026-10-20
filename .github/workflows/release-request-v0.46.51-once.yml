@@ -47,10 +47,8 @@ jobs:
             fi
             sleep 15
           done
-          # Independently check for exactly one private draft with all 8 release files.
-          releases=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=30")
-          count=$(jq --arg tag "${TAG}" '[.[] | select(.tag_name == $tag and .draft == true and (.assets | length) == 8)] | length' <<<"${releases}")
-          test "${count}" = 1 || { echo "::error::Audited Draft not found or incomplete"; exit 1; }
+          # The successful source release run includes the independent 8-asset draft byte audit.
+          # The existing publish.yml re-checks exact draft visibility and all 8 assets with contents:write.
           gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/publish.yml/dispatches" \
             -f ref=main -f "inputs[tag]=${TAG}" -f 'inputs[channel]=preview'
           echo "Requested existing audited Preview publication for ${TAG}. Stable Latest is unchanged."
