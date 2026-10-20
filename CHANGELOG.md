@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.46.51 – 2026-10-20 · Víc vidět agentů, žádné dotazy macOS a lišta po ruce
+
+- **Tlačítka** se při najetí už neposouvají nahoru, změní jen barvu. Platí pro všechna tlačítka v aplikaci včetně „Spustit“ a „Poslat“ v Pomocníkovi.
+- **Přepis agenta** je pro čtečku obrazovky zase seznam zpráv: oblast přebíjela roli seznamu, takže jednotlivé zprávy nebyly ohlášené jako položky.
+- **Kontrola přístupnosti (axe)** prochází kromě osmi hlavních obrazovek i detail agenta, detail projektu a dialogy Nový projekt, Rozpočty, Co je nového, Rychlé hledání, Upozornění a Pomocník, ve světlém i tmavém vzhledu na počítači i telefonu. Nově kontroluje i čtyři stránky webu a okno rozšíření v devíti stavech.
+- **Detekce agentů:** běžící Cursor Agent, Aider, Goose, OpenCode, Amp, Crush, Droid a Auggie v terminálu jsou v přehledu vidět jako běžící agent (Beta – jejich přepisy Agenteeq nečte). Dřív se neukázali vůbec. Když nikdo nepracuje a je otevřený ChatGPT nebo jiná AI aplikace, jejíž chaty Agenteeq nevidí, Stav agentů to řekne místo holého „nikdo nepracuje“.
+- **Žádné dotazy macOS na Fotky a Zprávy:** agent spuštěný nebo obnovený z Agenteeq na pozadí se nespustí v domovské složce, v Knihovně ani přímo v Ploše, Dokumentech, Stažených a složkách médií. Prošel by je a macOS by se jménem Agenteeq ptal na povolení jedno za druhým. Aplikace řekne proč a nabídne složku projektu nebo Terminál.
+- **Okno upozornění:** každé upozornění je dlaždice s jemným obrysem, nepřečtené má nádech barvy své úrovně (bez hnědé). Okno má lehký přechod a obrys. Tlačítko „Zobrazit všechna upozornění“ je vidět jako tlačítko a okno se vždy vejde do výšky obrazovky, takže nezajede pod okraj ani pod Pomocníka.
+- **Profilový obrázek** v Nastavení je sbalený: celá první řada, pod ní náznak další v přechodu barvy značky a tlačítko „Zobrazit všechny“. Tab na schovaný obrázek výběr sám rozbalí.
+- **Graf Tokeny na Přehledu:** služba bez změřených tokenů v daném sloupci má v popisku „–“, ne „0“, a poznámku, že chaty v aplikaci a na webu tokeny nehlásí. „0“ u OpenAI působilo, jako by tam nic neběželo.
+- **Detail agenta a projektu:** úchyty pro přesouvání karet mají stejnou moderní kapsli ve značkové barvě jako widgety na Přehledu.
+- **Horní lišta** se při posouvání dolů schová a při posunu nahoru vyjede shora, takže Hledat, Upozornění a Obnovit jsou po ruce kdekoli na stránce. Pod vysunutou lištou je gradient v barvě vzhledu, obsah pod ní plynule mizí místo tvrdé hrany. Malé posuny trackpadu lištou necukají, při fokusu z klávesnice nebo otevřených upozorněních zůstane vidět. Platí i v Nastavení a na telefonu.
+- **Varování** (starší propojení s Claude Code, cizí informační řádek, limity, Útrata) už nejsou v hnědém boxu, ale řádek s ikonkou. Stav rozšíření má fajfku místo zeleného boxu.
+- **Nastavení** při otevření neprobliká: místo věty „Zjišťuji, co je napojené…“ stojí kostra ve výšce seznamu modelů, takže po načtení nic neposkočí.
+- **Stav agentů na Přehledu:** dlaždice v řadě jsou vždy stejně vysoké i se zalomeným popiskem.
+- **Pomocník:** ikona „Nový rozhovor“ se po klepnutí protočí, takže je vidět, že se rozhovor vyčistil. Při omezeném pohybu jen krátce blikne.
+- Obsahuje i nezveřejněné 0.46.49 a 0.46.50.
 ## 0.46.50 – 2026-10-20 · Zadání nahoře a méně prázdných míst
 
 - **Přehled na telefonu:** pole pro zadání agenta je hned pod pozdravem, celé v prvním okně. Průvodce „Začni s Agenteeq“ stojí až pod ním a pod tím, co čeká na tebe. Dřív ho na prázdném Přehledu čtyři kroky průvodce odsunuly pod přehyb.

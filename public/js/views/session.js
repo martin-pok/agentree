@@ -148,7 +148,7 @@ function mount(el, [id]) {
           <h2 id="tr-h">${tr('Přepis')}</h2><span class="muted small" data-region="tr-count"></span>
           <label class="check-inline"><input type="checkbox" data-tools checked> ${tr('Zobrazit nástroje')}</label>
         </div>
-        <ol class="transcript-list" data-list tabindex="0" role="region" aria-label="${tr('Přepis konverzace')}"></ol>
+        <ol class="transcript-list" data-list tabindex="0" aria-label="${tr('Přepis konverzace')}"></ol>
         <div class="transcript-empty" data-region="tr-empty"></div>
         <span class="transcript-hint" data-hint aria-hidden="true" hidden>${ICON.down}${tr('Klikni a procházej přepis')}</span>
         <button class="jump" type="button" data-jump hidden>${ICON.down}${tr('Nové zprávy')}</button>

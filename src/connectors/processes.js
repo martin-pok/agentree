@@ -216,11 +216,23 @@ const BEZ_KONVERZACE = {
   'gemini-cli': { podprikazy: ['mcp', 'extensions'], prepinace: ['--version', '-v', '--help', '-h'] },
   'qwen-code': { podprikazy: ['mcp', 'extensions'], prepinace: ['--version', '-v', '--help', '-h'] },
   'copilot-cli': { podprikazy: ['help', 'login', 'logout'], prepinace: ['--version', '-v', '--help', '-h'] },
+  // Agenti v terminálu, jejichž přepisy Agenteeq nečte. I tak musí být vidět, že běží (AGENTS.md:
+  // každý běžící agent v přehledu). Podpříkazy bez konverzace jsou z nápovědy nástrojů, neověřené
+  // na skutečném stroji – proto Beta (docs/CONNECTORS.md). Neznámý podpříkaz se počítá jako agent:
+  // přebytečný „běží“ je menší chyba než přehlédnutý agent.
+  'cursor-agent': { podprikazy: ['login', 'logout', 'status', 'mcp', 'update', 'upgrade', 'help', 'install-shell-integration', 'uninstall-shell-integration'], prepinace: ['--version', '-v', '--help', '-h'] },
+  aider: { podprikazy: [], prepinace: ['--version', '--help', '-h', '--list-models', '--models'] },
+  goose: { podprikazy: ['mcp', 'configure', 'info', 'update', 'version', 'help', 'completion', 'bench', 'schedule'], prepinace: ['--version', '-V', '--help', '-h'] },
+  opencode: { podprikazy: ['serve', 'auth', 'mcp', 'models', 'upgrade', 'uninstall', 'stats', 'export', 'import', 'debug', 'acp', 'web', 'help', 'completion'], prepinace: ['--version', '-v', '--help', '-h'] },
+  amp: { podprikazy: ['login', 'logout', 'mcp', 'update', 'doctor', 'config', 'permissions', 'tools', 'help'], prepinace: ['--version', '-V', '--help', '-h'] },
+  crush: { podprikazy: ['logs', 'update-providers', 'help', 'completion', 'schema'], prepinace: ['--version', '-v', '--help', '-h'] },
+  droid: { podprikazy: ['mcp', 'update', 'login', 'logout', 'help'], prepinace: ['--version', '-v', '--help', '-h'] },
+  auggie: { podprikazy: ['login', 'logout', 'tokens', 'mcp', 'help', 'upgrade'], prepinace: ['--version', '-v', '--help', '-h'] },
 };
 
 // Argumenty za jménem programu. Program z npm běží jako „node /…/bin/claude …“ nebo „node /…/@openai/
 // codex/bin/codex.js …“ – to „node“ i cesta ke skriptu se přeskočí.
-const JMENA_CLI = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot' };
+const JMENA_CLI = { 'claude-code': 'claude', codex: 'codex', 'gemini-cli': 'gemini', 'qwen-code': 'qwen', 'copilot-cli': 'copilot', 'cursor-agent': 'cursor-agent', aider: 'aider', goose: 'goose', opencode: 'opencode', amp: 'amp', crush: 'crush', droid: 'droid', auggie: 'auggie' };
 function argumentyProgramu(args, runtime) {
   const slova = args.split(/\s+/);
   const jmeno = program(JMENA_CLI[runtime]);

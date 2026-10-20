@@ -4,8 +4,10 @@ import http from 'node:http';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { buildSite, hlavickyWebu } from './build-site.mjs';
+import { nactiAxe, axePoruseni } from './axe-kontrola.mjs';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
+const AXE = nactiAxe();
 const { out } = await buildSite();
 const hlavickyPro = await hlavickyWebu();
 const types = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.ttf': 'font/ttf', '.webp': 'image/webp', '.xml': 'application/xml', '.txt': 'text/plain' };
@@ -63,6 +65,21 @@ try {
   for (const engine of (process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'])) {
     const browser = await (engine === 'chromium' ? chromium.launch({ ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) }) : webkit.launch());
     try {
+      // WCAG 2.2 A/AA (axe-core) na všech stránkách webu, světlý i tmavý vzhled, počítač i telefon.
+      // Vlastní kontext s bypassCSP: CSP webu vložený skript axe odmítne. Ostatní kontroly níž běží
+      // s ostrou CSP jako na hostingu.
+      for (const theme of ['light', 'dark']) for (const width of [1440, 375]) {
+        const ctx = await browser.newContext({ viewport: { width, height: 1000 }, colorScheme: theme, reducedMotion: 'reduce', bypassCSP: true });
+        const page = await ctx.newPage();
+        await jenMistni(page, []);
+        for (const stranka of ['/', '/en', '/instalace', '/en/install']) {
+          await page.goto(url + (stranka === '/' ? '' : stranka));
+          await page.evaluate(() => document.fonts.ready);
+          const poruseni = await axePoruseni(page, AXE);
+          assert.deepEqual(poruseni, [], `${engine} ${theme} ${width} ${stranka}: porušení WCAG 2.2 A/AA (axe)`);
+        }
+        await ctx.close();
+      }
       // Real platform paths: first paint, the correct download, keyboard switching,
       // language/install continuity, and the Windows instructions before Mac instructions.
       for (const platform of ['Win32', 'MacIntel']) {

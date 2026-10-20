@@ -1,14 +1,16 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { run, shellQuote } from './util.js';
-import { kandidatiProgramu, ZKRATKA_VLOZIT } from './platform.js';
+import { kandidatiProgramu, ZKRATKA_VLOZIT, slozkaSDotazySystemu } from './platform.js';
 import { ui } from './texty.js';
 
 // Rychlé spouštění agentů. Plán se skládá jen z ověřených vstupů a pevných příkazů – klient nikdy neposílá příkaz.
 
 export const PROMPT_MAX = 20000;
+export const SLOZKA_S_DOTAZY = () => ui('V této složce by agent prošel i Fotky, Zprávy a další soukromé složky a macOS by se jménem Agenteeq ptal na povolení. Vyber složku projektu, nebo agenta spusť v Terminálu.');
 const URL_PROMPT_MAX = 6000;
 const CHATGPT_APP = '/Applications/ChatGPT.app';
 const CODEX_IN_CHATGPT = [
@@ -101,7 +103,7 @@ export function launchTargets(env) {
 
 const fail = (error, field) => ({ ok: false, error, field });
 
-export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.randomUUID() } = {}) {
+export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.randomUUID(), home = os.homedir(), system } = {}) {
   const target = launchTargets(env).find((t) => t.id === input?.agent);
   if (!target) return fail(ui('Tento agent na tomto počítači není k dispozici.'), 'agent');
   const mode = input.mode;
@@ -118,6 +120,10 @@ export async function planLaunch(input, env, { promptFile, sessionUuid = crypto.
     if (!st?.isDirectory()) return fail(ui('Tato složka neexistuje.'), 'cwd');
     cwd = path.resolve(input.cwd);
   }
+
+  // Na pozadí jen ve složce projektu: z domovské nebo chráněné složky by se macOS jménem Agenteeq
+  // ptal na Fotky, Zprávy a další soukromé složky (src/platform.js, slozkaSDotazySystemu).
+  if (mode === 'background' && cwd && slozkaSDotazySystemu(cwd, home, system)) return fail(SLOZKA_S_DOTAZY(), 'cwd');
 
   const { bins = {} } = env;
   const base = { agent: target.id, label: target.label, mode, prompt, cwd };

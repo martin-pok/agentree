@@ -384,23 +384,30 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .dot--down { background: var(--velvet-ink); }
 
 /* ---------- Horní lišta ---------- */
-/* --main-top je horní odsazení obsahu. Čte ho i lepivá lišta v Nastavení: kdyby se lepila jinde,
+/* --main-top je horní odsazení obsahu. Čte ho i lepivá horní lišta: kdyby se lepila jinde,
    než kde v toku stojí, sjela by při otevření přes první kartu (desktop: +100 px). */
 .main { --main-top: calc(var(--band-h) + 40px); position: relative; min-width: 0; padding: var(--main-top) 56px 64px 64px; }
 .topbar { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
-/* V Nastavení zůstává nadpis ve své původní výšce spolu s podmenu – lepí se přesně tam, kde v toku stojí. */
-.main--settings > .topbar { position: sticky; top: var(--main-top); z-index: 13; background: var(--paper); }
-/* Pás nad lištou (horní odsazení obsahu) kryje stín v barvě papíru, jinak by v něm při posouvání
-   prosvítal obsah. Přesah 24 px do stran kryje i postranní odsazení. */
-.main--settings > .topbar { box-shadow: 0 calc(-1 * var(--main-top)) 0 24px var(--paper); }
-@media (min-width: 1181px) {
-  /* Pravý obsah prochází celou výškou okna. Prázdná část ukotveného řádku jej
-     nesmí zakrývat ani zachytávat kliknutí; akce jsou dostupné na začátku stránky. */
-  .main--settings > .topbar { background: transparent; box-shadow: none; pointer-events: none; }
-  .main--settings > .topbar > * { pointer-events: auto; }
-  /* Akce plynule ustoupí obsahu, který pod nimi projíždí – nikdy nestojí přes kartu. */
-  .main--settings > .topbar .topbar-actions { transition: opacity var(--motion-response) var(--ease), visibility var(--motion-response) var(--ease); }
-  .has-page-scroll .main--settings > .topbar .topbar-actions { opacity: 0; visibility: hidden; pointer-events: none; }
+/* ---------- Horní lišta při posouvání (public/js/lista-pri-posunu.js) ----------
+   Na začátku stránky stojí lišta v toku. Když ji stránka mine, přilepí se ve stejné výšce: posun dolů
+   ji odsune nahoru mimo okno, posun nahoru ji vysune zpátky. Pod vysunutou lištou je gradient
+   v barvě papíru aktuálního vzhledu s jemným rozmazáním – obsah pod ní plynule mizí, akce vpravo
+   nahoře jsou čitelné na čemkoli. Pohyb jen přes transform a opacity, takže běží hladce i na
+   telefonu a ve WebKitu. Platí na všech obrazovkách včetně Nastavení. */
+.topbar { --lista-top: var(--main-top, 32px); position: sticky; top: var(--lista-top); z-index: 30; transition: transform var(--motion-move) var(--ease-settle); will-change: transform; }
+.topbar::before { content: ''; position: absolute; z-index: -1; top: calc(-1 * var(--lista-top)); bottom: -56px; left: calc(-1 * var(--lista-l, 56px)); right: calc(-1 * var(--lista-r, 56px));
+  background: linear-gradient(to bottom, var(--paper) 0%, color-mix(in srgb, var(--paper) 92%, transparent) 42%, color-mix(in srgb, var(--paper) 55%, transparent) 72%, transparent 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  opacity: 0; pointer-events: none; transition: opacity var(--motion-move) var(--ease); }
+html[data-lista='skryta'] .topbar { transform: translateY(calc(-100% - var(--lista-top) - 24px)); }
+html[data-lista='vysunuta'] .topbar::before { opacity: 1; }
+/* Kotva lišty (místo v toku) nesmí nic posunout. */
+.lista-kotva { height: 0; margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .topbar { transition: none; }
+  html[data-lista='skryta'] .topbar { transform: none; opacity: 0; visibility: hidden; }
+  .topbar::before, .set-nav { transition: none; }
 }
 .page-title { margin: 0; font: 400 36px/1.1 var(--f-display); letter-spacing: -.02em; outline: none; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
@@ -432,13 +439,23 @@ kbd { font: 500 12px/1 var(--f-mono); padding: 6px 8px; border-radius: var(--r-f
 .bell-badge { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: var(--r-full); background: var(--action); color: var(--on-action); font: 500 12px/20px var(--f-body); font-variant-numeric: tabular-nums; box-shadow: 0 0 0 2px var(--paper); }
 .bell-wrap { position: relative; }
 html.notif-open { overflow: hidden; }
-.notif-pop { position: absolute; right: 0; top: calc(100% + 12px); width: min(400px, calc(100vw - 32px)); background: var(--card); border-radius: var(--r-lg); box-shadow: var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
-.pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line-2); }
+/* Okno upozornění: plocha karty s jemným přechodem od značky nahoře a vlasovým obrysem; každé
+   upozornění je vlastní dlaždice s obrysem, nepřečtené má nádech barvy své úrovně zleva. */
+.notif-pop { position: absolute; right: 0; top: calc(100% + 12px); display: flex; flex-direction: column; width: min(400px, calc(100vw - 32px)); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 7%, var(--card)) 0%, var(--card) 140px); border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-lg); z-index: 50; overflow: hidden; animation: pop .22s var(--ease) both; }
+.pop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px 14px; }
 .notif-pop { overscroll-behavior: contain; }
-.pop-list { list-style: none; margin: 0; padding: 8px; max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
-.pop-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 10px 12px; border-radius: var(--r-sm); text-decoration: none; position: relative; }
-.pop-item:hover { background: var(--paper); }
-.pop-item.is-unread::after { content: ''; position: absolute; right: 12px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--velvet-ink); }
+.pop-list { display: grid; gap: 6px; list-style: none; margin: 0; padding: 4px 12px 12px; max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
+.pop-item { --uroven: var(--ink-2); display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 12px 14px; border-radius: var(--r-sm); background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 3%, var(--card)), var(--card)); box-shadow: inset 0 0 0 1px var(--line-2); text-decoration: none; position: relative; transition: box-shadow var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
+.pop-item:hover { box-shadow: inset 0 0 0 1px var(--line); background-color: var(--paper); }
+.pop-item.is-unread { background: linear-gradient(90deg, color-mix(in srgb, var(--uroven) 12%, var(--card)) 0%, var(--card) 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--uroven) 28%, var(--line-2)); }
+.pop-item.is-unread::after { content: ''; position: absolute; right: 14px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--uroven); box-shadow: 0 0 0 4px color-mix(in srgb, var(--uroven) 18%, transparent); }
+.pop-item.level-action, .pop-item.level-critical { --uroven: var(--velvet-ink); }
+.pop-item.level-warning { --uroven: var(--sky); }
+/* Varování v okně bez hnědé: tlumená modrá jako ikonka „pozor“ jinde v aplikaci (docs/DESIGN.md). */
+.pop-item.level-warning .pop-icon { background: color-mix(in srgb, var(--sky) 16%, var(--card)); color: var(--sky); }
+/* Otevřené upozornění nepřekrývá tlačítko Pomocníka (patička okna by byla pod ním). */
+html.notif-open .pomocnik { opacity: 0; pointer-events: none; }
+.pop-item.level-info { --uroven: var(--teal-ink); }
 .pop-icon, .alert-icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--line-2); color: var(--ink-2); }
 .pop-icon .icon { width: 16px; height: 16px; }
 .pop-text { display: grid; min-width: 0; padding-right: 16px; }
@@ -446,9 +463,14 @@ html.notif-open { overflow: hidden; }
 .pop-body { font-size: 13px; color: var(--ink-2); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .pop-time { font-size: 12px; color: var(--mute); }
 .pop-empty { padding: 24px; text-align: center; color: var(--mute); }
-.pop-foot { display: block; margin: 4px 8px 8px; padding: 12px 20px; border-radius: var(--r-full); text-align: center; font-size: 14px; font-weight: 500; text-decoration: none; transition: background-color var(--motion-response) var(--ease); }
-.pop-foot:hover { background: var(--paper); }
+/* Patička: viditelné tlačítko (kapsle 44 px s obrysem), oddělené od seznamu linkou. */
+.pop-foot { display: flex; align-items: center; justify-content: center; flex: none; height: 44px; margin: 0 12px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 5%, var(--card)); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: 500 14px/1 var(--f-body); text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.pop-foot:hover { background: color-mix(in srgb, var(--ink) 9%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 24%, transparent); }
+/* Okno se vejde do okna prohlížeče vždy celé: seznam se zkrátí a roluje, patička zůstane vidět. */
+.notif-pop { max-height: calc(100dvh - 120px); }
+.notif-pop > .pop-list { flex: 1 1 auto; min-height: 0; max-height: none; border-bottom: 1px solid var(--line-2); margin-bottom: 12px; }
 .level-action .pop-icon, .level-action .alert-icon, .level-critical .pop-icon, .level-critical .alert-icon { background: var(--velvet-tint); color: var(--velvet-ink); }
+.pop-icon { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); }
 .level-warning .pop-icon, .level-warning .alert-icon { background: var(--brass-tint); color: var(--brass-ink); }
 .level-info .pop-icon, .level-info .alert-icon { background: var(--teal-tint); color: var(--teal-ink); }
 
@@ -572,9 +594,8 @@ html[data-theme='dark'] .empty-mark { --er: #7B7DF5; --er-2: #A3A5FF; }
 /* Shared response grammar. Individual translate avoids overwriting modal/picker transforms. */
 :where(button, a, summary, [role='button']) { transition: color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), translate var(--motion-response) var(--ease); }
 :where(button, a, summary, [role='button']):not(:disabled):not([aria-disabled='true']):active { translate: 0 1px; transition-duration: var(--motion-press); }
-@media (hover: hover) and (pointer: fine) {
-  .btn:not(:disabled):not(.is-busy):hover, .icon-btn:not(:disabled):hover { translate: 0 -1px; }
-}
+/* Najetí mění jen plochu nebo linku, tlačítko se neposouvá (docs/DESIGN.md, Stavy). Dřív se při najetí
+   zvedlo o 1 px a „poskočilo“ – rozhodnutí vlastníka 20. 10. 2026: působí to levně, ne prémiově. */
 @media (prefers-reduced-motion: reduce) {
   :where(button, a, summary, [role='button']) { transition: none !important; translate: none !important; }
 }
@@ -855,6 +876,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 
 /* Kdy byla hodnota naměřená. Tlumené: je to doplněk k údaji, ne druhý údaj. */
 .tip-row.tip-note, .tip-row.tip-note b { color: var(--mute); font-size: 12px; }
+.tip-row.tip-pozn { display: block; max-width: 220px; margin-top: 4px; white-space: normal; line-height: 1.35; }
 .tip-total { border-top: 1px solid rgba(255, 255, 255, .16); margin-top: 4px; padding-top: 4px; }
 .sw { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
 .chart-plot.is-hover .vline, .chart-plot.is-hover .hover-dot, .chart-plot.is-hover .tip { opacity: 1; }
@@ -1007,7 +1029,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .banner p { margin: 4px 0 0; }
 .banner--action { background: var(--velvet-tint); color: var(--ink); box-shadow: none; }
 .banner--action > .icon { color: var(--velvet-ink); }
-.banner--limit { background: var(--brass-tint); box-shadow: none; }
+.banner--limit { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .banner--limit > .icon { color: var(--brass-ink); }
 .banner--info { background: var(--teal-tint); box-shadow: none; }
 .banner--info > .icon { color: var(--teal-ink); }
@@ -1107,6 +1129,15 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 /* Napojené modely: řádek na službu, stav a jediná akce. */
 .model-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
 .model-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line-2); min-width: 0; flex-wrap: wrap; }
+.model-row--kostra .model-kostra-logo { flex: none; width: 32px; height: 32px; margin: 0; border-radius: var(--r-sm); }
+.model-row--kostra .model-kostra-text { display: grid; gap: 6px; flex: 1; min-width: 0; }
+.model-row--kostra .skeleton { margin: 0; }
+.model-row--kostra .model-kostra-text .skeleton:first-child { width: 28%; height: 14px; }
+.model-row--kostra .model-kostra-text .skeleton:last-child { width: 52%; height: 12px; }
+/* Výšky jako u načteného seznamu (agent, agent, webové chaty na dva řádky), na telefonu se stav zalomí. */
+.model-row--kostra { min-height: 63px; }
+.model-row--kostra:last-child { min-height: 81px; }
+@media (max-width: 560px) { .model-row--kostra { min-height: 117px; } .model-row--kostra:last-child { min-height: 223px; } }
 .model-logo { flex: none; width: 32px; height: 32px; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .model-logo .logo, .model-logo .glyph { width: 18px; height: 18px; }
 .model-loga { flex: none; display: flex; }
@@ -1960,8 +1991,11 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 }
 @media (max-width: 1180px) {
   .settings2 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  /* Vodorovná lišta záložek se lepí těsně pod horní lištu, aby mezi nimi neprosvítal obsah. */
-  .set-nav { top: calc(var(--main-top) + 40px); z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  /* Vodorovná lišta záložek se lepí těsně pod vysunutou horní lištu; když se horní lišta schová,
+     vyjede k horní hraně okna. Stín v barvě papíru pod ní obsah plynule ztlumí. Pořadí nad
+     gradientem horní lišty, aby záložky nebyly zašedlé. */
+  .set-nav { top: env(safe-area-inset-top, 0px); z-index: 31; transition: top var(--motion-move) var(--ease-settle); box-shadow: 0 12px 14px -8px var(--paper); display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  html[data-lista='vysunuta'] .set-nav { top: calc(var(--main-top) + var(--lista-h, 44px)); }
   .set-nav::-webkit-scrollbar { display: none; }
   .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
@@ -2027,7 +2061,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
   .transcript-list { padding: 16px; max-height: clamp(360px, 70dvh, 720px); }
   .live-strip { flex-wrap: wrap; }
   .indeterminate { width: 100%; }
-  .notif-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; }
+  .notif-pop { position: fixed; left: 12px; right: 12px; top: 72px; width: auto; max-height: calc(100dvh - 72px - 112px - env(safe-area-inset-bottom)); }
 }
 @media (max-width: 560px) {
   .chart-x span.is-minor, .tl-ticks span.is-minor { display: none; }
@@ -2342,6 +2376,18 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .avatar-mini { display: block; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; }
 .avatar-mini svg { width: 100%; height: 100%; display: block; }
 .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; margin-top: 8px; }
+/* Sbalený výběr: první řada celá, z druhé jen náznak pod přechodem v barvě značky a tlačítko
+   „Zobrazit všechny“. Okraj 6 px kolem mřížky drží kroužek vybraného obrázku uvnitř ořezu. */
+.avatar-vyber { position: relative; display: grid; justify-items: center; gap: 4px; }
+.avatar-okno { --avatar-radek: 60px; position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; max-height: calc(var(--avatar-radek) * 1.45 + 12px + 12px); overflow: hidden; transition: max-height var(--motion-move) var(--ease-settle); }
+.avatar-okno > .avatar-grid { grid-template-columns: repeat(auto-fill, var(--avatar-radek)); justify-content: space-between; padding: 6px 0; margin-top: 0; }
+.avatar-vyber[data-rozbaleno] .avatar-okno { max-height: 1200px; }
+.avatar-okno::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--avatar-radek) * .95); background: linear-gradient(180deg, color-mix(in srgb, var(--card) 0%, transparent) 0%, color-mix(in srgb, var(--brand) 10%, var(--card)) 62%, var(--card) 100%); pointer-events: none; transition: opacity var(--motion-move) var(--ease); }
+.avatar-vyber[data-rozbaleno] .avatar-okno::after { opacity: 0; }
+.avatar-vice { position: relative; z-index: 1; gap: 6px; }
+.avatar-vice .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--motion-move) var(--ease-settle); }
+.avatar-vyber[data-rozbaleno] .avatar-vice .icon { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .avatar-okno, .avatar-okno::after, .avatar-vice .icon { transition: none; } }
 .avatar-pick { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); overflow: hidden; display: grid; place-items: center; font: 400 18px/1 var(--f-display); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .avatar-pick svg { width: 100%; height: 100%; }
 :where(html:not(.is-scrolling)) .avatar-pick:hover { transform: translateY(-2px); }
@@ -2687,11 +2733,23 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transition: none !important; }
 
 /* ---------- Rozšíření pro Chrome v Nastavení ---------- */
-.ext-status { margin: 0 0 16px; padding: 12px 16px; border-radius: var(--r-sm); background: var(--teal-tint, rgba(31, 138, 108, .1)); color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+/* Stav rozšíření: stejný klidný řádek jako varování, s fajfkou místo zeleného boxu. */
+.ext-status { position: relative; margin: 0 0 16px; padding: 0 0 0 26px; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+.ext-status::before { content: ''; position: absolute; left: 0; top: 3px; width: 16px; height: 16px; background: var(--teal-ink); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.6 5.2-1.1-1L6.9 8.1 5.4 6.6l-1.1 1.1 2.6 2.6 4.7-5.1Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.6 5.2-1.1-1L6.9 8.1 5.4 6.6l-1.1 1.1 2.6 2.6 4.7-5.1Z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .ext-reinstall { margin: 0 0 16px; }
 .ext-reinstall summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 8px 0; }
 .ext-reinstall[open] summary { margin-bottom: 8px; }
-.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: linear-gradient(45deg, color-mix(in srgb, var(--brass) 14%, transparent), color-mix(in srgb, var(--brass) 3%, transparent) 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 28%, transparent); color: var(--ink); }
+/* Varování v kartách: prostý řádek bez rámečku a bez teplého pozadí (rozhodnutí vlastníka 20. 10. 2026 –
+   hnědý box působil amatérsky). Od běžné poznámky ho odliší ikonka „pozor“ vlevo a plná barva písma. */
+:root { --ikona-pozor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm-.9 3.6h1.8l-.25 5.6h-1.3L7.1 3.6Zm.9 7.1a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.set-note--warn { position: relative; padding: 0 0 0 26px; border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+.set-note--warn::before { content: ''; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; background: var(--sky); -webkit-mask: var(--ikona-pozor); mask: var(--ikona-pozor); }
+/* Varování a stav pod sebou: řádky s ikonou potřebují mezi sebou vzduch. */
+.set-note--warn + .ext-status, .set-note--warn + .set-note--warn { margin-top: 8px; }
+.set-note--warn:has(+ .ext-status) { margin-bottom: 0; }
+/* Stejný klidný řádek i pro ostatní varování, která dřív měla hnědý box (Přehled, Útrata). */
+.rt-warn, .spend-stats .spend-note--warn, .spend-foot--warn { position: relative; padding: 0 0 0 26px; border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+.rt-warn::before, .spend-stats .spend-note--warn::before, .spend-foot--warn::before { content: ''; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; background: var(--sky); -webkit-mask: var(--ikona-pozor); mask: var(--ikona-pozor); }
 /* Poznámka s akcí (detail konverzace: stav bez propojení s Claude Code). */
 .hook-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .hook-note > span { flex: 1 1 280px; min-width: 0; }
@@ -2858,13 +2916,16 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) { .pcard-grip { transition: none; } }
 
-/* Úchyt pro přesouvání karet v pravém panelu: nahoře uprostřed, kde nic jiného neleží. */
+/* Úchyt pro přesouvání karet v pravém panelu (detail agenta a projektu): stejná kapsle se šesti
+   tečkami ve značkové barvě jako u widgetů Přehledu (refinement.css, .widget-grip);
+   kapsle sedí na horní hraně karty uprostřed, mimo nadpis. Vyjede při najetí; na dotykové obrazovce je vidět. */
 .side-card { position: relative; }
-.grip { position: absolute; top: 6px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(6, 4px); gap: 3px; padding: 6px 8px; border-radius: var(--r-full); translate: -50% 0; opacity: 0; cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
-.grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--mute); }
-.side-card:hover .grip, .side-card.is-lifted .grip, .grip:focus-visible { opacity: 1; }
-.grip:hover { background: var(--line-2); }
-@media (hover: none) { .grip { opacity: .7; } }
+.grip { --glow: var(--brand); position: absolute; top: -10px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+.grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
+.grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
+@media (hover: hover) { .side-card:hover .grip { opacity: 1; transform: translate(-50%, 0); } }
+.side-card.is-lifted .grip { opacity: 1; transform: translate(-50%, 0); }
+@media (hover: none) { .grip { opacity: 1; transform: translate(-50%, 0); } }
 .side-card.is-lifted { z-index: 30; cursor: grabbing; transition: none; box-shadow: var(--shadow-lg); will-change: transform; }
 .side-card.is-lifted .grip { cursor: grabbing; }
 .is-reordering .side-card { transition: none; }

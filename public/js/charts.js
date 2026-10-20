@@ -34,12 +34,14 @@ function pickLabels(n, maxLabels = 7) {
 
 /* ---------- Sloupce po intervalech (tokeny za den / hodinu) ---------- */
 
-export function stackedColumns({ id, labels, tips, series, height = 208, format = fmtTok, axisFormat = fmtAxis, label = tr('Graf'), partialLast = false }) {
+// `nulaNeznama`: nula ve sloupci neznamená, že služba nic nedělala – jen že z ní nepřišel žádný změřený
+// údaj (tokeny čte Agenteeq jen z přepisů agentů). Popisek pak místo „0“ ukáže pomlčku a poznámku.
+export function stackedColumns({ id, labels, tips, series, height = 208, format = fmtTok, axisFormat = fmtAxis, label = tr('Graf'), partialLast = false, nulaNeznama = '' }) {
   const n = labels.length;
   const visible = series.filter((s) => !s.hidden);
   const totals = Array.from({ length: n }, (_, i) => visible.reduce((a, s) => a + (s.values[i] || 0), 0));
   const max = niceMax(Math.max(0, ...totals));
-  registry.set(id, { kind: 'cols', n, tips: tips || labels, series: visible, totals, max, format, partialLast });
+  registry.set(id, { kind: 'cols', n, tips: tips || labels, series: visible, totals, max, format, partialLast, nulaNeznama });
   const bars = totals.map((tot, i) => {
     const segs = visible.map((s) => ({ v: s.values[i] || 0, color: s.color })).filter((x) => x.v > 0).reverse();
     const h = tot > 0 ? Math.max(0.8, (tot / max) * 100) : 0;
@@ -135,11 +137,13 @@ function showHover(plot, idx, t) {
 
   if (c.kind === 'cols') {
     for (const slot of plot.querySelectorAll('.bar-slot')) slot.classList.toggle('is-active', Number(slot.dataset.i) === idx);
+    const nula = (s) => !(s.values[idx] > 0);
     const rows = c.series.slice().reverse()
-      .map((s) => `<span class="tip-row"><i class="sw" style="background:${s.color}"></i>${esc(s.label)}<b>${esc(c.format(s.values[idx] || 0))}</b></span>`).join('');
+      .map((s) => `<span class="tip-row"><i class="sw" style="background:${s.color}"></i>${esc(s.label)}<b>${c.nulaNeznama && nula(s) ? '–' : esc(c.format(s.values[idx] || 0))}</b></span>`).join('');
+    const pozn = c.nulaNeznama && c.series.some(nula) ? `<span class="tip-row tip-note tip-pozn">${esc(c.nulaNeznama)}</span>` : '';
     const total = c.series.length > 1 ? `<span class="tip-row tip-total">${tr('Celkem')}<b>${esc(c.format(c.totals[idx]))}</b></span>` : '';
     const partial = c.partialLast && idx === c.n - 1 ? tr(' · zatím') : '';
-    placeTip(plot, ((idx + 0.5) / c.n) * 100, 100 - (c.totals[idx] / c.max) * 100).innerHTML = `<span class="tip-label">${esc(c.tips[idx])}${partial}</span>${rows || `<span class="tip-row">${tr('Bez dat')}</span>`}${total}`;
+    placeTip(plot, ((idx + 0.5) / c.n) * 100, 100 - (c.totals[idx] / c.max) * 100).innerHTML = `<span class="tip-label">${esc(c.tips[idx])}${partial}</span>${rows || `<span class="tip-row">${tr('Bez dat')}</span>`}${total}${pozn}`;
     return;
   }
 

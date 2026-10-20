@@ -23,7 +23,9 @@ export function vetaPozdravu({ cekaji = 0, pracuji = 0 } = {}) {
 // v cloudu nic neříká, takže „nikdo nepracuje“ by bylo tvrzení bez dat.
 const VZDALENE_CERSTVE = 2 * 60e3;
 
-export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, vzdaleneAt = 0, now = Date.now() } = {}) {
+// `nevidim`: jména otevřených AI aplikací, jejichž chaty Agenteeq nečte (ChatGPT, Claude…). Když
+// nikdo nepracuje, řekne to poznámka – „nikdo nepracuje“ platí jen pro to, co Agenteeq vidí.
+export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, vzdaleneAt = 0, nevidim = [], now = Date.now() } = {}) {
   const problemy = selhalo + limit;
   const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
   const vzdaleneStare = vzdaleneAt > 0 && now - vzdaleneAt > VZDALENE_CERSTVE;
@@ -40,7 +42,8 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
     veta = pracuje ? tr('Vše běží v pořádku') : vzdaleneStare ? tr('Na tomto počítači nikdo nepracuje') : tr('V pořádku, nikdo nepracuje');
   }
   const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
-    : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now)) : '';
+    : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now))
+      : stav === 'ok' && !pracuje && nevidim.length ? tr('Otevřené: {0}. Chaty z těchto aplikací Agenteeq nevidí.', nevidim.join(', ')) : '';
   return { stav, veta, poznamka };
 }
 

@@ -342,6 +342,71 @@ async function zkontrolujPlynulost(browser, engine) {
   console.log(`${engine} plynulost: ${JSON.stringify(mereni)}`);
 }
 
+// Horní lišta při posouvání (public/js/lista-pri-posunu.js) s povoleným pohybem: dolů se schová
+// mimo okno a nejde do Tabu, nahoru vyjede na své místo s gradientem, šum trackpadu ji nerozhodí,
+// na začátku stránky stojí v toku. V Nastavení na telefonu záložky skupin nikdy nezajedou pod lištu.
+async function zkontrolujListuPriPosunu(browser, engine) {
+  const { pripravUkazku } = await import('./demo-fixture.mjs');
+  const server = await pripravUkazku();
+  let mereni = 0;
+  try {
+    for (const [sirka, vyska] of [[1440, 900], [375, 812]]) {
+      const ctx = await browser.newContext({ viewport: { width: sirka, height: vyska }, reducedMotion: 'no-preference', serviceWorkers: 'block', hasTouch: sirka < 500 });
+      const p = await ctx.newPage();
+      for (const trasa of ['prehled', 'nastaveni']) {
+        await p.goto(`${server.url}/#/${trasa}`);
+        await p.locator('.view').waitFor();
+        await p.waitForTimeout(400);
+        const stav = () => p.evaluate(() => {
+          const t = document.querySelector('.topbar').getBoundingClientRect();
+          const nav = document.querySelector('.set-nav')?.getBoundingClientRect();
+          return { lista: document.documentElement.dataset.lista, top: Math.round(t.top), bottom: Math.round(t.bottom), inert: document.querySelector('.topbar').inert,
+            gradient: Number(getComputedStyle(document.querySelector('.topbar'), '::before').opacity), nav: nav && Math.round(nav.top), y: scrollY };
+        });
+        const kde = `${engine} ${sirka} /${trasa}`;
+        // Posun po krocích jako kolečko nebo prst. WebKit s dotykovou emulací kolečko nedoručí,
+        // proto scrollBy. WebKit v CI po `instant` posunu nevyšle událost scroll v každém běhu
+        // (viz níže u Nastavení) – doplní se, aby test měřil tutéž cestu jako skutečné gesto.
+        const posun = (dy) => p.evaluate((d) => { scrollBy({ top: d, behavior: 'instant' }); dispatchEvent(new Event('scroll')); }, dy);
+        const zacatek = await stav();
+        assert.equal(zacatek.lista, 'nahore', `${kde}: na začátku stránky lišta stojí v toku`);
+        for (let i = 0; i < 6; i++) { await posun(120); await p.waitForTimeout(60); }
+        await p.waitForTimeout(500);
+        const dolu = await stav();
+        assert.equal(dolu.lista, 'skryta', `${kde}: posun dolů lištu neschoval`);
+        assert.ok(dolu.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${dolu.bottom} px)`);
+        assert.equal(dolu.inert, true, `${kde}: schovaná lišta jde do Tabu`);
+        for (let i = 0; i < 2; i++) { await posun(-60); await p.waitForTimeout(60); }
+        await p.waitForTimeout(500);
+        // On a busy CI runner WebKit can still be mid-transform after the timer.
+        // Measure the actual sticky position only after the reveal transition settles;
+        // the final coordinate and gradient assertions below must still pass.
+        await p.waitForFunction(() => {
+          const el = document.querySelector('.topbar');
+          const transform = getComputedStyle(el).transform;
+          return document.documentElement.dataset.lista === 'vysunuta'
+            && (transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5);
+        }, null, { timeout: 5000 });
+        const nahoru = await stav();
+        assert.equal(nahoru.lista, 'vysunuta', `${kde}: posun nahoru lištu nevysunul`);
+        assert.ok(Math.abs(nahoru.top - zacatek.top) <= 1, `${kde}: vysunutá lišta stojí jinde (${nahoru.top}) než v toku (${zacatek.top})`);
+        assert.equal(nahoru.gradient, 1, `${kde}: pod vysunutou lištou chybí gradient`);
+        if (nahoru.nav != null && sirka < 1181) assert.ok(nahoru.nav >= nahoru.bottom - 1, `${kde}: záložky Nastavení zajely pod lištu (${nahoru.nav} < ${nahoru.bottom})`);
+        await posun(3); await p.waitForTimeout(300);
+        assert.equal((await stav()).lista, 'vysunuta', `${kde}: 3 px šumu lištu schovaly`);
+        await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+        await p.waitForFunction(() => document.documentElement.dataset.lista === 'nahore');
+        mereni += 1;
+      }
+      await ctx.close();
+    }
+  } finally {
+    await server.close();
+  }
+  results.push({ engine, check: 'horní lišta: dolů schovat, nahoru vysunout s gradientem', mereni });
+  console.log(`${engine} lišta při posouvání: ${mereni} obrazovek`);
+}
+
 // Nadpis obrazovky se na telefonu nikdy nezkracuje („Stat…“): u spojení v pořádku mu lišta nechá místo.
 async function zkontrolujNadpisy(browser, engine) {
   const server = await startTestServer();
@@ -478,6 +543,7 @@ for (const engine of engines) {
   if (!process.env.QA_SKIP_PREFLIGHT) {
   await zkontrolujPocitadla(browser, engine);
   await zkontrolujNadpisy(browser, engine);
+  await zkontrolujListuPriPosunu(browser, engine);
   await zkontrolujObdobi(browser, engine);
   await zkontrolujVyskyRadku(browser, engine);
   await zkontrolujPlynulost(browser, engine);
@@ -714,6 +780,12 @@ for (const engine of engines) {
     assert.equal(await page.evaluate(() => { const n = document.querySelector('.nav'); return n.scrollHeight > n.clientHeight + 1; }), false, `${engine} nabídka se na výšku musí vejít bez rolování`);
     await page.screenshot({ path: `dist/qa/${engine}-portrait-rest.png` });
     await page.setViewportSize({ width: 1440, height: 1000 });
+    // Full-page screenshots, project pickers and viewport changes can leave the document
+    // scrolled. The auto-hiding topbar deliberately makes its search button inert offscreen.
+    // Reset to the top before exercising the *visible* search button; keyboard search
+    // while scrolled is verified independently below.
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await page.waitForFunction(() => document.documentElement.dataset.lista === 'nahore');
     assert.equal(await page.locator('.launch-kbd').isVisible(), false, `${engine}: simplified composer keeps the shortcut decoration hidden`);
     await page.locator('[data-action="palette"]').click();
     const paletteOptions = page.locator('.palette-list [role="option"]');

@@ -445,3 +445,25 @@ export function appInstalled(names, home, { fileExists = (p) => fs.existsSync(p)
   if (!enabled) return null;
   return [].concat(names).some((n) => [`/Applications/${n}.app`, `${home}/Applications/${n}.app`].some((p) => fileExists(p)));
 }
+
+// ── Složky, ve kterých se agent z aplikace nespouští ─────────────────────────
+//
+// Agent spuštěný nebo obnovený z Agenteeq na pozadí je podproces Agenteeq. Když si při startu
+// projde složku, ve které běží, a ta obsahuje soukromé složky macOS (Fotky, Zprávy, Kontakty,
+// Plocha, Dokumenty…), systém se zeptá na povolení jménem Agenteeq – jeden dotaz za druhým. Proto
+// se na pozadí nespouští v kořeni disku, v domovské složce, v ~/Library ani přímo v chráněných
+// složkách a ve složkách médií. Projekt uvnitř Dokumentů nebo na Ploše projde: je to tvoje složka
+// a macOS se na ni zeptá nejvýš jednou. V Terminálu se agent spustí kdekoli (ptá se Terminál).
+const CHRANENE_KORENY = ['Desktop', 'Documents', 'Downloads'];
+const CHRANENE_CELE = ['Library', 'Pictures', 'Movies', 'Music'];
+
+export function slozkaSDotazySystemu(cwd, home, system = SYSTEM) {
+  // Cesty macOS: vždy POSIX, i když se pravidlo ověřuje na jiném systému.
+  const p = path.posix;
+  if (system !== 'macos' || typeof cwd !== 'string' || !p.isAbsolute(cwd) || !home) return false;
+  const c = p.resolve(cwd);
+  const h = p.resolve(home);
+  if (c === '/' || c === h || !c.startsWith(`${h}/`) && h.startsWith(`${c}/`)) return true;
+  if (CHRANENE_KORENY.some((d) => c === p.join(h, d))) return true;
+  return CHRANENE_CELE.some((d) => c === p.join(h, d) || c.startsWith(`${p.join(h, d)}/`));
+}

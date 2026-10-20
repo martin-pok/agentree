@@ -439,6 +439,23 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   vnitřního `codex` zdroj neuvádí – **neověřeno na skutečném stroji**. Vlákna aplikace čte konektor
   Codexu z `~/.codex/sessions` (`originator: "Codex Desktop"`); session se jmenuje „Codex · aplikace“,
   protože z přepisu nejde poznat, jestli šlo o Codex.app, nebo ChatGPT.app.
+
+### Běžící agenti bez čitelného přepisu (od 0.46.51) 🧪 Beta
+
+- **Agenti v terminálu** Cursor Agent, Aider, Goose, OpenCode, Amp, Crush, Droid a Auggie se
+  z výpisu procesů (`src/connectors/processes.js#agentniProcesy`) počítají jako běžící agenti
+  a v přehledu stojí jako „detekovaný proces“ (`src/bezici-agenti.js`), dokud proces běží. Přepisy
+  těchto nástrojů Agenteeq nečte, takže stav je jen „běží“, ne „pracuje / čeká“. Podpříkazy bez
+  konverzace (server, MCP, přihlášení, verze) jsou z nápovědy nástrojů, na skutečném stroji
+  neověřené – neznámý podpříkaz se počítá jako agent.
+- **Otevřené AI aplikace** (ChatGPT, Claude Desktop, Microsoft Copilot, Perplexity, Grok), jejichž
+  chaty Agenteeq nečte: když nikdo nepracuje, Stav agentů na Přehledu to řekne poznámkou
+  („Otevřené: ChatGPT. Chaty z těchto aplikací Agenteeq nevidí.“) místo holého „nikdo nepracuje“.
+- **Agent z aplikace na pozadí** se nespouští ani neobnovuje v kořeni disku, v domovské složce,
+  v `~/Library`, ve složkách médií ani přímo v Ploše, Dokumentech a Stažených
+  (`src/platform.js#slozkaSDotazySystemu`): běží jako podproces Agenteeq a průchod takovou složkou
+  by vyvolal dotazy macOS na Fotky, Zprávy a další soukromé složky jménem Agenteeq. Že je spouští
+  právě průchod složkou, vychází z hlášení vlastníka a z chování TCC, ne z měření → Beta.
 ## Předplatné a kurz koruny (Útrata)
 
 Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.

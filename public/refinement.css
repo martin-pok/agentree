@@ -140,7 +140,10 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 /* Stav agentů: dlaždice se obarví barvou stavu, jen když v ní něco je. Nula zůstává neutrální –
    barva je signál, ne výzdoba (čtyři barevné plochy naráz by nic neříkaly). Barva nese jen plochu;
    počet i popisek zůstávají v barvě textu, takže kontrast nezávisí na odstínu. */
-.zdravi-pocty a { justify-items: center; text-align: center; padding: 14px 12px; }
+/* Dlaždice v řadě mají vždy stejnou výšku, i když se jeden popisek („potřebuje tebe“) zalomí na dva
+   řádky: odkaz vyplní celou buňku mřížky a obsah stojí svisle uprostřed. */
+.zdravi-pocty li { display: flex; }
+.zdravi-pocty a { flex: 1; align-content: center; justify-items: center; text-align: center; padding: 14px 12px; }
 .zdravi-pocty span { font-size: var(--type-body); color: var(--ink-2); }
 /* Stav ve dlaždici: tón jen jako přechod 45° z barvy stavu do neutrální plochy a číslo v jeho
    barvě. Žádná obvodová ani horní linka – dlaždici drží plocha, ne rámeček. Tóny jsou tokeny

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { ui } from './texty.js';
-import { CLAUDE_PERMISSIONS } from './launcher.js';
+import { CLAUDE_PERMISSIONS, SLOZKA_S_DOTAZY } from './launcher.js';
+import { slozkaSDotazySystemu } from './platform.js';
 import { deriveStatus } from './model.js';
 
 // Odpověď agentovi přímo z Agenteeq: konverzace Claude Code pokračuje na pozadí
@@ -44,7 +45,7 @@ export function beziVeSlozce(s, procesy) {
   return false;
 }
 
-export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true, now = Date.now() } = {}) {
+export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = true, now = Date.now(), home = '', system } = {}) {
   if (!s || s.connector !== 'claude-code') {
     return { lze: false, kod: 'nastroj', proc: ui('Odpovídat z Agenteeq zatím jde jen v konverzacích Claude Code.') };
   }
@@ -55,6 +56,7 @@ export function lzeOdpovedet(s, { procesy, behy = [], claude = null, dostupne = 
   if (claude === false) return { lze: false, kod: 'program', proc: ui('Na tomto počítači se nenašel program claude.') };
   if (!claude) return { lze: false, kod: 'nevim', proc: ui('Ještě se zjišťuje, jestli je na tomto počítači program claude.') };
   if (!s.cwd || !path.isAbsolute(s.cwd)) return { lze: false, kod: 'slozka', proc: ui('U konverzace chybí složka, ve které běžela.') };
+  if (slozkaSDotazySystemu(s.cwd, home, system)) return { lze: false, kod: 'slozka-chranena', proc: SLOZKA_S_DOTAZY() };
   const naLimitu = Boolean(s.limit?.reached) && deriveStatus(s, now).status === 'limited';
   if (naLimitu && s.limit.resetsAt) {
     return { lze: false, kod: 'limit', proc: ui('Agent je na vyčerpaném limitu. Odpovědět půjde po jeho obnově.') };

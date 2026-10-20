@@ -38,6 +38,7 @@ import { mountDetekce } from './detekce-ui.js';
 import { goToSettings, goToSection, takeSectionJump, vyvolejMisto, pisePrave } from './jump.js';
 import { cileHledani, hledejCile, skore } from './hledani.js';
 import { containPopoverWheel } from './scroll-containment.js';
+import { listaPriPosunu } from './lista-pri-posunu.js';
 
 // Otevřené okno (hledání, upozornění, dialog) zamkne stránku přes overflow: hidden a posuvník zmizí.
 // Místo pro něj drží scrollbar-gutter (refinement.css); kde ho prohlížeč nezná, šířku posuvníku
@@ -490,6 +491,8 @@ let posouvaSe = false;
 let konecPosouvani = 0;
 const oznacPosunStranky = () => document.documentElement.classList.toggle('has-page-scroll', window.scrollY > 0);
 oznacPosunStranky();
+// Horní lišta se při posunu dolů schová a při posunu nahoru vysune (public/js/lista-pri-posunu.js).
+listaPriPosunu();
 window.addEventListener('scroll', () => {
   roluje = Date.now();
   oznacPosunStranky();

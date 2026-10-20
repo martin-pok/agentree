@@ -325,6 +325,12 @@ const pbDalsi = (n) => `<li class="pb-dalsi"><a class="link" href="#/agenti">${e
 // uzly – nepřehrají znovu nástup, nepřijdou o najetí a logo se znovu nedekóduje.
 const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'activity' || name === 'hero' || name === 'decisions' });
 
+// Otevřené AI aplikace, jejichž chaty Agenteeq nečte (Codex app čte celou, proto ne). Bez nich by
+// „nikdo nepracuje“ tvrdilo víc, než Agenteeq ví.
+function otevreneNevidim() {
+  return (state.runtimes || []).filter((r) => r.running && r.druh === 'aplikace' && r.id !== 'codex-app').map((r) => r.name).slice(0, 3);
+}
+
 function update(topics = new Set(['all'])) {
   const el = v.el;
   if (!el) return;
@@ -414,7 +420,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, now });
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
     // Barvu stavu dostane jen dlaždice, ve které něco je (refinement.css).
     const pocty = [
       [working.length, popisPoctu('working', working.length), working.length ? 'pracuje' : '', '#/agenti?stav=working'],
@@ -504,7 +510,7 @@ function update(topics = new Set(['all'])) {
   if (chartImmediate || (topics.has('sessions') && now - v.chartAt >= CHART_UPDATE_MS)) {
     const ser = providerSeries(everything, v.period, now, v.hidden);
     const chartChanged = fill(el, 'chart', ser.series.length
-      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: tr('Tokeny'), partialLast: true })
+      ? stackedColumns({ id: 'ov-tokens', labels: ser.labels, tips: ser.tips, series: ser.series, label: tr('Tokeny'), partialLast: true, nulaNeznama: tr('– = žádné změřené tokeny. Chaty v aplikaci a na webu tokeny nehlásí.') })
       : `<div class="empty-inline">${tr('V tomto období žádné tokeny.')}</div>`);
     if (chartChanged && !v.drawn) el.querySelector('[data-region="chart"] .chart-plot')?.classList.add('is-drawing');
     v.drawn = true;

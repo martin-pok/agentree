@@ -4,6 +4,34 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.51',
+    date: '2026-10-20',
+    title: 'Víc vidět agentů',
+    items: [
+      'Běžící Aider, Goose, OpenCode, Amp, Cursor Agent a další agenti v terminálu jsou v přehledu vidět.',
+      'Agent z Agenteeq se nespustí v domovské složce, takže macOS se neptá na Fotky ani Zprávy.',
+      'Okno upozornění má přehledné dlaždice a tlačítko dole je vždy vidět.',
+      'Horní lišta se při posunu dolů schová a při posunu nahoru vyjede s jemným přechodem do obsahu.',
+      'Varování nejsou v hnědých boxech a Nastavení při otevření neprobliká.',
+      'Tlačítka se při najetí neposouvají nahoru, jen změní barvu.',
+      'Ikona Nový rozhovor v Pomocníkovi se po klepnutí protočí.',
+      'Čtečka obrazovky čte přepis agenta jako seznam zpráv.',
+    ],
+    en: {
+      title: 'More agents in view',
+      items: [
+        'Running Aider, Goose, OpenCode, Amp, Cursor Agent and other terminal agents now show up in the overview.',
+        'An agent started from Agenteeq won\'t run in your home folder, so macOS doesn\'t ask about Photos or Messages.',
+        'The alerts window has clear tiles and the button at the bottom is always visible.',
+        'The top bar hides as you scroll down and slides back in, with a soft fade into the content, as you scroll up.',
+        'Warnings are no longer in brown boxes and Settings no longer flicker on open.',
+        'Buttons no longer jump up on hover, they only change colour.',
+        'The New conversation icon in the Assistant spins when you tap it.',
+        'Screen readers read the agent transcript as a list of messages.',
+      ],
+    },
+  },
+  {
     version: '0.46.50',
     date: '2026-10-20',
     title: 'Zadání nahoře a méně prázdných míst',

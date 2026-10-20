@@ -16,6 +16,7 @@ export default {
   "Odpovídat z Agenteeq jde zatím jen na macOS.": "Replying from Agenteeq works only on macOS for now.",
   "Ještě se zjišťuje, jestli je na tomto počítači program claude.": "Still checking whether the claude program is on this computer.",
   "U konverzace chybí složka, ve které běžela.": "The folder this conversation ran in is unknown.",
+  "V této složce by agent prošel i Fotky, Zprávy a další soukromé složky a macOS by se jménem Agenteeq ptal na povolení. Vyber složku projektu, nebo agenta spusť v Terminálu.": "In this folder the agent would also go through Photos, Messages and other private folders, and macOS would ask for permission in Agenteeq's name. Pick a project folder, or start the agent in Terminal.",
   "Agent ještě pracuje na předchozím zadání z Agenteeq. Počkej, až doběhne.": "The agent is still working on the previous task from Agenteeq. Wait until it finishes.",
   "Nepodařilo se zjistit, jestli konverzace neběží jinde. Odpověz radši v Terminálu.": "Couldn’t check whether the conversation is running elsewhere. Better reply in Terminal.",
   "V této složce právě běží Claude Code. Odpověz tam, ať se konverzace nerozdvojí.": "Claude Code is running in this folder right now. Reply there so the conversation doesn’t split.",
