@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.45',
+    date: '2026-10-20',
+    title: 'Klidnější Nastavení',
+    items: [
+      'Vysvětlující odstavce v Nastavení jsou schované pod „i“ u nadpisů a přepínačů, takže je stránka kratší a přehlednější.',
+      'Stav a varování, třeba adresa v domácí síti nebo upozornění před smazáním účtu, zůstávají vidět.',
+      'Bublina „i“ na telefonu nevyjede z obrazovky a ikona se drží posledního slova.',
+    ],
+    en: {
+      title: 'A calmer Settings page',
+      items: [
+        'Explanatory paragraphs in Settings now sit behind an “i” next to headings and switches, so the page is shorter and easier to scan.',
+        'Status and warnings, such as the home network address or the notice before deleting your account, stay visible.',
+        'The “i” tooltip stays on screen on phones and the icon sticks to the last word.',
+      ],
+    },
+  },
+  {
     version: '0.46.44',
     date: '2026-10-20',
     title: 'Vysvětlení pod „i“, ne v odstavcích',

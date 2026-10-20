@@ -5,7 +5,7 @@ import { esc, rel, initials, dateLong, plural } from '../format.js';
 import { ze } from '../predlozky.js';
 import { AVATAR_COUNT, avatarSvg, hasAvatar, setAvatar } from '../avatars.js';
 import { glyph, ICON } from '../icons.js';
-import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy } from '../ui.js';
+import { fill, switchRow, stateBadge, toast, modal, confirmDialog, copy, sTipem } from '../ui.js';
 import { applyAppearance, applyLook, normalizeAppearance, normalizeLook, resolvedAppearance, THEMES, themeOf } from '../appearance.js';
 import { qrSvg, parovaciAdresa, cileParovani } from '../qr.js';
 import { takeJump, vyvolejMisto } from '../jump.js';
@@ -88,7 +88,7 @@ function remoteCard() {
   const rada = t.advice;
   const bezi = t.list.find((x) => x.running);
   return `
-    ${head(ICON.cloud, tr('Mimo domov'), tr('Z mobilních dat a cizí Wi-Fi se k Agenteeq dostaneš přes tunel.'))}
+    ${head(ICON.cloud, tr('Mimo domov'), '', '', tr('Z mobilních dat a cizí Wi-Fi se k Agenteeq dostaneš přes tunel.'))}
     ${bezi ? `<div class="code-line"><code>${esc(bezi.remoteUrl || bezi.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(bezi.remoteUrl || bezi.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat')}</button></div>
       <p class="set-note">${esc(bezi.name)} ${tr('běží.')} ${esc(bezi.security)}</p>` : ''}
     ${t.list.length ? `<ul class="privacy-list">${t.list.map((x) => `<li>
@@ -125,7 +125,7 @@ function tailscaleCard() {
         ? tr('Tailscale je nainstalovaný, ale nejsi přihlášený.')
         : tr('Tailscale na {0} není.', tomtoPocitaci());
   return `
-    ${head(ICON.shield, tr('Přístup přes Tailscale'), tr('Privátní síť jen mezi tvými zařízeními. Telefon se k {0} dostane z mobilních dat i z cizí Wi-Fi bez veřejné adresy.', tomutoPocitaci()))}
+    ${head(ICON.shield, tr('Přístup přes Tailscale'), '', '', tr('Privátní síť jen mezi tvými zařízeními. Telefon se k {0} dostane z mobilních dat i z cizí Wi-Fi bez veřejné adresy.', tomutoPocitaci()))}
     ${switchRow({ key: 'tailscaleAccess', label: tr('Přístup ze sítě Tailscale'), desc: esc(popis), checked: t.enabled, disabled: !pripraveno })}
     ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
     ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>
@@ -186,7 +186,7 @@ function phoneCard() {
       </div>
       ${pin ? parovaciKod(cil, pin, cas) : ''}`;
   return `
-    ${head(ICON.mac, tr('Otevřít na telefonu'), tr('Přidá adresu v domácí síti. Telefon se k datům dostane jen po spárování jednorázovým kódem.'))}
+    ${head(ICON.mac, tr('Otevřít na telefonu'), '', '', tr('Přidá adresu v domácí síti. Telefon se k datům dostane jen po spárování jednorázovým kódem.'))}
     ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? `${tr('Adresa {0}:', tohotoPocitace())} ${l.addresses.join(', ')}` : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
     ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
     ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>` : ''}
@@ -238,7 +238,7 @@ function privacyCard() {
     telefon ? tr('Přístup z telefonu je zapnutý: server poslouchá i pro spárovaná zařízení.') : tr('Server poslouchá jen na 127.0.0.1, dokud nezapneš přístup z telefonu.'),
   ];
   return `
-    ${head(ICON.key, tr('Soukromí a bezpečnost'), tr('Konverzace, kód a názvy projektů čte Agenteeq jen na {0} a nikam je neposílá. Žádná telemetrie ani analytika.', tomtoPocitaci()))}
+    ${head(ICON.key, tr('Soukromí a bezpečnost'), '', '', tr('Konverzace, kód a názvy projektů čte Agenteeq jen na {0} a nikam je neposílá. Žádná telemetrie ani analytika.', tomtoPocitaci()))}
     <ul class="privacy-list">
       <li><b>${tr('Konverzace agentů')}</b><span>${tr('Čtou se ze souborů na disku ({0}, {1} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.', esc(`~/.claude`), esc(`~/.codex`))}</span></li>
       <li><b>${tr('Na disku v ~/.agenteeq/data.json')}</b><span>${tr('Nastavení, projekty, rozpočty a historie upozornění – soubor má práva jen pro tebe (0600) a složka 0700.')}</span></li>
@@ -261,7 +261,7 @@ function helpCard() {
     ['Esc', tr('Zavřít dialog, nabídku nebo hledání')],
   ];
   return `
-    ${head(ICON.info, tr('Nápověda a zkratky'), tr('Novinky, zkratky a pomoc, když něco nefunguje.'))}
+    ${head(ICON.info, tr('Nápověda a zkratky'), '', '', tr('Novinky, zkratky a pomoc, když něco nefunguje.'))}
     <dl class="shortcuts">${zkratky.map(([k, popis]) => `<div><dt><kbd>${esc(k)}</kbd></dt><dd>${popis}</dd></div>`).join('')}</dl>
     <div class="set-actions">
       <button class="btn btn--sm" type="button" data-whats-new>${ICON.spark}${tr('Co je nového')}</button>
@@ -937,7 +937,7 @@ function accountCard() {
       <div class="set-actions">${v.ucetUrl ? `<a class="btn btn--sm" href="${esc(v.ucetUrl)}" target="_blank" rel="noopener">${ICON.external}${tr('Otevřít přihlášení znovu')}</a>` : ''}
         <button class="btn btn--sm" type="button" data-action="ucet-zrusit">${tr('Zrušit')}</button></div>`;
   }
-  return `${head(ICON.cloud, tr('Účet Agenteeq'), tr('Tokeny, útrata a limity ze všech tvých počítačů pohromadě – v aplikaci i na webu. Bez účtu funguje všechno dál.'), stateBadge('missing', tr('Nepřihlášeno')))}
+  return `${head(ICON.cloud, tr('Účet Agenteeq'), '', stateBadge('missing', tr('Nepřihlášeno')), tr('Tokeny, útrata a limity ze všech tvých počítačů pohromadě – v aplikaci i na webu. Bez účtu funguje všechno dál.'))}
     ${chyba}
     <ul class="acct-benefits">
       <li>${ICON.mac}<span>${tr('Souhrny ze všech tvých počítačů pohromadě')}</span></li>
@@ -1022,12 +1022,14 @@ function pushSekce() {
 
 function modelsCard() {
   const list = v.napojeni;
-  return `${head(ICON.plug, tr('Napojené modely'), tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
+  return `${head(ICON.plug, tr('Napojené modely'), '', '', tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
     ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
     <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
 }
 
-const head = (icon, title, desc, aside = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3>${title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
+// `tip` = vysvětlení bez stavu (k čemu karta je, jak funguje). Patří pod „i“ u nadpisu, ne do odstavce –
+// viditelný `desc` zůstává jen pro stav nebo varování (rozhodnutí vlastníka 19. 10. 2026, backlog B07).
+const head = (icon, title, desc, aside = '', tip = '') => `<div class="set-card-head"><span class="icon-tile">${icon}</span><div><h3${tip ? ' class="eyebrow--tip"' : ''}>${tip ? sTipem(title, tip) : title}</h3>${desc ? `<p class="set-desc">${desc}</p>` : ''}</div>${aside}</div>`;
 
 function update(topics) {
   if (v.el && v.napojeni && (topics?.has?.('napojeni') || topics?.has?.('integrations'))) nactiNapojeni();
@@ -1051,15 +1053,15 @@ function update(topics) {
     </button>`;
   };
   fill(el, 'appearance', `
-    ${head(ICON.sun, tr('Vzhled'), tr('Dva páry, světlý a tmavý. Volba platí na {0}.', tomtoPocitaci()))}
+    ${head(ICON.sun, tr('Vzhled'), '', '', tr('Dva páry, světlý a tmavý. Volba platí na {0}.', tomtoPocitaci()))}
     <div class="theme-picks" role="radiogroup" aria-label="${tr('Vyber vzhled aplikace')}">
       ${THEMES.map(motiv).join('')}
     </div>
     ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', podleSystemu())), checked: system })}
     <div class="set-divider"></div>
-    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), desc: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
-    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), desc: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), desc: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
+    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
+    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
+    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
     <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
@@ -1072,7 +1074,7 @@ function update(topics) {
   const lang = jazyk();
   const langOption = (value, label) => `<button class="appearance-option" type="button" data-lang="${value}" aria-pressed="${lang === value}"><strong>${label}</strong></button>`;
   fill(el, 'language', `
-    ${head(ICON.globe, tr('Jazyk aplikace'), tr('Změna jazyka stránku znovu načte.'))}
+    ${head(ICON.globe, tr('Jazyk aplikace'), '', '', tr('Změna jazyka stránku znovu načte.'))}
     <div class="appearance-options appearance-options--lang" role="group" aria-label="${tr('Vyber jazyk aplikace')}">
       ${langOption('cs', 'Čeština')}
       ${langOption('en', 'English')}
@@ -1171,8 +1173,7 @@ function update(topics) {
   const nenalezene = zdroje.filter((c) => c.state === 'missing');
   const doplnky = dle(EXTRA_IDS);
   fill(el, 'connectors', `
-    ${head(ICON.plug, tr('Zdroje agentů'), tr('Odkud Agenteeq čte práci agentů na {0}. Nový nástroj se přidá sám, jakmile ho poprvé použiješ.', tomtoPocitaci()),
-      `<button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}${tr('Načíst znovu')}</button>`)}
+    ${head(ICON.plug, tr('Zdroje agentů'), '', `<button class="btn btn--sm" type="button" data-action="rescan">${ICON.refresh}${tr('Načíst znovu')}</button>`, tr('Odkud Agenteeq čte práci agentů na {0}. Nový nástroj se přidá sám, jakmile ho poprvé použiješ.', tomtoPocitaci()))}
     ${nalezene.length ? `<ul class="src-list">${nalezene.map(sourceRow).join('')}</ul>` : `<p class="set-note">${tr('Zatím nebyl nalezen žádný agent. Spusť třeba Claude Code, Codex nebo Cursor a objeví se tady.')}</p>`}
     ${nenalezene.length ? fold('missing', tr('Nenalezeno na {0}', tomtoPocitaci()), `<ul class="src-list">${nenalezene.map(sourceRow).join('')}</ul>`, { count: nenalezene.length }) : ''}
     ${doplnky.length ? fold('extra', tr('Doplňková data'), `<ul class="src-list">${doplnky.map(sourceRow).join('')}</ul>`, { count: doplnky.length }) : ''}`);
@@ -1181,7 +1182,7 @@ function update(topics) {
   const moje = mojeZive();
   const ignorovane = state.detekce?.ignorovane || [];
   fill(el, 'moje', `
-    ${head(ICON.spark, tr('Moje nástroje'), tr('AI nástroje zachycené na {0}. U každého vidíš, jestli právě běží.', tomtoPocitaci()))}
+    ${head(ICON.spark, tr('Moje nástroje'), '', '', tr('AI nástroje zachycené na {0}. U každého vidíš, jestli právě běží.', tomtoPocitaci()))}
     ${moje.length
       ? `<ul class="moje-list">${moje.map(mujRadek).join('')}</ul>`
       : `<p class="set-note">${tr('Zatím žádný. Až poběží nový AI nástroj, Agenteeq ti ho nabídne přidat.')}</p>`}
@@ -1200,22 +1201,22 @@ function update(topics) {
   /* Upozornění */
   const ticho = n.quietHours === true;
   fill(el, 'notifications', `
-    ${head(ICON.bell, tr('Kdy a jak tě upozornit'), tr('Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu.'), `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`)}
+    ${head(ICON.bell, tr('Kdy a jak tě upozornit'), '', `<button class="btn btn--sm" type="button" data-action="test-alert">${tr('Poslat zkušební')}</button>`, tr('Když přijde víc než tři upozornění za minutu, další se spojí do jednoho souhrnu.'))}
     ${switchRow({ key: 'native', label: JE_MAC ? tr('Oznámení v macOS') : tr('Oznámení systému'), desc: i.nativeNotify ? tr('Přijdou i se zavřeným prohlížečem, dokud Agenteeq běží.') : tr('Na tomto systému nejsou dostupná.'), checked: n.native && i.nativeNotify, disabled: !i.nativeNotify })}
-    ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), desc: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
+    ${i.desktop ? '' : switchRow({ key: 'browser', label: tr('Oznámení v prohlížeči'), tip: tr('Když máš Agenteeq otevřené na pozadí.'), checked: n.browser })}
     <div class="set-divider"></div>
     <div data-push-sekce>${pushSekce()}</div>
     <div class="set-divider"></div>
-    ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), desc: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
-    ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), desc: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
-    ${switchRow({ key: 'limitReset', label: tr('Obnovený limit'), desc: tr('Když se obnoví 5hodinový nebo týdenní limit.'), checked: n.limitReset !== false })}
-    ${switchRow({ key: 'budget', label: tr('Rozpočet'), desc: tr('Při 80 % a 100 % měsíčního rozpočtu útraty i tokenů projektu.'), checked: n.budget })}
-    ${switchRow({ key: 'detekce', label: tr('Nově zachycený agent'), desc: tr('Když na {0} poprvé poběží AI nástroj, který Agenteeq nezná. Každý jen jednou.', tomtoPocitaci()), checked: n.detekce !== false })}
-    ${switchRow({ key: 'done', label: tr('Dokončený úkol'), desc: tr('Když agent dokončí zadaný úkol.'), checked: n.done })}
+    ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), tip: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
+    ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), tip: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
+    ${switchRow({ key: 'limitReset', label: tr('Obnovený limit'), tip: tr('Když se obnoví 5hodinový nebo týdenní limit.'), checked: n.limitReset !== false })}
+    ${switchRow({ key: 'budget', label: tr('Rozpočet'), tip: tr('Při 80 % a 100 % měsíčního rozpočtu útraty i tokenů projektu.'), checked: n.budget })}
+    ${switchRow({ key: 'detekce', label: tr('Nově zachycený agent'), tip: tr('Když na {0} poprvé poběží AI nástroj, který Agenteeq nezná. Každý jen jednou.', tomtoPocitaci()), checked: n.detekce !== false })}
+    ${switchRow({ key: 'done', label: tr('Dokončený úkol'), tip: tr('Když agent dokončí zadaný úkol.'), checked: n.done })}
     <label class="field field--row"><span>${tr('Hlásit dokončené úkoly')}</span>
       <select data-done-min${n.done ? '' : ' disabled'}>${DONE_OPTIONS.map(([s, l]) => `<option value="${s}"${n.doneMinSeconds === s ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
     <div class="set-divider"></div>
-    ${switchRow({ key: 'quietHours', label: tr('Noční ticho'), desc: tr('V nastavený čas nepřijde oznámení ani zvuk. Co zůstane nevyřešené, shrne na konci ticha jedno oznámení.'), checked: ticho })}
+    ${switchRow({ key: 'quietHours', label: tr('Noční ticho'), tip: tr('V nastavený čas nepřijde oznámení ani zvuk. Co zůstane nevyřešené, shrne na konci ticha jedno oznámení.'), checked: ticho })}
     <div class="field field--row quiet-row"><span id="lbl-quiet-time">${tr('Čas ticha podle hodin tohoto počítače')}</span>
       <span class="quiet-times" role="group" aria-labelledby="lbl-quiet-time">
         <select data-quiet="quietFrom" aria-label="${tr('Začátek ticha')}"${ticho ? '' : ' disabled'}>${casyTicha(n.quietFrom || '22:00', n.quietTo)}</select>
@@ -1366,7 +1367,7 @@ function update(topics) {
   // nebo kamarádovi) a vydavateli i instalační balíček vzniklý buildem na TOMTO Macu. V příkazové
   // řádce bez balíčku by `npm pack` s cestami ve složce vývojáře nic neřekl – karta se tam nezobrazí.
   fill(el, 'share', !pkg && !(i.desktop && JE_MAC) ? '' : `
-    ${head(ICON.external, tr('Instalace pro další lidi'), tr('Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná.'))}
+    ${head(ICON.external, tr('Instalace pro další lidi'), '', '', tr('Každý si Agenteeq nainstaluje na svůj Mac a propojí vlastní agenty a předplatná.'))}
     <p class="set-desc">${tr('Nejjednodušší je poslat odkaz na stránku Instalace. Je tam stažení pro Mac i Windows a postup bez Terminálu:')}</p>
     <div class="code-line"><code>${esc(STRANKA_INSTALACE)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(STRANKA_INSTALACE)}" data-copy-message="${tr('Odkaz zkopírován')}">${ICON.copy}${tr('Kopírovat odkaz')}</button></div>
     ${fold('share-primo', i.desktop ? tr('Poslat aplikaci přímo') : tr('Poslat instalační balíček'), `

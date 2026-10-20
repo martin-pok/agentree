@@ -179,7 +179,7 @@ test('Útrata: u ručních záznamů i u součtů stojí, že se nepočítají; 
   assert.match(html, /Starší ruční záznamy<\/span><span class="ledger-group-note">nepočítají se do součtů ani rozpočtu<\/span>/);
   const kod = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
   const sp = { ...payload(spend), billing: { connected: true, at: NOW, failed: [] } };
-  assert.match(spendHeroHtml(sp), /role="tooltip" id="info-tip-\d+">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/span>/);
+  assert.match(spendHeroHtml(sp), /role="tooltip" id="info-tip-[0-9a-z]+">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/span>/);
   assert.doesNotMatch(spendHeroHtml({ ...sp, ledger: [] }), /Starší ruční záznamy/);
   const dialog = kod.slice(kod.indexOf('function openBudgets('), kod.indexOf('onSubmit:', kod.indexOf('function openBudgets(')));
   // Vysvětlení je schované za „i“ u celkového rozpočtu (rozhodnutí vlastníka 19. 10. 2026), bez odstavce.

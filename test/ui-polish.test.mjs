@@ -788,3 +788,20 @@ test('nahrání obrázku a loga: jeden řádek s tlačítkem vedle, podrobnosti 
   const { infoTip } = await import('../public/js/ui.js');
   assert.match(infoTip('do 4 MB'), /4\u00a0MB/, 'číslo a jednotka se nerozdělí');
 });
+
+test('Nastavení: vysvětlení bez stavu jsou pod „i“, stav a varování zůstávají vidět', async () => {
+  const s = await zdroj('public/js/views/settings.js');
+  assert.match(s, /const head = \(icon, title, desc, aside = '', tip = ''\) =>/);
+  for (const k of ['pomocnikZobrazit', 'needsInput', 'limits', 'quietHours']) assert.match(s, new RegExp(`key: '${k}'[^}]*tip: tr\\(`), `${k} má vysvětlení pod „i“`);
+  assert.match(s, /head\(ICON\.cloud, tr\('Odhlášení a smazání účtu'\), tr\('Data na/, 'varování před odhlášením zůstává vidět');
+  const ui = await zdroj('public/js/ui.js');
+  assert.match(ui, /export function sTipem\(text, tip\)/, 'poslední slovo a „i“ drží spolu');
+  const { sTipem } = await import('../public/js/ui.js');
+  assert.match(sTipem('Docházející limit předplatného', 'x'), /^Docházející limit <span class="tip-glue">předplatného<span class="info-tip">/);
+});
+
+test('„i“ dá při stejném textu stejné HTML (fill() kartu nepřekresluje a nezavře bublinu)', async () => {
+  const { infoTip } = await import('../public/js/ui.js');
+  assert.equal(infoTip('Stejný text'), infoTip('Stejný text'));
+  assert.notEqual(infoTip('Jeden'), infoTip('Druhý'));
+});
