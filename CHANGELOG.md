@@ -1,5 +1,10 @@
 # Changelog
 
+## Nevydáno
+
+- Při delším výpadku se hláška o ztrátě spojení zobrazí po čtyřech sekundách i při opakovaných pokusech o připojení. Po obnovení spojení zmizí.
+- Upozornění se označí jako přečtené až po úspěšném uložení. Neúspěšný zápis je neschová a opožděná odpověď nepřepíše novější počet nepřečtených.
+
 ## 0.46.48 – 2026-10-20 · Úchyty jen na požádání a úklid vydání
 
 - **Průběh dne na telefonu:** úchyty widgetů už trvale nesvítí. Přesouvá se v režimu „Upravit rozložení“ a prstem jen za úchyt, takže dotyk hlavičky widgetu posune stránku, ne kartu.

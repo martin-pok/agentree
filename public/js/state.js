@@ -42,6 +42,15 @@ export const state = {
 
 const listeners = new Set();
 let pending = null;
+// Pořadí serverových změn chrání živý počet před opožděnou HTTP odpovědí.
+export let alertsRevision = 0;
+
+export function confirmAlertsRead(ids, unread, revision) {
+  for (const a of state.alerts.items) if (ids.has(a.id)) a.read = true;
+  if (alertsRevision === revision) state.alerts.unread = unread;
+  alertsRevision++;
+  emit('alerts');
+}
 
 export function subscribe(fn) {
   listeners.add(fn);
@@ -71,6 +80,7 @@ export function emit(...topics) {
 }
 
 export function applySnapshot(s) {
+  alertsRevision++;
   Object.assign(state, {
     ready: s.ready,
     version: s.version,
@@ -165,6 +175,7 @@ export function applyEvent(name, data) {
       emit('credits');
       return null;
     case 'alert': {
+      alertsRevision++;
       state.alerts.unread = data.unread;
       if (state.alerts.items.some((a) => a.id === data.alert.id)) return null;
       state.alerts.items = [data.alert, ...state.alerts.items].slice(0, 300);
@@ -172,6 +183,7 @@ export function applyEvent(name, data) {
       return data.alert;
     }
     case 'alerts':
+      alertsRevision++;
       state.alerts.unread = data.unread;
       if (data.unread === 0) for (const a of state.alerts.items) a.read = true;
       emit('alerts');
