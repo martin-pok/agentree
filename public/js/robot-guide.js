@@ -227,7 +227,14 @@ function sestav() {
   el.addEventListener('click', (e) => {
     const akce = e.target.closest('[data-pm]')?.dataset.pm;
     if (akce === 'zavrit') return zavri();
-    if (akce === 'novy') { zpravy = []; ulozZpravy(); vykresli(); vstup.focus(); return; }
+    if (akce === 'novy') {
+      // Viditelná odezva: ikona se jednou protočí, i když je rozhovor už prázdný.
+      const tl = e.target.closest('[data-pm="novy"]');
+      tl.classList.remove('is-toci');
+      void tl.offsetWidth; // nové klepnutí během otáčení spustí animaci znovu od začátku
+      tl.classList.add('is-toci');
+      zpravy = []; ulozZpravy(); vykresli(); vstup.focus(); return;
+    }
     const navrh = e.target.closest('[data-navrh]');
     if (navrh) { posli(navrh.dataset.navrh); return; }
     const cilBtn = e.target.closest('[data-cil]');

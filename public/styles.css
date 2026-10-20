@@ -384,23 +384,30 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 .dot--down { background: var(--velvet-ink); }
 
 /* ---------- Horní lišta ---------- */
-/* --main-top je horní odsazení obsahu. Čte ho i lepivá lišta v Nastavení: kdyby se lepila jinde,
+/* --main-top je horní odsazení obsahu. Čte ho i lepivá horní lišta: kdyby se lepila jinde,
    než kde v toku stojí, sjela by při otevření přes první kartu (desktop: +100 px). */
 .main { --main-top: calc(var(--band-h) + 40px); position: relative; min-width: 0; padding: var(--main-top) 56px 64px 64px; }
 .topbar { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; margin-bottom: 36px; }
-/* V Nastavení zůstává nadpis ve své původní výšce spolu s podmenu – lepí se přesně tam, kde v toku stojí. */
-.main--settings > .topbar { position: sticky; top: var(--main-top); z-index: 13; background: var(--paper); }
-/* Pás nad lištou (horní odsazení obsahu) kryje stín v barvě papíru, jinak by v něm při posouvání
-   prosvítal obsah. Přesah 24 px do stran kryje i postranní odsazení. */
-.main--settings > .topbar { box-shadow: 0 calc(-1 * var(--main-top)) 0 24px var(--paper); }
-@media (min-width: 1181px) {
-  /* Pravý obsah prochází celou výškou okna. Prázdná část ukotveného řádku jej
-     nesmí zakrývat ani zachytávat kliknutí; akce jsou dostupné na začátku stránky. */
-  .main--settings > .topbar { background: transparent; box-shadow: none; pointer-events: none; }
-  .main--settings > .topbar > * { pointer-events: auto; }
-  /* Akce plynule ustoupí obsahu, který pod nimi projíždí – nikdy nestojí přes kartu. */
-  .main--settings > .topbar .topbar-actions { transition: opacity var(--motion-response) var(--ease), visibility var(--motion-response) var(--ease); }
-  .has-page-scroll .main--settings > .topbar .topbar-actions { opacity: 0; visibility: hidden; pointer-events: none; }
+/* ---------- Horní lišta při posouvání (public/js/lista-pri-posunu.js) ----------
+   Na začátku stránky stojí lišta v toku. Když ji stránka mine, přilepí se ve stejné výšce: posun dolů
+   ji odsune nahoru mimo okno, posun nahoru ji vysune zpátky. Pod vysunutou lištou je gradient
+   v barvě papíru aktuálního vzhledu s jemným rozmazáním – obsah pod ní plynule mizí, akce vpravo
+   nahoře jsou čitelné na čemkoli. Pohyb jen přes transform a opacity, takže běží hladce i na
+   telefonu a ve WebKitu. Platí na všech obrazovkách včetně Nastavení. */
+.topbar { --lista-top: var(--main-top, 32px); position: sticky; top: var(--lista-top); z-index: 30; transition: transform var(--motion-move) var(--ease-settle); will-change: transform; }
+.topbar::before { content: ''; position: absolute; z-index: -1; top: calc(-1 * var(--lista-top)); bottom: -56px; left: calc(-1 * var(--lista-l, 56px)); right: calc(-1 * var(--lista-r, 56px));
+  background: linear-gradient(to bottom, var(--paper) 0%, color-mix(in srgb, var(--paper) 92%, transparent) 42%, color-mix(in srgb, var(--paper) 55%, transparent) 72%, transparent 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1); backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%); mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  opacity: 0; pointer-events: none; transition: opacity var(--motion-move) var(--ease); }
+html[data-lista='skryta'] .topbar { transform: translateY(calc(-100% - var(--lista-top) - 24px)); }
+html[data-lista='vysunuta'] .topbar::before { opacity: 1; }
+/* Kotva lišty (místo v toku) nesmí nic posunout. */
+.lista-kotva { height: 0; margin: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .topbar { transition: none; }
+  html[data-lista='skryta'] .topbar { transform: none; opacity: 0; visibility: hidden; }
+  .topbar::before, .set-nav { transition: none; }
 }
 .page-title { margin: 0; font: 400 36px/1.1 var(--f-display); letter-spacing: -.02em; outline: none; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; }
@@ -1968,8 +1975,11 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 }
 @media (max-width: 1180px) {
   .settings2 { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  /* Vodorovná lišta záložek se lepí těsně pod horní lištu, aby mezi nimi neprosvítal obsah. */
-  .set-nav { top: calc(var(--main-top) + 40px); z-index: 12; display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  /* Vodorovná lišta záložek se lepí těsně pod vysunutou horní lištu; když se horní lišta schová,
+     vyjede k horní hraně okna. Stín v barvě papíru pod ní obsah plynule ztlumí. Pořadí nad
+     gradientem horní lišty, aby záložky nebyly zašedlé. */
+  .set-nav { top: env(safe-area-inset-top, 0px); z-index: 31; transition: top var(--motion-move) var(--ease-settle); box-shadow: 0 12px 14px -8px var(--paper); display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  html[data-lista='vysunuta'] .set-nav { top: calc(var(--main-top) + var(--lista-h, 44px)); }
   .set-nav::-webkit-scrollbar { display: none; }
   .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }

@@ -122,12 +122,22 @@ v jiném prohlížeči, delší patička –, profil zvolí menší podobu, a kd
 **Stavy.** Najetí změní plochu nebo linku (nikdy tvar), stisk zmenší tlačítko na 98 %, zakázané
 tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice ukazuje obrys 2 px.
 
+## Horní lišta při posouvání (vlastník 20. 10. 2026)
+
+Nadpis a akce vpravo nahoře (stav připojení, Obnovit, Hledat, Upozornění) se na všech obrazovkách
+chovají stejně: na začátku stránky stojí lišta v toku. Posun dolů ji schová (vyjede nahoru), posun
+nahoru ji vysune shora. Pod vysunutou lištou je gradient v barvě papíru aktuálního vzhledu
+s jemným rozostřením, který sahá od horní hrany okna dolů a pod akcemi plynule mizí, takže obsah
+pod lištou nekončí tvrdou hranou a akce jsou čitelné na čemkoli. Stav rozhoduje jen
+`public/js/lista-pri-posunu.js` (`html[data-lista]`), vzhled a pohyb jen CSS (transform a opacity).
+Malé posuny pod 8 px stav nemění. Lišta se neschová, dokud je v ní fokus z klávesnice nebo je otevřené
+okno upozornění či hledání. Při omezeném pohybu lišta nevyjíždí, jen se ukáže a zmizí.
+
 ## Rozestupy v Nastavení
 
 Lepivá horní lišta a podmenu Nastavení se odvozují z `--main-top` (horní odsazení `.main`, které
 si každý režim – web, macOS okno, telefon, Koncert – nastaví sám). Žádné jiné číslo: lišta, která
-se lepí níž, než kde v toku stojí, při otevření sjede přes první kartu. Na užších oknech, kde je
-lišta neprůhledná, kryje pás nad ní stín v barvě papíru. Dvě nezávislé volby pod sebou (kanál
+se lepí níž, než kde v toku stojí, při otevření sjede přes první kartu. Dvě nezávislé volby pod sebou (kanál
 a způsob aktualizací) mají každá viditelný popisek a mezi skupinami 24 px – víc než 10 px mezi
 kartami uvnitř skupiny, takže se obrysy vybraných karet nikdy nedotknou.
 

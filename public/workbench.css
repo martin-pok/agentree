@@ -1004,6 +1004,9 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .pm-novy, .pm-zavrit { background: rgb(255 255 255 / .14); color: #fff; box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2); transition: background var(--motion-response) var(--ease); }
 .pm-novy:hover, .pm-zavrit:hover { background: rgb(255 255 255 / .26); color: #fff; }
 .pm-novy:focus-visible, .pm-zavrit:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* Nový rozhovor: ikona se po stisku jednou protočí proti směru hodinových ručiček (směr šipky). */
+.pm-novy.is-toci svg { animation: pm-toci 600ms cubic-bezier(.3, .7, .2, 1); }
+@keyframes pm-toci { from { transform: rotate(0); } to { transform: rotate(-360deg); } }
 .pm-msg--on { background: var(--card); border: 1px solid color-mix(in srgb, var(--pm-vio) 14%, var(--line-2)); box-shadow: 0 6px 16px -12px rgb(56 50 170 / .35); }
 .pm-msg--ja { background: linear-gradient(135deg, #6a66e0 0%, var(--pm-vio-2) 100%); color: #fff; box-shadow: 0 8px 18px -12px rgb(56 50 170 / .7); }
 .pm-tip b { color: var(--pm-vio-ink); }
@@ -1018,7 +1021,8 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
   box-shadow: inset 0 1px 0 rgb(255 255 255 / .32), inset 0 0 0 1px rgb(255 255 255 / .14), 0 6px 14px -6px rgb(82 84 216 / .7); transition: transform var(--motion-press) var(--ease); }
 /* Bez poskoku při najetí, stejně jako ostatní tlačítka (styles.css, Stavy). */
 .pm-poslat:active { transform: translateY(0) scale(.96); }
-@media (prefers-reduced-motion: reduce) { .pm-poslat, .pm-navrh, .pm-novy, .pm-zavrit { transition: none; } .pm-poslat:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pm-poslat, .pm-navrh, .pm-novy, .pm-zavrit { transition: none; } .pm-poslat:hover { transform: none; } .pm-novy.is-toci svg { animation: pm-blik 400ms ease-out; } }
+@keyframes pm-blik { 50% { opacity: .35; } }
 
 /* Kde agent běží (tento počítač / web) musí být u robota vidět na první pohled: 24–28 px odznak
    s ikonou 14–16 px na ploše karty, ne 10 px tečka. */

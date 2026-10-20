@@ -6,15 +6,21 @@ export const RELEASES = [
   {
     version: '0.46.51',
     date: '2026-10-20',
-    title: 'Klidná tlačítka',
+    title: 'Lišta po ruce',
     items: [
+      'Horní lišta se při posunu dolů schová a při posunu nahoru vyjede s jemným přechodem do obsahu.',
+      'Varování nejsou v hnědých boxech a Nastavení při otevření neprobliká.',
       'Tlačítka se při najetí neposouvají nahoru, jen změní barvu.',
+      'Ikona Nový rozhovor v Pomocníkovi se po klepnutí protočí.',
       'Čtečka obrazovky čte přepis agenta jako seznam zpráv.',
     ],
     en: {
-      title: 'Calm buttons',
+      title: 'Top bar at hand',
       items: [
+        'The top bar hides as you scroll down and slides back in, with a soft fade into the content, as you scroll up.',
+        'Warnings are no longer in brown boxes and Settings no longer flicker on open.',
         'Buttons no longer jump up on hover, they only change colour.',
+        'The New conversation icon in the Assistant spins when you tap it.',
         'Screen readers read the agent transcript as a list of messages.',
       ],
     },

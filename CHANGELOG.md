@@ -1,10 +1,15 @@
 # Changelog
 
-## 0.46.51 – 2026-10-20 · Klidná tlačítka a přístupnější přepis
+## 0.46.51 – 2026-10-20 · Lišta po ruce, klidná tlačítka a varování bez boxů
 
 - **Tlačítka** se při najetí už neposouvají nahoru, změní jen barvu. Platí pro všechna tlačítka v aplikaci včetně „Spustit“ a „Poslat“ v Pomocníkovi.
 - **Přepis agenta** je pro čtečku obrazovky zase seznam zpráv: oblast přebíjela roli seznamu, takže jednotlivé zprávy nebyly ohlášené jako položky.
 - **Kontrola přístupnosti (axe)** prochází kromě osmi hlavních obrazovek i detail agenta, detail projektu a dialogy Nový projekt, Rozpočty, Co je nového, Rychlé hledání, Upozornění a Pomocník, ve světlém i tmavém vzhledu na počítači i telefonu. Nově kontroluje i čtyři stránky webu a okno rozšíření v devíti stavech.
+- **Horní lišta** se při posouvání dolů schová a při posunu nahoru vyjede shora, takže Hledat, Upozornění a Obnovit jsou po ruce kdekoli na stránce. Pod vysunutou lištou je gradient v barvě vzhledu, obsah pod ní plynule mizí místo tvrdé hrany. Malé posuny trackpadu lištou necukají, při fokusu z klávesnice nebo otevřených upozorněních zůstane vidět. Platí i v Nastavení a na telefonu.
+- **Varování** (starší propojení s Claude Code, cizí informační řádek, limity, Útrata) už nejsou v hnědém boxu, ale řádek s ikonkou. Stav rozšíření má fajfku místo zeleného boxu.
+- **Nastavení** při otevření neprobliká: místo věty „Zjišťuji, co je napojené…“ stojí kostra ve výšce seznamu modelů, takže po načtení nic neposkočí.
+- **Stav agentů na Přehledu:** dlaždice v řadě jsou vždy stejně vysoké i se zalomeným popiskem.
+- **Pomocník:** ikona „Nový rozhovor“ se po klepnutí protočí, takže je vidět, že se rozhovor vyčistil. Při omezeném pohybu jen krátce blikne.
 - Obsahuje i nezveřejněné 0.46.49 a 0.46.50.
 ## 0.46.50 – 2026-10-20 · Zadání nahoře a méně prázdných míst
 
