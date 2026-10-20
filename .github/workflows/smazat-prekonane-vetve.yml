@@ -1,0 +1,48 @@
+# Jednorázové smazání devíti starých větví, jejichž práce není v main, ale je překonaná
+# (6.–19. 10. 2026, verze 0.37–0.46.32). Výslovně schválil vlastník 20. 10. 2026 („Smaž je“).
+# Seznam je pevný; nic jiného se nemaže. Opakované spuštění je neškodné – chybějící větev přeskočí.
+name: Smazat překonané větve (jednorázově)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/smazat-prekonane-vetve.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smazat:
+    name: smazat schválené větve
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # smazání devíti vyjmenovaných větví; nic jiného
+    steps:
+      - name: Smazat vyjmenované větve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for JMENO in \
+            claude/bold-curie-unt6xf \
+            claude/nifty-einstein-w0ub1d \
+            dalsi32 \
+            design/satoshi-workbench \
+            docs/verified-0463-release-status \
+            fix/release-screenshot-qa-flake \
+            preview \
+            redesign-den-noc \
+            release/preview-04615-followup-20261016
+          do
+            if gh api "repos/$REPO/git/refs/heads/$JMENO" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/$REPO/git/refs/heads/$JMENO"
+              echo "Smazána větev $JMENO"
+            else
+              echo "Větev $JMENO už neexistuje"
+            fi
+          done
