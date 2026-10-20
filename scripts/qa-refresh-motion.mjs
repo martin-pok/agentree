@@ -23,6 +23,11 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`${server.url}/#/prehled`);
   await page.locator('#refresh-app').waitFor();
+  // The button exists in the HTML before the app's event delegation and first
+  // server snapshot have finished initializing. Clicking that static button
+  // immediately after navigation races startup and can silently do nothing.
+  // Require a live connection first; then the refresh click tests real behavior.
+  await page.waitForFunction(() => document.querySelector('#conn-pill .dot--live'), null, { timeout: 10000 });
 
   let requests = 0;
   await page.route('**/api/connectors/rescan', async (route) => {
