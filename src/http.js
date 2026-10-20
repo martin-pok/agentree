@@ -52,6 +52,8 @@ class HttpError extends Error {
   }
 }
 
+const idNapojeni = (id) => id.replace(/%3a/gi, ':');
+
 export function createHttpServer(app, existingServer = null) {
   const { store, datastore, alerts, config } = app;
   const clients = new Map(); // response → original authorization context
@@ -893,35 +895,37 @@ export function createHttpServer(app, existingServer = null) {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Přihlásit se lze jen {0}.', POCITAC.naHostiteli));
       return ucetVolani(() => app.ucet.zacniPrihlaseni({ port: port() }));
     }],
+    // ID napojení webu nese dvojtečku („web:chatgpt“). Rozhraní ji jako správně kódovaná část adresy
+    // posílá jako %3A – bez dekódování by každé „Napojit“ u webového chatu skončilo 404.
     // Napojení modelů: jen člověk u Macu. Zjišťování stavu spouští nástroje dodavatelů (claude, codex),
     // takže ani čtení nesmí jít z telefonu.
     ['GET', /^\/api\/napojeni$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení modelů je vidět jen {0}.', POCITAC.naHostiteli));
       return { napojeni: await app.napojeni.prehled() };
     }],
-    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})$/, async (req, m) => {
+    ['POST', /^\/api\/napojeni\/((?:[\w:-]|%3[Aa]){2,40})$/, async (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
-      const r = await app.napojeni.napojit(m[1]);
+      const r = await app.napojeni.napojit(idNapojeni(m[1]));
       if (r.status) throw new HttpError(r.status, r.error, r.rozsireni ? { rozsireni: true } : {});
       return r;
     }],
     // Záložní cesta, když se prohlížeč sám neotevřel: otevřít odkaz z přihlášení a vložit kód.
-    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/odkaz$/, async (req, m) => {
+    ['POST', /^\/api\/napojeni\/((?:[\w:-]|%3[Aa]){2,40})\/odkaz$/, async (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
-      const r = await app.napojeni.odkaz(m[1]);
+      const r = await app.napojeni.odkaz(idNapojeni(m[1]));
       if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
-    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/kod$/, async (req, m) => {
+    ['POST', /^\/api\/napojeni\/((?:[\w:-]|%3[Aa]){2,40})\/kod$/, async (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojit model lze jen {0}.', POCITAC.naHostiteli));
       const body = await readBody(req);
-      const r = app.napojeni.kod(m[1], body?.kod);
+      const r = app.napojeni.kod(idNapojeni(m[1]), body?.kod);
       if (r.status) throw new HttpError(r.status, r.error);
       return r;
     }],
-    ['POST', /^\/api\/napojeni\/([\w:-]{2,40})\/zrusit$/, (req, m) => {
+    ['POST', /^\/api\/napojeni\/((?:[\w:-]|%3[Aa]){2,40})\/zrusit$/, (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení lze zrušit jen {0}.', POCITAC.naHostiteli));
-      return app.napojeni.zrusit(m[1]);
+      return app.napojeni.zrusit(idNapojeni(m[1]));
     }],
     ['POST', /^\/api\/ucet\/zruseni$/, (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Přihlášení lze zrušit jen {0}.', POCITAC.naHostiteli));

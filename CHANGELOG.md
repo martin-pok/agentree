@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.52 – 2026-10-20 · Napojení webových chatů funguje
+
+- **Napojit ChatGPT, Claude.ai, Gemini a další webové chaty:** tlačítko „Napojit“ v Nastavení → Propojení končilo hláškou „Neznámá adresa API.“ Rozhraní posílalo označení služby (`web:chatgpt`) správně zakódované jako `web%3Achatgpt` a server takovou adresu nepoznal. Teď ji pozná a napojení se otevře: ChatGPT v prohlížeči a okno čeká, až rozšíření ohlásí první konverzaci. Test volá adresu přesně tak, jak ji posílá rozhraní.
+- **Bez rozšíření pro Chrome** „Napojit“ webového chatu ukáže kartu rozšíření a zvýrazní krok „Přidat do Chromu“, místo aby jen vypsal hlášku.
+
 ## 0.46.51 – 2026-10-20 · Víc vidět agentů, žádné dotazy macOS a lišta po ruce
 
 - **Tlačítka** se při najetí už neposouvají nahoru, změní jen barvu. Platí pro všechna tlačítka v aplikaci včetně „Spustit“ a „Poslat“ v Pomocníkovi.

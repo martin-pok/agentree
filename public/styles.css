@@ -265,6 +265,10 @@ html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
 @media (prefers-reduced-motion: reduce) { .p-skel .avatar, .p-skel .skel-text { animation: none; } }
 .avatar::after { content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--teal); opacity: 0; }
 .avatar.is-live::after { animation: ring 2.4s var(--ease) infinite; }
+/* Další krok po „Napojit“ webového chatu bez rozšíření: kapsle dvakrát jemně zazáří kroužkem značky. */
+.je-dalsi-krok { animation: dalsi-krok 1400ms var(--ease) 2; }
+@keyframes dalsi-krok { 50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand) 28%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .je-dalsi-krok { animation: none; } }
 @keyframes ring { 0% { transform: scale(.94); opacity: .9; } 100% { transform: scale(1.14); opacity: 0; } }
 .welcome { margin: 16px 0 0; color: var(--mute); font-size: 14px; }
 /* Jméno i řádky zdrojů mají vždy jeden řádek (dlouhé se zkrátí), jinak by výška profilu závisela

@@ -250,13 +250,19 @@ test('HTTP: napojení jen z tohoto Macu, potvrzení přijde živým proudem i z 
     assert.equal(odkazZTelefonu.status, 403);
     assert.equal((await klient.send('POST', '/api/napojeni/claude-code/kod', { kod: 'x' })).status, 422);
     assert.equal((await klient.send('POST', '/api/napojeni/claude-code/kod', { kod: 'abc123#def456' })).status, 409, 'přihlášení už doběhlo');
-    const web = await klient.send('POST', '/api/napojeni/web:chatgpt', {});
+    // Rozhraní posílá ID přes encodeURIComponent (public/js/api.js): „web:chatgpt“ jako web%3Achatgpt.
+    // Test dřív volal jen syrovou dvojtečku, a tak neodhalil, že každé „Napojit“ webu končilo 404.
+    const cestaWebu = `/api/napojeni/${encodeURIComponent('web:chatgpt')}`;
+    assert.equal(cestaWebu, '/api/napojeni/web%3Achatgpt');
+    const web = await klient.send('POST', cestaWebu, {});
     assert.equal(web.status, 409);
     assert.equal(web.body.rozsireni, true);
 
     // Se spárovaným rozšířením: první stav z ChatGPT napojení potvrdí.
     const par = await pairExtension(srv.url);
-    assert.equal((await klient.send('POST', '/api/napojeni/web:chatgpt', {})).status, 200);
+    assert.equal((await klient.send('POST', cestaWebu, {})).status, 200);
+    assert.equal((await klient.send('POST', `${cestaWebu}/zrusit`, {})).status, 200, 'zrušení webu stejnou cestou');
+    assert.equal((await klient.send('POST', cestaWebu, {})).status, 200);
     const ingest = await klient.send('POST', '/api/ingest/web', { site: 'chatgpt', conversationId: 'abc-1', url: 'https://chatgpt.com/c/abc-1', generating: false, counts: { user: 1, assistant: 1 } }, { 'X-Agenteeq-Token': par.token, Origin: EXTENSION_ORIGIN });
     assert.equal(ingest.status, 200);
     const w = await waitFor(() => proud.events.find((e) => e.event === 'napojeni' && e.data.id === 'web:chatgpt'));
