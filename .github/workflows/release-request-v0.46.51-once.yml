@@ -1,6 +1,7 @@
 # One-time GitHub Actions bridge for the owner's explicit request to test v0.46.51.
 # No automatic publication: uses the existing tested prepare workflow, which makes an audited draft.
 # Remove this helper after the draft is assembled. A second push cannot start a release.
+# Security exception for this *specific* one-time bridge is reviewed in test/workflow-opravneni.test.mjs.
 name: One-time v0.46.51 draft request
 on:
   push:
