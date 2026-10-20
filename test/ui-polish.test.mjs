@@ -901,3 +901,36 @@ test('Linux: „přepne systém sám“, ne „systému“', async () => {
   assert.equal(podmet, 'systém', 'podmět je 1. pád');
   assert.match(await zdroj('public/js/views/settings.js'), /přepne \{0\} sám\.', systemPodmet\(\)\)/);
 });
+
+// Úchyty widgetů na telefonu svítily trvale (opacity .7) a dotyk hlavičky zahájil přesun místo
+// posunu stránky. Přesouvá se jen v režimu „Upravit rozložení“ a prstem jen za úchyt.
+test('telefon: úchyty widgetů jen v režimu Upravit rozložení, prstem jen za úchyt', async () => {
+  const css = await zdroj('public/refinement.css');
+  const mobil = css.slice(css.indexOf('@media (max-width: 880px) {\n  .home-board'), css.indexOf('@media (prefers-reduced-motion: reduce) { .widget::after'));
+  assert.match(mobil, /\.widget-grip \{ opacity: 0; pointer-events: none; \}/);
+  assert.match(mobil, /\.home-board\[data-upravit\] \.widget-grip \{ opacity: 1;/);
+  assert.ok(css.indexOf('.board-upravit { display: none; }') < css.indexOf('@media (max-width: 880px) {\n  .home-board'), 'základní skrytí stojí před mobilním pravidlem');
+  assert.match(await zdroj('public/js/views/overview.js'), /data-board-upravit aria-pressed="false">\$\{tr\('Upravit rozložení'\)\}/);
+  assert.match(await zdroj('public/js/reorder.js'), /e\.pointerType === 'touch' && !e\.target\.closest\('\[data-grip\]'\)/);
+});
+
+test('limity a tokeny bez hovorových rad; malé cílové plochy mají 44 px', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  assert.doesNotMatch(ui, /V pohodě pro běžnou práci|Dobrý čas na velké úlohy|Šetři na důležité úlohy/);
+  assert.match(ui, /pct >= 80 \? tr\('Zbývá málo'\) : ''/);
+  const ov = await zdroj('public/js/views/overview.js');
+  assert.match(ov, /<h2 id="chart-h">\$\{sTipem\(tr\('Tokeny'\)/);
+  assert.doesNotMatch(ov, /tr\('Tokeny z přepisů'\)/);
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.legend-item::before \{ content: ''; position: absolute; inset: -8px -4px; \}/, 'legenda grafu 28 → 44 px');
+  assert.match(css, /\.source-version \{[^}]*margin: -10px 0; padding: 14px 0;/, '„Co je nového?“ 25 → 45 px bez posunu rozvržení');
+  assert.match(await zdroj('public/js/views/agents.js'), /placeholder="\$\{tr\('Hledat agenta…'\)\}"/);
+});
+
+test('pořadí karet: chyba uložení vrátí předchozí stav, výchozí pořadí až po uložení', async () => {
+  const src = await zdroj('public/js/layout-prefs.js');
+  const reset = src.slice(src.indexOf('export async function resetLayout'));
+  assert.ok(reset.indexOf('await api.saveSettings') < reset.indexOf("emit('settings')"), 'okno se změní až po úspěšném uložení');
+  const save = src.slice(src.indexOf('export async function saveOrder'), src.indexOf('export async function resetLayout'));
+  assert.match(save, /catch \(err\) \{\s*if \(state\.settings\) state\.settings = \{ \.\.\.state\.settings, layout: predtim \};\s*emit\('settings'\);/);
+});

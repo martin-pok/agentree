@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.46.48 – 2026-10-20 · Úchyty jen na požádání a úklid vydání
+
+- **Průběh dne na telefonu:** úchyty widgetů už trvale nesvítí. Přesouvá se v režimu „Upravit rozložení“ a prstem jen za úchyt, takže dotyk hlavičky widgetu posune stránku, ne kartu.
+- **Okna limitů** nemají hovorové rady („V pohodě pro běžnou práci“). Slovo se ukáže až od 80 %: „Zbývá málo“. Graf na Přehledu se jmenuje „Tokeny“, odkud čísla jsou, říká „i“.
+- **Větší cílové plochy:** legenda grafu a „Co je nového?“ v postranním panelu mají 44 px bez změny vzhledu.
+- **Agenti:** pole hledání říká „Hledat agenta…“, kde všude hledá, je v popisku.
+- **Pořadí karet:** když se uložení nepovede, vrátí se předchozí pořadí. Výchozí pořadí se použije až po úspěšném uložení.
+- **Vydání:** po každém novém ověřeném Draftu se samy smažou starší nezveřejněné Drafty. Zveřejněná vydání a tagy zůstávají.
+
 ## 0.46.47 – 2026-10-20 · Dialog projektu bez rolování a sjednocené barvy
 
 - **Nový projekt** se vejde do okna na počítači i na telefonu. Výběr složky je samostatný krok: zbytek formuláře se na tu chvíli schová a tlačítko „Zpět k projektu“ vede zpátky. Obrázek karty a logo klienta jsou sbalené pod jedním řádkem, vysvětlení složek je pod „i“. Na telefonu se barvy vejdou do dvou řádků.

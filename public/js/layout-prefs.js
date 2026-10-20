@@ -21,20 +21,26 @@ export function applyOrder(box, itemSelector, name) {
   if (sorted.some((el, i) => el !== items[i])) for (const el of sorted) box.append(el);
 }
 
+// Pořadí se ukáže hned (karta už leží, kam ji uživatel pustil). Když se uložení nepovede,
+// vrátí se uložené pořadí i na obrazovce – jinak by okno ukazovalo něco, co po restartu zmizí.
 export async function saveOrder(name, ids) {
-  const layout = { ...(state.settings?.layout || {}), [name]: ids };
+  const predtim = state.settings?.layout;
+  const layout = { ...(predtim || {}), [name]: ids };
   if (state.settings) state.settings = { ...state.settings, layout };
   try {
     await api.saveSettings({ layout: { [name]: ids } });
   } catch (err) {
+    if (state.settings) state.settings = { ...state.settings, layout: predtim };
+    emit('settings');
     toast(`${tr('Pořadí karet se neuložilo:')} ${err.message}`, { tone: 'err' });
   }
 }
 
+// Výchozí pořadí platí až po úspěšném uložení; chybu převezme volající (Nastavení ji ukáže).
 export async function resetLayout() {
   const names = Object.keys(state.settings?.layout || {});
   if (!names.length) return;
+  await api.saveSettings({ layout: Object.fromEntries(names.map((n) => [n, null])) });
   if (state.settings) state.settings = { ...state.settings, layout: {} };
   emit('settings');
-  await api.saveSettings({ layout: Object.fromEntries(names.map((n) => [n, null])) });
 }

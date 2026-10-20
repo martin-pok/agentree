@@ -862,7 +862,9 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .api-tok-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 32px; }
 .api-tok-list li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; }
 .api-tok-val { font-family: var(--f-mono); color: var(--ink-2); white-space: nowrap; }
-.legend-item { display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--ink-2); }
+.legend-item { position: relative; display: inline-flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 0; font-size: 13px; color: var(--ink-2); }
+/* Cílová plocha 44 px bez změny vzhledu: neviditelný přesah nad a pod popiskem. */
+.legend-item::before { content: ''; position: absolute; inset: -8px -4px; }
 .legend-item .swatch { width: 16px; height: 3px; border-radius: 2px; }
 .legend-item .swatch--box { width: 10px; height: 10px; border-radius: 3px; }
 /* Sloupce po intervalech */
@@ -2689,7 +2691,7 @@ html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transit
 .hook-note > span { flex: 1 1 280px; min-width: 0; }
 
 /* ---------- Verze v postranním panelu = vstup do „Co je nového“ ---------- */
-.source-version { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; margin: 0; padding: 4px 0; border: 0; background: none; color: var(--mute); font: 400 12px/1.4 var(--f-mono); text-align: left; white-space: nowrap; cursor: pointer; }
+.source-version { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; width: 100%; min-width: 0; margin: -10px 0; padding: 14px 0; border: 0; background: none; color: var(--mute); font: 400 12px/1.4 var(--f-mono); text-align: left; white-space: nowrap; cursor: pointer; }
 /* Patička panelu má vždy jeden řádek na položku: výška panelu nesmí záviset na šířce písma (záložní
    písmo v jiném systému, delší popisek v jiném jazyce), jinak by se ořízl profil. */
 .source-state, .source-version { overflow: hidden; text-overflow: ellipsis; }

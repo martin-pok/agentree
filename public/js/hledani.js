@@ -28,7 +28,7 @@ const STRANKY = () => [
 const SEKCE = () => [
   ['prehled', 'decisions', tr('Vyžaduje pozornost'), 'ceka povoleni schvaleni otazka limit selhani needs input approval permission failed exhausted'],
   ['prehled', 'timeline', tr('Dnešní směna'), 'casova osa dnes prubeh timeline today'],
-  ['prehled', 'chart', tr('Tokeny z přepisů'), 'graf tokens chart'],
+  ['prehled', 'chart', tr('Tokeny'), 'graf tokens chart prepisy prepisu'],
   ['prehled', 'today-apps', tr('Kam dnes šly tokeny'), 'dnes aplikace tokeny today apps'],
   ['prehled', 'limits', tr('Limity předplatných'), 'limit limity okna kvota 5hodinovy tydenni predplatne quota usage limits plan'],
   ['prehled', 'spend', tr('Náklady z API'), 'api naklady cena utrata cost'],

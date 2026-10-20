@@ -7,7 +7,7 @@ import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank, chartColor } from '../data.js';
 import { claudeLimitStatus, limitsAll } from '../limits-ui.js';
 import { enableBoard, widgetChrome } from '../widget-board.js';
-import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState, infoTip } from '../ui.js';
+import { fill, tween, activityItem, decisionCard, openButtons, currentLimits, limitState, limitObnova, legendHtml, limitWindows, toast, agentHref, creditAge, statusPill, vetaStavu, emptyState, infoTip, sTipem } from '../ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { createLauncher } from '../launcher-ui.js';
 import { goToExtension } from '../jump.js';
@@ -183,9 +183,9 @@ function mount(el) {
         <div class="card pad" data-region="today-apps"></div>
       </section>
     </div>
-    <div class="widget" data-card="tokeny">${widgetChrome(tr('Tokeny z přepisů'))}
+    <div class="widget" data-card="tokeny">${widgetChrome(tr('Tokeny'))}
       <section class="card token-card" data-enter style="--i:3" aria-labelledby="chart-h" data-jen-s-daty>
-        <div class="sec-head"><h2 id="chart-h">${tr('Tokeny z přepisů')}</h2>
+        <div class="sec-head"><h2 id="chart-h">${sTipem(tr('Tokeny'), tr('Vstup a výstup z přepisů konverzací na {0}, bez cache. Je to zaznamenaná aktivita, ne účtované náklady.', tomtoPocitaci()))}</h2>
           <label class="select"><span class="sr-only">${tr('Období')}</span><select data-action="period"><option value="today">${tr('Dnes')}</option><option value="day">${tr('24 hodin')}</option><option value="week">${tr('Týden')}</option><option value="fortnight">${tr('14 dní')}</option><option value="month">${tr('30 dní')}</option></select></label>
         </div>
         <div data-region="chart"></div>
@@ -239,7 +239,15 @@ function mount(el) {
   // Rozbalení je výrazná kapsle přes celou šířku: šipka v kroužku, název, popis a vpravo slovo,
   // co klepnutí udělá (Zobrazit / Skrýt) – aby bylo vidět, že jde o akci, ne o nadpis.
   history.innerHTML = `<summary><span class="hh-ikona" aria-hidden="true">${ICON.chev}</span><span class="hh-nazev">${tr('Průběh dne a spotřeba')}</span><span class="hh-popis">${tr('Aktivita, tokeny a náklady')}</span><span class="hh-akce" aria-hidden="true"><span class="hh-zobrazit">${tr('Zobrazit')}</span><span class="hh-skryt">${tr('Skrýt')}</span></span></summary>`;
+  // Na telefonu úchyty trvale nesvítí: přesouvá se jen v režimu „Upravit rozložení“.
+  history.insertAdjacentHTML('beforeend', `<div class="board-upravit"><button class="btn btn--sm" type="button" data-board-upravit aria-pressed="false">${tr('Upravit rozložení')}</button></div>`);
   history.append(el.querySelector('[data-board]'));
+  history.querySelector('[data-board-upravit]').addEventListener('click', (e) => {
+    const zap = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+    e.currentTarget.setAttribute('aria-pressed', String(zap));
+    e.currentTarget.textContent = zap ? tr('Hotovo') : tr('Upravit rozložení');
+    el.querySelector('[data-board]').toggleAttribute('data-upravit', zap);
+  });
   el.append(workspace, history);
   v.board = enableBoard(el.querySelector('[data-board]'), {
     name: 'home',

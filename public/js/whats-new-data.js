@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.48',
+    date: '2026-10-20',
+    title: 'Úchyty jen na požádání',
+    items: [
+      'Na telefonu se widgety přesouvají v režimu „Upravit rozložení“, jinak úchyty nesvítí.',
+      'Okna limitů mají jen „Zbývá málo“ od 80 %, žádné hovorové rady.',
+      'Legenda grafu a „Co je nového?“ mají větší plochu na klepnutí.',
+      'Když se pořadí karet neuloží, vrátí se předchozí.',
+    ],
+    en: {
+      title: 'Handles only when you ask',
+      items: [
+        'On phones, widgets move in “Edit layout” mode; otherwise the handles stay hidden.',
+        'Limit windows only say “Running low” from 80 %, no chatty advice.',
+        'The chart legend and “What’s new?” have a larger tap area.',
+        'If the card order fails to save, the previous order comes back.',
+      ],
+    },
+  },
+  {
     version: '0.46.47',
     date: '2026-10-20',
     title: 'Dialog projektu bez rolování a sjednocené barvy',
