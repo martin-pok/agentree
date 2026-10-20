@@ -199,7 +199,7 @@ function mount(el, _params, query) {
       <div class="filtry-rada">
         <span class="filtry-popis" id="ag-f-zdroj">${tr('Zdroj')}</span>
         <div class="chips chips--rada" role="group" aria-labelledby="ag-f-zdroj" data-region="source"></div>
-        <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Název, projekt, model, aplikace…')}" autocomplete="off"></label>
+        <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Hledat agenta…')}" title="${tr('Hledá v názvu, projektu, větvi, modelu, aplikaci i posledním zadání')}" autocomplete="off"></label>
       </div>
       <div class="filtry-rada" data-region="sluzby-rada">
         <span class="filtry-popis" id="ag-f-sluzba">${tr('Služba')}</span>

@@ -338,13 +338,16 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .widget-size { position: absolute; top: -12px; right: 24px; z-index: 4; padding: 6px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 14%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 36%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--glow) 80%, transparent); color: var(--ink); font: 500 var(--type-caption)/1 var(--f-body); white-space: nowrap; pointer-events: none; opacity: 0; transform: translateY(-50%) scale(.96); transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
 .widget-size.is-on { opacity: 1; transform: translateY(-50%) scale(1); }
 
-/* Úzká obrazovka: jeden sloupec, šířka se nemění; přesouvá se za úchyt (vždy vidět, prstem). */
+.board-upravit { display: none; }
+/* Úzká obrazovka: jeden sloupec, šířka se nemění; přesouvá se prstem za úchyt, který je vidět jen v režimu „Upravit rozložení“. */
 @media (max-width: 880px) {
   .home-board { grid-template-columns: minmax(0, 1fr); gap: 36px; }
   .widget { grid-column: 1 / -1; }
   .widget-resize, .widget-size { display: none; }
   .widget > section > .sec-head { cursor: auto; user-select: auto; }
-  .widget-grip { opacity: .7; transform: translate(-50%, 0); }
+  .widget-grip { opacity: 0; pointer-events: none; }
+  .home-board[data-upravit] .widget-grip { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .board-upravit { display: flex; justify-content: flex-end; margin: 16px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .widget::after, .widget-grip, .widget-resize::before, .widget-size { transition: none; } }
 .widget[data-bez-okraje] > .widget-resize { display: none; }

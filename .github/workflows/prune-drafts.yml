@@ -1,0 +1,71 @@
+# Úklid překonaných konceptů vydání. Každý merge do main se zvýšenou verzí sestaví nový Draft,
+# zveřejňuje se ale jen občas – staré Drafty se tak hromadily a nebylo poznat, který je aktuální.
+# Tenhle workflow smaže každý NEZVEŘEJNĚNÝ Draft, jehož verze je nižší než nejvyšší verze mezi
+# všemi vydáními (Drafty i zveřejněnými). Nejnovější kandidát tak zůstane vždy jen jeden.
+#
+# Co nikdy nedělá: nesahá na zveřejněná vydání, nemaže tagy (zůstávají neměnné, takže se pod
+# stejným číslem nic znovu nesestaví) a nemaže nejnovější Draft. Rozhodnutí vlastníka 20. 10. 2026.
+name: Úklid konceptů vydání
+
+on:
+  # Volá ho release.yml po úspěšném auditu nového Draftu.
+  workflow_call:
+  # Jednorázový úklid, když se tento soubor změní na main.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prune-drafts.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prune-drafts
+  cancel-in-progress: false
+
+jobs:
+  uklid:
+    name: smazat překonané Drafty
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write # mazání nezveřejněných Draftů; zveřejněná vydání a tagy se nemění
+    steps:
+      - name: Smazat Drafty starší než nejnovější vydání
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # id, draft a verze ze všech stránek; tagy mimo tvar vX.Y.Z se ignorují.
+          gh api --paginate "repos/$REPO/releases?per_page=100" \
+            --jq '.[] | [.id, .draft, .tag_name] | @tsv' > vydani.tsv
+          NEJVYSSI=$(awk -F'\t' '$3 ~ /^v[0-9]+\.[0-9]+\.[0-9]+$/ { print substr($3, 2) }' vydani.tsv | sort -V | tail -n 1)
+          if [ -z "$NEJVYSSI" ]; then
+            echo "Žádné verzované vydání, není co uklízet."
+            exit 0
+          fi
+          echo "Nejvyšší verze: v$NEJVYSSI"
+          SMAZANO=0
+          while IFS=$'\t' read -r ID DRAFT TAG; do
+            [ "$DRAFT" = "true" ] || continue
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+            VERZE="${TAG#v}"
+            [ "$VERZE" != "$NEJVYSSI" ] || continue
+            [ "$(printf '%s\n%s\n' "$VERZE" "$NEJVYSSI" | sort -V | head -n 1)" = "$VERZE" ] || continue
+            # Těsně před smazáním znovu ověřit, že je to pořád nezveřejněný Draft.
+            if [ "$(gh api "repos/$REPO/releases/$ID" --jq .draft)" != "true" ]; then
+              echo "::warning::$TAG mezitím někdo zveřejnil, nechávám ho být."
+              continue
+            fi
+            gh api --method DELETE "repos/$REPO/releases/$ID"
+            echo "Smazán překonaný Draft $TAG"
+            SMAZANO=$((SMAZANO + 1))
+          done < vydani.tsv
+          {
+            echo "### Úklid konceptů vydání"
+            echo "Nejvyšší verze: v$NEJVYSSI · smazaných Draftů: $SMAZANO"
+            echo "Zveřejněná vydání a tagy zůstaly beze změny."
+          } >> "$GITHUB_STEP_SUMMARY"

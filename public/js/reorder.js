@@ -116,7 +116,8 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     if (e.button !== 0 || st) return;
     const el = e.target.closest(itemSelector);
     if (!el || !box.contains(el)) return;
-    if (handle ? !e.target.closest(handle) : e.pointerType !== 'mouse' && !e.target.closest('[data-grip]')) return;
+    // Prstem se táhne jen za úchyt: dotyk hlavičky je posun stránky, ne přesun karty.
+    if (handle ? !e.target.closest(handle) || (e.pointerType === 'touch' && !e.target.closest('[data-grip]')) : e.pointerType !== 'mouse' && !e.target.closest('[data-grip]')) return;
     st = { el, x: e.clientX, y: e.clientY, px: e.clientX, py: e.clientY, id: e.pointerId };
   });
   box.addEventListener('pointermove', (e) => {

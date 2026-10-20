@@ -296,3 +296,13 @@ jobs:
     uses: ./.github/workflows/audit-release-draft.yml
     with:
       tag: ${{ inputs.tag || github.ref_name }}
+
+  # Nový Draft prošel auditem → starší nezveřejněné Drafty jsou překonané. Smaže jen je;
+  # zveřejněná vydání a tagy zůstávají (prune-drafts.yml, rozhodnutí vlastníka 20. 10. 2026).
+  uklid:
+    name: smazat překonané Drafty
+    needs: audit
+    if: ${{ needs.audit.result == 'success' }}
+    permissions:
+      contents: write # mazání nezveřejněných Draftů, nic jiného
+    uses: ./.github/workflows/prune-drafts.yml
