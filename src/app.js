@@ -1026,6 +1026,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       behy: runs.list(),
       dostupne: config.launchAgents,
       claude: launchHledano ? launchEnv.bins?.claude || false : null,
+      home: os.homedir(),
     };
   }
   function muzeOdpovedet(id) {

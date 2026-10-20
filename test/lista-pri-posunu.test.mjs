@@ -24,6 +24,8 @@ function prostredi() {
     activeElement: null,
     documentElement: { dataset: {}, style: { setProperty() {}, removeProperty() {} } },
     createElement: () => ({ setAttribute() {}, remove() {}, getBoundingClientRect: () => ({ top: kotvaTop - win.scrollY }) }),
+    addEventListener: (t, f) => { posluchaci[`doc-${t}`] = f; },
+    removeEventListener() {},
     getElementById: (id) => (id === 'notif-pop' ? notif : null),
     querySelector: (s) => (s === '.palette:not([hidden])' ? paleta : null),
   };
@@ -41,7 +43,8 @@ function prostredi() {
   globalThis.getComputedStyle = () => ({ top: '12px', paddingLeft: '56px', paddingRight: '56px' });
   globalThis.requestAnimationFrame = (f) => f();
   const posun = (y) => { win.scrollY = y; posluchaci.scroll(); return doc.documentElement.dataset.lista; };
-  return { lista, koren: doc.documentElement, posun, doc, nadpis, tlacitko, notif, naListe, setPaleta: (p) => { paleta = p; } };
+  const klik = (cil) => posluchaci['doc-click']({ target: { closest: (sel) => (sel === '[data-jump]' && cil === 'jump' ? {} : null) } });
+  return { klik, lista, koren: doc.documentElement, posun, doc, nadpis, tlacitko, notif, naListe, setPaleta: (p) => { paleta = p; } };
 }
 
 test('lišta: dolů schová, nahoru vysune, na začátku stránky stojí v toku', async () => {
@@ -60,6 +63,10 @@ test('lišta: dolů schová, nahoru vysune, na začátku stránky stojí v toku'
   assert.equal(p.posun(783), 'vysunuta', 'šum dolů ji hned neschová');
   assert.equal(p.posun(900), 'skryta');
   assert.equal(p.posun(-40), 'nahore', 'přetažení nad začátek (iOS) je pořád začátek');
+  assert.equal(p.posun(1200), 'skryta');
+  p.klik('jump');
+  assert.equal(p.posun(700), 'skryta', 'skok aplikace na skupinu Nastavení lištu nevysune');
+  p.klik('jinam');
   p.posun(900);
   zrus();
   assert.equal(p.koren.dataset.lista, undefined);

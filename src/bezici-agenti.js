@@ -21,6 +21,15 @@ export const AGENTI = {
   'gemini-cli': { connector: 'gemini-cli', app: 'Gemini CLI', provider: 'google' },
   'qwen-code': { connector: 'qwen-code', app: 'Qwen Code', provider: 'alibaba' },
   'copilot-cli': { connector: 'copilot-cli', app: 'Copilot CLI', provider: 'github' },
+  // Přepisy těchto agentů Agenteeq nečte; v přehledu jsou vidět jen jako běžící proces (Beta).
+  'cursor-agent': { connector: 'cursor-agent', app: 'Cursor Agent', provider: 'cursor' },
+  aider: { connector: 'aider', app: 'Aider', provider: 'other' },
+  goose: { connector: 'goose', app: 'Goose', provider: 'other' },
+  opencode: { connector: 'opencode', app: 'OpenCode', provider: 'other' },
+  amp: { connector: 'amp', app: 'Amp', provider: 'other' },
+  crush: { connector: 'crush', app: 'Crush', provider: 'other' },
+  droid: { connector: 'droid', app: 'Droid', provider: 'other' },
+  auggie: { connector: 'auggie', app: 'Auggie', provider: 'other' },
 };
 
 export const PROMENNE_DOMOVA = Object.values(AGENTI).map((a) => a.domov).filter(Boolean);

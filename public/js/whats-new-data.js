@@ -6,8 +6,10 @@ export const RELEASES = [
   {
     version: '0.46.51',
     date: '2026-10-20',
-    title: 'Lišta po ruce',
+    title: 'Víc vidět agentů',
     items: [
+      'Běžící Aider, Goose, OpenCode, Amp, Cursor Agent a další agenti v terminálu jsou v přehledu vidět.',
+      'Agent z Agenteeq se nespustí v domovské složce, takže macOS se neptá na Fotky ani Zprávy.',
       'Horní lišta se při posunu dolů schová a při posunu nahoru vyjede s jemným přechodem do obsahu.',
       'Varování nejsou v hnědých boxech a Nastavení při otevření neprobliká.',
       'Tlačítka se při najetí neposouvají nahoru, jen změní barvu.',
@@ -15,8 +17,10 @@ export const RELEASES = [
       'Čtečka obrazovky čte přepis agenta jako seznam zpráv.',
     ],
     en: {
-      title: 'Top bar at hand',
+      title: 'More agents in view',
       items: [
+        'Running Aider, Goose, OpenCode, Amp, Cursor Agent and other terminal agents now show up in the overview.',
+        'An agent started from Agenteeq won\'t run in your home folder, so macOS doesn\'t ask about Photos or Messages.',
         'The top bar hides as you scroll down and slides back in, with a soft fade into the content, as you scroll up.',
         'Warnings are no longer in brown boxes and Settings no longer flicker on open.',
         'Buttons no longer jump up on hover, they only change colour.',

@@ -1,10 +1,13 @@
 # Changelog
 
-## 0.46.51 – 2026-10-20 · Lišta po ruce, klidná tlačítka a varování bez boxů
+## 0.46.51 – 2026-10-20 · Víc vidět agentů, žádné dotazy macOS a lišta po ruce
 
 - **Tlačítka** se při najetí už neposouvají nahoru, změní jen barvu. Platí pro všechna tlačítka v aplikaci včetně „Spustit“ a „Poslat“ v Pomocníkovi.
 - **Přepis agenta** je pro čtečku obrazovky zase seznam zpráv: oblast přebíjela roli seznamu, takže jednotlivé zprávy nebyly ohlášené jako položky.
 - **Kontrola přístupnosti (axe)** prochází kromě osmi hlavních obrazovek i detail agenta, detail projektu a dialogy Nový projekt, Rozpočty, Co je nového, Rychlé hledání, Upozornění a Pomocník, ve světlém i tmavém vzhledu na počítači i telefonu. Nově kontroluje i čtyři stránky webu a okno rozšíření v devíti stavech.
+- **Detekce agentů:** běžící Cursor Agent, Aider, Goose, OpenCode, Amp, Crush, Droid a Auggie v terminálu jsou v přehledu vidět jako běžící agent (Beta – jejich přepisy Agenteeq nečte). Dřív se neukázali vůbec. Když nikdo nepracuje a je otevřený ChatGPT nebo jiná AI aplikace, jejíž chaty Agenteeq nevidí, Stav agentů to řekne místo holého „nikdo nepracuje“.
+- **Žádné dotazy macOS na Fotky a Zprávy:** agent spuštěný nebo obnovený z Agenteeq na pozadí se nespustí v domovské složce, v Knihovně ani přímo v Ploše, Dokumentech, Stažených a složkách médií. Prošel by je a macOS by se jménem Agenteeq ptal na povolení jedno za druhým. Aplikace řekne proč a nabídne složku projektu nebo Terminál.
+- **Detail agenta a projektu:** úchyty pro přesouvání karet mají stejnou moderní kapsli ve značkové barvě jako widgety na Přehledu.
 - **Horní lišta** se při posouvání dolů schová a při posunu nahoru vyjede shora, takže Hledat, Upozornění a Obnovit jsou po ruce kdekoli na stránce. Pod vysunutou lištou je gradient v barvě vzhledu, obsah pod ní plynule mizí místo tvrdé hrany. Malé posuny trackpadu lištou necukají, při fokusu z klávesnice nebo otevřených upozorněních zůstane vidět. Platí i v Nastavení a na telefonu.
 - **Varování** (starší propojení s Claude Code, cizí informační řádek, limity, Útrata) už nejsou v hnědém boxu, ale řádek s ikonkou. Stav rozšíření má fajfku místo zeleného boxu.
 - **Nastavení** při otevření neprobliká: místo věty „Zjišťuji, co je napojené…“ stojí kostra ve výšce seznamu modelů, takže po načtení nic neposkočí.

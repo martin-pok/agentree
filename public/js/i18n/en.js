@@ -39,6 +39,7 @@ export default {
     "Agent nečeká na tebe, ale limit je vyčerpaný.": "No agent is waiting for you, but a limit is used up.",
     "Nic neblokuje. Tohle můžeš vyřídit teď.": "Nothing is blocked. Here is what you can do now.",
     "Na tomto počítači nikdo nepracuje": "Nobody is working on this computer",
+    "Otevřené: {0}. Chaty z těchto aplikací Agenteeq nevidí.": "Open: {0}. Agenteeq can't see chats in these apps.",
     "Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.": "Cloud agents are known only from Claude Desktop, last {0}.",
     "Nic neblokuje. Hlídám za tebe:": "Nothing is blocked. Keeping an eye on:",
     "Žádosti o povolení": "Permission requests",

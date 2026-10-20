@@ -23,6 +23,7 @@ export function listaPriPosunu({ lista = document.querySelector('.topbar'), kore
   let posledni = Math.max(0, window.scrollY);
   let smer = 0; // nasčítaný posun jedním směrem
   let ceka = false;
+  let klidDo = 0;
 
   // Schovaná lišta je mimo okno: inert ji vyřadí z Tabu i ze čtečky. Jinak by Tab na její tlačítko
   // nechal prohlížeč odrolovat stránku až nahoru, aby ho ukázal.
@@ -57,6 +58,9 @@ export function listaPriPosunu({ lista = document.querySelector('.topbar'), kore
     const dy = y - posledni;
     posledni = y;
     if (!prilepena(y)) { smer = 0; nastav('nahore'); return; }
+    // Posun nahoru, který udělala aplikace (skok na skupinu Nastavení), není gesto uživatele: lišta
+    // nevyjede, jinak by záložky pod ní poskočily právě pod kliknutím. Schovat se smí.
+    if (dy < 0 && performance.now() < klidDo) { smer = 0; return; }
     if (drzetViditelnou()) { smer = 0; nastav('vysunuta'); return; }
     smer = Math.sign(dy) === Math.sign(smer) ? smer + dy : dy;
     if (smer > PRAH) nastav('skryta');
@@ -66,6 +70,7 @@ export function listaPriPosunu({ lista = document.querySelector('.topbar'), kore
   const naPosun = () => { if (!ceka) { ceka = true; requestAnimationFrame(vyhodnot); } };
   // Klávesnice: fokus v liště ji vždy ukáže.
   const naFokus = () => { if (fokusVListe() && prilepena(window.scrollY)) nastav('vysunuta'); };
+  const naKlik = (e) => { if (e.target.closest?.('[data-jump]')) klidDo = performance.now() + 400; };
   const naZmenu = () => { okraje(); posledni = Math.max(0, window.scrollY); smer = 0; vyhodnot(); };
 
   okraje();
@@ -75,6 +80,7 @@ export function listaPriPosunu({ lista = document.querySelector('.topbar'), kore
   window.addEventListener('resize', naZmenu, { passive: true });
   window.addEventListener('hashchange', naZmenu);
   lista.addEventListener('focusin', naFokus);
+  document.addEventListener('click', naKlik, true);
   // Výška lišty se mění s obrazovkou (tlačítko zpět, zalomený nadpis) i po vykreslení dat.
   const pozorovatel = typeof ResizeObserver === 'function' ? new ResizeObserver(okraje) : null;
   pozorovatel?.observe(lista);
@@ -84,6 +90,7 @@ export function listaPriPosunu({ lista = document.querySelector('.topbar'), kore
     window.removeEventListener('resize', naZmenu);
     window.removeEventListener('hashchange', naZmenu);
     lista.removeEventListener('focusin', naFokus);
+    document.removeEventListener('click', naKlik, true);
     kotva.remove();
     lista.inert = false;
     koren.style.removeProperty('--lista-h');

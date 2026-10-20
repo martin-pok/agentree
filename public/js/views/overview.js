@@ -325,6 +325,12 @@ const pbDalsi = (n) => `<li class="pb-dalsi"><a class="link" href="#/agenti">${e
 // uzly – nepřehrají znovu nástup, nepřijdou o najetí a logo se znovu nedekóduje.
 const zivy = (el, name, html) => fill(el, name, html, { sloucit: true, presun: name === 'activity' || name === 'hero' || name === 'decisions' });
 
+// Otevřené AI aplikace, jejichž chaty Agenteeq nečte (Codex app čte celou, proto ne). Bez nich by
+// „nikdo nepracuje“ tvrdilo víc, než Agenteeq ví.
+function otevreneNevidim() {
+  return (state.runtimes || []).filter((r) => r.running && r.druh === 'aplikace' && r.id !== 'codex-app').map((r) => r.name).slice(0, 3);
+}
+
 function update(topics = new Set(['all'])) {
   const el = v.el;
   if (!el) return;
@@ -414,7 +420,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, now });
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
     // Barvu stavu dostane jen dlaždice, ve které něco je (refinement.css).
     const pocty = [
       [working.length, popisPoctu('working', working.length), working.length ? 'pracuje' : '', '#/agenti?stav=working'],
