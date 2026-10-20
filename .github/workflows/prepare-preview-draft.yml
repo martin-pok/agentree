@@ -1,12 +1,11 @@
-# A fully green main CI dispatches existing release.yml for a DRAFT only.
-# Publication remains manual (publish.yml), with real-device UAT and owner approval.
-name: Prepare next Preview draft
+# Kandidát na vydání (neveřejný Draft) se sestaví jen NA POKYN: Actions → „Připravit vydání“ →
+# Run workflow nad main. Dřív vznikal po každém zeleném CI na main a v seznamu vydání viselo
+# mnoho nedokončených Draftů; rozhodnutí vlastníka 20. 10. 2026: Draft jen pro vydání, které se
+# opravdu chystá. Zveřejnění zůstává ruční (publish.yml) až po ověření příloh.
+name: Připravit vydání
 
 on:
-  workflow_run:
-    workflows: ['Testy']
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,19 +17,15 @@ concurrency:
 jobs:
   prepare:
     name: enqueue verified release build
-    if: >-
-      ${{ github.event.workflow_run.conclusion == 'success'
-      && github.event.workflow_run.event == 'push'
-      && github.event.workflow_run.head_branch == 'main' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
       contents: read
       actions: write # only dispatch existing release.yml; no direct publishing
     steps:
-      # Záměrně bez `ref:`. U události workflow_run je výchozí checkout nejnovější commit
-      # výchozí větve (main), tedy důvěryhodný kód, ne obsah z cizího běhu. Brána níže pak
-      # vyžaduje HEAD == TESTED_SHA == aktuální main; když se main mezitím posunul, nic se nespustí.
+      # Záměrně bez `ref:`: výchozí checkout je spuštěný main. Brána níže vyžaduje
+      # HEAD == aktuální main a úspěšné Testy na přesně tomto commitu.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -40,14 +35,21 @@ jobs:
         id: gate
         env:
           GH_TOKEN: ${{ github.token }}
-          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
         shell: bash
         run: |
           set -euo pipefail
+          TESTED_SHA=$(git rev-parse HEAD)
           if ! [[ "$TESTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "::error::CI event has invalid source SHA."
+            echo "::error::Invalid source SHA."
             exit 1
           fi
+          # Kandidát se staví jen z commitu, na kterém prošly kompletní Testy po push do main.
+          ZELENE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/runs?head_sha=$TESTED_SHA&event=push&status=success" --jq .total_count)
+          if [ "$ZELENE" = "0" ]; then
+            echo "::error::Na $TESTED_SHA zatím nejsou zelené Testy; počkej na doběhnutí CI a spusť znovu."
+            exit 1
+          fi
+          echo "tested_sha=$TESTED_SHA" >> "$GITHUB_OUTPUT"
           CURRENT_MAIN=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
           if [ "$CURRENT_MAIN" != "$TESTED_SHA" ] || [ "$(git rev-parse HEAD)" != "$TESTED_SHA" ]; then
             echo "Newer main exists; its own CI will prepare the newer candidate."
@@ -76,7 +78,7 @@ jobs:
         if: steps.gate.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+          TESTED_SHA: ${{ steps.gate.outputs.tested_sha }}
           TAG: ${{ steps.gate.outputs.tag }}
         run: |
           set -euo pipefail
