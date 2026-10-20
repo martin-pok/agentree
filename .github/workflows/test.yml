@@ -77,9 +77,8 @@ jobs:
           node-version: '22'
 
       - name: Nástroje Visual Studio
-        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
-        with:
-          arch: x64
+        shell: pwsh
+        run: ./scripts/msvc-prostredi.ps1
 
       - name: Sestavit
         run: npm run build:windows
@@ -187,7 +186,10 @@ jobs:
 
   browser-qa:
     name: rozhraní a přístupnost
-    runs-on: ubuntu-latest
+    # Připnuto: ubuntu-latest se od 19. 10. 2026 postupně přepíná na 26.04 (runner-images #14748)
+    # a `playwright install --with-deps` instaluje systémové balíčky podle verze systému.
+    # Na 24.04 je QA ověřené; přechod na 26.04 až s verzí Playwrightu, která ji podporuje.
+    runs-on: ubuntu-24.04
     # Kontrast se od 0.38.0 měří ve čtyřech vzhledech a qa:desktop klepe i na výběr vzhledu.
     # Instalace prohlížečů (apt) sama trvá na runneru 1–11 minut, 20 minut na celek nestačilo.
     timeout-minutes: 35
@@ -219,7 +221,10 @@ jobs:
 
   browser-web-qa:
     name: Web, rozšíření a kontrast
-    runs-on: ubuntu-latest
+    # Připnuto: ubuntu-latest se od 19. 10. 2026 postupně přepíná na 26.04 (runner-images #14748)
+    # a `playwright install --with-deps` instaluje systémové balíčky podle verze systému.
+    # Na 24.04 je QA ověřené; přechod na 26.04 až s verzí Playwrightu, která ji podporuje.
+    runs-on: ubuntu-24.04
     # Independently test site/extension/a11y; do not serialize behind long desktop QA.
     # Playwright --with-deps can spend >23 min provisioning WebKit system packages
     # on a fresh GitHub runner. 25 min cancelled qa:site before qa:extension/qa:contrast.
@@ -248,7 +253,10 @@ jobs:
 
   chrome-store:
     name: Chrome Web Store branding a screenshoty
-    runs-on: ubuntu-latest
+    # Připnuto: ubuntu-latest se od 19. 10. 2026 postupně přepíná na 26.04 (runner-images #14748)
+    # a `playwright install --with-deps` instaluje systémové balíčky podle verze systému.
+    # Na 24.04 je QA ověřené; přechod na 26.04 až s verzí Playwrightu, která ji podporuje.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

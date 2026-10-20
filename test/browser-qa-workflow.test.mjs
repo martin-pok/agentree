@@ -18,7 +18,7 @@ test('browser QA is parallelized without losing any of the ten acceptance checks
   assert.deepEqual(commands(web), expectedWeb);
   assert.equal(new Set([...commands(desktop), ...commands(web)]).size, 10, 'QA steps cannot silently disappear or run twice');
   for (const [jobName, section] of [['desktop', desktop], ['web', web]]) {
-    assert.match(section, /runs-on: ubuntu-latest/, jobName + ' must remain a distinct job');
+    assert.match(section, /runs-on: ubuntu-24\.04$/m, jobName + ' must remain a distinct job pinned to a Playwright-verified Ubuntu');
     assert.match(section, /npm install --no-save --package-lock=false playwright@1\.62\.1( axe-core@[0-9.]+)?$/m);
     assert.match(section, /playwright install --with-deps chromium webkit/);
     assert.match(section, /if: always\(\)/, jobName + ' must preserve QA artifacts on failures');
@@ -26,4 +26,13 @@ test('browser QA is parallelized without losing any of the ten acceptance checks
   }
   assert.match(web, /name: browser-web-qa/, 'web QA artifacts must be identifiable independently');
   assert.doesNotMatch(web, /needs:\s*browser-qa/, 'web checks cannot wait for desktop');
+});
+
+test('každý job s playwright install --with-deps má připnutou verzi Ubuntu', () => {
+  const jobs = workflow.split(/^  (?=[a-z-]+:\n)/m).filter((j) => j.includes('--with-deps'));
+  assert.equal(jobs.length, 3, 'desktop QA, web QA a Chrome Web Store');
+  for (const job of jobs) {
+    assert.match(job, /runs-on: ubuntu-24\.04$/m, job.split('\n')[0]);
+    assert.doesNotMatch(job, /runs-on: ubuntu-latest/, job.split('\n')[0]);
+  }
 });

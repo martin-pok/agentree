@@ -75,3 +75,24 @@ test('plášť pro Windows: vlastní klíč okna, předaný serveru i oknu, nikd
   const swift = await fs.readFile(path.join(root, 'desktop/Agenteeq.swift'), 'utf8');
   assert.match(swift, /env\["AGENTEEQ_LOCAL_KEY"\] = localKey/);
 });
+
+test('CLI: neošetřené selhání server řádně ukončí s kódem 1 a uklidí klíč okna', { skip: process.platform === 'win32' && 'Windows nemá SIGUSR2' }, async (t) => {
+  const dir = await tempDir('agenteeq-cli-selhani-');
+  const env = { ...process.env, PORT: '0', AGENTEEQ_SOURCE_HOME: dir, AGENTEEQ_HOME: dir, AGENTEEQ_PROCESSES: '0', AGENTEEQ_CLOUD: '0', AGENTEEQ_NATIVE_NOTIFY: '0', AGENTEEQ_KEYCHAIN: '0', AGENTEEQ_UCET_URL: '0', AGENTEEQ_OPEN: 'dry', AGENTEEQ_OLLAMA_URL: 'http://127.0.0.1:9' };
+  delete env.AGENTEEQ_LOCAL_KEY;
+  // Zkušební spoušť: signál vyvolá odmítnutí promise, které nikdo neošetří.
+  const spoust = `data:text/javascript,process.on('SIGUSR2',()=>{Promise.reject(new Error('zkouska-neosetrene'))})`;
+  const child = spawn(process.execPath, ['--import', spoust, path.join(root, 'bin/agenteeq.mjs')], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+  let out = '', err = '';
+  child.stdout.on('data', (d) => { out += d; });
+  child.stderr.on('data', (d) => { err += d; });
+  const konec = new Promise((r) => child.once('exit', (code) => r(code)));
+  t.after(async () => { if (child.exitCode === null) { child.kill('SIGKILL'); await konec; } });
+  await waitFor(() => /běží na http/.test(out), 15000);
+  await waitFor(() => nactiKlic(dir), 5000);
+  child.kill('SIGUSR2');
+  assert.equal(await konec, 1, 'selhání není řádný konec – launchd server spustí znovu');
+  assert.match(err, /neošetřené selhání operace/);
+  assert.match(err, /zkouska-neosetrene/, 'příčina zůstane v logu');
+  assert.equal(await nactiKlic(dir), '', 'klíč okna po pádu nezůstane na disku');
+});

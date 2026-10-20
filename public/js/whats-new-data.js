@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.49',
+    date: '2026-10-20',
+    title: 'Spolehlivější server',
+    items: [
+      'Server spuštěný z Terminálu se po neočekávané chybě řádně ukončí a LaunchAgent ho spustí znovu.',
+      'Při takovém pádu nezůstanou běžet agenti, které spustil, ani klíč okna na disku.',
+    ],
+    en: {
+      title: 'A more reliable server',
+      items: [
+        'The server started from Terminal shuts down cleanly after an unexpected error and the LaunchAgent restarts it.',
+        'Such a crash no longer leaves the agents it started running or the window key on disk.',
+      ],
+    },
+  },
+  {
     version: '0.46.48',
     date: '2026-10-20',
     title: 'Úchyty jen na požádání',

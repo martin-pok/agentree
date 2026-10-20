@@ -162,8 +162,9 @@ jobs:
         with: { ref: '${{ inputs.tag || github.ref }}', persist-credentials: false }
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: '22' }
-      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
-        with: { arch: x64 }
+      - name: Nástroje Visual Studio
+        shell: pwsh
+        run: ./scripts/msvc-prostredi.ps1
       - name: Sestavit plášť
         run: npm run build:windows
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

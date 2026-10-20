@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.49 – 2026-10-20 · Spolehlivější server a CI
+
+- **Server spuštěný z Terminálu** (`agenteeq`, LaunchAgent) se po neočekávané chybě řádně ukončí: zastaví agenty, které spustil, smaže klíč okna z disku a do logu zapíše příčinu. Dřív spadl bez úklidu. LaunchAgent ho pak spustí znovu. Aplikace pro Mac tuto pojistku už měla.
+- **CI:** joby s Playwrightem běží na připnutém Ubuntu 24.04, protože `ubuntu-latest` se od 19. 10. 2026 postupně přepíná na 26.04. Sestavení pro Windows nastavuje Visual Studio vlastním skriptem místo neudržované cizí akce `ilammy/msvc-dev-cmd`.
+- **Testy:** kontroly pravidla „nepodařilo se zjistit ≠ nic neběží“, které root přeskakoval, se pod rootem spustí znovu jako neprivilegovaný uživatel, takže proběhnou i v kontejnerech.
 ## 0.46.48 – 2026-10-20 · Úchyty jen na požádání a úklid vydání
 
 - **Průběh dne na telefonu:** úchyty widgetů už trvale nesvítí. Přesouvá se v režimu „Upravit rozložení“ a prstem jen za úchyt, takže dotyk hlavičky widgetu posune stránku, ne kartu.
