@@ -2,7 +2,7 @@ import { state, setProjects, agentsList, projectSessions, projectById } from './
 import { api } from './api.js';
 import { esc, shortPath, plural, jeAbsolutniCesta, castiCesty } from './format.js';
 import { ICON, glyph, logoKey } from './icons.js';
-import { modal, toast } from './ui.js';
+import { modal, toast, infoTip } from './ui.js';
 import { openCropper, TARGETS } from './cropper.js';
 import { tokensSince, needsYou } from './data.js';
 import { tr } from './i18n.js';
@@ -253,7 +253,7 @@ export function projectForm(existing = null) {
       <div class="media-picks">
         ${['cover', 'logo'].map((kind) => `<div class="media-pick" data-media="${kind}">
           <span class="media-thumb media-thumb--${kind}" data-media-thumb></span>
-          <span class="media-text"><b>${kind === 'cover' ? tr('Obrázek karty') : tr('Logo klienta')}</b><small>${esc(TARGETS[kind].hint)}</small></span>
+          <span class="media-text"><b>${kind === 'cover' ? tr('Obrázek karty') : tr('Logo klienta')}${infoTip(TARGETS[kind].hint)}</b><small>${esc(TARGETS[kind].kratce)}</small></span>
           <span class="media-actions"><button class="btn btn--sm" type="button" data-media-pick>${tr('Nahrát')}</button><button class="btn btn--sm" type="button" data-media-remove hidden>${tr('Odebrat')}</button></span>
           <input type="file" accept="image/png,image/jpeg,image/webp" hidden data-media-file>
           <div class="media-crop" data-media-crop hidden></div>

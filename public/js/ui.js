@@ -809,9 +809,10 @@ let infoTipEsc = false;
 export function infoTip(text, label = tr('Více informací')) {
   if (!infoTipEsc) { infoTipEsc = true; hlidejInfoTip(); }
   const id = `info-tip-${++infoTipId}`;
-  return `<span class="info-tip"><button type="button" class="info-tip-btn" aria-label="${esc(label)}" aria-describedby="${id}" aria-expanded="false">${ICON.info}</button><span class="info-tip-bubble" role="tooltip" id="${id}">${esc(text)}</span></span>`;
+  return `<span class="info-tip"><button type="button" class="info-tip-btn" aria-label="${esc(label)}" aria-describedby="${id}" aria-expanded="false">${ICON.info}</button><span class="info-tip-bubble" role="tooltip" id="${id}">${esc(String(text).replace(/(\d) (?=[A-Za-z%])/g, '$1\u00a0'))}</span></span>`;
 }
 function hlidejInfoTip() {
+  if (typeof window === 'undefined' || typeof document === 'undefined' || !document.addEventListener) return;
   // Na window v zachytávací fázi: proběhne dřív než Esc dialogu (document, také zachytávání),
   // takže zavře jen bublinu a dialog zůstane otevřený.
   window.addEventListener('keydown', (e) => {
@@ -825,6 +826,16 @@ function hlidejInfoTip() {
     tip.querySelector('.info-tip-btn')?.setAttribute('aria-expanded', 'false');
   }, true);
   const odkryj = (e) => { const t = e.target.closest?.('.info-tip'); if (t && !t.contains(e.relatedTarget)) delete t.dataset.skryto; };
+  // Bublina roste od tlačítka doleva; kdyby tím vyjela z dialogu nebo okna, poroste doprava.
+  const umisti = (tip) => {
+    const btn = tip.querySelector('.info-tip-btn');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const okraj = tip.closest('.modal')?.getBoundingClientRect() || { left: 0, right: innerWidth };
+    const sirka = Math.min(300, innerWidth * 0.72);
+    tip.dataset.strana = r.right + 8 - sirka < okraj.left + 8 ? 'vpravo' : 'vlevo';
+  };
+  for (const typ of ['pointerover', 'focusin']) document.addEventListener(typ, (e) => { const t = e.target.closest?.('.info-tip'); if (t) umisti(t); });
   // Klepnutí (dotyk, kde hover není a Safari tlačítku fokus nedá) bublinu přepne; klepnutí mimo ji zavře.
   const nastav = (tip, otevrit) => {
     tip.toggleAttribute('data-otevreno', otevrit);
@@ -834,7 +845,7 @@ function hlidejInfoTip() {
   document.addEventListener('click', (e) => {
     const btn = e.target.closest?.('.info-tip-btn');
     for (const t of document.querySelectorAll('.info-tip[data-otevreno]')) if (!t.contains(e.target)) nastav(t, false);
-    if (btn) { e.preventDefault(); const t = btn.closest('.info-tip'); nastav(t, !t.hasAttribute('data-otevreno')); }
+    if (btn) { e.preventDefault(); const t = btn.closest('.info-tip'); umisti(t); nastav(t, !t.hasAttribute('data-otevreno')); }
   });
   document.addEventListener('pointerout', odkryj);
   document.addEventListener('focusout', odkryj);

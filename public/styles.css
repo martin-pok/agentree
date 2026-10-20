@@ -1447,9 +1447,11 @@ html.is-cloud body { background: var(--paper); }
    At phone sizes the original single-column media controls remain intact. */
 @media (min-width: 680px) {
   .modal--project .media-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .modal--project .media-pick { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-content: start; }
-  .modal--project .media-thumb--cover { width: 84px; }
-  .modal--project .media-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  /* Náhled, text na jeden řádek a „Nahrát“ vedle sebe: karta má výšku náhledu, ne tří řádků. */
+  .modal--project .media-pick { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .modal--project .media-thumb--cover { width: 64px; height: 32px; }
+  .modal--project .media-thumb--logo { width: 44px; height: 44px; }
+  .modal--project .media-text small { white-space: nowrap; }
 }
 
 /* ---------- Dovednosti ---------- */
@@ -2384,10 +2386,12 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 .media-thumb .pcover { position: absolute; inset: 0; }
 .media-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--mute); }
 .media-text { display: grid; gap: 2px; min-width: 0; }
-.media-text b { font-weight: 500; font-size: 14px; }
+.media-text b { display: flex; align-items: center; gap: 2px; font-weight: 500; font-size: 14px; white-space: nowrap; }
+.media-text small { white-space: nowrap; }
 .media-text small { font-size: 12px; color: var(--mute); }
 .media-actions { display: flex; gap: 8px; }
-@media (max-width: 560px) { .media-pick { grid-template-columns: 72px minmax(0, 1fr); } .media-thumb { width: 72px; } .media-actions { grid-column: 1 / -1; } }
+/* Telefon: náhled, text a „Nahrát“ zůstávají v jednom řádku; text se smí zalomit na dva. */
+@media (max-width: 560px) { .media-pick { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; } .media-thumb { width: 48px; height: 24px; } .media-thumb--logo { width: 36px; height: 36px; } .media-text small { overflow: hidden; text-overflow: ellipsis; } }
 .pcard > * { position: relative; z-index: 1; }
 :where(html:not(.is-scrolling)) .pcard:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--pc) 40%, transparent); }
 .pcard.is-archived { opacity: .72; }

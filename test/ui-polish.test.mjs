@@ -676,7 +676,7 @@ test('jméno v profilu vede do Nastavení → Účet a při najetí se podtrhne'
 
 test('vysvětlení za „i“ se zalamuje, jde přečíst odečítačem a Esc ho zavře', async () => {
   const ui = await zdroj('public/js/ui.js');
-  assert.match(ui, /aria-describedby="\$\{id\}" aria-expanded="false">\$\{ICON\.info\}<\/button><span class="info-tip-bubble" role="tooltip" id="\$\{id\}">\$\{esc\(text\)\}<\/span>/);
+  assert.match(ui, /aria-describedby="\$\{id\}" aria-expanded="false">\$\{ICON\.info\}<\/button><span class="info-tip-bubble" role="tooltip" id="\$\{id\}">\$\{esc\(String\(text\)/);
   assert.match(ui, /if \(e\.key !== 'Escape'\) return;[\s\S]{0,400}tip\.dataset\.skryto = ''/);
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.info-tip-btn \{[^}]*width: 32px; height: 32px;[^}]*border-radius: var\(--r-full\)/);
@@ -776,4 +776,14 @@ test('Detekované procesy: vypnuté sledování segment skryje, selhání ukáž
   const ag = await zdroj('public/js/views/agents.js');
   assert.match(ag, /const procesy = proc\?\.state === 'connected' \? 'ok' : proc\?\.state === 'error' \? 'nevim' : 'vypnuto';/);
   assert.match(ag, /k === 'observed' && !count && procesy !== 'ok'[\s\S]{0,300}<span class="count">–<\/span>/);
+});
+
+test('nahrání obrázku a loga: jeden řádek s tlačítkem vedle, podrobnosti pod „i“', async () => {
+  const pu = await zdroj('public/js/projects-ui.js');
+  assert.match(pu, /\$\{infoTip\(TARGETS\[kind\]\.hint\)\}<\/b><small>\$\{esc\(TARGETS\[kind\]\.kratce\)\}<\/small>/);
+  const css = await zdroj('public/styles.css');
+  assert.match(css, /\.modal--project \.media-pick \{ grid-template-columns: 64px minmax\(0, 1fr\) auto;/);
+  assert.doesNotMatch(css, /\.modal--project \.media-actions \{ grid-column: 1 \/ -1;/, 'tlačítko už nepadá pod text');
+  const { infoTip } = await import('../public/js/ui.js');
+  assert.match(infoTip('do 4 MB'), /4\u00a0MB/, 'číslo a jednotka se nerozdělí');
 });

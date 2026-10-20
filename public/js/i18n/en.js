@@ -9,6 +9,8 @@ export default {
   texty: {
     "Vzhled agenta": "Agent appearance",
     "Zobrazit": "Show",
+    "1400 × 400 px · 4 MB": "1400 × 400 px · 4 MB",
+    "512 × 512 px · 1,5 MB": "512 × 512 px · 1.5 MB",
     "Dnešní konverzace najdeš v Agentech": "Find today’s conversations in Agents",
     "Skrýt": "Hide",
     "Více informací": "More information",

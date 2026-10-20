@@ -7,8 +7,9 @@ import { tr } from './i18n.js';
 // Retině nebyl rozmazaný. Dřív se obrázek jen zmenšil a karta ho ořízla sama (`object-fit`).
 
 export const TARGETS = {
-  cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), hint: tr('1400 × 400 px · PNG, JPG nebo WebP do 4 MB') },
-  logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), hint: tr('512 × 512 px · ideálně PNG s průhledností, do 1,5 MB') },
+  // `kratce` je jeden řádek u nahrávání (rozměr a limit); plné `hint` se ukáže v bublině „i“.
+  cover: { w: 1400, h: 400, bytes: 4_000_000, label: tr('Obrázek karty'), kratce: tr('1400 × 400 px · 4 MB'), hint: tr('1400 × 400 px · PNG, JPG nebo WebP do 4 MB') },
+  logo: { w: 512, h: 512, bytes: 1_500_000, label: tr('Logo klienta'), kratce: tr('512 × 512 px · 1,5 MB'), hint: tr('512 × 512 px · ideálně PNG s průhledností, do 1,5 MB') },
 };
 const TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_ZOOM = 4;
