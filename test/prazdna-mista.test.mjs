@@ -53,3 +53,17 @@ test('CSS: žádné :has() uvnitř :has() – prohlížeč by celé pravidlo ti�
   }
   assert.deepEqual(vnorene, []);
 });
+
+test('tlačítka se při najetí neposouvají – mění se jen plocha nebo linka (docs/DESIGN.md, Stavy)', async () => {
+  const soubory = (await fs.readdir(new URL('../public/', import.meta.url))).filter((f) => f.endsWith('.css'));
+  const poskoky = [];
+  for (const f of soubory) {
+    const css = await zdroj(`public/${f}`);
+    for (const m of css.matchAll(/([^{}]*:hover[^{}]*)\{([^}]*)\}/g)) {
+      const [, selektor, telo] = m;
+      if (!/\b(btn|icon-btn|launch-go|pm-poslat|search-btn)\b/.test(selektor)) continue;
+      if (/translate:\s*0(px)?\s+-\d|translateY\(-\d/.test(telo)) poskoky.push(`${f}: ${selektor.trim()}`);
+    }
+  }
+  assert.deepEqual(poskoky, []);
+});

@@ -572,9 +572,8 @@ html[data-theme='dark'] .empty-mark { --er: #7B7DF5; --er-2: #A3A5FF; }
 /* Shared response grammar. Individual translate avoids overwriting modal/picker transforms. */
 :where(button, a, summary, [role='button']) { transition: color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease), border-color var(--motion-response) var(--ease), translate var(--motion-response) var(--ease); }
 :where(button, a, summary, [role='button']):not(:disabled):not([aria-disabled='true']):active { translate: 0 1px; transition-duration: var(--motion-press); }
-@media (hover: hover) and (pointer: fine) {
-  .btn:not(:disabled):not(.is-busy):hover, .icon-btn:not(:disabled):hover { translate: 0 -1px; }
-}
+/* Najetí mění jen plochu nebo linku, tlačítko se neposouvá (docs/DESIGN.md, Stavy). Dřív se při najetí
+   zvedlo o 1 px a „poskočilo“ – rozhodnutí vlastníka 20. 10. 2026: působí to levně, ne prémiově. */
 @media (prefers-reduced-motion: reduce) {
   :where(button, a, summary, [role='button']) { transition: none !important; translate: none !important; }
 }
