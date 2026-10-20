@@ -67,3 +67,21 @@ test('tlačítka se při najetí neposouvají – mění se jen plocha nebo link
   }
   assert.deepEqual(poskoky, []);
 });
+
+test('varování bez hnědého boxu, dlaždice stavu stejně vysoké, karta modelů bez skoku při načtení', async () => {
+  const css = await zdroj('public/styles.css');
+  for (const sel of ['.set-note--warn', '.ext-status', '.rt-warn, .spend-stats .spend-note--warn, .spend-foot--warn']) {
+    const i = css.lastIndexOf(`\n${sel} {`);
+    assert.ok(i >= 0, `${sel} má pravidlo`);
+    const pravidlo = css.slice(i, css.indexOf('}', i));
+    assert.doesNotMatch(pravidlo, /brass|teal-tint|inset 0 0 0 1px/, `${sel}: bez hnědého (ani zeleného) boxu`);
+    assert.match(pravidlo, /padding: 0 0 0 26px/, `${sel}: místo pro ikonku`);
+  }
+  assert.match(css, /\.banner--limit \{ background: var\(--card\);/, 'banner limitu bez hnědé plochy');
+  const ref = await zdroj('public/refinement.css');
+  assert.match(ref, /\.zdravi-pocty li \{ display: flex; \}/);
+  assert.match(ref, /\.zdravi-pocty a \{ flex: 1; align-content: center;/);
+  const settings = await zdroj('public/js/views/settings.js');
+  assert.match(settings, /: kostraNapojeni\(\)\}/, 'místo věty „Zjišťuji…“ kostra ve výšce seznamu');
+  assert.match(css, /\.model-row--kostra \{ min-height: 63px; \}/);
+});

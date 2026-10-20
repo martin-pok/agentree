@@ -1006,7 +1006,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .banner p { margin: 4px 0 0; }
 .banner--action { background: var(--velvet-tint); color: var(--ink); box-shadow: none; }
 .banner--action > .icon { color: var(--velvet-ink); }
-.banner--limit { background: var(--brass-tint); box-shadow: none; }
+.banner--limit { background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .banner--limit > .icon { color: var(--brass-ink); }
 .banner--info { background: var(--teal-tint); box-shadow: none; }
 .banner--info > .icon { color: var(--teal-ink); }
@@ -1106,6 +1106,15 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 /* Napojené modely: řádek na službu, stav a jediná akce. */
 .model-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 8px; }
 .model-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line-2); min-width: 0; flex-wrap: wrap; }
+.model-row--kostra .model-kostra-logo { flex: none; width: 32px; height: 32px; margin: 0; border-radius: var(--r-sm); }
+.model-row--kostra .model-kostra-text { display: grid; gap: 6px; flex: 1; min-width: 0; }
+.model-row--kostra .skeleton { margin: 0; }
+.model-row--kostra .model-kostra-text .skeleton:first-child { width: 28%; height: 14px; }
+.model-row--kostra .model-kostra-text .skeleton:last-child { width: 52%; height: 12px; }
+/* Výšky jako u načteného seznamu (agent, agent, webové chaty na dva řádky), na telefonu se stav zalomí. */
+.model-row--kostra { min-height: 63px; }
+.model-row--kostra:last-child { min-height: 81px; }
+@media (max-width: 560px) { .model-row--kostra { min-height: 117px; } .model-row--kostra:last-child { min-height: 223px; } }
 .model-logo { flex: none; width: 32px; height: 32px; border-radius: var(--r-logo); display: grid; place-items: center; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
 .model-logo .logo, .model-logo .glyph { width: 18px; height: 18px; }
 .model-loga { flex: none; display: flex; }
@@ -2686,11 +2695,23 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 html.meni-motiv *, html.meni-motiv *::before, html.meni-motiv *::after { transition: none !important; }
 
 /* ---------- Rozšíření pro Chrome v Nastavení ---------- */
-.ext-status { margin: 0 0 16px; padding: 12px 16px; border-radius: var(--r-sm); background: var(--teal-tint, rgba(31, 138, 108, .1)); color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+/* Stav rozšíření: stejný klidný řádek jako varování, s fajfkou místo zeleného boxu. */
+.ext-status { position: relative; margin: 0 0 16px; padding: 0 0 0 26px; color: var(--ink-2); font-size: 14px; line-height: 1.5; }
+.ext-status::before { content: ''; position: absolute; left: 0; top: 3px; width: 16px; height: 16px; background: var(--teal-ink); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.6 5.2-1.1-1L6.9 8.1 5.4 6.6l-1.1 1.1 2.6 2.6 4.7-5.1Z'/%3E%3C/svg%3E") center / contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm3.6 5.2-1.1-1L6.9 8.1 5.4 6.6l-1.1 1.1 2.6 2.6 4.7-5.1Z'/%3E%3C/svg%3E") center / contain no-repeat; }
 .ext-reinstall { margin: 0 0 16px; }
 .ext-reinstall summary { cursor: pointer; font-size: 14px; color: var(--ink-2); padding: 8px 0; }
 .ext-reinstall[open] summary { margin-bottom: 8px; }
-.set-note--warn { padding: 12px 16px; border-radius: var(--r-sm); background: linear-gradient(45deg, color-mix(in srgb, var(--brass) 14%, transparent), color-mix(in srgb, var(--brass) 3%, transparent) 70%); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brass) 28%, transparent); color: var(--ink); }
+/* Varování v kartách: prostý řádek bez rámečku a bez teplého pozadí (rozhodnutí vlastníka 20. 10. 2026 –
+   hnědý box působil amatérsky). Od běžné poznámky ho odliší ikonka „pozor“ vlevo a plná barva písma. */
+:root { --ikona-pozor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm-.9 3.6h1.8l-.25 5.6h-1.3L7.1 3.6Zm.9 7.1a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.set-note--warn { position: relative; padding: 0 0 0 26px; border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+.set-note--warn::before { content: ''; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; background: var(--sky); -webkit-mask: var(--ikona-pozor); mask: var(--ikona-pozor); }
+/* Varování a stav pod sebou: řádky s ikonou potřebují mezi sebou vzduch. */
+.set-note--warn + .ext-status, .set-note--warn + .set-note--warn { margin-top: 8px; }
+.set-note--warn:has(+ .ext-status) { margin-bottom: 0; }
+/* Stejný klidný řádek i pro ostatní varování, která dřív měla hnědý box (Přehled, Útrata). */
+.rt-warn, .spend-stats .spend-note--warn, .spend-foot--warn { position: relative; padding: 0 0 0 26px; border-radius: 0; background: none; box-shadow: none; color: var(--ink); }
+.rt-warn::before, .spend-stats .spend-note--warn::before, .spend-foot--warn::before { content: ''; position: absolute; left: 0; top: 2px; width: 16px; height: 16px; background: var(--sky); -webkit-mask: var(--ikona-pozor); mask: var(--ikona-pozor); }
 /* Poznámka s akcí (detail konverzace: stav bez propojení s Claude Code). */
 .hook-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .hook-note > span { flex: 1 1 280px; min-width: 0; }

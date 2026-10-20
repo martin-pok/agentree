@@ -1024,10 +1024,14 @@ function pushSekce() {
     <p class="set-note">${tr('Posílá je {0}, dokud běží. Zprávu doručí push služba výrobce telefonu a je šifrovaná, takže ji služba nepřečte.', tentoPocitac())}</p>`;
 }
 
+// Než se seznam napojení načte (ptá se nástrojů dodavatelů, trvá i sekundu), stojí na jeho místě kostra
+// tří řádků ve stejné výšce. Karta pak při načtení neposkočí o dvě stě pixelů.
+const kostraNapojeni = () => `<ul class="model-list" aria-busy="true"><li class="sr-only" role="status">${tr('Zjišťuji, co je napojené…')}</li>${'<li class="model-row model-row--kostra" aria-hidden="true"><span class="skeleton model-kostra-logo"></span><span class="model-kostra-text"><span class="skeleton"></span><span class="skeleton"></span></span></li>'.repeat(3)}</ul>`;
+
 function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), '', '', tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
-    ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note set-note--warn">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
+    ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note set-note--warn">${esc(v.napojeniChyba)}</p>` : kostraNapojeni()}
     <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
 }
 

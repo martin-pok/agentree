@@ -176,8 +176,13 @@ nestojí jako viditelný odstavec. Patří do `infoTip()` u nadpisu nebo u hodno
 co uživatel udělá: varování s akcí, následek nevratného kroku, selhání.
 
 - `.set-note` je prostý text bez rámečku a pozadí. Rámeček by z něj dělal něco, na co se klepe.
-- Rámeček a teplé pozadí má jen `.set-note--warn`: chyba, selhané načtení nebo stav, který
-  potřebuje zásah. Uživatel tak „nepodařilo se zjistit“ pozná od běžné poznámky na první pohled.
+- Varování (`.set-note--warn`, `.rt-warn`, varování v Útratě) je taky řádek bez rámečku a bez
+  pozadí: od běžné poznámky ho odliší ikonka „pozor“ vlevo (`--ikona-pozor` v tónu `--sky`) a plná
+  barva písma. Hnědý box s teplým pozadím se nepoužívá (rozhodnutí vlastníka 20. 10. 2026: působil
+  amatérsky). Stav „v pořádku“ (`.ext-status`) má stejný řádek s fajfkou.
+- Karta, jejíž obsah se dotahuje (napojené modely), drží místo kostrou ve výšce výsledku –
+  po načtení se nic neposune.
+- Dlaždice v jedné řadě mají vždy stejnou výšku, i když se jeden popisek zalomí.
 - Prázdný stav uvnitř karty (žádná složka, žádný agent) je ztlumená věta bez rámečku.
 - Dialog má jednu viditelnou větu a akci. Podrobnosti a cesty jdou pod „i“.
 
