@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.49** — Preview kandidát: server z Terminálu se po neočekávané chybě řádně ukončí a uklidí po sobě, CI na připnutém Ubuntu 24.04 a sestavení pro Windows bez cizí akce. Kandidát vzniká jen na pokyn jako neveřejný Draft s auditem všech osmi příloh a pak se zveřejní jako Preview. **Poslední veřejné Preview je [0.46.48](https://github.com/martin-pok/agentree/releases/tag/v0.46.48)**; Stable Latest zůstává `v0.46.0`. Historické tagy se nepřepisují; překonané nezveřejněné Drafty se mažou samy.
+> **0.46.50** — Preview kandidát: zadání agenta na prázdném Přehledu i na telefonu v prvním okně, Statistiky bez karet „Bez dat.“, karty projektů bez prázdného pruhu a jedno tlačítko zpět; obsahuje i nevydané 0.46.49 (spolehlivější server z Terminálu a CI). Kandidát vzniká jen na pokyn jako neveřejný Draft s auditem všech osmi příloh a pak se zveřejní jako Preview. **Poslední veřejné Preview je [0.46.48](https://github.com/martin-pok/agentree/releases/tag/v0.46.48)**; Stable Latest zůstává `v0.46.0`. Historické tagy se nepřepisují; překonané nezveřejněné Drafty se mažou samy.
 >
 > **0.46.14** — **historický neměnný kandidát s tagem na `43fbc39`; release build běží.** Slučuje opravu zaseknutých aktualizací Macu a bezpečného ukončení ([#262](https://github.com/martin-pok/agentree/pull/262)), editor vzhledu na detailu agenta ([#261](https://github.com/martin-pok/agentree/pull/261)) a minimalistickou ruční obnovu ([#260](https://github.com/martin-pok/agentree/pull/260)). Nativní QA aktualizací na macOS runneru u #262 prošlo **17/17** včetně zaseknuté služby; **instalace na uživatelově Macu zatím není ověřená**. Teprve přesné zelené CI na finálním `main`, neměnný tag, Draft s nezávislým SHA-256 auditem a reálný Mac UAT umožní označit vydání za připravené k publikaci. Starší 0.46.13 je soukromý Draft a veřejné Preview je stále 0.46.12.
 >
@@ -65,7 +65,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 1255 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
+npm test          # 1397 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/

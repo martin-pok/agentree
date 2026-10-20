@@ -232,7 +232,9 @@ function mount(el) {
   const prazdno = document.createElement('div');
   prazdno.dataset.region = 'prazdno';
   prazdno.className = 'home-prazdno';
-  desk.append(el.querySelector('[data-launch]'), dvojice, prazdno);
+  // Průvodce stojí pod zadáním i pod tím, co čeká na tebe: na prázdném Přehledu je zadání agenta
+  // to hlavní a na telefonu by ho čtyři kroky průvodce odsunuly pod přehyb.
+  desk.append(el.querySelector('[data-launch]'), dvojice, el.querySelector('[data-region="onboard"]'), prazdno);
   live.append(el.querySelector('[data-region="hero"]'));
   const history = document.createElement('details');
   history.className = 'home-history';

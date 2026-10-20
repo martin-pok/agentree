@@ -102,8 +102,16 @@ export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } =
   }
   demo.app.store.setLimit({ id: 'showcase-five', label: u('limit 5 h'), app: 'Claude Code', provider: 'anthropic', usedPercent: 62, at: now, resetsAt: now + 7200000 });
   await pridejUtratu(client, new Date(now), u);
+  // Propojení: ukázkový Claude Code a Codex pracují, takže je ukázka hlásí jako napojené. Bez toho
+  // by se stav zjišťoval na počítači, kde prohlídka běží: bez těch programů „Nepodařilo se
+  // zjistit“ nebo „Program nenalezen“ vedle pracujících agentů.
+  const zjistene = demo.app.napojeni.prehled;
+  demo.app.napojeni.prehled = async () => (await zjistene()).map((n) => (n.druh === 'agent' && UKAZKOVI_AGENTI.has(n.id)
+    ? { ...n, nainstalovano: true, napojeno: true, ceka: false } : n));
   return demo;
 }
+
+const UKAZKOVI_AGENTI = new Set(['claude-code', 'codex']);
 
 // Smyšlená útrata: rozpočet a výdaje tak, aby měsíc byl zhruba ze 70 % vyčerpaný a graf za půl
 // roku měl co ukázat. Jde přes API jako skutečný uživatel, takže čísla spočítá server stejně.

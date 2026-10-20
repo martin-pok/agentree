@@ -141,8 +141,11 @@ body { letter-spacing: -.012em; }
 .pcard-name { font-size: 20px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
 .pcard-top { align-items: flex-start; }
 .pcard-top > .pdot { margin-top: 5px; }
-.pcard > .pcover:not(:has(img)) { aspect-ratio: auto; height: 40px; background: color-mix(in srgb, var(--pc) 5%, var(--card)); }
-.pcard > .pcover:not(:has(img))::after { height: 1px; background: color-mix(in srgb, var(--pc) 20%, var(--line-2)); }
+/* Projekt bez obrázku karty nemá prázdný pruh obálky (projects.js ho nevykreslí): karta začíná
+   běžným okrajem a logo, které jinak přesahuje do obálky, sedí v řádku s názvem. */
+.pcard--bez-obalky { padding-top: 22px; }
+.pcard--bez-obalky .pcard-top.has-logo { margin-top: 0; align-items: center; }
+.pcard--bez-obalky .pcard-top.has-logo .pcard-name { padding-top: 0; }
 .pcard--ghost { box-shadow: none; }
 .set-card-head :is(h2, h3) { font-size: 20px; font-weight: 400; }
 .appearance-options--lang .appearance-option[aria-checked='true'] { border-color: var(--action); background: color-mix(in srgb, var(--action) 5%, var(--card)); color: var(--ink); box-shadow: none; }
@@ -223,6 +226,8 @@ html[data-theme] .home-live .pulse-bar { --pb-bg: transparent; --pb-ink: var(--i
 .home-desk .launch-foot { border: 0; padding-top: 4px; }
 .home-desk .launch-kbd { display: none; }
 .home-desk > section[aria-labelledby='dec-h'] { max-width: none; margin: 0; }
+.home-desk .onboard { margin: 0 0 30px; }
+.home-dvojice:not([hidden]) + [data-region='onboard'] > .onboard { margin-top: 30px; }
 .home-desk .decision { padding: 18px 22px; }
 .home-desk .decision-actions { margin-top: 6px; }
 .home-live { position: relative; border: 0; padding: 0; }

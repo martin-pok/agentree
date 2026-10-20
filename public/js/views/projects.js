@@ -81,9 +81,11 @@ function cardHtml(p, now) {
   const st = projectStats(p, now);
   const spark = dailyActivity(st.live, now);
   const hasSpark = spark.some((x) => x > 0);
-  return `<a class="card pcard${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(barvaProjektu(p.color))}" data-project-drop="${esc(p.id)}" data-pid="${esc(p.id)}">
+  // Bez nahraného obrázku karta obálku nemá: prázdný pruh nahoře by jen zabíral místo.
+  const obalka = Boolean(p.cover?.file);
+  return `<a class="card pcard${obalka ? '' : ' pcard--bez-obalky'}${p.archived ? ' is-archived' : ''}" href="${projectHref(p.id)}" style="--pc:${esc(barvaProjektu(p.color))}" data-project-drop="${esc(p.id)}" data-pid="${esc(p.id)}">
     <span class="pcard-grip" data-grip aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
-    ${projectCover(p)}
+    ${obalka ? projectCover(p) : ''}
     <span class="pcard-top${p.logo?.file ? ' has-logo' : ''}">${projectMark(p, 'pdot--lg')}<span class="pcard-name">${esc(p.name)}</span>
       ${st.needs ? `<span class="pcount pcount--alert" title="${tr('Potřebuje tvé rozhodnutí')}">${ICON.hand}${st.needs}</span>` : st.working ? `<span class="pcount pcount--live" title="${tr('Právě pracuje')}"><i class="live-dot"></i>${st.working}</span>` : ''}</span>
     <span class="pcard-desc">${esc(p.description || (p.folders.length ? shortPath(p.folders[0]) : tr('Ručně zařazené konverzace')))}</span>

@@ -4,6 +4,28 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.50',
+    date: '2026-10-20',
+    title: 'Zadání nahoře a méně prázdných míst',
+    items: [
+      'Na telefonu je pole pro zadání agenta hned pod pozdravem, průvodce až pod ním.',
+      'Statistiky schovají karty, které v období nemají data.',
+      'Projekt bez obrázku nemá na kartě prázdný pruh.',
+      'V detailu agenta a projektu je jen jedno tlačítko zpět.',
+      'Načítání ukazuje malou hlavu robota místo obecného kroužku.',
+    ],
+    en: {
+      title: 'Task first and fewer empty spots',
+      items: [
+        'On phones, the agent task field sits right below the greeting, with the guide below it.',
+        'Statistics hide cards that have no data for the period.',
+        'A project without an image no longer has an empty strip on its card.',
+        'Agent and project details have a single back button.',
+        'Loading shows a small robot head instead of a generic spinner.',
+      ],
+    },
+  },
+  {
     version: '0.46.49',
     date: '2026-10-20',
     title: 'Spolehlivější server',

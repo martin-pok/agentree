@@ -819,7 +819,6 @@ export default {
     "Hodiny s aktivitou": "Active hours",
     "hodiny, kdy aspoň jeden agent pracoval": "hours when at least one agent was working",
     "V tomto období žádné tokeny": "No tokens in this period",
-    "Bez dat.": "No data.",
     "zůstatek": "balance",
     "Tvůj nový pracovní prostor": "Your new workspace",
     "Všichni agenti.\nJeden přehled.": "Every agent.\nOne overview.",
