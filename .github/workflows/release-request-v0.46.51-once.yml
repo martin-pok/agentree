@@ -9,9 +9,11 @@ on:
       - '.github/workflows/release-request-v0.46.51-once.yml'
 permissions:
   contents: read
-  actions: write
 jobs:
   prepare:
+    permissions:
+      contents: read
+      actions: write
     if: contains(github.event.head_commit.message, 'request one-time v0.46.51 candidate')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
