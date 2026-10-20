@@ -37,9 +37,36 @@ test('rozbalovací limity vypisují všechny nástroje a u neměřených to ří
   assert.equal(allToolLimits(state, now).length, 7, 'každý sledovaný nástroj má řádek');
   const html = limitsAll(state, now);
   assert.match(html, /Limit 5 h<\/span><b>34 %/);
-  assert.match(html, /Gemini CLI na tomto Macu není/);
+  assert.match(html, /Na tomto Macu nenalezeno: Gemini CLI</);
+  assert.equal((html.match(/nenalezeno:/g) || []).length, 1, 'nepřítomné nástroje jsou v jednom řádku');
   assert.match(html, /Cursor[\s\S]*Bez údajů o limitu/, 'Cursor nemá měřený limit a má to říct');
   assert.doesNotMatch(html, /undefined|NaN/);
+});
+
+// Konektor Codexu hlásil „missing“ (žádná složka), ale konverzace z Codexu v aplikaci byly a
+// dnešní tokeny také. Řádek pak tvrdil zároveň „287 tis. tokenů dnes“ a „nejsou žádné konverzace“.
+test('limity: nástroj s konverzacemi se nikdy nehlásí jako nepřítomný', async () => {
+  const { limitsAll } = await import('../public/js/limits-ui.js');
+  const now = Date.now();
+  const hodina = new Date(now).toISOString().slice(0, 13);
+  const state = {
+    limits: [],
+    connectors: [
+      { id: 'codex', state: 'missing', detail: 'Na tomto Macu nejsou žádné konverzace Codexu.' },
+      { id: 'cursor', state: 'missing' },
+      { id: 'gemini-cli', state: 'missing' },
+      { id: 'qwen-code', state: 'error', detail: 'EACCES' },
+    ],
+    sessions: new Map([['c1', { connector: 'codex', hourly: { [hodina]: 287000 }, tokens: { input: 287000 } }]]),
+  };
+  const html = limitsAll(state, now);
+  assert.doesNotMatch(html, /nejsou žádné konverzace Codexu/, 'rozpor s tokeny');
+  assert.match(html, /<b>Codex · ChatGPT<\/b>[\s\S]*?Bez údajů o limitu/);
+  assert.match(html, /Na tomto Macu nenalezeno: Cursor, Gemini CLI</, 'nepřítomné v jednom ztlumeném řádku');
+  assert.doesNotMatch(html, /nenalezeno:[^<]*Codex/);
+  assert.match(html, /<b>Qwen Code<\/b>[\s\S]*?Data se nepodařilo načíst/, 'selhání čtení není „není tu“');
+  assert.doesNotMatch(html, /nenalezeno:[^<]*Qwen/);
+  assert.match(html, /<b>Chaty na webu<\/b>[\s\S]*?class="info-tip/, 'u webu důvod pod „i“');
 });
 
 test('heatDetails spočítá dny, podíl nástroje a možné dny okna', async () => {
@@ -638,11 +665,19 @@ test('dlaždice Stav agentů: jemný přechod 45° bez rámečku, číslo v tón
   assert.doesNotMatch(blok, /inset 0 (0|1px) 0 (0 )?1px|border:/, 'bez obvodové i horní linky');
 });
 
-test('poznámky v kartách jsou skleněné, ne hnědé; „Zjištění ještě neproběhlo“ je štítek u tlačítka', async () => {
+// Orámovaná poznámka s gradientem vypadala „skoro jak button“. Obyčejná poznámka je prostý text,
+// rámeček a výplň má jen varování (docs/DESIGN.md, „Vysvětlující texty patří pod i“).
+test('poznámky v kartách jsou prostý text, rámeček má jen varování; „Zjištění ještě neproběhlo“ je štítek u tlačítka', async () => {
   const css = await zdroj('public/styles.css');
   const note = css.match(/^\.set-note \{[^}]+\}/m)?.[0] || '';
-  assert.doesNotMatch(note, /brass-tint/, 'obyčejná poznámka nemá hnědou výplň');
-  assert.match(note, /linear-gradient\(45deg, color-mix\(in srgb, var\(--sky\) 7%, transparent\)/);
+  assert.ok(note, 'pravidlo .set-note existuje');
+  assert.doesNotMatch(note, /background|box-shadow|border|padding/, 'obyčejná poznámka nemá rámeček ani výplň');
+  assert.doesNotMatch(css.match(/\.folder-list \.folder-empty \{[^}]+\}/)?.[0] || '', /inset 0 0 0 1px/, 'prázdný seznam složek bez rámečku');
+  const design = await zdroj('docs/DESIGN.md');
+  assert.match(design, /## Vysvětlující texty patří pod „i“/);
+  for (const chyba of ['v.napojeniChyba ? `<p class="set-note set-note--warn">', "u.stav === 'nedostupne' ? `<p class=\"set-note set-note--warn\">"]) {
+    assert.ok((await zdroj('public/js/views/settings.js')).includes(chyba), `selhání má rámeček varování: ${chyba}`);
+  }
   const warn = css.match(/^\.set-note--warn \{[^}]+\}/m)?.[0] || '';
   assert.doesNotMatch(warn, /brass-tint/);
   const settings = await zdroj('public/js/views/settings.js');
@@ -804,4 +839,21 @@ test('„i“ dá při stejném textu stejné HTML (fill() kartu nepřekresluje 
   const { infoTip } = await import('../public/js/ui.js');
   assert.equal(infoTip('Stejný text'), infoTip('Stejný text'));
   assert.notEqual(infoTip('Jeden'), infoTip('Druhý'));
+});
+
+// Detail agenta a dialogy: dlouhé poznámky s interními výrazy (PID, „událost propojení“) nahradil
+// štítek nebo jedna věta, vysvětlení je pod „i“. Varování s akcí zůstává vidět.
+test('detail agenta a dialogy: jedna viditelná věta, podrobnosti pod „i“', async () => {
+  const session = await zdroj('public/js/views/session.js');
+  assert.match(session, /sTipem\(tr\('Stav odhadem'\)/);
+  assert.match(session, /sTipem\(tr\('Neúplný přepis'\)/);
+  assert.doesNotMatch(session, /<p class="metric-note">/, 'neúplný přepis už není odstavec');
+  assert.doesNotMatch(session, /PID \{0\} běží od/, 'PID není ve viditelné větě');
+  assert.match(session, /class="set-note set-note--warn hook-note"[^`]*Zkontrolovat propojení/, 'varování s akcí zůstává');
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /sTipem\(tr\('Konverzace a kód zůstávají na \{0\}\.'/);
+  assert.match(app, /\$\{tr\('Hotovo'\)\}<\/button>/, 'tlačítko je přeložené');
+  const settings = await zdroj('public/js/views/settings.js');
+  assert.doesNotMatch(settings, /<ul class="checklist"><li>\$\{tr\('Původní nastavení/, 'propojení s Claude Code bez seznamu odrážek');
+  assert.doesNotMatch(settings, /<p class="small muted">\$\{tr\('Soubor:'\)\}/, 'cesty k souborům jsou pod „i“');
 });

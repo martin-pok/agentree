@@ -5,7 +5,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState, sTipem } from '../ui.js';
 import { sessionTotal, chartColor } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -328,19 +328,29 @@ function renderTranscript(el, t) {
 }
 
 // Konverzace Claude Code, ze které nepřišla žádná událost propojení, má stav jen z přepisu
-// (src/model.js#hookHealth). Věta řekne proč a nabídne jedinou akci, která to změní.
+// (src/model.js#hookHealth). Viditelné zůstává jen to, co mění další krok: u „silent“ krátké
+// varování s akcí. U „before“ a „unknown“ stačí štítek u stavu, vysvětlení je pod „i“.
 function propojeniNote(s) {
-  const h = s.hookHealth;
-  if (h === 'silent') {
-    return `<div class="set-note set-note--warn hook-note"><span>${tr('Z této konverzace nepřišla žádná událost propojení, i když zadání přišlo po jeho zapnutí. Žádost o povolení se jen odhaduje z přepisu.')}</span><a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zkontrolovat propojení')}</a></div>`;
+  if (s.hookHealth !== 'silent') return '';
+  const proc = tr('Z této konverzace nepřišla žádná událost propojení, i když zadání přišlo po jeho zapnutí. Žádost o povolení se jen odhaduje z přepisu.');
+  return `<div class="set-note set-note--warn hook-note"><span>${sTipem(tr('Propojení z této konverzace nic nehlásí.'), proc)}</span><a class="btn btn--sm" href="#/nastaveni" data-karta="claude">${tr('Zkontrolovat propojení')}</a></div>`;
+}
+
+// Štítky k řádku se stavem: kde je stav nebo přepis jen přibližný, řekne to jedno slovo a důvod je pod „i“.
+// Pokračování nabízí lišta akcí pod hlavičkou, proto tu žádné další tlačítko není.
+function stitkyOdhadu(s) {
+  const out = [];
+  if (s.hookHealth === 'before' || s.hookHealth === 'unknown') {
+    const proc = s.hookHealth === 'before'
+      ? tr('Konverzace začala před zapnutím propojení, žádost o povolení se proto jen odhaduje z přepisu. Přesný stav bude vidět po novém spuštění: ukonči Claude Code a pokračuj v konverzaci znovu.')
+      : tr('Z této konverzace zatím nepřišla žádná událost propojení, žádost o povolení se jen odhaduje z přepisu. Běží-li Claude Code od doby před zapnutím propojení, přesný stav bude vidět po novém spuštění.');
+    out.push(`<span class="meta-odhad">${sTipem(tr('Stav odhadem'), proc)}</span>`);
   }
-  if (h !== 'before' && h !== 'unknown') return '';
-  const text = h === 'before'
-    ? tr('Konverzace začala před zapnutím propojení, žádost o povolení se proto jen odhaduje z přepisu. Přesný stav bude vidět po novém spuštění: ukonči Claude Code a pokračuj v konverzaci znovu.')
-    : tr('Z této konverzace zatím nepřišla žádná událost propojení, žádost o povolení se jen odhaduje z přepisu. Běží-li Claude Code od doby před zapnutím propojení, přesný stav bude vidět po novém spuštění.');
-  // Pokračování nabízí lišta akcí hned pod poznámkou („Pokračovat v Terminálu“ na macOS a kopírování
-  // příkazu všude) – druhé tlačítko v poznámce by dělalo totéž.
-  return `<div class="set-note hook-note"><span>${text}</span></div>`;
+  if (s.observation) {
+    const proc = `${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}`;
+    out.push(`<span class="meta-odhad">${sTipem(tr('Neúplný přepis'), proc)}</span>`);
+  }
+  return out.join('');
 }
 
 function update() {
@@ -378,9 +388,8 @@ function update() {
   fill(el, 'head', `
     <div class="session-kicker"><button class="icon-tile agent-robot-tile session-avatar" type="button" data-agent-appearance aria-label="${tr('Upravit vzhled')}" title="${tr('Upravit vzhled')}">${agentRobot(s)}<span class="session-avatar-edit" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></span></button><span>${esc(s.app)}</span><span class="dot-sep" aria-hidden="true"></span><span>${s.proces ? tr('detekovaný proces na {0}', tomtoPocitaci()) : s.source === 'web' ? tr('webová aplikace') : s.source === 'desktop-cache' ? tr('vzdálený agent · místní cache') : tr('na {0}', tomtoPocitaci())}</span>${s.hooked ? `<span class="badge badge--ok">${tr('Propojeno')}</span>` : ''}</div>
     <h2 class="session-title">${esc(s.title)}</h2>
-    <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}</div>
+    <div class="session-meta">${statusPill(s.status)}${s.status === 'waiting' && !s.done && s.reason ? `<span>${esc(s.reason)}</span>` : ''}<span class="muted">${s.proces ? tr('Nalezeno') : s.observation ? tr('Poslední hlášená změna') : tr('Poslední aktivita')} <span data-ago="${s.lastAt}">${rel(s.lastAt, now)}</span></span>${s.cwd ? `<code class="path">${esc(shortPath(s.cwd))}</code>` : ''}${stitkyOdhadu(s)}</div>
     ${propojeniNote(s)}
-    ${s.observation ? `<p class="metric-note">${tr('Claude Desktop ukládá jen část vzdáleného přepisu. Tokeny a historie mohou být neúplné; čas změny není dobou souvislé práce.')}${s.observation.transcriptThrough ? ` ${tr('Přepis je dostupný do {0}.', dateTime(s.observation.transcriptThrough))}` : ''}</p>` : ''}
     ${akce ? `<div class="session-actions">${akce}</div>` : ''}`);
 
   fill(el, 'banner', s.status === 'needs_input'
@@ -390,7 +399,7 @@ function update() {
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.proces
-          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${esc(tr('PID {0} běží od {1}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid, timeHM(s.proces.od)))}</p></div></div>`
+          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${sTipem(esc(tr('Běží od {0}, zatím bez přepisu.', timeHM(s.proces.od))), tr('PID {0}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid))}</p></div></div>`
           : '');
 
   fill(el, 'live', s.status === 'working'

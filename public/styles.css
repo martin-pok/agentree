@@ -990,6 +990,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .dot-sep { width: 4px; height: 4px; border-radius: 50%; background: var(--line); }
 .session-title { margin: 12px 0 10px; font: 400 32px/1.15 var(--f-display); letter-spacing: -.02em; overflow-wrap: anywhere; }
 .session-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px; }
+.session-meta .meta-odhad { color: var(--mute); font-size: 13px; }
 .path { padding: 4px 8px; border-radius: var(--r-full); background: var(--line-2); font-size: 12px; overflow-wrap: anywhere; }
 .session-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
 .banner { display: flex; gap: 16px; align-items: flex-start; margin-top: 24px; padding: 18px 24px; border-radius: var(--r-lg); }
@@ -1687,7 +1688,7 @@ html.is-cloud body { background: var(--paper); }
 .set-group-title { margin: 0; font: 400 24px/1.2 var(--f-display); letter-spacing: -.01em; }
 /* Poznámka v kartě: skleněná plocha s jemnou linkou a chladným přechodem 45° v barvě značky.
    Hnědá výplň působila jako varování i u obyčejné nápovědy; varování má vlastní teplý tón níž. */
-.set-note { margin: 12px 0 0; padding: 10px 14px; border-radius: var(--r-sm); background: linear-gradient(45deg, color-mix(in srgb, var(--sky) 7%, transparent), transparent 65%); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink-2); font-size: 13px; }
+.set-note { margin: 12px 0 0; color: var(--ink-2); font-size: 13px; line-height: 20px; }
 .set-note code { padding: 1px 6px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--ink) 6%, transparent); white-space: nowrap; }
 .set-card { padding: 28px; }
 /* Krátké zvýraznění karty, na kterou odkázalo tlačítko – jinak není poznat, kam skok vedl. */
@@ -2119,6 +2120,10 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .ltool-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
 .ltool { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: start; padding: 10px 4px; border-radius: var(--r-md); }
 .ltool.is-off .lwin-logo { opacity: .5; }
+.ltool--nenalezeno { grid-template-columns: auto minmax(0, 1fr); align-items: center; }
+.ltool-loga { display: flex; padding-left: 8px; }
+.ltool-loga .lwin-logo { width: 28px; height: 28px; margin-left: -8px; box-shadow: 0 0 0 2px var(--card); }
+.ltool-loga .lwin-logo .logo, .ltool-loga .lwin-logo .glyph { width: 16px; height: 16px; }
 .ltool-main { display: grid; gap: 6px; min-width: 0; }
 .ltool-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .ltool-top b { font-weight: 400; font-size: 14px; }
@@ -2477,7 +2482,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .folder-list code { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .folder-list .icon-btn { width: 32px; height: 32px; }
 .folder-list .icon-btn .icon { width: 14px; height: 14px; }
-.folder-list .folder-empty { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--mute); font-size: 13px; padding: 10px 12px; }
+.folder-list .folder-empty { background: transparent; box-shadow: none; color: var(--mute); font-size: 13px; padding: 10px 0; }
 .folder-list--plain { margin-bottom: 8px; }
 .folder-browser { margin-top: 12px; }
 .fb { border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }

@@ -539,8 +539,7 @@ function mount(el) {
         const ok = await modal({
           title: tr('Spouštět Agenteeq po přihlášení'),
           submitLabel: tr('Zapnout'),
-          body: `<p class="modal-text">${tr('macOS pak Agenteeq spustí po každém přihlášení, a když nečekaně spadne, znovu ho zapne. Upozornění tak chodí, i když aplikaci nemáš otevřenou.')}</p>
-            <p class="small muted">${tr('Soubor:')} ~/Library/LaunchAgents/cz.agenteeq.agent.plist</p>`,
+          body: `<p class="modal-text">${sTipem(tr('Agenteeq se spustí po každém přihlášení, takže upozornění chodí, i když aplikaci nemáš otevřenou.'), `${tr('Když nečekaně spadne, macOS ho znovu zapne.')} ${tr('Soubor:')} ~/Library/LaunchAgents/cz.agenteeq.agent.plist`)}</p>`,
         });
         if (ok) {
           const r = await api.autostart('install');
@@ -834,8 +833,13 @@ async function connectClaude() {
   const ok = await modal({
     title: tr('Zapnout propojení s Claude Code'),
     submitLabel: tr('Zapnout propojení'),
-    body: `<p class="modal-text">${tr('Agenteeq zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného.')}</p>
-      <ul class="checklist"><li>${tr('Původní nastavení se uloží jako záloha.')}</li><li>${tr('Ostatní nastavení i vlastní informační řádek zůstanou beze změny.')}</li><li>${tr('Pod zadáním v Claude Code uvidíš: „Agenteeq · 5 h 34 % · týden 12 % · kontext 41 %“.')}</li><li>${tr('Platí pro nově otevřené konverzace v Claude Code.')}</li></ul>${h?.path ? `<p class="small muted">${tr('Soubor:')} ${esc(h.path)}</p>` : ''}`,
+    body: `<p class="modal-text">${sTipem(tr('Claude Code pak Agenteeq ohlásí každou změnu a pod zadáním ukáže limity předplatného.'), [
+      tr('Agenteeq zapíše do nastavení Claude Code dvě věci: krátké příkazy, které mu dají vědět o každé změně (začátek práce, dokončení, žádost o povolení), a informační řádek pod zadáním s limity předplatného.'),
+      tr('Pod zadáním v Claude Code uvidíš: „Agenteeq · 5 h 34 % · týden 12 % · kontext 41 %“.'),
+      tr('Ostatní nastavení i vlastní informační řádek zůstanou beze změny.'),
+      h?.path ? `${tr('Soubor:')} ${h.path}` : '',
+    ].filter(Boolean).join(' '))}</p>
+      <p class="small muted">${tr('Původní nastavení se uloží jako záloha.')} ${tr('Platí pro nově otevřené konverzace v Claude Code.')}</p>`,
   });
   if (!ok) return;
   state.integrations.claudeHooks = (await api.hooks('install')).claudeHooks;
@@ -920,7 +924,7 @@ function accountCard() {
       ${u.fotoStav === 'chyba' ? `<p class="set-note">${tr('Profilovou fotku z Googlu se zatím nepodařilo načíst. Zkusím to znovu za pár minut.')}</p>`
         : u.fotoStav === 'bez' ? `<p class="set-note">${tr('Google k tomuto účtu neposlal profilovou fotku, proto tu jsou iniciály. Fotku nastavíš v účtu Google; po dalším přihlášení se tu ukáže.')}</p>`
         : u.fotoStav === 'stahuji' ? `<p class="set-note">${tr('Načítám profilovou fotku z Googlu…')}</p>` : ''}
-      ${u.stav === 'nedostupne' ? `<p class="set-note">${esc(u.chyba || tr('Server účtů teď neodpovídá.'))} ${tr('Přihlášení zůstává, další pokus proběhne sám.')}</p>` : ''}
+      ${u.stav === 'nedostupne' ? `<p class="set-note set-note--warn">${esc(u.chyba || tr('Server účtů teď neodpovídá.'))} ${tr('Přihlášení zůstává, další pokus proběhne sám.')}</p>` : ''}
       ${u.trvale || u.stav !== 'prihlaseno' ? '' : `<p class="set-note">${tr('Přihlášení vydrží do zavření Agenteeq.')}</p>`}
       ${syncBlock(u)}
       <div class="acct-foot">
@@ -1002,7 +1006,7 @@ async function prepniTelefon(sw) {
 function pushSekce() {
   const p = v.push;
   const nadpis = `<div class="push-head"><h4 class="push-head-title">${tr('Na telefon')}<span class="badge badge--beta" title="${tr('Zatím ověřeno jen podle specifikace, ne na skutečném telefonu.')}">${tr('Beta')}</span></h4><p class="set-desc">${tr('Stejná upozornění jako na {0}, i se zavřenou aplikací v telefonu.', tomtoPocitaci())}</p></div>`;
-  if (!p) return `${nadpis}<p class="set-note">${v.pushChyba ? esc(v.pushChyba) : tr('Zjišťuji stav upozornění na telefon…')}</p>`;
+  if (!p) return `${nadpis}<p class="set-note${v.pushChyba ? ' set-note--warn' : ''}">${v.pushChyba ? esc(v.pushChyba) : tr('Zjišťuji stav upozornění na telefon…')}</p>`;
   if (p.podpora.duvod === 'mac') {
     const radky = p.odbery.map((o) => `<li><b>${esc(o.nazev || tr('Telefon'))}</b><span>${o.chyba ? `${tr('poslední doručení selhalo ({0})', esc(o.chyba))} · ` : o.naposledyOk ? `${tr('naposledy doručeno')} <span data-ago="${o.naposledyOk}">${rel(o.naposledyOk)}</span> · ` : `${tr('zapnuto {0}', dateLong(o.vytvoreno))} · `}<button class="link-inline" type="button" data-action="push-zrusit" data-id="${esc(o.id)}">${tr('Vypnout')}</button></span></li>`).join('');
     return `${nadpis}
@@ -1023,7 +1027,7 @@ function pushSekce() {
 function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), '', '', tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
-    ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
+    ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul>` : v.napojeniChyba ? `<p class="set-note set-note--warn">${esc(v.napojeniChyba)}</p>` : `<p class="set-desc">${tr('Zjišťuji, co je napojené…')}</p>`}
     <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
 }
 
@@ -1106,12 +1110,12 @@ function update(topics) {
       tr('Claude Code hned oznámí, že pracuje, čeká na tvé povolení nebo narazil na limit.'),
       stateBadge(...claudeState))}
     ${h.error ? `<p class="form-error form-error--inline">${esc(h.error)}</p>` : ''}
-    ${outdated ? `<p class="set-note">${h.inlineToken
+    ${outdated ? `<p class="set-note set-note--warn">${h.inlineToken
       ? tr('Propojení vzniklo ve starší verzi Agenteeq a klíč Agenteeq stojí přímo v nastavení Claude Code. Obnov ho – klíč se přesune do souboru, který čte jen tvůj účet.')
       : h.chybi?.length
         ? tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby Agenteeq poznal, že jsi povolení vyřídil, a agent dál neukazoval, že tě potřebuje.')
         : tr('Propojení vzniklo ve starší verzi Agenteeq. Obnov ho, aby se zobrazovaly i limity předplatného.')}</p>` : ''}
-    ${h.statusLine === 'foreign' ? `<p class="set-note">${tr('Claude Code má vlastní informační řádek, přesné limity Claude proto chybí.')}</p>` : ''}
+    ${h.statusLine === 'foreign' ? `<p class="set-note set-note--warn">${tr('Claude Code má vlastní informační řádek, přesné limity Claude proto chybí.')}</p>` : ''}
     ${zdraviHtml}
     <div class="set-actions">${h.installed && h.current
       ? `${zdravi.silent ? `<button class="btn btn--primary" type="button" data-action="claude-check">${tr('Zkontrolovat znovu')}</button><button class="btn" type="button" data-action="claude-reinstall">${tr('Přeinstalovat propojení')}</button>` : ''}<button class="btn" type="button" data-action="claude-disconnect">${tr('Vypnout propojení')}</button>`

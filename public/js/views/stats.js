@@ -274,7 +274,7 @@ function updateDlouhe() {
   fill(el, 'legend', legendHtml(d.series, { box: true }));
   // Mezera před začátkem ukládání není nula: Agenteeq ty dny neviděl, a tak to říká narovinu.
   fill(el, 'history-note', v.historie.chyba
-    ? `<p class="set-note">${tr('Uloženou historii se nepodařilo načíst. Zkus to za chvíli znovu.')}</p>`
+    ? `<p class="set-note set-note--warn">${tr('Uloženou historii se nepodařilo načíst. Zkus to za chvíli znovu.')}</p>`
     : d.chybiDo ? `<p class="set-note">${esc(tr('Historii Agenteeq ukládá od {0}. Dny před tím v grafu chybí – nejsou to nuly, Agenteeq je neviděl.', dateLong(Date.parse(`${d.chybiDo}T12:00:00`))))}</p>` : '');
   fill(el, 'api-tokens', '');
   zivy(el, 'apps', hbarRadky(d.aplikace, d.tokeny));

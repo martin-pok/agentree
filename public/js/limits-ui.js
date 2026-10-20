@@ -1,6 +1,6 @@
 import { esc, rel, fmtTok, startOfDay } from './format.js';
 import { ICON, glyph } from './icons.js';
-import { currentLimits, limitState, limitObnova } from './ui.js';
+import { currentLimits, limitState, limitObnova, infoTip } from './ui.js';
 import { tokensSince } from './data.js';
 import { tr, tomtoPocitaci } from './i18n.js';
 import { ze } from './predlozky.js';
@@ -73,11 +73,13 @@ function poznamkaClaude(state, now) {
     : tr('Žádné čerstvé měření – {0}.', terminal);
 }
 
-function poznamka(t, spojene, state, now) {
-  const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene[0];
+// Stav „missing“ hlásí konektor podle složky na disku. Když ale z nástroje máme konverzace nebo
+// dnešní tokeny, nástroj tu zjevně je – věta „na tomto Macu není“ by stála vedle tokenů a lhala.
+function poznamka(t, spojene, maData, state, now) {
+  const stav = spojene.find((c) => c.state === 'connected' || c.state === 'idle') || spojene.find((c) => c.state === 'error') || spojene[0];
   if (!stav) return tr('Bez údajů o limitu');
-  if (t.web) return tr('Limity nejsou dostupné');
-  if (stav.state === 'missing') return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
+  if (stav.state === 'error') return tr('Data se nepodařilo načíst');
+  if (stav.state === 'missing' && !maData) return stav.detail || `${t.name} ${tr('na {0} není.', tomtoPocitaci())}`;
   if (t.id === 'claude') return poznamkaClaude(state, now);
   return tr('Bez údajů o limitu');
 }
@@ -88,8 +90,12 @@ export function allToolLimits(state, now = Date.now()) {
   const rows = TOOLS.map((t) => {
     const spojene = (state.connectors || []).filter((c) => t.connectors.includes(c.id));
     const okna = t.provider ? limits.filter((l) => l.provider === t.provider) : [];
-    const tok = tokensSince([...(state.sessions?.values?.() || [])].filter((s) => t.connectors.includes(s.connector)), dnes);
-    return { t, spojene, okna, tok };
+    const vlastni = [...(state.sessions?.values?.() || [])].filter((s) => t.connectors.includes(s.connector));
+    const tok = tokensSince(vlastni, dnes);
+    // Nepřítomný je jen nástroj, o kterém konektor řekl „missing“ a nemáme z něj nic. Bez záznamu
+    // konektoru nevíme nic, a to není totéž co „není tu“.
+    const chybi = !okna.length && !vlastni.length && spojene.length > 0 && spojene.every((c) => c.state === 'missing');
+    return { t, spojene, okna, tok, maData: vlastni.length > 0 || tok > 0, chybi };
   });
   return rows;
 }
@@ -109,18 +115,28 @@ function radekBezDat(n, now) {
 export function limitsAll(state, now = Date.now()) {
   const rows = allToolLimits(state, now);
   const bezDat = nastrojeBezDat(state, new Set(TOOLS.flatMap((t) => t.connectors)), now);
-  const items = rows.map(({ t, spojene, okna, tok }) => {
+  // Nástroje, které na počítači nejsou, nedostanou každý vlastní řádek s toutéž větou – stačí jeden
+  // ztlumený řádek se jmény. Webové chaty zůstávají zvlášť, protože „nenalezeno“ o nich neplatí.
+  const nenalezene = rows.filter((r) => r.chybi && !r.t.web);
+  const items = rows.filter((r) => !nenalezene.includes(r)).map(({ t, spojene, okna, tok, maData }) => {
     const stari = okna.length ? Math.max(...okna.map((l) => l.at || 0)) : 0;
-    const nota = poznamka(t, spojene, state, now);
-    const chybi = !okna.length && spojene.every((c) => c.state === 'missing');
-    return `<li class="ltool${chybi ? ' is-off' : ''}">
+    const nota = t.web
+      ? `<span class="ltool-note">–${infoTip(tr('Z webových chatů Agenteeq limity nečte, jen konverzace a tokeny přes rozšíření.'), tr('Proč tu limit není'))}</span>`
+      : `<span class="ltool-note">${esc(poznamka(t, spojene, maData, state, now))}</span>`;
+    return `<li class="ltool${!okna.length && !maData && !t.web && spojene.every((c) => c.state === 'missing') ? ' is-off' : ''}">
       <span class="lwin-logo">${glyph(t.logo)}</span>
       <span class="ltool-main">
         <span class="ltool-top"><b>${esc(t.name)}</b>${tok > 0 ? `<span class="ltool-tok" title="${tr('Vstup + výstup z přepisů na {0}, bez cache', tomtoPocitaci())}">${fmtTok(tok)} ${tr('tokenů dnes')}</span>` : ''}</span>
-        ${okna.length ? `<span class="ltool-chips">${chips([...okna], now)}</span><span class="ltool-note">${tr('Změřeno')} ${esc(rel(stari, now))}</span>` : `<span class="ltool-note">${esc(nota)}</span>`}
+        ${okna.length ? `<span class="ltool-chips">${chips([...okna], now)}</span><span class="ltool-note">${tr('Změřeno')} ${esc(rel(stari, now))}</span>` : nota}
       </span>
     </li>`;
   });
+  if (nenalezene.length) {
+    items.push(`<li class="ltool ltool--nenalezeno is-off">
+      <span class="ltool-loga" aria-hidden="true">${nenalezene.map((r) => `<span class="lwin-logo">${glyph(r.t.logo)}</span>`).join('')}</span>
+      <span class="ltool-note">${esc(tr('Na {0} nenalezeno:', tomtoPocitaci()))} ${esc(nenalezene.map((r) => r.t.name).join(', '))}</span>
+    </li>`);
+  }
   items.push(...bezDat.map((n) => radekBezDat(n, now)));
   const merene = rows.filter((r) => r.okna.length).length;
   return `<details class="lim-all" data-lim-all${otevreno ? ' open' : ''}>

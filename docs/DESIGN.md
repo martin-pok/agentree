@@ -168,6 +168,19 @@ skutečně změřená hodnota v období, ve kterém data jsou. Selhání zjišť
 načtení historie, chyba sítě) prázdno netvrdí. Pokrytí měří `scripts/qa-prazdny-profil.mjs`
 v `qa:tvary` i `qa:contrast`.
 
+## Vysvětlující texty patří pod „i“ (od 0.46.46)
+
+Doplňující vysvětlení – proč něco je, jak to funguje, co se děje se soukromím, cesta k souboru –
+nestojí jako viditelný odstavec. Patří do `infoTip()` u nadpisu nebo u hodnoty, ke které se váže
+(`sTipem()` drží poslední slovo a „i“ na jednom řádku). Viditelná zůstává jen věta, která mění,
+co uživatel udělá: varování s akcí, následek nevratného kroku, selhání.
+
+- `.set-note` je prostý text bez rámečku a pozadí. Rámeček by z něj dělal něco, na co se klepe.
+- Rámeček a teplé pozadí má jen `.set-note--warn`: chyba, selhané načtení nebo stav, který
+  potřebuje zásah. Uživatel tak „nepodařilo se zjistit“ pozná od běžné poznámky na první pohled.
+- Prázdný stav uvnitř karty (žádná složka, žádný agent) je ztlumená věta bez rámečku.
+- Dialog má jednu viditelnou větu a akci. Podrobnosti a cesty jdou pod „i“.
+
 ## Kontrola
 
 - `npm run qa:tvary` projde vykreslenou aplikaci (všechny obrazovky, 1440 i 375 px, paletu příkazů
