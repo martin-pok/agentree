@@ -364,22 +364,26 @@ async function zkontrolujListuPriPosunu(browser, engine) {
             gradient: Number(getComputedStyle(document.querySelector('.topbar'), '::before').opacity), nav: nav && Math.round(nav.top), y: scrollY };
         });
         const kde = `${engine} ${sirka} /${trasa}`;
+        // Posun po krocích jako kolečko nebo prst. WebKit s dotykovou emulací kolečko nedoručí,
+        // proto scrollBy. WebKit v CI po `instant` posunu nevyšle událost scroll v každém běhu
+        // (viz níže u Nastavení) – doplní se, aby test měřil tutéž cestu jako skutečné gesto.
+        const posun = (dy) => p.evaluate((d) => { scrollBy({ top: d, behavior: 'instant' }); dispatchEvent(new Event('scroll')); }, dy);
         const zacatek = await stav();
         assert.equal(zacatek.lista, 'nahore', `${kde}: na začátku stránky lišta stojí v toku`);
-        for (let i = 0; i < 6; i++) { await p.mouse.wheel(0, 120); await p.waitForTimeout(60); }
+        for (let i = 0; i < 6; i++) { await posun(120); await p.waitForTimeout(60); }
         await p.waitForTimeout(500);
         const dolu = await stav();
         assert.equal(dolu.lista, 'skryta', `${kde}: posun dolů lištu neschoval`);
         assert.ok(dolu.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${dolu.bottom} px)`);
         assert.equal(dolu.inert, true, `${kde}: schovaná lišta jde do Tabu`);
-        for (let i = 0; i < 2; i++) { await p.mouse.wheel(0, -60); await p.waitForTimeout(60); }
+        for (let i = 0; i < 2; i++) { await posun(-60); await p.waitForTimeout(60); }
         await p.waitForTimeout(500);
         const nahoru = await stav();
         assert.equal(nahoru.lista, 'vysunuta', `${kde}: posun nahoru lištu nevysunul`);
         assert.ok(Math.abs(nahoru.top - zacatek.top) <= 1, `${kde}: vysunutá lišta stojí jinde (${nahoru.top}) než v toku (${zacatek.top})`);
         assert.equal(nahoru.gradient, 1, `${kde}: pod vysunutou lištou chybí gradient`);
         if (nahoru.nav != null && sirka < 1181) assert.ok(nahoru.nav >= nahoru.bottom - 1, `${kde}: záložky Nastavení zajely pod lištu (${nahoru.nav} < ${nahoru.bottom})`);
-        await p.mouse.wheel(0, 3); await p.waitForTimeout(300);
+        await posun(3); await p.waitForTimeout(300);
         assert.equal((await stav()).lista, 'vysunuta', `${kde}: 3 px šumu lištu schovaly`);
         await p.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
         await p.waitForFunction(() => document.documentElement.dataset.lista === 'nahore');

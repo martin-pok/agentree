@@ -458,10 +458,12 @@ const CHRANENE_KORENY = ['Desktop', 'Documents', 'Downloads'];
 const CHRANENE_CELE = ['Library', 'Pictures', 'Movies', 'Music'];
 
 export function slozkaSDotazySystemu(cwd, home, system = SYSTEM) {
-  if (system !== 'macos' || typeof cwd !== 'string' || !path.isAbsolute(cwd) || !home) return false;
-  const c = path.resolve(cwd);
-  const h = path.resolve(home);
+  // Cesty macOS: vždy POSIX, i když se pravidlo ověřuje na jiném systému.
+  const p = path.posix;
+  if (system !== 'macos' || typeof cwd !== 'string' || !p.isAbsolute(cwd) || !home) return false;
+  const c = p.resolve(cwd);
+  const h = p.resolve(home);
   if (c === '/' || c === h || !c.startsWith(`${h}/`) && h.startsWith(`${c}/`)) return true;
-  if (CHRANENE_KORENY.some((d) => c === path.join(h, d))) return true;
-  return CHRANENE_CELE.some((d) => c === path.join(h, d) || c.startsWith(`${path.join(h, d)}/`));
+  if (CHRANENE_KORENY.some((d) => c === p.join(h, d))) return true;
+  return CHRANENE_CELE.some((d) => c === p.join(h, d) || c.startsWith(`${p.join(h, d)}/`));
 }
