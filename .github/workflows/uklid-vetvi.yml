@@ -1,0 +1,64 @@
+# Úklid sloučených větví. Po každém merge do main smaže každou větev, jejíž poslední commit je
+# přesně hlava už sloučeného pull requestu – práce z ní je celá v main a větev nic dalšího nenese.
+# Rozhodnutí vlastníka 20. 10. 2026 („smaž rozhodně ty branches, co už jsou sloučené“).
+#
+# Co nikdy nemaže: main, chráněné větve, větev s otevřeným pull requestem a větev, na které
+# od sloučení přibyl další commit (ta nese práci, která v main není). Tagy nemění.
+name: Úklid sloučených větví
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uklid-vetvi
+  cancel-in-progress: false
+
+jobs:
+  uklid:
+    name: smazat sloučené větve
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # mazání sloučených větví; main, chráněné větve a tagy se nemění
+      pull-requests: read
+    steps:
+      - name: Smazat větve, jejichž hlava je sloučený pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Hlavy sloučených PR (větev + přesný commit) a větve s otevřeným PR.
+          gh api --paginate "repos/$REPO/pulls?state=closed&per_page=100" \
+            --jq '.[] | select(.merged_at != null and .head.repo != null and .head.repo.full_name == "'"$REPO"'") | [.head.ref, .head.sha] | @tsv' > sloucene.tsv
+          gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" --jq '.[].head.ref' > otevrene.txt
+          gh api --paginate "repos/$REPO/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha, .protected] | @tsv' > vetve.tsv
+          SMAZANO=0
+          while IFS=$'\t' read -r JMENO SHA CHRANENA; do
+            [ "$JMENO" != "main" ] || continue
+            [ "$CHRANENA" != "true" ] || continue
+            if grep -Fxq -- "$JMENO" otevrene.txt; then continue; fi
+            # Jen přesná shoda větev + commit se sloučeným PR: novější commity se nemažou.
+            if ! grep -Fxq -- "$(printf '%s\t%s' "$JMENO" "$SHA")" sloucene.tsv; then
+              # Druhá možnost: celá větev už je v historii main (sloučení bez squashe).
+              STAV=$(gh api "repos/$REPO/compare/main...$SHA" --jq .status 2>/dev/null || echo nezjisteno)
+              [ "$STAV" = "behind" ] || [ "$STAV" = "identical" ] || continue
+            fi
+            # Každý díl jména zvlášť: lomítka ve jméně větve (fix/…) zůstanou cestou.
+            REF=$(jq -rn --arg r "heads/$JMENO" '$r | split("/") | map(@uri) | join("/")')
+            gh api --method DELETE "repos/$REPO/git/refs/$REF"
+            echo "Smazána sloučená větev $JMENO"
+            SMAZANO=$((SMAZANO + 1))
+          done < vetve.tsv
+          {
+            echo "### Úklid sloučených větví"
+            echo "Smazaných větví: $SMAZANO"
+            echo "main, chráněné větve, větve s otevřeným PR a větve s novější prací zůstaly."
+          } >> "$GITHUB_STEP_SUMMARY"
