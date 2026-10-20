@@ -14,11 +14,12 @@ on:
   pull_request:
   workflow_dispatch:
 
-# One current validation per PR, plus one per main push. Superseded commits cancel
-# earlier runs without competing with a second push event for the same PR branch.
+# Jedno aktuální ověření na PR: nový push do PR zruší starší běh. Každý commit na main se ale
+# ověří celý (vlastní skupina podle SHA, nic se neruší): „Připravit vydání“ přijme jen commit
+# se zelenými Testy, a dřív dvě rychle po sobě sloučené PR navzájem zrušily ověření.
 concurrency:
-  group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
+  group: test-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

@@ -3,7 +3,7 @@
 ## 0.46.49 – 2026-10-20 · Spolehlivější server a CI
 
 - **Server spuštěný z Terminálu** (`agenteeq`, LaunchAgent) se po neočekávané chybě řádně ukončí: zastaví agenty, které spustil, smaže klíč okna z disku a do logu zapíše příčinu. Dřív spadl bez úklidu. LaunchAgent ho pak spustí znovu. Aplikace pro Mac tuto pojistku už měla.
-- **CI:** joby s Playwrightem běží na připnutém Ubuntu 24.04, protože `ubuntu-latest` se od 19. 10. 2026 postupně přepíná na 26.04. Sestavení pro Windows nastavuje Visual Studio vlastním skriptem místo neudržované cizí akce `ilammy/msvc-dev-cmd`.
+- **CI:** joby s Playwrightem běží na připnutém Ubuntu 24.04, protože `ubuntu-latest` se od 19. 10. 2026 postupně přepíná na 26.04. Sestavení pro Windows nastavuje Visual Studio vlastním skriptem místo neudržované cizí akce `ilammy/msvc-dev-cmd`. Testy na `main` se už navzájem neruší: dřív dvě rychle po sobě sloučené PR zrušily ověření prvního commitu a z něj pak nešlo připravit vydání.
 - **Testy:** kontroly pravidla „nepodařilo se zjistit ≠ nic neběží“, které root přeskakoval, se pod rootem spustí znovu jako neprivilegovaný uživatel, takže proběhnou i v kontejnerech.
 ## 0.46.48 – 2026-10-20 · Úchyty jen na požádání a úklid vydání
 
