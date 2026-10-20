@@ -1,0 +1,54 @@
+# One-time GitHub Actions bridge for the owner's explicit request to test v0.46.51.
+# No automatic publication: uses the existing tested prepare workflow, which makes an audited draft.
+# Remove this helper after the draft is assembled. A second push cannot start a release.
+name: One-time v0.46.51 draft request
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/release-request-v0.46.51-once.yml'
+permissions:
+  contents: read
+  actions: write
+jobs:
+  prepare:
+    if: ${{ github.event.head_commit.message == 'chore(release): request one-time v0.46.51 candidate' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Wait for green tests on this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" = "${SOURCE_SHA}"
+          for n in $(seq 1 130); do
+            runs=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/test.yml/runs?head_sha=${SOURCE_SHA}&event=push&per_page=20")
+            outcome=$(jq -r --arg sha "${SOURCE_SHA}" '[.workflow_runs[] | select(.head_sha == $sha)] | if any(.[]; .conclusion == "success" and .status == "completed") then "success" elif any(.[]; .status == "completed" and (.conclusion == "failure" or .conclusion == "cancelled")) then "failure" else "pending" end' <<<"${runs}")
+            if [ "${outcome}" = success ]; then
+              echo "Verified full main CI succeeded for ${SOURCE_SHA}"
+              exit 0
+            fi
+            if [ "${outcome}" = failure ]; then
+              echo "::error::Main CI failed; no release is requested."
+              exit 1
+            fi
+            sleep 15
+          done
+          echo "::error::Main CI did not finish within the verification window."
+          exit 1
+      - name: Request existing verified preview draft workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)" = "${SOURCE_SHA}"
+          version=$(gh api "repos/${GITHUB_REPOSITORY}/contents/package.json?ref=${SOURCE_SHA}" --jq .content | base64 -d | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          test "${version}" = "0.46.51" || { echo "::error::Unexpected version ${version}"; exit 1; }
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/workflows/prepare-preview-draft.yml/dispatches" -f ref=main
+          echo "Requested audited Draft v0.46.51 from ${SOURCE_SHA}. No public release was published."
