@@ -105,15 +105,26 @@ server.listen(config.port, config.host, async () => {
 });
 
 let stopping = false;
-async function shutdown() {
+async function shutdown(code = 0) {
   if (stopping) return;
   stopping = true;
+  // Úklid se nesmí zaseknout navždy – po limitu proces skončí i bez něj.
+  setTimeout(() => process.exit(code), 8000).unref();
   app.runs.stopAll();
   server.closeAllConnections?.();
   server.close();
   await smazKlic(config.dataDir, config.localKey);
   await app.stop();
-  process.exit(0);
+  process.exit(code);
 }
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+process.on('SIGINT', () => shutdown());
+process.on('SIGTERM', () => shutdown());
+// Neočekávaná chyba nesmí server shodit bez úklidu: spuštění agenti by zůstali běžet a klíč okna
+// na disku. Chyba jde do logu (LaunchAgent ho ukládá), server se řádně ukončí s kódem 1 a launchd
+// ho spustí znovu. Stejnou pojistku má proces aplikace pro Mac (desktop/server.mjs).
+const neocekavana = (popis) => (err) => {
+  console.error(`Agenteeq: ${popis}:`, err?.stack || err);
+  shutdown(1);
+};
+process.on('uncaughtException', neocekavana('neočekávaná chyba'));
+process.on('unhandledRejection', neocekavana('neošetřené selhání operace'));

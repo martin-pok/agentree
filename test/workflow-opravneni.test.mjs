@@ -150,7 +150,8 @@ test('CI does not start duplicate push and pull_request matrices for feature bra
   assert.match(triggers, /\n  pull_request:/, 'feature branches run the complete matrix through a PR');
   assert.match(triggers, /\n  workflow_dispatch:/, 'maintainers can explicitly run CI');
   assert.doesNotMatch(triggers, /branches: \['\*\*'\]/, 'all-branches push CI duplicates PR checks');
-  assert.match(workflow, /cancel-in-progress: true/, 'new commits cancel obsolete PR runs');
+  assert.match(workflow, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/, 'new commits cancel obsolete PR runs');
+  assert.match(workflow, /group: test-.*\$\{\{ github\.head_ref \|\| github\.sha \}\}/, 'každý commit na main má vlastní skupinu, nikdy se neruší ani nenahradí');
 });
 
 
