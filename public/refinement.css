@@ -400,3 +400,19 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 .palette-list .pl-text small { margin-top: 3px; line-height: 1.35; }
 .palette-list .pl-text > span { line-height: 1.3; }
 .palette-list li[role='option'] + li[role='option'] { margin-top: 2px; }
+
+/* Rozpočty: kurzy a rozpočty služeb jsou sbalené kapsle (dialog se vejde i na telefon). Popisek
+   s „i“ drží ikonu na stejném řádku jako text. */
+.field-label-tip { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+.budget-fold { margin-top: 16px; }
+.budget-fold > summary { list-style: none; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: 500 14px/1 var(--f-body); cursor: pointer; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.budget-fold > summary::-webkit-details-marker { display: none; }
+.budget-fold > summary::after { content: ''; width: 7px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-2px) rotate(45deg); transition: transform var(--motion-response) var(--ease); }
+.budget-fold[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+:where(html:not(.is-scrolling)) .budget-fold > summary:hover { background: color-mix(in srgb, var(--brand) 7%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 30%, var(--line)); }
+.budget-fold > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.budget-fold > .form-grid { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .budget-fold > summary, .budget-fold > summary::after { transition: none; } }
+
+/* Nadpis nebo popisek s „i“: ikona drží na stejném řádku jako text. */
+.eyebrow--tip { display: inline-flex; align-items: center; gap: 2px; }

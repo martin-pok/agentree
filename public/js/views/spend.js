@@ -43,18 +43,25 @@ function openBudgets(opener = null) {
     wide: true,
     opener,
     submitLabel: tr('Uložit rozpočty'),
-    // Rozpočet se počítá jen z nákladů z připojeného Admin API. Bez něj by se nastavený rozpočet nikde
-    // neukázal ani neupozornil – dialog to řekne pod „i“ u úvodní věty, ať formulář zůstane čistý.
-    // Měna a kurzy platí i pro ruční záznamy a ceník, proto se dialog nezakazuje.
-    body: `<p class="modal-text">${tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.')}${sp.billing?.connected === false ? `<span data-budget-api>${infoTip(tr('Rozpočet se počítá z nákladů za API. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní.'))}</span>` : ''}</p>
-      <div class="form-grid">
-        <label class="field"><span>${tr('Celkový měsíční rozpočet')}</span><input name="total" inputmode="decimal" autocomplete="off" placeholder="${tr('bez limitu')}" value="${cfg.total || ''}"></label>
+    // Vysvětlení (upozornění při 80/100 %, prázdné pole = bez limitu a bez připojeného Admin API se
+    // rozpočet neukáže) je v jednom „i“ u celkového rozpočtu – dialog začíná rovnou formulářem.
+    // Kurzy a rozpočty jednotlivých služeb jsou sbalené (otevřené, když už v nich něco je), aby
+    // se dialog vešel i na telefon. Měna a kurzy platí i pro ruční záznamy, proto se nezakazuje.
+    body: `<div class="form-grid">
+        <label class="field"><span class="field-label-tip">${tr('Celkový měsíční rozpočet')}<span data-budget-api>${infoTip([tr('Agenteeq tě upozorní při 80 % a 100 % rozpočtu. Prázdné pole znamená bez limitu.'), sp.billing?.connected === false ? tr('Rozpočet se počítá z nákladů za API. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní.') : ''].filter(Boolean).join(' '))}</span></span><input name="total" inputmode="decimal" autocomplete="off" placeholder="${tr('bez limitu')}" value="${cfg.total || ''}"></label>
         <label class="field"><span>${tr('Hlavní měna')}</span><select name="currency">${sp.currencies.map((c) => `<option${c === sp.currency ? ' selected' : ''}>${c}</option>`).join('')}</select></label>
-        <label class="field"><span>${tr('Kurz USD (Kč za 1 $)')}</span><input name="rate_USD" inputmode="decimal" value="${sp.rates.USD}"></label>
-        <label class="field"><span>${tr('Kurz EUR (Kč za 1 €)')}</span><input name="rate_EUR" inputmode="decimal" value="${sp.rates.EUR}"></label>
       </div>
-      <h3 class="form-sub">${tr('Rozpočet podle služby')}</h3>
-      <div class="form-grid form-grid--services">${services}</div>`,
+      <details class="budget-fold">
+        <summary>${tr('Kurzy měn')}</summary>
+        <div class="form-grid">
+          <label class="field"><span>${tr('Kurz USD (Kč za 1 $)')}</span><input name="rate_USD" inputmode="decimal" value="${sp.rates.USD}"></label>
+          <label class="field"><span>${tr('Kurz EUR (Kč za 1 €)')}</span><input name="rate_EUR" inputmode="decimal" value="${sp.rates.EUR}"></label>
+        </div>
+      </details>
+      <details class="budget-fold"${Object.values(cfg.services || {}).some((x) => x !== '' && x != null && Number(x) > 0) ? ' open' : ''}>
+        <summary>${tr('Rozpočet podle služby')}</summary>
+        <div class="form-grid form-grid--services">${services}</div>
+      </details>`,
     onSubmit: async (form) => {
       const d = new FormData(form);
       const body = {
@@ -246,14 +253,13 @@ export function spendHeroHtml(sp) {
       reached: pct >= 100,
     })}</div>
     <div class="spend-stats">
-      <div><span class="eyebrow">${tr('Náklady z API tento měsíc')}</span><span class="val">${tween('sp-month', sp.month.total, `money:${sp.currency}`)}</span></div>
+      <div><span class="eyebrow eyebrow--tip">${tr('Náklady z API tento měsíc')}${sp.ledger?.length ? infoTip(tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')) : ''}</span><span class="val">${tween('sp-month', sp.month.total, `money:${sp.currency}`)}</span></div>
       <div><span class="eyebrow">${tr('Prognóza do konce měsíce')}</span><span class="val val--soft" data-odo>${money(sp.forecast)}</span></div>
       <div><span class="eyebrow">${tr('Aktualizováno')}</span><span class="val val--soft">${sp.billing?.at ? `<span data-ago="${sp.billing.at}">${esc(rel(sp.billing.at))}</span>` : '–'}</span></div>
       <div><span class="eyebrow">${total ? (sp.month.total > total ? tr('Přečerpáno') : tr('Zbývá z rozpočtu')) : tr('Rozpočet')}</span>
         <span class="val val--soft${total && sp.month.total > total ? ' is-over' : ''}"${total ? ' data-odo' : ''}>${total ? money(Math.abs(total - sp.month.total)) : `<button class="link-inline" type="button" data-action="budgets">${tr('Nastavit')}</button>`}</span></div>
       ${failed.length ? `<p class="spend-note spend-note--warn" data-billing-failed>${esc(tr('Bez nákladů od: {0}.', failed.map(popisSelhani).join(' · ')))} ${tr('Nepodařilo se je načíst, součet, prognóza i rozpočet jsou proto neúplné.')}</p>` : ''}
-      ${sp.ledger?.length ? `<p class="spend-note">${tr('Součty, prognóza a rozpočet počítají jen náklady z API. Starší ruční záznamy v nich nejsou.')}</p>` : ''}
-    </div>` : `${ICON.wallet}<div><strong>${tr('Náklady za API nejsou připojené')}</strong><p class="muted small">${tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatná mají pevnou měsíční cenu a do útraty se nepočítají.')}</p></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`;
+    </div>` : `${ICON.wallet}<div><strong class="eyebrow--tip">${tr('Náklady za API nejsou připojené')}${infoTip(tr('Útrata ukazuje jen ověřené náklady z Admin API Anthropicu a OpenAI. Předplatná mají pevnou měsíční cenu a do útraty se nepočítají.'))}</strong></div><a class="btn btn--primary" href="#/nastaveni" data-karta="cloud">${tr('Propojit API')}</a>`;
 }
 
 function update() {
@@ -441,7 +447,8 @@ export function rateNote(sp, rows, auto) {
   const n = (x) => Number(x).toLocaleString(LOCALE, { maximumFractionDigits: 3 });
   const rates = tr('1 $ = {0} Kč, 1 € = {1} Kč', n(sp.rates?.USD), n(sp.rates?.EUR));
   if (info.source === 'default') {
-    return `<p class="spend-foot spend-foot--warn"><b>${tr('Orientační kurz')}</b> ${esc(rates)}. ${tr('Kurz ČNB se zatím nepodařilo načíst. Přesný kurz zadáš v Rozpočtech.')}</p>`;
+    // Běžná informace, ne varování: krátce kurz, proč je orientační a kde se mění říká „i“.
+    return `<p class="spend-foot spend-foot--orientacni"><b>${tr('Orientační kurz')}</b> ${esc(rates)}${infoTip(tr('Kurz ČNB se zatím nepodařilo načíst. Přesný kurz zadáš v Rozpočtech.'))}</p>`;
   }
   const source = info.source === 'cnb' && info.date ? tr('Kurz ČNB z {0}', esc(dateLong(dateOnlyTs(info.date)))) : tr('Vlastní kurz z Rozpočtů');
   return `<p class="spend-foot">${source}: ${esc(rates)}. ${tr('Minulé měsíce se přepočítávají stejným kurzem, ne kurzem ze dne platby.')}</p>`;

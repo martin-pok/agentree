@@ -87,7 +87,9 @@ test('jen automatické řádky (bez ručních) už neukazují prázdný stav „
 
 test('kurz: výchozí je označený jako orientační, ČNB s datem, vlastní jako vlastní', () => {
   const vychozi = ledgerHtml(payload({ ...structuredClone(DEFAULT_SPEND), currency: 'CZK', ledger }));
-  assert.match(vychozi, /spend-foot--warn/);
+  assert.doesNotMatch(vychozi, /spend-foot--warn/, 'orientační kurz je informace, ne béžové varování');
+  assert.match(vychozi, /spend-foot--orientacni/);
+  assert.match(vychozi, /Kurz ČNB se zatím nepodařilo načíst\. Přesný kurz zadáš v Rozpočtech\./, 'proč je kurz orientační, říká „i“');
   assert.match(vychozi, /Orientační kurz/);
   assert.match(vychozi, /1 \$ = 23 Kč, 1 € = 25 Kč/);
 
@@ -177,10 +179,11 @@ test('Útrata: u ručních záznamů i u součtů stojí, že se nepočítají; 
   assert.match(html, /Starší ruční záznamy<\/span><span class="ledger-group-note">nepočítají se do součtů ani rozpočtu<\/span>/);
   const kod = await fs.readFile(new URL('../public/js/views/spend.js', import.meta.url), 'utf8');
   const sp = { ...payload(spend), billing: { connected: true, at: NOW, failed: [] } };
-  assert.match(spendHeroHtml(sp), /<p class="spend-note">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/p>/);
+  assert.match(spendHeroHtml(sp), /role="tooltip" id="info-tip-\d+">Součty, prognóza a rozpočet počítají jen náklady z API\. Starší ruční záznamy v nich nejsou\.<\/span>/);
   assert.doesNotMatch(spendHeroHtml({ ...sp, ledger: [] }), /Starší ruční záznamy/);
   const dialog = kod.slice(kod.indexOf('function openBudgets('), kod.indexOf('onSubmit:', kod.indexOf('function openBudgets(')));
-  // Vysvětlení je schované za „i“ (rozhodnutí vlastníka 19. 10. 2026), ne jako box v dialogu.
-  assert.match(dialog, /sp\.billing\?\.connected === false \? `<span data-budget-api>\$\{infoTip\(tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\)\)\}<\/span>`/);
-  assert.doesNotMatch(dialog, /set-note/);
+  // Vysvětlení je schované za „i“ u celkového rozpočtu (rozhodnutí vlastníka 19. 10. 2026), bez odstavce.
+  assert.match(dialog, /<span data-budget-api>\$\{infoTip\(\[tr\('Agenteeq tě upozorní při 80 % a 100 % rozpočtu\. Prázdné pole znamená bez limitu\.'\), sp\.billing\?\.connected === false \? tr\('Rozpočet se počítá z nákladů za API\. Dokud nejsou připojené, rozpočet se neukáže ani neupozorní\.'\) : ''\]/);
+  assert.doesNotMatch(dialog, /set-note|<p class="modal-text">/);
+  assert.match(dialog, /<details class="budget-fold">\s*<summary>\$\{tr\('Kurzy měn'\)\}/);
 });
