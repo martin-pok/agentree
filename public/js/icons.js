@@ -134,8 +134,9 @@ export const ICON = {
 // Kde agent běží. V cloudu: konverzace z prohlížeče (služba ji počítá na svých serverech) a vzdálené
 // relace Claude Code (claude.ai/code), které Agenteeq zná z cache Claude Desktopu – agent pracuje na
 // serverech Anthropicu nad repozitářem, ne na tomto počítači. Ostatní konektory čtou přepis
-// a procesy z tohoto počítače, takže agent běží tady.
-export const jeCloud = (s) => s?.source === 'web' || s?.source === 'desktop-cache' || s?.connector === 'claude-desktop-code';
+// a procesy z tohoto počítače, takže agent běží tady – kromě přepisu vzdálené relace Claude Code
+// (source 'remote', entrypoint „remote…“ v přepisu; src/connectors/claude-code.js).
+export const jeCloud = (s) => s?.source === 'web' || s?.source === 'desktop-cache' || s?.source === 'remote' || s?.connector === 'claude-desktop-code';
 export const ENV = {
   cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
   local: { icon: ICON.mac, label: tr('Běží na {0}', tomtoPocitaci()), short: tr('Na {0}', tomtoPocitaci()) },

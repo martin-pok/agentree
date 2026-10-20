@@ -231,6 +231,14 @@ function meta(s, o) {
   if (o.cwd && !s.cwd) s.cwd = o.cwd;
   if (o.gitBranch && o.gitBranch !== 'HEAD') s.branch = o.gitBranch;
   if (o.entrypoint === 'claude-desktop') s.app = 'Claude Desktop · Code';
+  // Vzdálená relace (claude.ai/code): Claude Code běží v cloudovém kontejneru Anthropicu a do přepisu
+  // píše entrypoint „remote…“ – ověřeno 19. 10. 2026 na skutečném přepisu cloudové relace spuštěné
+  // z Claude Desktopu („remote_desktop“, cwd /home/user/…). Ostatní varianty „remote_…“ jsou Beta
+  // (docs/CONNECTORS.md). Přepis na disku tedy neznamená, že agent běžel na tomto počítači.
+  else if (typeof o.entrypoint === 'string' && /^remote(_[a-z]{1,20})?$/.test(o.entrypoint)) {
+    s.source = 'remote';
+    s.app = o.entrypoint === 'remote_desktop' ? ui('Claude Desktop · vzdálený Code') : ui('Claude Code · vzdálený');
+  }
   // Režim oprávnění, když ho přepis nese (bypassPermissions = bez ptaní, acceptEdits = úpravy bez ptaní).
   if (typeof o.permissionMode === 'string' && /^[A-Za-z]{1,32}$/.test(o.permissionMode)) s.permissionMode = o.permissionMode;
 }

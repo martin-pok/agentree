@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.42',
+    date: '2026-10-19',
+    title: 'Cloud jako cloud a hledání, které najde',
+    items: [
+      'Cloudové relace Claude Code se ukazují jako Cloud, ne jako agenti na tomto počítači.',
+      'Pozdrav na Přehledu říká „Dnes: N konverzace“, takže už nevypadá v rozporu s prázdným Právě teď.',
+      'Hledání najde agenta i podle projektu, větve nebo posledního zadání a výsledky mají víc vzduchu.',
+      'Obnova dat je klidná a nenápadná a loga služeb v detailu projektu jsou větší.',
+    ],
+    en: {
+      title: 'Cloud shown as cloud, and search that finds things',
+      items: [
+        'Claude Code cloud sessions now show as Cloud instead of agents on this computer.',
+        'The Overview greeting says “Today: N conversations”, so it no longer seems to contradict an empty Right now.',
+        'Search finds agents by project, branch or last prompt, and results have more breathing room.',
+        'Refreshing data is calm and subtle, and service logos in project details are larger.',
+      ],
+    },
+  },
+  {
     version: '0.46.41',
     date: '2026-10-19',
     title: 'Čistší detaily a roboti, kteří mluví k věci',

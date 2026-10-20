@@ -380,3 +380,19 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .info-tip-bubble::before { content: ''; position: absolute; inset: -8px 0 auto; height: 8px; }
 .info-tip:not([data-skryto]):is(:hover, :focus-within) .info-tip-bubble { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
 @media (prefers-reduced-motion: reduce) { .info-tip-bubble { transform: none; transition: opacity var(--motion-response) linear, visibility 0s linear var(--motion-response); } }
+
+/* Detail projektu → karta Služby: loga jsou obsah karty, ne doplněk řádku, proto větší disky
+   (40 px, logo 22 px) s jemnou výplní, aby byla vidět i na tmavé kartě. */
+.kpi-logos { min-height: 40px; }
+.kpi-logos .discs--sm .disc { width: 40px; height: 40px; margin-left: -10px; border-width: 3px; background: color-mix(in srgb, var(--ink) 6%, var(--card)); }
+.kpi-logos .discs--sm .disc:first-child { margin-left: 0; }
+.kpi-logos .discs--sm .disc :is(.logo, .glyph) { width: 22px; height: 22px; }
+.kpi-logos .discs--sm .disc--more { font: 500 13px/1 var(--f-body); color: var(--ink-2); }
+
+/* Hledání: položka s popisem (projekt, agent s cestou) má dva řádky – pevná výška 44 px ji mačkala.
+   Dostane vlastní výšku s 10 px vzduchu nahoře i dole a zaoblený obdélník (kapsle je jen pro jeden
+   řádek). Mezi položkami 2 px, aby se zvýraznění sousedů nedotýkala. */
+html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height: 56px; padding: 10px 14px; border-radius: var(--r-md); }
+.palette-list .pl-text small { margin-top: 3px; line-height: 1.35; }
+.palette-list .pl-text > span { line-height: 1.3; }
+.palette-list li[role='option'] + li[role='option'] { margin-top: 2px; }
