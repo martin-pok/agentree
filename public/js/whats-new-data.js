@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.52',
+    date: '2026-10-20',
+    title: 'Webové chaty jdou napojit',
+    items: [
+      'Tlačítko Napojit u ChatGPT, Claude.ai, Gemini a dalších webových chatů funguje.',
+      'Bez rozšíření pro Chrome aplikace rovnou ukáže, kde ho přidat.',
+    ],
+    en: {
+      title: 'Web chats connect again',
+      items: [
+        'The Connect button for ChatGPT, Claude.ai, Gemini and other web chats works.',
+        'Without the Chrome extension, the app shows where to add it.',
+      ],
+    },
+  },
+  {
     version: '0.46.51',
     date: '2026-10-20',
     title: 'Víc vidět agentů',

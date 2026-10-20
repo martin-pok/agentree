@@ -161,7 +161,17 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
     vLetu.delete(n.id);
     if (err.status === 409) {
       toast(err.message, { tone: 'info', timeout: 8000 });
-      document.querySelector('[data-region="extension"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Webový chat se napojuje přes rozšíření: ukázat kartu a dát fokus hlavnímu kroku, ať je jasné,
+      // na co klepnout dál („Přidat do Chromu“, nebo spárování kódem).
+      const karta = document.querySelector('[data-region="extension"]');
+      karta?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const krok = karta?.querySelector('.btn--primary, .btn');
+      if (krok) {
+        krok.focus({ preventScroll: true });
+        krok.classList.remove('je-dalsi-krok');
+        void krok.offsetWidth;
+        krok.classList.add('je-dalsi-krok');
+      }
       return;
     }
     throw err;
