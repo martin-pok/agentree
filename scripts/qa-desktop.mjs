@@ -378,6 +378,15 @@ async function zkontrolujListuPriPosunu(browser, engine) {
         assert.equal(dolu.inert, true, `${kde}: schovaná lišta jde do Tabu`);
         for (let i = 0; i < 2; i++) { await posun(-60); await p.waitForTimeout(60); }
         await p.waitForTimeout(500);
+        // On a busy CI runner WebKit can still be mid-transform after the timer.
+        // Measure the actual sticky position only after the reveal transition settles;
+        // the final coordinate and gradient assertions below must still pass.
+        await p.waitForFunction(() => {
+          const el = document.querySelector('.topbar');
+          const transform = getComputedStyle(el).transform;
+          return document.documentElement.dataset.lista === 'vysunuta'
+            && (transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5);
+        }, null, { timeout: 5000 });
         const nahoru = await stav();
         assert.equal(nahoru.lista, 'vysunuta', `${kde}: posun nahoru lištu nevysunul`);
         assert.ok(Math.abs(nahoru.top - zacatek.top) <= 1, `${kde}: vysunutá lišta stojí jinde (${nahoru.top}) než v toku (${zacatek.top})`);
