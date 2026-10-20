@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.43',
+    date: '2026-10-20',
+    title: 'Kompaktní nahrávání a „i“ i na telefonu',
+    items: [
+      'Obrázek karty a logo klienta se nahrávají z jednoho kompaktního řádku, podrobnosti jsou pod „i“.',
+      'Bublina „i“ jde na telefonu otevřít klepnutím a nevyjede mimo dialog.',
+      'Kam dnes šly tokeny má zase viditelné barevné pruhy.',
+      'Detekované procesy na Agentech neukazují nulu, když se procesy nesledují nebo je nešlo zjistit.',
+    ],
+    en: {
+      title: 'Compact uploads and an “i” that works on phones',
+      items: [
+        'The card image and client logo upload from one compact row, with details behind the “i”.',
+        'The “i” tooltip opens with a tap on phones and stays inside the dialog.',
+        'Where tokens went today shows visible coloured bars again.',
+        'Detected processes in Agents no longer shows zero when processes aren’t tracked or couldn’t be checked.',
+      ],
+    },
+  },
+  {
     version: '0.46.42',
     date: '2026-10-19',
     title: 'Cloud jako cloud a hledání, které najde',

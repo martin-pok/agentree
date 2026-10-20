@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.43 – 2026-10-20 · Kompaktní nahrávání a „i“ i na telefonu
+
+- **Obrázek karty a logo klienta** v dialogu projektu mají náhled, název a „Nahrát“ v jednom řádku. Karta už není trojnásobně vysoká. Pod názvem zůstal jen rozměr a limit („1400 × 400 px · 4 MB“), formáty a doporučení jsou v bublině „i“.
+- **Bublina „i“** má cílovou plochu 44 px, na telefonu se otevírá a zavírá klepnutím, klepnutí mimo ji zavře. U okraje dialogu roste na tu stranu, kde je místo, a číslo se od jednotky nikdy neoddělí.
+- **Kam dnes šly tokeny** na Přehledu má zase viditelné pruhy v barvách služeb. Dřív jim chyběla barva a byly průhledné.
+- **Agenti:** segment „Detekované procesy“ se při vypnutém sledování procesů neukazuje. Když zjišťování selže, stojí v něm „–“ s vysvětlením, ne zavádějící nula.
+
 ## 0.46.42 – 2026-10-19 · Cloud jako cloud a hledání, které najde
 
 - **Cloudové relace Claude Code** už nejsou označené jako „na tomto počítači“. Přepis relace z claude.ai/code nese značku vzdáleného spuštění. Agenteeq ji teď čte a ukáže takovou konverzaci jako Cloud s aplikací „Claude Desktop · vzdálený Code“. Filtr Zdroj na Agentech ji zařadí správně.

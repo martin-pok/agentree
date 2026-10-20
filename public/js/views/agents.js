@@ -308,8 +308,17 @@ function update() {
   const scoped = all.filter(matchFacets);
   const base = scoped.filter(matchProject);
 
+  // Detekované procesy: „0“ smí stát jen tam, kde výpis procesů opravdu proběhl. Vypnuté sledování
+  // segment skryje; selhání zjišťování ukáže pomlčku s vysvětlením – „nepodařilo se zjistit“ není „nic“.
+  const proc = (state.connectors || []).find((c) => c.id === 'processes');
+  const procesy = proc?.state === 'connected' ? 'ok' : proc?.state === 'error' ? 'nevim' : 'vypnuto';
   zivy(el, 'seg', SEGMENTS.map(([k, label]) => {
     const count = base.filter((s) => matchStatus(s, k)).length;
+    if (k === 'observed' && !count && procesy !== 'ok' && f.status !== 'observed') {
+      return procesy === 'nevim'
+        ? `<button type="button" data-status-filter="${k}" aria-pressed="false" title="${esc(tr('Nepodařilo se zjistit, co na {0} běží.', tomtoPocitaci()))}">${label}<span class="count">–</span></button>`
+        : '';
+    }
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
   zivy(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]

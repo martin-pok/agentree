@@ -370,6 +370,9 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 .info-tip-btn { display: grid; place-items: center; width: 32px; height: 32px; margin-block: -8px; padding: 0; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); cursor: help;
   transition: background-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
 .info-tip-btn .icon { width: 17px; height: 17px; }
+/* Cílová plocha 44 × 44 px (docs/DESIGN.md) bez vlivu na výšku řádku: viditelný kroužek zůstává 32 px. */
+.info-tip-btn { position: relative; }
+.info-tip-btn::before { content: ''; position: absolute; inset: -6px; border-radius: var(--r-full); }
 :where(html:not(.is-scrolling)) .info-tip-btn:hover, .info-tip-btn:focus-visible, .info-tip:focus-within .info-tip-btn { background: color-mix(in srgb, var(--brand) 12%, var(--card)); color: var(--brand); }
 .info-tip-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .info-tip-bubble { position: absolute; top: calc(100% + 6px); right: -8px; z-index: 30; width: max-content; max-width: min(300px, 72vw); padding: 10px 14px; border-radius: var(--r-md);
@@ -378,7 +381,8 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
   opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none;
   transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), visibility 0s linear var(--motion-response); }
 .info-tip-bubble::before { content: ''; position: absolute; inset: -8px 0 auto; height: 8px; }
-.info-tip:not([data-skryto]):is(:hover, :focus-within) .info-tip-bubble { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
+.info-tip[data-strana='vpravo'] .info-tip-bubble { right: auto; left: -8px; }
+.info-tip:not([data-skryto]):is(:hover, :focus-within, [data-otevreno]) .info-tip-bubble { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
 @media (prefers-reduced-motion: reduce) { .info-tip-bubble { transform: none; transition: opacity var(--motion-response) linear, visibility 0s linear var(--motion-response); } }
 
 /* Detail projektu → karta Služby: loga jsou obsah karty, ne doplněk řádku, proto větší disky
