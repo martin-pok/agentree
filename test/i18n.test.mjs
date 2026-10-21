@@ -259,6 +259,7 @@ const MIMO_ROZHRANI = {
   'src/tunnel.js': ['binárka ({0}) nebo', '"cloudflared" v PATH', '"ngrok" v PATH; běžící', 'uživatel spustí "'], // technický popis, rozhraní ho nezobrazuje
   'src/connectors/local-agents.js': ['vysoká', 'nízká'], // kód jistoty, klient ho porovnává
   'src/connectors/claude-code.js': ['týden {0} %'], // stavový řádek v Claude Code
+  'src/rozhodnuti.js': ['The user denied this action in Agenteeq.'], // zpráva pro model v Claude Code, ne pro rozhraní
   'src/alerts.js': null, // celý soubor: překládá klient (viz JEN_KLIENT)
   'src/webpush.js': ['invalid subscription keys'],
   'src/pomocnik.js': ['Pomáháš uživateli najít jeho dřívější konverzace s AI.'], // pokyn pro lokální model, ne text rozhraní // vnitřní chyba, posli() ji změní na zrušení odběru

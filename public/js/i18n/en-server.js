@@ -3,6 +3,9 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Rozhodnout za agenta lze jen {0}.": "You can decide for the agent only {0}.",
+  "Neznámé rozhodnutí.": "Unknown decision.",
+  "Na tuhle žádost už se čekat přestalo. Agent se zeptá v terminálu.": "This request is no longer waiting. The agent will ask in the terminal.",
   "Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.": "The downloaded update package has changed or disappeared. Download the update again.",
   "Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.": "First open the native Agenteeq app on this computer.",
   "Neplatný agent.": "Invalid agent.",

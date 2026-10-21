@@ -28,6 +28,7 @@ import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initObjev } from './objev-ui.js';
+import { initRozhodnuti } from './rozhodnuti-ui.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
@@ -58,6 +59,7 @@ for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app
 initSelects();
 initWelcome();
 initObjev();
+initRozhodnuti();
 initWhatsNew();
 initAppearance();
 plynulePosouvani();

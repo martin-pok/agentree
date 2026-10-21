@@ -235,6 +235,7 @@ export function createHttpServer(app, existingServer = null) {
     runtimes: (l) => broadcast('runtimes', l),
     localAgents: (l) => broadcast('localAgents', l),
     detekce: (d) => broadcast('detekce', d),
+    rozhodnuti: (l) => broadcast('rozhodnuti', l),
     customAgents: (l) => broadcast('customAgents', l),
     limits: (l) => broadcast('limits', l),
     credits: (l) => broadcast('credits', l),
@@ -534,8 +535,28 @@ export function createHttpServer(app, existingServer = null) {
       if (app.jePomocnikSession?.(telo?.session_id)) return { ok: true };
       const r = await app.connectors['claude-code'].ingestHook(telo);
       if (!r.ok) throw new HttpError(400, r.error);
+      // Agent pokračuje bez nás (zadání, konec tahu): karta s rozhodnutím zmizí.
+      if (['UserPromptSubmit', 'Stop', 'SessionEnd'].includes(telo?.hook_event_name)) app.rozhodnuti?.vyrizeno(telo.session_id);
       return r;
     }, { token: true }],
+    // Hook PermissionRequest (src/rozhodnuti.js): čeká na rozhodnutí v Agenteeq. Prázdná odpověď =
+    // bez rozhodnutí, Claude Code se zeptá v terminálu. Nikdy chyba, která by žádost zamítla.
+    ['POST', /^\/api\/hooks\/claude-code\/povoleni$/, async (req) => {
+      if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
+      const telo = await readBody(req);
+      const prazdna = { raw: true, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, body: '' };
+      if (app.jePomocnikSession?.(telo?.session_id)) return prazdna;
+      await app.connectors['claude-code'].ingestHook(telo).catch(() => {});
+      const vystup = await app.rozhodnuti.zadost(telo);
+      return vystup ? { ...prazdna, body: JSON.stringify(vystup) } : prazdna;
+    }, { token: true }],
+    // Kliknutí „Povolit“ / „Zamítnout“ v Agenteeq. Jen u Macu – telefon je ke čtení.
+    ['POST', /^\/api\/rozhodnuti\/([\w-]{6,40})\/(povolit|zamitnout)$/, (req, m) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Rozhodnout za agenta lze jen {0}.', POCITAC.naHostiteli));
+      const r = app.rozhodnuti.rozhodni(m[1], m[2]);
+      if (r.status) throw new HttpError(r.status, r.error);
+      return r;
+    }],
     ['POST', /^\/api\/hooks\/claude-statusline$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
       const r = app.connectors['claude-code'].ingestStatusline(await readBody(req));
@@ -756,7 +777,7 @@ export function createHttpServer(app, existingServer = null) {
         }
         datastore.data.settings.layout = normalizeLayout(merged);
       }
-      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser', 'quietHours', 'detekce']) if (typeof n[k] === 'boolean') cur[k] = n[k];
+      for (const k of ['needsInput', 'limits', 'limitReset', 'budget', 'done', 'native', 'browser', 'quietHours', 'detekce', 'rozhodnuti']) if (typeof n[k] === 'boolean') cur[k] = n[k];
       for (const k of ['quietFrom', 'quietTo']) if (n[k] !== undefined) cur[k] = n[k];
       if (n.doneMinSeconds !== undefined) {
         const v = Number(n.doneMinSeconds);

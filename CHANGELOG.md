@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.54 – 2026-10-21 · Rozhodnutí agenta přímo v Agenteeq
+
+- **Povolit nebo zamítnout přímo v aplikaci (Beta):** když Claude Code žádá o povolení nástroje a okno Agenteeq je otevřené, vpravo dole se objeví karta s celým příkazem nebo souborem, složkou a tlačítky **Povolit** a **Zamítnout**. Rozhodnutí se vrátí do Claude Code a agent pokračuje. Zamítnutí agentovi řekne, že akci nechceš, ale nezastaví ho.
+- **Terminál zůstává záloha:** když okno Agenteeq není vidět, funkce je vypnutá nebo nikdo do 45 s nerozhodne, Claude Code se zeptá v terminálu jako dřív. Agenteeq nikdy nic nezamítne ani nepovolí sám. Pravidla zákazu v nastavení Claude Code platí dál. Rozhodovat jde jen na Macu, telefon je dál jen ke čtení.
+- **Agent „potřebuje tebe“ hned:** žádost o povolení je v přehledu vidět ve chvíli, kdy ji Claude Code položí, ne až po šesti vteřinách.
+- **Zapnutí:** v Nastavení → Propojení s Claude Code klikni na **Obnovit propojení** (přidá hook PermissionRequest). V Nastavení → Upozornění jde rozhodování vypnout přepínačem „Rozhodovat v Agenteeq“.
+
 ## 0.46.53 – 2026-10-21 · Našli jsme na tvém Macu
 
 - **Okno „Našli jsme na tvém Macu“:** po úvodním průvodci (a kdykoli z Nastavení → Propojení → „Najít AI nástroje na tomto Macu“) Agenteeq ukáže AI nástroje, které na počítači opravdu našel: co právě běží, aplikace ve složce Aplikace (Claude, ChatGPT, Codex, Cursor, VS Code, Windsurf, Zed, Warp, Ollama, LM Studio a další), programy v PATH (Claude Code, Codex, Gemini CLI, Qwen Code, Copilot CLI, Cursor Agent, Aider, OpenCode, Auggie) a nástroje, které tu už někdy běžely. Pod nimi jsou webové chaty v Chromu.

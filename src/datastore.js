@@ -24,6 +24,8 @@ export const DEFAULT_SETTINGS = {
   updateChannel: 'stable',
   notifications: {
     needsInput: true,
+    // Rozhodnutí agenta (povolení nástroje) přímo v Agenteeq, když je okno vidět (src/rozhodnuti.js).
+    rozhodnuti: true,
     limits: true,
     limitReset: true,
     budget: true,
