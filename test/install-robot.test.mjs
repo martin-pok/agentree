@@ -12,6 +12,8 @@ test('extension section shows the real rendered popup, sized, lazy and described
     ['site/index.html', 'svetle', ''], ['site/en/index.html', 'svetle', '-en']]) {
     const html = await read(path);
     assert.doesNotMatch(html, /chat\.example|extension-display/, path + ': placeholder mockup is gone');
+    // Žádná vymyšlená lišta prohlížeče (kolečka okna, adresní řádek, kostra stránky): jen skutečné okno.
+    assert.doesNotMatch(html, /ext-okno-(lista|tecky|adresa|nav|stranka|ikona)/, path + ': no invented browser chrome');
     const img = html.match(/<img class="ext-okno-snimek"[^>]*>/)?.[0];
     assert.ok(img, path);
     const soubor = `okno-${vzhled}${en}.webp`;
