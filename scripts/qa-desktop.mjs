@@ -33,7 +33,7 @@ async function zkontrolujPostranniPanel(browser, engine, errors) {
       addTokens(s, Date.now(), { input: 1200000, output: 300000 });
       server.app.store.commit(s);
     }
-    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
     await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
     for (const jazyk of ['cs', 'en']) {
@@ -129,7 +129,7 @@ async function zkontrolujProcesBezPrepisu(browser, engine, errors) {
   const server = await startTestServer({ AGENTEEQ_PROCESSES: '1', AGENTEEQ_PROCESS_MS: '60000' }, { vypisProcesu });
   try {
     // Snímek má kontrolovat detail procesu, ne překrytý úvodní průvodce nového profilu.
-    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
     const id = 'claude-code:proces-4242';
     await new Promise((resolve, reject) => {
       const end = Date.now() + 3000;
@@ -216,7 +216,7 @@ async function zkontrolujPlynulost(browser, engine) {
     store.commit(s);
     radky.push(s);
   }
-  await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+  await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
   assert.equal((await api(server.url).send('POST', '/api/projects', { name: 'QA plynulost' })).status, 201);
   const ozivit = (s) => { s.lastAt = Date.now(); addTokens(s, Date.now(), { input: 500, output: 50 }); store.commit(s); };
   const mereni = {};
@@ -453,6 +453,8 @@ async function zkontrolujObdobi(browser, engine) {
     // Průvodce prvního spuštění zavřít a počkat, až po sobě uklidí (odchod na Přehled).
     await p.locator('.welcome-dialog[open]').waitFor({ timeout: 3000 }).then(() => p.keyboard.press('Escape'), () => {});
     await p.waitForFunction(() => !document.querySelector('.welcome-dialog[open]'), null, { timeout: 3000 });
+    // Po průvodci se otevře „Našli jsme na tvém Macu“ (public/js/objev-ui.js) – zavřít jako člověk.
+    await p.locator('.objev-dialog[open] [data-objev-hotovo]').click({ timeout: 3000 }).catch(() => {});
     await p.waitForTimeout(300);
     await p.evaluate(() => { location.hash = '#/statistiky'; });
     await p.waitForFunction(() => location.hash === '#/statistiky' && document.querySelector('[data-period]') && !document.querySelector('dialog[open]'), null, { timeout: 5000 });
@@ -573,6 +575,19 @@ for (const engine of engines) {
     await page.unroute('**/api/settings');
     await page.locator('[data-welcome-next]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
+    await page.reload();
+    // První spuštění pokračuje oknem „Našli jsme na tvém Macu“: nalezené nástroje, potvrzení
+    // přístupu před každým napojením, a po „Hotovo“ se samo už neukáže.
+    await page.locator('.objev-dialog[open] .objev-row').first().waitFor();
+    await page.screenshot({ path: `dist/qa/${engine}-objev.png` });
+    assert.ok(await page.locator('.objev-dialog .objev-row').count() >= 2, 'okno ukazuje nalezené nástroje i webové chaty');
+    await page.locator('.objev-dialog [data-objev-napojit="web"]').click();
+    await page.locator('.objev-dialog [data-objev-povolit="web"]').waitFor();
+    assert.equal(await page.locator('.objev-dialog .objev-pravo').count(), 2, 'potvrzení říká, co Agenteeq uvidí a co ne');
+    await page.locator('.objev-dialog [data-objev-zpet]').first().click();
+    await page.locator('.objev-dialog [data-objev-hotovo]').click();
+    await page.locator('.objev-dialog').waitFor({ state: 'detached' });
+    await page.waitForFunction(async () => (await (await fetch('/api/state')).json()).settings?.objevHotovo === true);
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);

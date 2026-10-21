@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.53 – 2026-10-21 · Našli jsme na tvém Macu
+
+- **Okno „Našli jsme na tvém Macu“:** po úvodním průvodci (a kdykoli z Nastavení → Propojení → „Najít AI nástroje na tomto Macu“) Agenteeq ukáže AI nástroje, které na počítači opravdu našel: co právě běží, aplikace ve složce Aplikace (Claude, ChatGPT, Codex, Cursor, VS Code, Windsurf, Zed, Warp, Ollama, LM Studio a další), programy v PATH (Claude Code, Codex, Gemini CLI, Qwen Code, Copilot CLI, Cursor Agent, Aider, OpenCode, Auggie) a nástroje, které tu už někdy běžely. Pod nimi jsou webové chaty v Chromu.
+- **Každé napojení přes potvrzovací obrazovku:** „Napojit“ nejdřív ukáže, co Agenteeq uvidí, co neuvidí a co se po kliknutí stane. Teprve „Povolit“ spustí přihlášení u dodavatele (Claude Code, Codex), začne sledovat záznamy nástroje na tomto počítači, nebo vede k rozšíření pro Chrome. Bez potvrzení se nic nenapojí.
+- **Poctivě:** nalezeno je jen to, co je ověřené. Když se na počítači hledat nedalo, okno to řekne a netvrdí, že tu nic není. Jména programů, která nosí i jiné běžné nástroje (goose, amp, crush, droid), se v PATH nehledají; rozpoznání, které nikdo neověřil na skutečném počítači, nese štítek Beta.
+
 ## 0.46.52 – 2026-10-20 · Napojení webových chatů funguje
 
 - **Napojit ChatGPT, Claude.ai, Gemini a další webové chaty:** tlačítko „Napojit“ v Nastavení → Propojení končilo hláškou „Neznámá adresa API.“ Rozhraní posílalo označení služby (`web:chatgpt`) správně zakódované jako `web%3Achatgpt` a server takovou adresu nepoznal. Teď ji pozná a napojení se otevře: ChatGPT v prohlížeči a okno čeká, až rozšíření ohlásí první konverzaci. Test volá adresu přesně tak, jak ji posílá rozhraní.

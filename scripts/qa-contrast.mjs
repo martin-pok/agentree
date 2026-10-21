@@ -165,7 +165,7 @@ for (const [rootDir, name] of [['.claude', 'Claude'], ['.codex', 'Codex']]) {
   cb.providers = () => ({ 'anthropic-admin': { state: 'connected', detail: '', at: Date.now(), source: 'env', tokens: { [den]: { input: 1200000, output: 300000 } }, tokensError: null }, 'openai-admin': { state: 'connected', detail: '', at: Date.now(), source: 'env', tokens: null, tokensError: 'OpenAI odpověděla 403' } });
 }
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
-await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true });
+await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true });
 for (let i = 0; i < 100 && !((await api(app.url).send('GET', '/api/state')).body.detekce?.nove?.length >= 3); i++) await new Promise((r) => setTimeout(r, 100));
 if ((await api(app.url).send('POST', '/api/nastroje/warp/pridat', {})).status !== 200) throw new Error('Detekce v QA nezachytila Warp – karta by se neměřila.');
 

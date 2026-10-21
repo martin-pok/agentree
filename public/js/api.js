@@ -37,6 +37,7 @@ export async function request(method, path, body, { keepalive = false } = {}) {
 
 export const api = {
   napojeni: () => request('GET', '/api/napojeni'),
+  objev: () => request('GET', '/api/objev'),
   napojit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}`),
   napojeniZrusit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/zrusit`),
   napojeniOdkaz: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/odkaz`),

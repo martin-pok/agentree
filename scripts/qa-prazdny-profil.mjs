@@ -60,7 +60,7 @@ export async function projdiPrazdnyProfil(browser, { sirky, rezimy = ['light'], 
   try {
     const verze = (await api(app.url).get('/api/state')).body.version;
     // Úvodní průvodce a „Co je nového“ by obrazovku zakryly; průvodce na Přehledu (onboarding) zůstává.
-    await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, lastSeenVersion: verze });
+    await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, lastSeenVersion: verze });
     let akceOvereny = false;
     for (const rezim of rezimy) {
       await api(app.url).send('PUT', '/api/settings', { appearance: rezim });

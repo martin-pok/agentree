@@ -58,7 +58,10 @@ export function showWelcome() {
       state.settings = (await api.saveSettings({ welcomeCompleted: true, ...(state.version ? { lastSeenVersion: state.version } : {}) })).settings;
       dialog.close(); dialog.remove(); dialog = null;
       if (target === 'extension') goToExtension();
-      else location.hash = target;
+      else {
+        location.hash = target;
+        window.dispatchEvent(new Event('agenteeq-pruvodce-hotov'));
+      }
       (opener?.isConnected ? opener : document.getElementById('page-title'))?.focus();
     } catch {
       const error = dialog.querySelector('.welcome-error');
