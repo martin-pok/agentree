@@ -2,6 +2,7 @@
 # and source version must match. Existing release.yml builds + audits all eight
 # GitHub-hosted assets; publish.yml independently re-downloads and verifies them.
 # No stable release or Chrome Web Store publication occurs here.
+# Activation requested by the owner: release v0.46.57 only after this exact main commit passes all Testy.
 name: One-time release v0.46.57 Preview
 
 on:
