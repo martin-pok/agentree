@@ -544,7 +544,7 @@ async function zkontrolujKontrastLogVCTA(page, engine) {
     document.body.append(host);
     const issues = [];
     const colors = (input) => {
-      const values = String(input).match(/[\\d.]+/g)?.slice(0, 3).map(Number);
+      const values = String(input).match(/[\d.]+/g)?.slice(0, 3).map(Number);
       return values?.length === 3 ? values : null;
     };
     const luminance = (rgb) => {
