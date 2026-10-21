@@ -8,7 +8,7 @@ import { esc } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
-import { naMacu, tlacitkaRozhodnuti, kdePravidlo } from './rozhodnuti-data.js';
+import { naMacu, tlacitkaRozhodnuti, podrobnostiRozhodnuti, textOdpoctu } from './rozhodnuti-data.js';
 
 let oblast = null;
 let tik = 0;
@@ -28,10 +28,7 @@ function karta(r) {
     <header class="rozh-head"><span class="rozh-logo" aria-hidden="true">${glyph('claude')}</span>
       <div><h2 id="rozh-${esc(r.id)}">${esc(tr('Claude Code žádá o povolení'))}</h2>${nazev ? `<p class="rozh-nazev">${esc(nazev)}</p>` : ''}</div></header>
     <p class="rozh-popis">${esc(r.popis || r.nastroj)}</p>
-    ${r.podrobnost ? `<pre class="rozh-prikaz">${esc(r.podrobnost)}</pre>` : ''}
-    ${r.cwd ? `<p class="rozh-slozka">${ICON.folder}<span>${esc(r.cwd)}</span></p>` : ''}
-    ${r.pravidlo ? `<p class="rozh-pravidlo">${esc(tr('Příště se neptat na: {0} ({1})', r.pravidlo.text, kdePravidlo(r)))}</p>` : ''}
-    <p class="rozh-cas" data-rozh-cas>${esc(tr('Bez rozhodnutí se za {0} s zeptá v terminálu.', zbyva(r)))}</p>
+    ${podrobnostiRozhodnuti(r, { ikonaSlozky: ICON.folder })}
     <footer class="rozh-akce">${tlacitkaRozhodnuti(r, { odeslano: ceka })}</footer>
   </article>`;
 }
@@ -74,16 +71,14 @@ function schovejDvojniky() {
   oblast.hidden = vidno === 0;
 }
 
+// Odpočet běží u každé kopie žádosti na stránce (roh, Přehled, detail agenta), ne jen v rohu.
 function odpocet() {
-  let konec = false;
-  for (const r of state.rozhodnuti || []) {
-    const el = oblast.querySelector(`[data-rozh="${CSS.escape(r.id)}"] [data-rozh-cas]`);
-    if (!el) continue;
-    const s = zbyva(r);
-    if (s <= 0) konec = true;
-    else el.textContent = tr('Bez rozhodnutí se za {0} s zeptá v terminálu.', s);
+  const ted = Date.now();
+  for (const el of document.querySelectorAll('[data-rozh-cas][data-rozh-do]')) {
+    const s = Math.max(0, Math.ceil((Number(el.dataset.rozhDo) - ted) / 1000));
+    if (s > 0) el.textContent = textOdpoctu(s);
   }
-  if (konec) vykresli();
+  if ((state.rozhodnuti || []).some((r) => zbyva(r) <= 0 && oblast.querySelector(`[data-rozh="${CSS.escape(r.id)}"]`))) vykresli();
 }
 
 // Všechna tlačítka téže žádosti (roh, Přehled, detail agenta) se zamknou naráz.

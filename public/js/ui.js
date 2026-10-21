@@ -1,4 +1,4 @@
-import { rozhodnutiPro, tlacitkaRozhodnuti } from './rozhodnuti-data.js';
+import { rozhodnutiPro, tlacitkaRozhodnuti, podrobnostiRozhodnuti } from './rozhodnuti-data.js';
 import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
@@ -525,6 +525,7 @@ export function decisionCard(s) {
   const druh = failed ? (s.observation ? tr('Vzdálený agent selhal') : s.failure?.kind === 'chyba' ? tr('Skončil chybou') : tr('Spuštění selhalo')) : limited ? tr('Vyčerpaný limit') : kindLabel(s.pending?.kind);
   // Hlavní je to, o čem se rozhoduje (otázka agenta, důvod selhání), proto je největší. Název
   // konverzace je kontext pod ním; akce drží spodní hranu karty, takže karta využije výšku řádku.
+  const r = rozhodnutiPro(s);
   return `<li class="decision${limited ? ' is-limit' : ''}" data-key="${esc(s.id)}" data-ton="${failed ? 'problem' : limited ? 'limit' : 'pozor'}">
     <div class="decision-head">
       <span class="decision-kicker"><i class="decision-dot" aria-hidden="true"></i>${druh}</span>
@@ -533,9 +534,10 @@ export function decisionCard(s) {
     <div class="decision-body">
       <p class="decision-reason">${esc(s.reason)}</p>
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
+      ${r ? `<div class="decision-rozh">${podrobnostiRozhodnuti(r, { ikonaSlozky: ICON.folder })}</div>` : ''}
     </div>
     <div class="decision-actions">
-      ${rozhodnutiPro(s) ? tlacitkaRozhodnuti(rozhodnutiPro(s), { small: true }) : s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
+      ${r ? tlacitkaRozhodnuti(r, { small: true }) : s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
       ${s.open?.length ? `<a class="link decision-detail" href="${agentHref(s.id)}">${tr('Detail agenta')}${ICON.arrow || ''}</a>` : ''}
     </div>
   </li>`;

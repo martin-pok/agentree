@@ -23,6 +23,19 @@ const KDE = {
 };
 export const kdePravidlo = (r) => (KDE[r?.pravidlo?.kde] || (() => ''))();
 
+const zbyva = (r, now = Date.now()) => Math.max(0, Math.ceil((r.do - now) / 1000));
+export const textOdpoctu = (s) => tr('Bez rozhodnutí se za {0} s zeptá v terminálu.', s);
+
+// Co přesně se schvaluje – stejně všude, kde jde rozhodnout: celý příkaz (nebo soubor, adresa),
+// složka, přesné trvalé pravidlo a odpočet do návratu do terminálu. Bez toho by se schvalovalo
+// naslepo podle popisu, který si agent napsal sám.
+export function podrobnostiRozhodnuti(r, { slozka = true, ikonaSlozky = '' } = {}) {
+  return `${r.podrobnost ? `<pre class="rozh-prikaz">${esc(r.podrobnost)}</pre>` : ''}`
+    + `${slozka && r.cwd ? `<p class="rozh-slozka">${ikonaSlozky}<span>${esc(r.cwd)}</span></p>` : ''}`
+    + `${r.pravidlo ? `<p class="rozh-pravidlo">${esc(tr('Příště se neptat na: {0} ({1})', r.pravidlo.text, kdePravidlo(r)))}</p>` : ''}`
+    + `<p class="rozh-cas" data-rozh-cas data-rozh-do="${Number(r.do) || 0}">${esc(textOdpoctu(zbyva(r)))}</p>`;
+}
+
 export function tlacitkaRozhodnuti(r, { small = false, odeslano = false } = {}) {
   const sm = small ? ' btn--sm' : '';
   const dis = odeslano ? ' disabled' : '';

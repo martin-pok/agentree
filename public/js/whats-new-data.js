@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.56',
+    date: '2026-10-21',
+    title: 'Nikdy naslepo',
+    items: [
+      'Ve „Vyžaduje pozornost“ je teď vidět celý příkaz, složka a přesné pravidlo.',
+      'Odpočet do návratu do terminálu běží u každé žádosti.',
+      'Na webu je ukázka rozšíření jen se skutečným oknem.',
+    ],
+    en: {
+      title: 'Never blind',
+      items: [
+        '“Needs attention” now shows the full command, the folder and the exact rule.',
+        'The countdown until the terminal takes over runs on every request.',
+        'The website shows only the real extension window.',
+      ],
+    },
+  },
+  {
     version: '0.46.55',
     date: '2026-10-21',
     title: 'Rozhodování dotažené',

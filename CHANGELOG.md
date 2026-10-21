@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.56 – 2026-10-21 · Nikdy neschvaluješ naslepo
+
+- **Celý příkaz všude, kde jde rozhodnout:** v „Vyžaduje pozornost“ na Přehledu byla v 0.46.55 jen tlačítka a popis, který si agent napsal sám – přesný příkaz chyběl. Teď karta ukáže celý příkaz (nebo soubor, adresu), složku, přesné pravidlo pro „Povolit a příště se neptat“ i odpočet do návratu do terminálu, stejně jako karta v rohu. V detailu agenta přibylo pravidlo a odpočet.
+- **Odpočet běží všude:** do kdy se dá v Agenteeq rozhodnout, se počítá u každé kopie žádosti, ne jen v rohu.
+- **Hlídané v CI:** nová kontrola v prohlížeči (Chromium i WebKit) pošle skutečnou žádost, ověří přesný příkaz na Přehledu i v rohu, že klepnutí na Povolit a Zamítnout dojde až do odpovědi hooku, a že se karta na úzkém okně vejde a tlačítka mají aspoň 40 px.
+- **Web:** ukázka rozšíření ukazuje jen skutečné okno rozšíření ve skutečné velikosti, bez vymyšlené lišty prohlížeče.
+
 ## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené
 
 - **Povolit a příště se neptat:** když Claude Code k žádosti nabídne trvalé pravidlo (stejné, jaké nabízí v terminálu), karta ho ukáže celé i s tím, kam se uloží („v tomto projektu, jen u tebe“, „jen v této konverzaci“…), a jedním klepnutím ho potvrdíš. Agenteeq žádné pravidlo nevymýšlí a nic v něm nemění.

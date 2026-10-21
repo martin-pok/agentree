@@ -491,6 +491,10 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   žádostí), `PreToolUse` jiného nástroje, `UserPromptSubmit`, `Stop`, `SessionEnd`, nebo zavřené spojení
   hooku. Že Claude Code při vypršení ukončí i curl (celou skupinu procesů), neověřeno; jinak karta
   zmizí nejpozději po 45 s.
+- **Co se schvaluje** (od 0.46.56): každé místo s tlačítky (roh, „Vyžaduje pozornost“, detail
+  agenta) ukazuje přesný příkaz / soubor / adresu z `tool_input`, pravidlo z `permission_suggestions`
+  a odpočet. Ověřeno v prohlížeči na simulovaném hooku (`qa:desktop`), na skutečném Claude Code
+  stále Beta.
 - V neinteraktivním režimu (`claude -p`, pomocní agenti na pozadí) Claude Code podle dokumentace
   žádost bez rozhodnutí hooku zamítne – to je jeho výchozí chování, Agenteeq ho nemění.
 
