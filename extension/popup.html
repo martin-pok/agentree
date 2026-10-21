@@ -90,15 +90,16 @@
     .top { flex: none; position: relative; display: flex; align-items: center; gap: 8px; height: 56px; padding: 0 16px; }
     .top::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--hair); opacity: 0; transition: opacity var(--motion-response) var(--ease); }
     body[data-odrolovano='true'] .top::after { opacity: 1; }
-    /* Značka otevírá aplikaci (jediné místo s touto akcí): kapsle 32 px, plocha až při najetí. Bez
-       běžící aplikace je to jen značka – odkaz by vedl na nedostupnou adresu. */
-    .brand { --brand-mark: round(calc(var(--brand-word) * var(--brand-mark-tile)), 1px); display: inline-flex; align-items: center; gap: max(0px, calc(var(--brand-word) * .55 - var(--brand-mark) * .068)); height: 32px; margin: 0 auto 0 -8px; padding: 0 10px 0 8px; min-width: 0; border-radius: var(--r-full); color: var(--ink); font: 500 var(--brand-word)/1 var(--f-display); letter-spacing: .02em; text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+    /* Značka otevírá nativní aplikaci (jediné místo s touto akcí): kapsle 32 px, plocha až při
+       najetí. Bez spárování zůstává vypnutá; nikam v prohlížeči neodkazuje. */
+    .brand { --brand-mark: round(calc(var(--brand-word) * var(--brand-mark-tile)), 1px); appearance: none; border: 0; background: transparent; cursor: pointer; display: inline-flex; align-items: center; gap: max(0px, calc(var(--brand-word) * .55 - var(--brand-mark) * .068)); height: 32px; margin: 0 auto 0 -8px; padding: 0 10px 0 8px; min-width: 0; border-radius: var(--r-full); color: var(--ink); font: 500 var(--brand-word)/1 var(--f-display); letter-spacing: .02em; text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
     .brand > img { width: var(--brand-mark); height: var(--brand-mark); flex: none; }
     .brand .sipka { width: 14px; height: 14px; color: var(--ink-2); transition: transform var(--motion-move) var(--ease-out); }
-    a.brand:hover { background: var(--glass-strong); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 0 0 1px var(--hair); }
-    a.brand:hover .sipka { transform: translate(2px, -2px); }
-    a.brand:active { transform: scale(.98); }
-    .brand:not([href]) .sipka { display: none; }
+    button.brand:not(:disabled):hover { background: var(--glass-strong); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 0 0 1px var(--hair); }
+    button.brand:not(:disabled):hover .sipka { transform: translate(2px, -2px); }
+    button.brand:not(:disabled):active { transform: scale(.98); }
+    .brand:disabled { cursor: default; }
+    .brand:disabled .sipka { display: none; }
     .chip { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: var(--r-full); font-size: 13px; font-weight: 500; line-height: 1; white-space: nowrap; }
     .chip--glass { background: var(--glass); box-shadow: inset 0 0 0 1px var(--glass-rim), 0 0 0 1px var(--hair); color: var(--ink-2); }
     .dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--mute); }
@@ -378,7 +379,7 @@
 </head>
 <body class="ext-okno" data-stav="nacitam" data-pohled="hlavni">
   <header class="top">
-    <a class="brand" id="brand" href="http://127.0.0.1:4620/" target="_blank" rel="noopener" aria-label="Otevřít aplikaci Agenteeq" title="Otevřít aplikaci Agenteeq" data-i18n-attr="aria-label,title"><img src="icons/brand.svg" width="30" height="30" alt="">Agenteeq<svg class="ico sipka" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+    <button class="brand" id="brand" type="button" disabled aria-label="Agenteeq" data-i18n-attr="aria-label"><img src="icons/brand.svg" width="30" height="30" alt="">Agenteeq<svg class="ico sipka" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></button>
     <span class="chip chip--glass stav" id="pill" role="status"><span class="dot"></span><span id="pill-text" data-i18n>Zjišťuji…</span></span>
     <button class="icon-btn" id="refresh-popup" type="button" aria-label="Obnovit aktuální stav" title="Obnovit aktuální stav" data-i18n-attr="aria-label,title">
       <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.9-3.5M4 4v4h4M4 13a8 8 0 0 0 14.9 3.5M20 20v-4h-4"/></svg>

@@ -18,6 +18,17 @@ test('Notion: appearance customization belongs to one selected agent detail, nev
   assert.match(appearance, /localStorage\.setItem\(PERSONA_KEY/);
 });
 
+test('Přehled: hlavní text karty je název konverzace, jméno agenta zůstává podpůrné', async () => {
+  const home = await source('public/js/home-studio.js');
+  const view = await source('public/js/views/overview.js');
+  const styles = await source('public/workbench.css');
+  assert.match(view, /<span class="pb-agent-text"><b[\s\S]*?\$\{esc\(s\.title\)\}<\/b>/, 'název konverzace je primární text karty');
+  assert.match(home, /className = 'studio-nickname'[\s\S]*?title\?\.after\(nick\)/, 'jméno agenta následuje hned po názvu konverzace');
+  assert.match(styles, /\.home-live \.pb-agent-text b \{[^}]*font-size: 20px;[^}]*color: var\(--ink\)/, 'název je dominantní a má barvu hlavního textu');
+  assert.match(styles, /\.studio-nickname \{[^}]*font-size: 13px;[^}]*color: var\(--mute\)/, 'jméno agenta je menší podpůrný údaj');
+  assert.match(styles, /\.home-live \.pb-agent-text small \{ order: 2; \}/, 'stav je až po názvu konverzace a nástroji');
+});
+
 test('Notion: compact, keyboard-addressable, branded choices instead of system dropdowns', async () => {
   const editor = await source('public/js/agent-appearance.js');
   const style = await source('public/workbench.css');

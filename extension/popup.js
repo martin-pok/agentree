@@ -865,7 +865,7 @@ function vykresli() {
   if (s) { souhrn.textContent = sazba(s.text); souhrn.dataset.tone = s.ton; }
   // Aplikaci otevírá značka v hlavičce – jediné místo s touto akcí. Bez běžící aplikace je to jen
   // značka (odkaz by vedl na nedostupnou adresu); hlavní výzvou je pak „Stáhnout“ v reflektoru.
-  nastavZnacku(rezim !== 'offline');
+  nastavZnacku(rezim === 'sparovano');
   vykresliAktualizaci(pripojeno && seznam.zastarala);
   vykresliOsu();
 }
@@ -934,16 +934,29 @@ function zakladniStav() {
   seznam.pripojeno = false;
   seznam.zastarala = false;
   delete $('konverzace').dataset.podpis; // Po obnovení spojení se osa vykreslí znovu i se stejnými daty.
-  nastavZnacku(true);
+  nastavZnacku(false);
 }
 function nastavZnacku(odkaz) {
   const z = $('brand');
   if (odkaz) {
-    z.href = APLIKACE;
+    z.disabled = false;
     z.setAttribute('aria-label', tr('Otevřít aplikaci Agenteeq'));
     z.title = tr('Otevřít aplikaci Agenteeq');
-  } else for (const a of ['href', 'aria-label', 'title']) z.removeAttribute(a);
+  } else {
+    z.disabled = true;
+    z.setAttribute('aria-label', tr('Agenteeq'));
+    z.removeAttribute('title');
+  }
 }
+$('brand').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (rezim !== 'sparovano') return;
+  const result = await chrome.runtime.sendMessage({ type: 'agenteeq:open-app' }).catch(() => null);
+  if (result?.ok) window.close();
+  else if (result?.error) toast(result.error);
+  else if (result?.unsupported) toast(tr('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.'));
+  else if (result?.offline) toast(tr('Agenteeq právě neodpovídá. Obnov seznam a zkus to znovu.'));
+});
 
 // Offline stav je skutečná dostupnost lokální služby, ne přítomnost starého snapshotu.
 // Kontrolujeme jej také při otevřeném okně: jinak by náhlý restart aplikace nechal

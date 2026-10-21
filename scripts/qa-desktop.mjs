@@ -374,8 +374,12 @@ async function zkontrolujListuPriPosunu(browser, engine) {
         await p.waitForTimeout(500);
         const dolu = await stav();
         assert.equal(dolu.lista, 'skryta', `${kde}: posun dolů lištu neschoval`);
-        assert.ok(dolu.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${dolu.bottom} px)`);
-        assert.equal(dolu.inert, true, `${kde}: schovaná lišta jde do Tabu`);
+        // WebKit může při vytíženém runneru dokončit compositing déle po změně atributu.
+        // Čekej na skutečnou polohu mimo viewport, ne na pevný počet milisekund.
+        await p.waitForFunction(() => document.querySelector('.topbar').getBoundingClientRect().bottom <= 0, null, { timeout: 1500 });
+        const skryta = await stav();
+        assert.ok(skryta.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${skryta.bottom} px)`);
+        assert.equal(skryta.inert, true, `${kde}: schovaná lišta jde do Tabu`);
         for (let i = 0; i < 2; i++) { await posun(-60); await p.waitForTimeout(60); }
         await p.waitForTimeout(500);
         // On a busy CI runner WebKit can still be mid-transform after the timer.

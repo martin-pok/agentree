@@ -380,7 +380,7 @@ export async function assignDialog(sessionIds, { current = undefined } = {}) {
   const opt = (value, label, sub, checked, dot = '') => `<label class="choice"><input type="radio" name="target" value="${esc(value)}"${checked ? ' checked' : ''}>${dot}<span class="choice-text"><span>${esc(label)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</span></label>`;
   const result = await modal({
     title: tr('Zařadit {0} do projektu', name),
-    submitLabel: tr('Zařadit'),
+    submitLabel: sessionIds.length > 1 ? tr('Zařadit vybrané ({0})', sessionIds.length) : tr('Zařadit'),
     body: `<div class="choices">
         ${items.map((p) => opt(p.id, p.name, p.description, current === p.id, pdot(p))).join('')}
         ${opt('__new', tr('Nový projekt…'), '', !items.length, `<span class="choice-plus">${ICON.plus}</span>`)}

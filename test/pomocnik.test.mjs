@@ -10,7 +10,10 @@ import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
 
 const NOW = Date.parse('2026-10-08T12:00:00Z');
 const DEN = 864e5;
-const den = (ts) => new Date(ts).toISOString().slice(0, 10);
+const den = (ts) => {
+  const d = new Date(ts);
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+};
 
 test('pomocník: rozumí času, nástroji a hledaným slovům v češtině i angličtině', () => {
   const a = rozeberDotaz('najdi mi chat ve kterém jsme před cca 3 měsíci řešili fakturaci, už nevím jaký LLM', NOW);

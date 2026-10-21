@@ -1,7 +1,10 @@
 # Changelog
 
-## Nepublikované změny
+## 0.46.56 – 2026-10-21 · Přehled agentů, výběr a napojení rozšíření
 
+- **Agenti:** hromadné zařazování konverzací jasně odlišuje plné tlačítko od filtrů, přesně počítá vybratelné konverzace, zachová výběr napříč filtry s viditelným upozorněním a potvrzuje počet položek v dialogu.
+- **Přehled:** karty agentů dávají název konverzace do hlavní typografické úrovně; jméno agenta nebo nástroje zůstává menší podpůrný údaj.
+- **Rozšíření Chrome:** značka v hlavičce už nikdy neotevře prázdnou stránku lokálního serveru. Spárované rozšíření požádá běžící nativní Agenteeq, aby zobrazil Přehled; klíč okna se do Chromu nepředává.
 - **Dovednosti:** seznam nově zahrnuje `~/skills`, vlastní umístění `CLAUDE_CONFIG_DIR` a `CODEX_HOME` a symlinkované soubory i složky. Stejný soubor připojený na více místech se ukáže jen jednou; cykly symlinků se bezpečně přeskočí. Odstraněn byl také tichý limit 400 položek. Seznam se dál obnovuje při otevření stránky, po návratu do okna a každých 30 sekund.
 
 ## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené

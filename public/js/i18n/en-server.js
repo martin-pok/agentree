@@ -9,6 +9,7 @@ export default {
   "Na tuhle žádost už se čekat přestalo. Agent se zeptá v terminálu.": "This request is no longer waiting. The agent will ask in the terminal.",
   "Stažený aktualizační balíček se změnil nebo zmizel. Stáhni aktualizaci znovu.": "The downloaded update package has changed or disappeared. Download the update again.",
   "Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.": "First open the native Agenteeq app on this computer.",
+  "Aplikaci lze otevřít jen na místním počítači.": "The app can only be opened on this computer.",
   "Neplatný agent.": "Invalid agent.",
   "Agent už není v aktuálním přehledu. Obnov seznam.": "This agent is no longer in the current overview. Refresh the list.",
   "Agenta lze otevřít jen na místním počítači.": "You can only open this agent on the local computer.",
