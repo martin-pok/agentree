@@ -1,0 +1,39 @@
+# One-shot owner-requested release trigger. The actual publish.yml enforces
+# successful CI on immutable tag, SHA256 verification of all eight draft assets,
+# and preview-only publication without changing Stable Latest.
+# This workflow has no release-write permission and is triggered only by its creation commit.
+name: One-time publish v0.46.56 Preview
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v0.46.56-once.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    if: ${{ github.event.head_commit.message == 'chore(release): dispatch verified v0.46.56 Preview once' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Dispatch secured publisher for exactly v0.46.56 Preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/main"
+          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/419985249")
+          jq -e '.id == 419985249 and .tag_name == "v0.46.56" and .draft == true and (.assets | length == 8)' <<<"$release" >/dev/null
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
+            -f ref=main \
+            -f 'inputs[tag]=v0.46.56' \
+            -f 'inputs[channel]=preview' \
+            -f 'inputs[confirm_stable]=false'
+          echo "Requested official publish.yml for v0.46.56 Preview; no Stable update."
