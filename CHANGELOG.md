@@ -1,8 +1,9 @@
 # Changelog
 
-## Nevydáno
+## 0.46.57 – 2026-10-21 · Přehlednější mapa práce agentů
 
 - **Statistiky:** mapa „Kdy agenti pracují“ používá místo okrové značkovou fialovou škálu. Intenzita stále odpovídá skutečné aktivitě; barva se přizpůsobuje světlému a tmavému vzhledu.
+- Obsahuje také změny připravené v neveřejném kandidátu 0.46.56 níže.
 
 ## 0.46.56 – 2026-10-21 · Přehled agentů, výběr a napojení rozšíření
 
