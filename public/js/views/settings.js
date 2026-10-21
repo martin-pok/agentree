@@ -580,9 +580,15 @@ function mount(el) {
         toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Balíček je vidět ve Finderu'));
       } else if (a.dataset.action === 'check-updates') {
         a.disabled = true;
-        state.updates = (await api.checkUpdates()).updates;
-        toast(state.updates.status === 'current' ? tr('Máš nejnovější verzi.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
-        update();
+        try {
+          state.updates = (await api.checkUpdates()).updates;
+          toast(state.updates.status === 'current' ? tr('Máš nejnovější verzi.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
+          update();
+        } finally {
+          // fill() nemusí oblast přepsat, pokud se stav vydání nezměnil. V tom případě
+          // zůstává na stránce právě toto tlačítko a musí jít znovu použít.
+          a.disabled = false;
+        }
       } else if (a.dataset.action === 'download-update') {
         a.disabled = true;
         const r = await api.downloadUpdate();

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.58',
+    date: '2026-10-21',
+    title: 'Aktualizace a upozornění spolehlivěji',
+    items: [
+      'Po ruční kontrole aktualizací jde tlačítko hned znovu použít, i když se výsledek nezměnil nebo kontrola selhala.',
+      'Při delším výpadku spojení se upozornění ukáže po čtyřech sekundách od začátku výpadku.',
+      'Upozornění se označí za přečtená až po potvrzení serverem.',
+    ],
+    en: {
+      title: 'More reliable updates and alerts',
+      items: [
+        'Check now becomes available again after each check, even when the result is unchanged or the request fails.',
+        'The offline message appears four seconds after a connection outage begins.',
+        'Alerts are marked as read only after the server confirms the change.',
+      ],
+    },
+  },
+  {
     version: '0.46.57',
     date: '2026-10-21',
     title: 'Přehled a statistiky doladěné',

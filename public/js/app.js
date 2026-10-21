@@ -911,10 +911,18 @@ function renderOffline(show) {
 
 function onConnection(s) {
   state.connection = s;
-  clearTimeout(offlineTimer);
-  if (s === 'live') renderOffline(false);
-  // Krátké výpadky (restart serveru) nezobrazujeme; po 4 s už je to skutečný výpadek.
-  else offlineTimer = setTimeout(() => { if (state.connection !== 'live') renderOffline(true); }, 4000);
+  if (s === 'live') {
+    clearTimeout(offlineTimer);
+    offlineTimer = null;
+    renderOffline(false);
+  } else if (offlineTimer === null && offlineEl.hidden) {
+    // Čtyři sekundy od začátku výpadku, ne od posledního pokusu: SSE zkouší
+    // spojení každé 2 s a nesmí tím hlášku donekonečna odkládat.
+    offlineTimer = setTimeout(() => {
+      offlineTimer = null;
+      if (state.connection !== 'live') renderOffline(true);
+    }, 4000);
+  }
   updateChrome();
 }
 

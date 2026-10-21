@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 21. 10. 2026:** veřejné Preview je [`v0.46.56`](https://github.com/martin-pok/agentree/releases/tag/v0.46.56); připravuje se `v0.46.57` (fialová mapa aktivity navazující na veřejnou 0.46.56). Zveřejněné přílohy `v0.46.56` zůstávají neměnné. Stable Latest zůstává `v0.46.0`.
+**Stav 21. 10. 2026:** poslední zde doložené veřejné Preview je [`v0.46.56`](https://github.com/martin-pok/agentree/releases/tag/v0.46.56); `v0.46.57` má samostatný jednorázový release workflow, jeho dokončení je nutné ověřit přes GitHub. Pracovní kandidát `v0.46.58` obsahuje opravy kontroly aktualizací, upozornění a offline stavu. Nic z něj zatím není nainstalované na Macu. Stable Latest zůstává `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 21. 10. 2026:** kandidát **0.46.57 Preview** (`v0.46.57`) přidává fialovou mapu aktivity. Přehled agentů, hromadný výběr a přechod z rozšíření do aplikace již obsahuje zveřejněná `v0.46.56`. Veřejné Preview je `v0.46.56`.
+**Aktuální release vlak 21. 10. 2026:** pracovní kandidát **0.46.58 Preview** zahrnuje nejnovější `main` 0.46.57 a tři opravy spolehlivosti. Vyžaduje PR, přesné zelené CI, audit osmi binárních příloh a ověření instalace/aktualizace na skutečném Macu. Přístup k Macu a funkční GitHub autentizace z tohoto cloudového prostředí nejsou k dispozici; do té doby neoznačovat vydání ani upgrade za hotový.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

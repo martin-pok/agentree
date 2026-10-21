@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.58 – 2026-10-21 · Spolehlivější kontrola aktualizací a upozornění
+
+- **Nastavení → Aktualizace:** tlačítko „Zkontrolovat nyní“ se po dokončení kontroly znovu aktivuje, i když je verze stále stejná. Další pokus je možný také po chybě spojení.
+- **Výpadek spojení:** hlášení se zobrazí čtyři sekundy od začátku výpadku. Opakované pokusy o spojení už časovač neposouvají stále dál.
+- **Nepřečtená upozornění:** jako přečtená se v aplikaci označí až po potvrzení serverem. Neúspěšný požadavek neschová nepřečtené položky a opožděná odpověď nepřepíše novější počet.
+
 ## 0.46.57 – 2026-10-21 · Přehlednější mapa práce agentů
 
 - **Statistiky:** mapa „Kdy agenti pracují“ používá místo okrové značkovou fialovou škálu. Intenzita stále odpovídá skutečné aktivitě; barva se přizpůsobuje světlému a tmavému vzhledu.

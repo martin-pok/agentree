@@ -1195,6 +1195,29 @@ for (const engine of engines) {
       await page.evaluate(() => { sessionStorage.setItem('agenteeq.jump', 'extension'); window.dispatchEvent(new Event('agenteeq-jump')); });
       await page.waitForFunction(() => !document.querySelector('[data-region="extension"]').closest('.set-group').hidden, null, { timeout: 3000 });
     }
+    // Kontrola aktualizace se může vrátit se stejným výsledkem; fill() potom zachová
+    // původní DOM uzel. Tlačítko musí být po každém úspěchu i po chybě znovu aktivní.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${server.url}/#/nastaveni`);
+    await page.locator('.settings2').waitFor();
+    await page.locator('.set-nav [data-jump="set-aplikace"]').click();
+    const checkButton = page.locator('[data-action="check-updates"]');
+    await checkButton.waitFor();
+    await page.route('**/api/updates/check', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ updates: { status: 'current', currentVersion: '0.46.58', latestVersion: '', checkedAt: Date.now() } }),
+    }));
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/updates/check')), checkButton.click()]);
+      await page.waitForFunction(() => !document.querySelector('[data-action="check-updates"]')?.disabled);
+      assert.equal(await checkButton.isEnabled(), true, `${engine}: opakovaná kontrola aktualizací zůstala zablokovaná`);
+    }
+    await page.unroute('**/api/updates/check');
+    await page.route('**/api/updates/check', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"QA update failure"}' }));
+    await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/updates/check')), checkButton.click()]);
+    await page.waitForFunction(() => !document.querySelector('[data-action="check-updates"]')?.disabled);
+    assert.equal(await checkButton.isEnabled(), true, `${engine}: chyba kontroly aktualizací zablokovala další pokus`);
+    await page.unroute('**/api/updates/check');
     // Na širokém desktopu má svislé podmenu zůstat ve výšce, kde se otevřelo.
     // Původní sticky top: 24 px ho při dlouhé skupině vytáhl až k hornímu okraji
     // okna, zatímco hlavní postranní panel stál na místě.
@@ -1443,7 +1466,7 @@ for (const engine of engines) {
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
