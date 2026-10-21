@@ -12,6 +12,11 @@ export const needsYou = (s) => s.status === 'needs_input';
 // Pořadí v seznamech: nejdřív co potřebuje tebe, pak co pracuje, zbytek podle času.
 export const attentionRank = (s) => (STATUS_ORDER[s.status] <= STATUS_ORDER.working ? STATUS_ORDER[s.status] : STATUS_ORDER.working + 1);
 
+// Seznam Agenti klade běžící práci i zachycené živé procesy před žádosti o zásah a selhání.
+export const AGENT_LIST_ORDER = { working: 0, observed: 1, needs_input: 2, failed: 3, limited: 4, waiting: 5, idle: 6, archived: 7 };
+export const agentListRank = (s) => AGENT_LIST_ORDER[s.status] ?? AGENT_LIST_ORDER.waiting;
+export const compareAgentsForList = (a, b) => agentListRank(a) - agentListRank(b) || b.lastAt - a.lastAt;
+
 // Barvy grafů: ověřená kategoriální paleta (validátor dataviz: světlost, sytost, rozlišitelnost pro barvoslepé).
 // Barva patří poskytovateli natrvalo – nemění se podle pořadí ani filtru. Devátý a další spadne do „Ostatní“.
 // Tlumené pigmenty (Den i Noc): každý drží grafický kontrast ≥ 3 : 1 proti kartě v obou režimech.

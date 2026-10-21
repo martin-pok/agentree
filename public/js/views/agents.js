@@ -3,7 +3,7 @@ import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
-import { sessionTotal, needsYou, attentionRank } from '../data.js';
+import { sessionTotal, needsYou, agentListRank, compareAgentsForList } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
@@ -129,8 +129,6 @@ function lokalniHtml(a) {
   </li>`;
 }
 const matchProject = (s) => (f.project === 'all' ? true : f.project === 'none' ? !s.projectId : s.projectId === f.project);
-const rank = attentionRank;
-
 function applyQuery(q) {
   if (!q) return;
   const st = q.get('stav');
@@ -336,14 +334,16 @@ function update() {
     : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Založit projekt')}</a>`);
   zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
 
-  const list = base.filter((s) => matchStatus(s, f.status)).sort((a, b) => rank(a) - rank(b) || b.lastAt - a.lastAt);
+  const list = base.filter((s) => matchStatus(s, f.status)).sort(compareAgentsForList);
   // A grid cannot preserve the card under the pointer by vertical scrolling alone.
   // Keep existing slots during live updates below the filters; explicit filter changes re-sort.
   const filterKey = JSON.stringify([f.status, f.source, [...f.providers], f.q, f.project]);
   const table = el.querySelector('[data-region="table"]');
   if (v.filterKey === filterKey && table?.getBoundingClientRect().top < 0) {
     const positions = new Map([...table.querySelectorAll('[data-key]')].map((node, i) => [node.dataset.key, i]));
-    list.sort((a, b) => (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity));
+    // Pozici při scrollu zachovávej jen uvnitř skupiny, nikdy přes prioritu stavu.
+    list.sort((a, b) => agentListRank(a) - agentListRank(b)
+      || (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity));
   }
   v.filterKey = filterKey;
   v.visible = list;
