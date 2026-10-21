@@ -1,6 +1,6 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 20. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
+**Aktualizováno 21. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
@@ -8,7 +8,8 @@
 
 - **Draft jen na pokyn (od 20. 10. 2026, rozhodnutí vlastníka):** kandidát se sestaví ručním spuštěním „Připravit vydání“, ne po každém merge. Seznam vydání tak obsahuje jen zveřejněná vydání a nanejvýš jeden kandidát během chystaného vydání.
 - **Úklid Draftů (od 20. 10. 2026, rozhodnutí vlastníka):** po každém novém Draftu, který projde auditem, smaže `prune-drafts.yml` všechny nezveřejněné Drafty s nižší verzí. Zveřejněná vydání a tagy se nemažou. První běh po sloučení smaže překonané Drafty v0.36.4, v0.37.0, v0.46.7–v0.46.11, v0.46.13, v0.46.14, v0.46.19, v0.46.32, v0.46.34–v0.46.38, v0.46.40, v0.46.41, v0.46.44 a v0.46.45 (případně i v0.46.46 a v0.46.47, pokud mezitím vzniknou a nebudou zveřejněné); jejich zmínky níže jsou historie.
-- **v0.46.57:** připravovaný Preview kandidát s fialovou mapou aktivity a dosud nezveřejněnými změnami 0.46.56. `v0.46.56` zůstává neměnný neveřejný Draft; veřejné Preview `v0.46.55`.
+- **v0.46.57:** připravovaný Preview kandidát s fialovou mapou aktivity; navazuje na zveřejněné Preview `v0.46.56` a nemění jeho neměnné binární přílohy.
+- **v0.46.56: Preview zveřejněné 21. 10. 2026 (přehled agentů, hromadný výběr, rozšíření a hledání dovedností).**
 - **v0.46.55: Preview zveřejněné 21. 10. 2026 (rozhodování v Agenteeq dotažené).**
 - **v0.46.54: Preview zveřejněné 21. 10. 2026 (rozhodnutí agenta v aplikaci, Beta).**
 - **v0.46.53: Preview zveřejněné 21. 10. 2026 (okno „Našli jsme na tvém Macu“, aktualizace rozšíření z jeho okna).**
