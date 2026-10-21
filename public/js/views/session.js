@@ -1,3 +1,4 @@
+import { rozhodnutiPro, tlacitkaRozhodnuti } from '../rozhodnuti-data.js';
 import { agentRobot } from '../home-studio.js';
 import { editAgentAppearance } from '../agent-appearance.js';
 import { state, emit } from '../state.js';
@@ -393,7 +394,7 @@ function update() {
     ${akce ? `<div class="session-actions">${akce}</div>` : ''}`);
 
   fill(el, 'banner', s.status === 'needs_input'
-    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
+    ? `<div class="banner banner--action" role="alert">${ICON.hand}<div><strong>${esc(kindLabel(s.pending?.kind))}</strong><p>${esc(s.reason)}</p>${rozhodnutiPro(s) ? `${rozhodnutiPro(s).podrobnost ? `<pre class="rozh-prikaz">${esc(rozhodnutiPro(s).podrobnost)}</pre>` : ''}<div class="banner-actions">${tlacitkaRozhodnuti(rozhodnutiPro(s), { small: true })}</div>` : s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : `<p class="small muted">${esc(howToAnswer(s))}</p>`}</div></div>`
     : s.status === 'limited'
       ? `<div class="banner banner--limit" role="alert">${ICON.alert}<div><strong>${tr('Vyčerpaný limit')}</strong><p>${esc(s.reason)}</p>${s.limit?.resetsAt && !s.limit.label ? `<p class="small muted">${tr('Obnoví se {0}.', dateTime(s.limit.resetsAt))}</p>` : ''}</div></div>`
       : s.status === 'failed'

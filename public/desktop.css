@@ -236,5 +236,12 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
 .rozh-slozka span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rozh-cas { margin: 12px 0 0; color: var(--mute); font-size: 12px; }
 .rozh-akce { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-@media (max-width: 680px) { .rozh-oblast { right: 16px; left: 16px; width: auto; } .rozh-akce .btn { flex: 1; } }
+@media (max-width: 680px) { .rozh-oblast { right: 16px; left: 16px; width: auto; } }
 @media (prefers-reduced-motion: reduce) { .rozh-karta { animation: none; } }
+.rozh-pravidlo { margin: 8px 0 0; color: var(--mute); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.rozh-akce { flex-wrap: wrap; }
+/* Tři volby: Zamítnout a Povolit vedle sebe, trvalé povolení celou šířkou pod nimi. */
+.rozh-karta .rozh-akce { display: grid; grid-template-columns: 1fr 1fr; }
+.rozh-karta .rozh-akce [data-rozh-akce="povolit-vzdy"] { grid-column: 1 / -1; order: 3; }
+.rozh-karta[hidden] { display: none; }
+.banner .rozh-prikaz { margin: 8px 0 0; }

@@ -482,6 +482,15 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   skutečném Claude Code:** jestli terminál ukazuje dotaz už během čekání hooku, nebo až po něm
   (pak se dotaz v terminálu objeví nejvýš po 45 s); proto se čeká jen, když je okno Agenteeq vidět
   (hlášení `/api/ui/pritomnost`), a funkce jde vypnout (`notifications.rozhodnuti`).
+- **Povolit a příště se neptat** (od 0.46.55): z `permission_suggestions` se bere první položka
+  `addRules` s `behavior: allow` a místem `session` / `localSettings` / `projectSettings` /
+  `userSettings`, beze změny se vrátí v `decision.updatedPermissions`. Že Claude Code takové
+  pravidlo uloží, vychází z dokumentace (formát „permission update entries“), na skutečném
+  Claude Code neověřeno.
+- **Zmizení karty** (od 0.46.55): `PostToolUse` téhož `tool_use_id` (z posledního `PreToolUse` před
+  žádostí), `PreToolUse` jiného nástroje, `UserPromptSubmit`, `Stop`, `SessionEnd`, nebo zavřené spojení
+  hooku. Že Claude Code při vypršení ukončí i curl (celou skupinu procesů), neověřeno; jinak karta
+  zmizí nejpozději po 45 s.
 - V neinteraktivním režimu (`claude -p`, pomocní agenti na pozadí) Claude Code podle dokumentace
   žádost bez rozhodnutí hooku zamítne – to je jeho výchozí chování, Agenteeq ho nemění.
 
