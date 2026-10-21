@@ -530,6 +530,74 @@ async function zkontrolujVyskyRadku(browser, engine) {
   results.push({ engine, check: 'ovládací prvky v jednom řádku mají stejnou výšku' });
 }
 
+// Regresní kontrola: primární CTA má v Noci světlé pozadí, takže výchozí
+// automatické invertování monochromatických log vytvářelo bílou na bílé.
+// Měříme skutečné vykreslené CSS pro všechny čtyři vzhledy, monochromatická
+// loga různých poskytovatelů, běžné tlačítko i vektorový fallback.
+async function zkontrolujKontrastLogVCTA(page, engine) {
+  const result = await page.evaluate(async () => {
+    const { openButtons } = await import('/js/ui.js');
+    const root = document.documentElement;
+    const original = { theme: root.dataset.theme, look: root.dataset.look };
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;top:-2000px;left:0;display:flex;gap:8px';
+    document.body.append(host);
+    const issues = [];
+    const colors = (input) => {
+      const values = String(input).match(/[\\d.]+/g)?.slice(0, 3).map(Number);
+      return values?.length === 3 ? values : null;
+    };
+    const luminance = (rgb) => {
+      const linear = rgb.map((n) => {
+        const c = n / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    };
+    const contrast = (a, b) => {
+      const x = luminance(a), y = luminance(b);
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    try {
+      const mono = ['openai', 'githubcopilot', 'grok', 'cursor', 'ollama', 'lmstudio', 'windsurf', 'kiro', 'zed', 'goose', 'opencode', 'antigravity', 'aistudio', 'notebooklm', 'trae', 'v0'];
+      for (const look of ['obloha', 'koncert']) for (const theme of ['light', 'dark']) {
+        root.dataset.look = look;
+        root.dataset.theme = theme;
+        for (const key of mono) for (const primary of [true, false]) {
+          const session = { id: 'qa-logo-' + key, logo: key, open: [{ id: 'app', label: 'Otevřít konverzaci' }] };
+          host.innerHTML = openButtons(session, { small: true, primary });
+          const button = host.querySelector('button');
+          const img = button?.querySelector('img.logo--mono');
+          if (!img) { issues.push(look + '/' + theme + '/' + key + ': logo missing'); continue; }
+          const filter = getComputedStyle(img).filter;
+          const expected = (primary ? theme === 'light' : theme === 'dark') ? 'invert(1)' : 'none';
+          if (filter !== expected) issues.push(look + '/' + theme + '/' + key + (primary ? '/primary' : '/secondary') + ': filter=' + filter + ', expected ' + expected);
+          if (primary) {
+            const bg = colors(getComputedStyle(button).backgroundColor);
+            if (!bg) issues.push(look + '/' + theme + '/' + key + ': no solid CTA background');
+            else {
+              const logoColor = filter === 'invert(1)' ? [255, 255, 255] : [0, 0, 0];
+              const ratio = contrast(logoColor, bg);
+              if (ratio < 4.5) issues.push(look + '/' + theme + '/' + key + ': logo contrast ' + ratio.toFixed(2) + ':1');
+            }
+          }
+        }
+        const session = { id: 'qa-fallback', provider: 'other', open: [{ id: 'app', label: 'Otevřít konverzaci' }] };
+        host.innerHTML = openButtons(session, { primary: true });
+        const fallback = host.querySelector('.btn--primary .glyph');
+        const buttonColor = getComputedStyle(host.querySelector('button')).color;
+        if (!fallback || getComputedStyle(fallback).color !== buttonColor) issues.push(look + '/' + theme + ': fallback glyph differs from CTA text');
+      }
+    } finally {
+      host.remove();
+      if (original.theme === undefined) delete root.dataset.theme; else root.dataset.theme = original.theme;
+      if (original.look === undefined) delete root.dataset.look; else root.dataset.look = original.look;
+    }
+    return issues;
+  });
+  assert.deepEqual(result, [], `${engine}: kontrast poskytovatelských log na tlačítkách\n${result.join('\n')}`);
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   let accountSnapshot = null;
@@ -595,6 +663,7 @@ for (const engine of engines) {
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);
+    await zkontrolujKontrastLogVCTA(page, engine);
     const malePismo = await page.evaluate(() => {
       const nodes = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
