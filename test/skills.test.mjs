@@ -60,3 +60,51 @@ test('Dovednosti: prázdný a chybějící domov nic nerozbije', async () => {
   const skills = createSkills({ config });
   assert.deepEqual(await skills.list(), []);
 });
+
+test('Dovednosti: najde také ~/skills a vlastní adresáře Claude Code i Codexu', async () => {
+  const home = await tempDir();
+  const claude = path.join(home, 'custom-claude');
+  const codex = path.join(home, 'custom-codex');
+  const config = loadConfig({
+    AGENTEEQ_SOURCE_HOME: home,
+    AGENTEEQ_HOME: home,
+    AGENTEEQ_CLAUDE_CONFIG_DIR: claude,
+    AGENTEEQ_CODEX_HOME: codex,
+  });
+  await writeSkill(home, ['skills', 'taste', 'SKILL.md'], '---\nname: Taste\ndescription: Design judgment\n---\n');
+  await writeSkill(home, ['custom-claude', 'skills', 'claude-extra', 'SKILL.md'], '---\nname: Claude extra\n---\n');
+  await writeSkill(home, ['custom-codex', 'skills', 'codex-extra', 'SKILL.md'], '---\nname: Codex extra\n---\n');
+
+  const list = await createSkills({ config }).list();
+  assert.deepEqual(list.map(({ name, sourceId }) => [name, sourceId]), [
+    ['Claude extra', 'claude'],
+    ['Codex extra', 'codex'],
+    ['Taste', 'user-skills'],
+  ]);
+  assert.equal(createSkills({ config }).rootOf({ tool: 'claude', rel: ['skills'] }), path.join(claude, 'skills'));
+});
+
+test('Dovednosti: sleduje symlinkované adresáře a soubory bez duplicit a cyklů', async (t) => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
+  const target = await writeSkill(home, ['shared-target', 'SKILL.md'], '---\nname: Linked skill\n---\n');
+  await fs.mkdir(path.join(home, '.agents', 'skills'), { recursive: true });
+  await fs.symlink(path.dirname(target), path.join(home, '.agents', 'skills', 'linked'), 'dir');
+  await fs.symlink(path.join(home, '.agents', 'skills'), path.join(path.dirname(target), 'cycle'), 'dir');
+  await fs.symlink(path.dirname(target), path.join(home, 'skills'), 'dir');
+  await fs.mkdir(path.join(home, '.claude', 'skills', 'file-linked'), { recursive: true });
+  await fs.symlink(target, path.join(home, '.claude', 'skills', 'file-linked', 'SKILL.md'));
+  const list = await createSkills({ config }).list();
+  assert.equal(list.filter((skill) => skill.name === 'Linked skill').length, 1);
+  assert.match(list.find((skill) => skill.name === 'Linked skill').dir, /\.agents[\\/]skills[\\/]linked$/);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+});
+
+test('Dovednosti: seznam není potichu omezen na prvních 400 položek', async () => {
+  const home = await tempDir();
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
+  for (let i = 0; i < 405; i++) {
+    await writeSkill(home, ['.agents', 'skills', `skill-${String(i).padStart(3, '0')}`, 'SKILL.md'], `---\nname: Skill ${i}\n---\n`);
+  }
+  assert.equal((await createSkills({ config }).list()).length, 405);
+});
