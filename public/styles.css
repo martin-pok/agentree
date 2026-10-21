@@ -196,6 +196,15 @@ code { font-family: var(--f-code); font-size: max(12px, .9em); }
 html[data-theme='dark'] .logo--mono { filter: invert(1); }
 /* Výjimka: bílý čip v živém pásu zůstává bílý i v noci, takže tam platí černá varianta. */
 html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
+/* Primární tlačítko má opačnou polaritu než plocha stránky: ve Dni tmavé pozadí,
+   v Noci světlé. Logo nelze barvit podle data-theme samotného; černý SVG v tmavém
+   režimu na světlém CTA splýval s pozadím (ChatGPT, Copilot, Cursor, Grok...).
+   Platí pro všechny monochromatické značky a obě rodiny vzhledu (Obloha/Koncert). */
+.btn--primary .logo--mono { filter: invert(1); }
+html[data-theme='dark'] .btn--primary .logo--mono { filter: none; }
+/* Záložní vektorová značka musí stejně jako text použít barvu konkrétního CTA,
+   ne natvrdo bílou z glyph(..., {onDark:true}). */
+.btn--primary .glyph { color: var(--on-action) !important; }
 .g { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .gf { fill: currentColor; stroke: none; }
 .muted { color: var(--mute); }
