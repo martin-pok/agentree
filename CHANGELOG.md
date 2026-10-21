@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydáno
+
+- **Statistiky:** mapa „Kdy agenti pracují“ používá místo okrové značkovou fialovou škálu. Intenzita stále odpovídá skutečné aktivitě; barva se přizpůsobuje světlému a tmavému vzhledu.
+
 ## 0.46.56 – 2026-10-21 · Přehled agentů, výběr a napojení rozšíření
 
 - **Agenti:** hromadné zařazování konverzací jasně odlišuje plné tlačítko od filtrů, přesně počítá vybratelné konverzace, zachová výběr napříč filtry s viditelným upozorněním a potvrzuje počet položek v dialogu.

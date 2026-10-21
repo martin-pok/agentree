@@ -254,6 +254,10 @@ Usazení šatníku na devět postav (rozhodnutí vlastníka 18. 10. 2026, po če
 
 **Stav:** šatník a dialog přepracované na zadání majitele z reportu (bod 10.5); čeká na ověření na Macu.
 
+## Statistiky: mapa aktivity
+
+Mapa „Kdy agenti pracují“ míchá značkovou fialovou `--brand` s neutrální `--line-2` podle skutečné intenzity. Nulová aktivita zůstává neutrální. Token `--brand` má samostatnou hodnotu pro světlý a tmavý vzhled; stavové pigmenty zde nenesou význam.
+
 ## Přehled: pozdrav a Stav agentů (Figma, 18. 10. 2026)
 
 - Pozdrav má zprava jemný fialový přechod: dvě rozmazané skvrny s 18–30 % sytosti, které se

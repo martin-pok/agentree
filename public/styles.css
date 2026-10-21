@@ -1288,7 +1288,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .heat { position: relative; display: grid; gap: 4px; }
 .heat-row { display: grid; grid-template-columns: 24px repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center; }
 .heat-day { font-size: 12px; color: var(--mute); transition: color var(--motion-response) var(--ease); }
-.heat-cell { position: relative; display: block; aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--brass) calc(var(--v) * 100%), var(--line-2)); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease), border-radius var(--motion-response) var(--ease); }
+.heat-cell { position: relative; display: block; aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--brand) calc(var(--v) * 100%), var(--line-2)); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease), border-radius var(--motion-response) var(--ease); }
 .heat-hours span { font: 400 12px/1 var(--f-mono); color: var(--mute); transition: color var(--motion-response) var(--ease); }
 .heat-day.is-hot, .heat-hours span.is-hot { color: var(--ink); }
 .heat-tip { position: absolute; z-index: 4; left: 0; top: 0; min-width: 176px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--ink-surface); color: var(--on-ink); box-shadow: var(--shadow-sm); display: grid; gap: 4px; pointer-events: none; font-size: 12px; animation: heat-tip-in .16s var(--ease) both; }
