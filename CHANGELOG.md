@@ -2,6 +2,7 @@
 
 ## Nepublikované změny
 
+- **Chrome Web Store:** vydávací workflow nyní skončí chybou, pokud chybí OAuth secrets; prázdné nahrání už nemůže vypadat jako úspěšné vydání.
 - **Dovednosti:** seznam nově zahrnuje `~/skills`, vlastní umístění `CLAUDE_CONFIG_DIR` a `CODEX_HOME` a symlinkované soubory i složky. Stejný soubor připojený na více místech se ukáže jen jednou; cykly symlinků se bezpečně přeskočí. Odstraněn byl také tichý limit 400 položek. Seznam se dál obnovuje při otevření stránky, po návratu do okna a každých 30 sekund.
 
 ## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené

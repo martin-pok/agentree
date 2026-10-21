@@ -13,12 +13,13 @@ test('Chrome Web Store: po zveřejnění vydání nahraje ověřený ZIP do exis
   assert.match(yml, /chromewebstore\/v1\.1\/items\/\$ITEM_ID\/publish/);
 });
 
-test('Chrome Web Store: tajné hodnoty jen v kroku nahrání, token maskovaný, bez nich jen varování', () => {
+test('Chrome Web Store: tajné hodnoty jen v kroku nahrání, token maskovaný, chybějící secrets blokují release', () => {
   const kroky = yml.split(/^ {6}- /m).slice(1);
   const sTajemstvim = kroky.filter((k) => /secrets\./.test(k));
   assert.equal(sTajemstvim.length, 1);
   assert.match(sTajemstvim[0], /^name: Nahrát do Chrome Web Store/);
   assert.match(yml, /::add-mask::\$TOKEN/);
-  assert.match(yml, /::warning::Chybí CWS_CLIENT_ID/);
+  assert.match(yml, /::error::Chybí CWS_CLIENT_ID/);
+  assert.match(yml, /Chybí CWS_CLIENT_ID[\s\S]*?exit 1/);
   assert.doesNotMatch(yml, /^permissions:[\s\S]*?write/m);
 });

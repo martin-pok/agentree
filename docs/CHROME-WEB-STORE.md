@@ -218,5 +218,6 @@ kontrole. Zveřejnění v obchodě pak závisí jen na kontrole Googlu.
 Jednorázově potřebuje tři tajné hodnoty repozitáře (Settings → Secrets and variables → Actions):
 `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` – OAuth klient typu Desktop v Google Cloud
 projektu se zapnutým Chrome Web Store API, přihlášený účtem vydavatele (scope
-`https://www.googleapis.com/auth/chromewebstore`). Bez nich workflow jen ohlásí varování a nic
-nenahraje. Obrázky v záznamu obchodu API nemění; ty se mění ručně v Developer Dashboard.
+`https://www.googleapis.com/auth/chromewebstore`). Bez nich workflow skončí chybou, aby zelený běh
+nemohl znamenat, že aktualizace ve skutečnosti nebyla nahrána. Obrázky v záznamu obchodu API
+nemění; ty se mění ručně v Developer Dashboard.
