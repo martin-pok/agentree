@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.55',
+    date: '2026-10-21',
+    title: 'Rozhodování dotažené',
+    items: [
+      'Povolit a příště se neptat – stejné pravidlo, jaké nabízí Claude Code v terminálu.',
+      'Povolit a Zamítnout jsou i v „Vyžaduje pozornost“ a v detailu agenta.',
+      'Když se rozhodne v terminálu, karta v Agenteeq hned zmizí.',
+    ],
+    en: {
+      title: 'Decisions, polished',
+      items: [
+        'Allow and don’t ask again – the same rule Claude Code offers in the terminal.',
+        'Allow and Deny are also in “Needs attention” and in the agent detail.',
+        'When you decide in the terminal, the card in Agenteeq disappears right away.',
+      ],
+    },
+  },
+  {
     version: '0.46.54',
     date: '2026-10-21',
     title: 'Rozhodni přímo v Agenteeq',

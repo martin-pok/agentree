@@ -535,8 +535,8 @@ export function createHttpServer(app, existingServer = null) {
       if (app.jePomocnikSession?.(telo?.session_id)) return { ok: true };
       const r = await app.connectors['claude-code'].ingestHook(telo);
       if (!r.ok) throw new HttpError(400, r.error);
-      // Agent pokračuje bez nás (zadání, konec tahu): karta s rozhodnutím zmizí.
-      if (['UserPromptSubmit', 'Stop', 'SessionEnd'].includes(telo?.hook_event_name)) app.rozhodnuti?.vyrizeno(telo.session_id);
+      // Agent pokračuje bez nás (rozhodl se v terminálu, další nástroj, zadání, konec tahu): karta zmizí.
+      app.rozhodnuti?.pokracoval(telo.session_id, telo.hook_event_name, typeof telo.tool_use_id === 'string' ? telo.tool_use_id : '');
       return r;
     }, { token: true }],
     // Hook PermissionRequest (src/rozhodnuti.js): čeká na rozhodnutí v Agenteeq. Prázdná odpověď =
@@ -547,11 +547,18 @@ export function createHttpServer(app, existingServer = null) {
       const prazdna = { raw: true, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }, body: '' };
       if (app.jePomocnikSession?.(telo?.session_id)) return prazdna;
       await app.connectors['claude-code'].ingestHook(telo).catch(() => {});
-      const vystup = await app.rozhodnuti.zadost(telo);
+      // Hook skončil dřív (Claude Code ho ukončil, curl vypršel): spojení se zavře a karta zmizí.
+      const preruseni = new AbortController();
+      const zavreno = () => preruseni.abort();
+      req.socket.once('close', zavreno);
+      const sid = typeof telo?.session_id === 'string' ? telo.session_id : '';
+      const toolUseId = app.store.sessions?.get?.(`claude-code:${sid}`)?.hookTool || '';
+      const vystup = await app.rozhodnuti.zadost(telo, { toolUseId, signal: preruseni.signal });
+      req.socket.off('close', zavreno);
       return vystup ? { ...prazdna, body: JSON.stringify(vystup) } : prazdna;
     }, { token: true }],
     // Kliknutí „Povolit“ / „Zamítnout“ v Agenteeq. Jen u Macu – telefon je ke čtení.
-    ['POST', /^\/api\/rozhodnuti\/([\w-]{6,40})\/(povolit|zamitnout)$/, (req, m) => {
+    ['POST', /^\/api\/rozhodnuti\/([\w-]{6,40})\/(povolit|povolit-vzdy|zamitnout)$/, (req, m) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Rozhodnout za agenta lze jen {0}.', POCITAC.naHostiteli));
       const r = app.rozhodnuti.rozhodni(m[1], m[2]);
       if (r.status) throw new HttpError(r.status, r.error);

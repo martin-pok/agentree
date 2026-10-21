@@ -1,3 +1,4 @@
+import { rozhodnutiPro, tlacitkaRozhodnuti } from './rozhodnuti-data.js';
 import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
@@ -534,7 +535,7 @@ export function decisionCard(s) {
       <a class="decision-title" href="${agentHref(s.id)}">${esc(s.title)}</a>
     </div>
     <div class="decision-actions">
-      ${s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
+      ${rozhodnutiPro(s) ? tlacitkaRozhodnuti(rozhodnutiPro(s), { small: true }) : s.open?.length ? openButtons(s, { small: true, max: 2 }) : `<a class="btn btn--sm btn--primary" href="${agentHref(s.id)}">${tr('Detail')}</a>`}
       ${s.open?.length ? `<a class="link decision-detail" href="${agentHref(s.id)}">${tr('Detail agenta')}${ICON.arrow || ''}</a>` : ''}
     </div>
   </li>`;

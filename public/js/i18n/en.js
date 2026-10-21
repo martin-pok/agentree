@@ -7,6 +7,13 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "jen v této konverzaci": "only in this conversation",
+    "v tomto projektu, jen u tebe": "in this project, just for you",
+    "v tomto projektu pro všechny": "in this project for everyone",
+    "ve všech projektech": "in all projects",
+    "Povolit a příště se neptat": "Allow and don’t ask again",
+    "Příště se neptat na: {0} ({1})": "Don’t ask again for: {0} ({1})",
+    "Povoleno. Na stejnou akci se Claude Code příště nezeptá.": "Allowed. Claude Code won’t ask about the same action again.",
     "Claude Code žádá o povolení": "Claude Code is asking for permission",
     "Bez rozhodnutí se za {0} s zeptá v terminálu.": "Without a decision it asks in the terminal in {0} s.",
     "Zamítnout": "Deny",

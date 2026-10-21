@@ -437,7 +437,7 @@ function update(topics = new Set(['all'])) {
 
   const hooks = state.integrations?.claudeHooks;
   if (changed(topics, 'settings')) v.board?.reload();
-  if (changed(topics, 'sessions', 'integrations', 'limits', 'tick')) zivy(el, 'decisions', attention.length
+  if (changed(topics, 'sessions', 'integrations', 'limits', 'tick', 'rozhodnuti')) zivy(el, 'decisions', attention.length
     ? `<ul class="decisions">${attention.slice(0, 4).map(decisionCard).join('')}</ul>${attention.length > 4 ? `<a class="link more" href="#/agenti">${plural(attention.length - 4, 'A další {0}', 'A další {0}', 'A dalších {0}').replace('{0}', attention.length - 4)}</a>` : ''}`
     : klid(all, hooks, now));
   if (changed(topics, 'sessions', 'tick')) {

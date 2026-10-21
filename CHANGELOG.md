@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené
+
+- **Povolit a příště se neptat:** když Claude Code k žádosti nabídne trvalé pravidlo (stejné, jaké nabízí v terminálu), karta ho ukáže celé i s tím, kam se uloží („v tomto projektu, jen u tebe“, „jen v této konverzaci“…), a jedním klepnutím ho potvrdíš. Agenteeq žádné pravidlo nevymýšlí a nic v něm nemění.
+- **Rozhodnutí tam, kde agent čeká:** tlačítka Zamítnout / Povolit jsou i přímo v „Vyžaduje pozornost“ na Přehledu a v detailu agenta, s celým příkazem. Karta v rohu se schová, když jsou tatáž tlačítka vidět na stránce, a nic nezakrývá. Klepnutí kdekoli vyřídí žádost všude.
+- **Vždy aktuální:** karta zmizí hned, jakmile se rozhodlo jinde – odpověď v terminálu (doběhl nástroj, o který šlo, nebo začal jiný), nové zadání, konec tahu, nebo když Claude Code hook ukončí. Nikdy nezůstane viset tlačítko, které už nic neudělá.
+- **Bez zdvojené bubliny:** u žádosti, o které jde rozhodnout v Agenteeq, se místo bubliny „Otevřít“ ukáže rovnou karta s volbami.
+
 ## 0.46.54 – 2026-10-21 · Rozhodnutí agenta přímo v Agenteeq
 
 - **Povolit nebo zamítnout přímo v aplikaci (Beta):** když Claude Code žádá o povolení nástroje a okno Agenteeq je otevřené, vpravo dole se objeví karta s celým příkazem nebo souborem, složkou a tlačítky **Povolit** a **Zamítnout**. Rozhodnutí se vrátí do Claude Code a agent pokračuje. Zamítnutí agentovi řekne, že akci nechceš, ale nezastaví ho.

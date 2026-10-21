@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 21. 10. 2026:** veřejné Preview je [`v0.46.53`](https://github.com/martin-pok/agentree/releases/tag/v0.46.53); připravuje se `v0.46.54` (rozhodnutí agenta přímo v Agenteeq). Stable Latest zůstává `v0.46.0`.
+**Stav 21. 10. 2026:** veřejné Preview je [`v0.46.54`](https://github.com/martin-pok/agentree/releases/tag/v0.46.54); připravuje se `v0.46.55` (rozhodování v Agenteeq dotažené). Stable Latest zůstává `v0.46.0`.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +8,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 21. 10. 2026:** kandidát **0.46.54 Preview** (`v0.46.54`) přidává schválení nebo zamítnutí žádosti Claude Code o povolení přímo v aplikaci (hook PermissionRequest, Beta). Veřejné Preview je `v0.46.53`.
+**Aktuální release vlak 21. 10. 2026:** kandidát **0.46.55 Preview** (`v0.46.55`) dotahuje rozhodování v aplikaci: trvalé pravidlo podle návrhu Claude Code, tlačítka u agenta, okamžité zmizení karty po rozhodnutí jinde. Veřejné Preview je `v0.46.54`.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

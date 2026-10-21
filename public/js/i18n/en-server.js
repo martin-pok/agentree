@@ -3,6 +3,7 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Claude Code k této žádosti trvalé povolení nenabídl.": "Claude Code didn’t offer a permanent permission for this request.",
   "Rozhodnout za agenta lze jen {0}.": "You can decide for the agent only {0}.",
   "Neznámé rozhodnutí.": "Unknown decision.",
   "Na tuhle žádost už se čekat přestalo. Agent se zeptá v terminálu.": "This request is no longer waiting. The agent will ask in the terminal.",

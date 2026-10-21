@@ -8,9 +8,7 @@ import { esc } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { toast } from './ui.js';
 import { tr } from './i18n.js';
-
-// Rozhodovat smí jen okno na počítači s Agenteeq – telefon je jen ke čtení (src/remote-scope.js).
-const naMacu = () => Boolean(window.agenteeqDesktop) || ['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname);
+import { naMacu, tlacitkaRozhodnuti, kdePravidlo } from './rozhodnuti-data.js';
 
 let oblast = null;
 let tik = 0;
@@ -32,11 +30,9 @@ function karta(r) {
     <p class="rozh-popis">${esc(r.popis || r.nastroj)}</p>
     ${r.podrobnost ? `<pre class="rozh-prikaz">${esc(r.podrobnost)}</pre>` : ''}
     ${r.cwd ? `<p class="rozh-slozka">${ICON.folder}<span>${esc(r.cwd)}</span></p>` : ''}
+    ${r.pravidlo ? `<p class="rozh-pravidlo">${esc(tr('Příště se neptat na: {0} ({1})', r.pravidlo.text, kdePravidlo(r)))}</p>` : ''}
     <p class="rozh-cas" data-rozh-cas>${esc(tr('Bez rozhodnutí se za {0} s zeptá v terminálu.', zbyva(r)))}</p>
-    <footer class="rozh-akce">
-      <button type="button" class="btn" data-rozh-akce="zamitnout"${ceka ? ' disabled' : ''}>${tr('Zamítnout')}</button>
-      <button type="button" class="btn btn--primary" data-rozh-akce="povolit"${ceka ? ' disabled' : ''}>${tr('Povolit')}</button>
-    </footer>
+    <footer class="rozh-akce">${tlacitkaRozhodnuti(r, { odeslano: ceka })}</footer>
   </article>`;
 }
 
@@ -57,6 +53,25 @@ function vykresli() {
   }
   oblast.hidden = false;
   if (!tik) tik = setInterval(odpocet, 1000);
+  requestAnimationFrame(schovejDvojniky);
+}
+
+// Když jsou tlačítka téže žádosti vidět přímo na stránce (Vyžaduje pozornost, detail agenta), karta
+// v rohu by je jen zakrývala – schová se. Jinde (jiná stránka, odrolováno) zůstane.
+function schovejDvojniky() {
+  if (!oblast) return;
+  let vidno = 0;
+  for (const karta of oblast.querySelectorAll('[data-rozh]')) {
+    const id = karta.dataset.rozh;
+    const naStrance = [...document.querySelectorAll(`[data-rozh-id="${CSS.escape(id)}"]`)].some((b) => {
+      if (oblast.contains(b)) return false;
+      const rect = b.getBoundingClientRect();
+      return rect.width > 0 && rect.bottom > 0 && rect.top < innerHeight;
+    });
+    karta.hidden = naStrance;
+    if (!naStrance) vidno++;
+  }
+  oblast.hidden = vidno === 0;
 }
 
 function odpocet() {
@@ -71,20 +86,22 @@ function odpocet() {
   if (konec) vykresli();
 }
 
+// Všechna tlačítka téže žádosti (roh, Přehled, detail agenta) se zamknou naráz.
+const tlacitkaZadosti = (id) => document.querySelectorAll(`[data-rozh-id="${CSS.escape(id)}"]`);
+
 async function rozhodni(tlacitko) {
-  const el = tlacitko.closest('[data-rozh]');
-  const id = el?.dataset.rozh;
+  const id = tlacitko.dataset.rozhId;
   if (!id || odeslane.has(id)) return;
   odeslane.add(id);
-  el.querySelectorAll('[data-rozh-akce]').forEach((b) => { b.disabled = true; });
+  tlacitkaZadosti(id).forEach((b) => { b.disabled = true; });
   const akce = tlacitko.dataset.rozhAkce;
   try {
     await api.rozhodnout(id, akce);
-    toast(akce === 'povolit' ? tr('Povoleno. Agent pokračuje.') : tr('Zamítnuto. Agent dostal zprávu, že akci nechceš.'), { tone: 'ok' });
+    toast(akce === 'zamitnout' ? tr('Zamítnuto. Agent dostal zprávu, že akci nechceš.') : akce === 'povolit-vzdy' ? tr('Povoleno. Na stejnou akci se Claude Code příště nezeptá.') : tr('Povoleno. Agent pokračuje.'), { tone: 'ok' });
   } catch (err) {
     odeslane.delete(id);
     toast(err.message || tr('Rozhodnutí se nepodařilo odeslat. Agent se zeptá v terminálu.'), { tone: 'err', timeout: 8000 });
-    el.querySelectorAll('[data-rozh-akce]').forEach((b) => { b.disabled = false; });
+    tlacitkaZadosti(id).forEach((b) => { b.disabled = false; });
   }
 }
 
@@ -96,12 +113,19 @@ export function initRozhodnuti() {
   oblast.setAttribute('aria-label', tr('Žádosti agentů o povolení'));
   oblast.setAttribute('aria-live', 'polite');
   document.body.append(oblast);
-  oblast.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-rozh-akce]');
+  // Na dokumentu: tlačítka stojí i na Přehledu a v detailu agenta.
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest?.('[data-rozh-akce][data-rozh-id]');
     if (b && !b.disabled) rozhodni(b);
   });
   subscribe((topics) => {
     if (!topics || topics.has?.('rozhodnuti') || topics.has?.('all')) vykresli();
+    else if (oblast.childElementCount) requestAnimationFrame(schovejDvojniky);
   });
+  let posun = 0;
+  const pozdeji = () => { if (!posun && oblast.childElementCount) posun = requestAnimationFrame(() => { posun = 0; schovejDvojniky(); }); };
+  window.addEventListener('hashchange', () => setTimeout(pozdeji, 50));
+  window.addEventListener('scroll', pozdeji, { passive: true });
+  window.addEventListener('resize', pozdeji);
   vykresli();
 }

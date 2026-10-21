@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { spawn } from 'node:child_process';
-import { createRozhodnuti, vystupRozhodnuti, podrobnost } from '../src/rozhodnuti.js';
+import { createRozhodnuti, vystupRozhodnuti, podrobnost, pravidloZNavrhu } from '../src/rozhodnuti.js';
 import { claudeSettingsPath, rozhodnutiCommand } from '../src/hooks-installer.js';
 import { startTestServer, api, openStream, waitFor } from './helpers.mjs';
 
@@ -58,6 +58,62 @@ test('rozhodnutí: podrobnost je celá akce, ne zkratka', () => {
   assert.equal(podrobnost('mcp__x__y', { a: 1 }), '');
 });
 
+const NAVRH = [{ type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm run build:*' }], behavior: 'allow', destination: 'localSettings' }];
+
+test('rozhodnutí: „Povolit a příště se neptat“ vrátí přesně pravidlo, které navrhl Claude Code', async () => {
+  const r = createRozhodnuti({ videt: () => true });
+  const p = r.zadost(zadost({ permission_suggestions: [{ type: 'setMode', mode: 'acceptEdits', destination: 'session' }, ...NAVRH] }));
+  const [z] = r.seznam();
+  assert.deepEqual(z.pravidlo, { text: 'Bash(npm run build:*)', kde: 'localSettings' });
+  assert.deepEqual(r.rozhodni(z.id, 'povolit-vzdy'), { ok: true });
+  assert.deepEqual((await p).hookSpecificOutput.decision, { behavior: 'allow', updatedPermissions: NAVRH });
+
+  // Bez návrhu žádné trvalé pravidlo – Agenteeq si ho nevymýšlí.
+  const q = r.zadost(zadost());
+  const [bez] = r.seznam();
+  assert.equal(bez.pravidlo, null);
+  assert.equal(r.rozhodni(bez.id, 'povolit-vzdy').status, 400);
+  r.rozhodni(bez.id, 'povolit');
+  assert.deepEqual((await q).hookSpecificOutput.decision, { behavior: 'allow' });
+});
+
+test('rozhodnutí: z návrhů se bere jen povolení s pravidly a známým místem, nic se nepřidá', () => {
+  assert.equal(pravidloZNavrhu(null), null);
+  assert.equal(pravidloZNavrhu([{ type: 'addRules', rules: [{ toolName: 'Bash' }], behavior: 'deny', destination: 'session' }]), null);
+  assert.equal(pravidloZNavrhu([{ type: 'addRules', rules: [{ toolName: 'Bash' }], behavior: 'allow', destination: '/etc' }]), null);
+  assert.equal(pravidloZNavrhu([{ type: 'addRules', rules: [], behavior: 'allow', destination: 'session' }]), null);
+  assert.deepEqual(pravidloZNavrhu([{ type: 'addRules', rules: [{ toolName: 'Read', extra: 'x' }], behavior: 'allow', destination: 'session', navic: 1 }]),
+    { type: 'addRules', rules: [{ toolName: 'Read' }], behavior: 'allow', destination: 'session' });
+});
+
+test('rozhodnutí: karta zmizí, jakmile se rozhodlo jinde nebo hook skončil', async () => {
+  const r = createRozhodnuti({ videt: () => true });
+  // Doběhl nástroj, o který šlo (odpověď v terminálu).
+  const a = r.zadost(zadost(), { toolUseId: 'toolu_1' });
+  r.pokracoval(SID, 'PostToolUse', 'toolu_jiny');
+  assert.equal(r.seznam().length, 1, 'souběžný nástroj žádost neruší');
+  r.pokracoval(SID, 'PostToolUse', 'toolu_1');
+  assert.equal(await a, null);
+  // Začal jiný nástroj (zamítnuto v terminálu).
+  let t = 1000;
+  const r2 = createRozhodnuti({ videt: () => true, now: () => t });
+  const b = r2.zadost(zadost(), { toolUseId: 'toolu_1' });
+  t += 10;
+  r2.pokracoval(SID, 'PreToolUse', 'toolu_2');
+  assert.equal(await b, null);
+  // Claude Code hook ukončil.
+  const ac = new AbortController();
+  const c = r.zadost(zadost(), { signal: ac.signal });
+  ac.abort();
+  assert.equal(await c, null);
+  assert.deepEqual(r.seznam(), []);
+  assert.equal(await r.zadost(zadost(), { signal: ac.signal }), null, 'už ukončený hook se neukáže');
+  // Konec tahu.
+  const d = r.zadost(zadost());
+  r.pokracoval(SID, 'Stop');
+  assert.equal(await d, null);
+});
+
 const sh = (command, stdin) => new Promise((resolve, reject) => {
   const child = spawn('sh', ['-c', command]);
   let stdout = '';
@@ -98,6 +154,13 @@ test('rozhodnutí: skutečný hook přes curl – povolení z okna dojde do Clau
   const vysledek = await beh;
   assert.equal(vysledek.code, 0);
   assert.deepEqual(JSON.parse(vysledek.stdout).hookSpecificOutput.decision, { behavior: 'allow' });
+
+  // Claude Code hook ukončí i s curl (vyprší mu čas): karta v Agenteeq zmizí, nečeká dál.
+  const ukonceny = spawn('sh', ['-c', hook], { detached: true });
+  ukonceny.stdin.end(JSON.stringify(zadost({ session_id: 'aaaaaaaa-1111-4111-8111-000000000009' })));
+  await waitFor(() => srv.app.rozhodnuti.seznam().length === 1, 5000);
+  process.kill(-ukonceny.pid, 'SIGKILL');
+  await waitFor(() => srv.app.rozhodnuti.seznam().length === 0, 5000);
 
   // Vypnuto v Nastavení: zpátky jen terminál.
   await a.send('PUT', '/api/settings', { notifications: { rozhodnuti: false } });

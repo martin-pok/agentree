@@ -29,6 +29,7 @@ import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
 import { initObjev } from './objev-ui.js';
 import { initRozhodnuti } from './rozhodnuti-ui.js';
+import { rozhodnutiPro } from './rozhodnuti-data.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
@@ -586,7 +587,13 @@ function onAlert(a) {
   if (a.kind === 'novy-nastroj') return;
   const href = alertHref(a);
   const urgent = a.level === 'action' || a.level === 'critical';
-  toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: tr('Otevřít'), href }, timeout: urgent ? 12000 : 5000 });
+  const bublina = () => toast(`${a.title}${a.body ? ` – ${a.body}` : ''}`, { tone: a.level === 'critical' ? 'err' : urgent ? 'action' : 'info', action: { label: tr('Otevřít'), href }, timeout: urgent ? 12000 : 5000 });
+  // Žádost o povolení, o které jde rozhodnout přímo tady (rozhodnuti-ui.js): karta s Povolit /
+  // Zamítnout je lepší než bublina „Otevřít“, která by navíc tlačítka zakryla. Žádost přichází
+  // těsně po upozornění, proto se chvíli počká.
+  if (a.kind === 'needs_input' && String(a.sessionId || '').startsWith('claude-code:')) {
+    setTimeout(() => { if (!rozhodnutiPro(state.sessions.get(a.sessionId))) bublina(); }, 400);
+  } else bublina();
   const n = state.settings?.notifications;
   if (n?.browser && 'Notification' in window && Notification.permission === 'granted' && (document.hidden || !document.hasFocus())) {
     try {
