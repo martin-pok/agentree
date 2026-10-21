@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.57',
+    date: '2026-10-21',
+    title: 'Přehled a statistiky doladěné',
+    items: [
+      'Mapa práce agentů ve Statistikách má nyní fialovou škálu sladěnou se značkou.',
+      'Na kartě agenta má hlavní místo název konverzace.',
+      'Konverzace vybereš hromadně s přesným počtem položek.',
+      'Rozšíření otevře Přehled přímo v aplikaci a dovednosti se hledají v dalších složkách.',
+    ],
+    en: {
+      title: 'Overview and statistics refined',
+      items: [
+        'The agent activity map in Statistics now uses the brand purple scale.',
+        'The conversation title takes the main place on each agent card.',
+        'Select conversations in bulk with an exact item count.',
+        'The extension opens the app overview directly, and skills are found in more folders.',
+      ],
+    },
+  },
+  {
     version: '0.46.56',
     date: '2026-10-21',
     title: 'Agenti na první pohled',
