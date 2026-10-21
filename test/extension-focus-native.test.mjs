@@ -17,8 +17,31 @@ async function fixture(t, { native = true } = {}) {
   assert.equal(paired.status, 200);
   const send = (id, overrides = {}) => api(server.url).send('POST', '/api/extension/focus-agent', { id },
     { Origin: EXTENSION_ORIGIN, 'X-Agenteeq-Token': paired.token, ...overrides });
-  return { server, messages, s, paired, send };
+  const open = (overrides = {}) => api(server.url).send('POST', '/api/extension/open-app', {},
+    { Origin: EXTENSION_ORIGIN, 'X-Agenteeq-Token': paired.token, ...overrides });
+  return { server, messages, s, paired, send, open };
 }
+
+test('popup opens the existing native overview without exposing a localhost URL or window key', async (t) => {
+  const f = await fixture(t);
+  f.server.app.config.localKey = 'a'.repeat(48);
+  const response = await f.open();
+  assert.equal(response.status, 200);
+  assert.deepEqual(response.body, { ok: true, opened: true });
+  assert.deepEqual(f.messages, [{ type: 'open-app', route: '#/prehled' }]);
+  assert.doesNotMatch(JSON.stringify(response.body), /token|localKey|127\.0\.0\.1|https?:/i);
+});
+
+test('opening the overview requires local origin, a paired extension and a running native shell', async (t) => {
+  const f = await fixture(t);
+  assert.equal((await f.open({ 'X-Agenteeq-Token': '' })).status, 401);
+  assert.equal((await f.open({ Origin: 'https://evil.example' })).status, 401);
+  assert.equal((await f.open({ 'X-Forwarded-For': '198.51.100.4' })).status, 403);
+  assert.equal(f.messages.length, 0);
+  const noNative = await fixture(t, { native: false });
+  assert.equal((await noNative.open()).status, 409);
+  assert.equal(noNative.messages.length, 0);
+});
 
 test('extension focuses only a visible existing agent in the already running native window', async (t) => {
   const f = await fixture(t);
@@ -93,13 +116,18 @@ test('headless/Windows shell does not pretend to focus the unavailable macOS WKW
 
 test('native focus route code does not execute shell or accept arbitrary browser URLs', async () => {
   const swift = await fs.readFile(new URL('../desktop/Agenteeq.swift', import.meta.url), 'utf8');
+  const win = await fs.readFile(new URL('../desktop/windows/Agenteeq.cpp', import.meta.url), 'utf8');
   const app = await fs.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
   const http = await fs.readFile(new URL('../src/http.js', import.meta.url), 'utf8');
   assert.match(swift, /if type == "focus-agent"/);
+  assert.match(swift, /if type == "open-app"[\s\S]*?pendingAgentRoute = "#\/prehled"/);
+  assert.match(win, /druh == L"open-app"[\s\S]*?UkazOkno\(\);[\s\S]*?Naviguj\(L"#\/prehled"\)/);
   assert.match(swift, /route\.hasPrefix\("#\/agent\/"\)/);
   assert.match(swift, /pendingAgentRoute = route[\s\S]*?showWindow\(\)/);
   assert.match(swift, /web\.evaluateJavaScript\("location\.hash=\\\(json\)\[0\]"\)/);
   assert.match(app, /desktopReport\(\{ type: 'focus-agent', route:/);
+  assert.match(app, /desktopReport\(\{ type: 'open-app', route: '#\/prehled' \}\)/);
+  assert.match(http, /openExtensionApp/);
   assert.match(http, /if \(!zTohotoMacu\(req\)\) throw new HttpError\(403/);
   assert.match(http, /if \(!extensionOk\(req\)\) throw new HttpError\(401/);
 });

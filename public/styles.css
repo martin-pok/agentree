@@ -2629,6 +2629,9 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .filtry-rada + .filtry-rada { border-top: 1px solid var(--line-2); }
 .filtry-popis { font: 400 14px/1.2 var(--f-body); letter-spacing: 0; color: var(--mute); }
 .filtry-rada > .btn, .filtry-rada > .search-field { grid-column: 3; justify-self: end; margin: 0; }
+.agent-select-toggle { min-width: 152px; box-shadow: 0 3px 10px -6px rgba(22, 32, 58, .4); }
+.agent-select-toggle[aria-pressed='true'] { background: var(--stage-2); border-color: var(--stage-2); color: var(--on-ink); }
+.agent-select-toggle[aria-pressed='true']:hover { background: var(--ink-surface); border-color: var(--ink-surface); }
 .filtry-rada > .search-field input { width: 240px; }
 .chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
 .chips--rada::-webkit-scrollbar { display: none; }
@@ -2649,6 +2652,8 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .row[data-session-drag] { -webkit-user-drag: element; }
 .selbar:not(:empty) { position: sticky; bottom: 24px; z-index: 20; display: flex; justify-content: center; margin-top: 16px; pointer-events: none; }
 .selbar-inner { pointer-events: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 8px 8px 20px; border-radius: var(--r-full); background: var(--ink-surface); color: var(--on-ink); box-shadow: var(--shadow-lg); animation: pop .25s var(--ease) both; font-size: 14px; }
+.selbar-note { color: color-mix(in srgb, var(--on-ink) 72%, transparent); font-size: 12px; }
+.selbar-count { min-width: 20px; margin-left: 2px; padding: 2px 6px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink-surface) 12%, transparent); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
 .btn--light { background: #fff; border-color: #fff; color: var(--ink-surface); }
 /* Světlý čip leží vždy na tmavém pruhu, takže po najetí musí zůstat světlý i v noci – jinak splyne text i plocha. */
 .btn--light:hover { border-color: #EFEDF3; background: #EFEDF3; color: var(--ink-surface); }

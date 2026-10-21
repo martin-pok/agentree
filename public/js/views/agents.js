@@ -8,6 +8,7 @@ import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } fr
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
+import { selectableSessions, selectionOutsideVisible, pruneSelection } from '../agent-bulk-selection.js';
 
 const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
 const v = { el: null, visible: [], limit: Infinity, ceka: false, doplnuje: false };
@@ -206,7 +207,7 @@ function mount(el, _params, query) {
       <div class="filtry-rada">
         <span class="filtry-popis" id="ag-f-projekt">${tr('Projekt')}</span>
         <div class="chips chips--rada" role="group" aria-labelledby="ag-f-projekt" data-region="projects"></div>
-        <button class="btn" type="button" data-select-toggle>${ICON.check}<span data-region="select-label">${tr('Vybrat')}</span></button>
+    <button class="btn btn--primary agent-select-toggle" type="button" data-select-toggle aria-pressed="false"><span data-region="select-icon">${ICON.check}</span><span data-region="select-label">${tr('Vybrat konverzace')}</span></button>
       </div>
     </div>
     <div class="card table" data-enter style="--i:3" data-region="table"></div>
@@ -254,14 +255,16 @@ function mount(el, _params, query) {
       return;
     }
     if (e.target.closest('[data-select-toggle]')) {
-      f.selecting = !f.selecting;
-      f.selected.clear();
+      if (f.selecting) {
+        f.selecting = false;
+        f.selected.clear();
+      } else f.selecting = true;
       update();
       return;
     }
     const bulk = e.target.closest('[data-bulk]');
     if (bulk) {
-      if (bulk.dataset.bulk === 'all') v.visible.forEach((s) => f.selected.add(s.id));
+      if (bulk.dataset.bulk === 'all') selectableSessions(v.visible).forEach((s) => f.selected.add(s.id));
       else if (bulk.dataset.bulk === 'none') f.selected.clear();
       else if (bulk.dataset.bulk === 'assign' && f.selected.size) {
         const r = await assignDialog([...f.selected]);
@@ -275,6 +278,14 @@ function mount(el, _params, query) {
       input.value = '';
       update();
     }
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !f.selecting) return;
+    e.preventDefault();
+    f.selecting = false;
+    f.selected.clear();
+    update();
+    el.querySelector('[data-select-toggle]')?.focus();
   });
 }
 
@@ -332,7 +343,11 @@ function update() {
       ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" title="${tahni}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
       <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" title="${tahni}" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>`
     : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Založit projekt')}</a>`);
-  zivy(el, 'select-label', f.selecting ? tr('Hotovo') : tr('Vybrat'));
+  zivy(el, 'select-label', f.selecting ? tr('Ukončit výběr') : tr('Vybrat konverzace'));
+  zivy(el, 'select-icon', f.selecting ? ICON.close : ICON.check);
+  const selectToggle = el.querySelector('[data-select-toggle]');
+  selectToggle?.setAttribute('aria-pressed', String(f.selecting));
+  selectToggle?.classList.toggle('agent-select-toggle--active', f.selecting);
 
   const list = base.filter((s) => matchStatus(s, f.status)).sort(compareAgentsForList);
   // A grid cannot preserve the card under the pointer by vertical scrolling alone.
@@ -347,7 +362,7 @@ function update() {
   }
   v.filterKey = filterKey;
   v.visible = list;
-  for (const id of f.selected) if (!all.some((s) => s.id === id)) f.selected.delete(id);
+  pruneSelection(f.selected, all);
   if (!list.length) table?.classList.remove('table--roboti');
   if (!all.length) {
     zivy(el, 'table', emptyState({
@@ -376,11 +391,14 @@ function update() {
   zivy(el, 'runtimes', bezPrepisuHtml(all));
 
   const n = f.selected.size;
+  const skippedByFilter = selectionOutsideVisible(f.selected, list);
+  const selectable = selectableSessions(list);
   zivy(el, 'selbar', f.selecting
     ? `<div class="selbar-inner"><span><b>${n}</b> ${plural(n, 'vybraná', 'vybrané', 'vybraných')}</span>
-        <button class="btn btn--sm btn--on-dark" type="button" data-bulk="all">${tr('Vybrat vše ({0})', list.length)}</button>
+        ${skippedByFilter ? `<span class="selbar-note">${tr('{0} mimo aktuální filtr', skippedByFilter)}</span>` : ''}
+        <button class="btn btn--sm btn--on-dark" type="button" data-bulk="all"${selectable.length ? '' : ' disabled'}>${tr('Vybrat vše ({0})', selectable.length)}</button>
         ${n ? `<button class="btn btn--sm btn--on-dark" type="button" data-bulk="none">${tr('Zrušit výběr')}</button>` : ''}
-        <button class="btn btn--sm btn--light" type="button" data-bulk="assign"${n ? '' : ' disabled'}>${ICON.folder}${tr('Zařadit do projektu')}</button></div>`
+        <button class="btn btn--sm btn--light" type="button" data-bulk="assign"${n ? '' : ' disabled'}>${ICON.folder}${tr('Zařadit do projektu')}<span class="selbar-count">${n}</span></button></div>`
     : '');
 }
 

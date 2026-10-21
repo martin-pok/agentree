@@ -987,6 +987,13 @@ void Aplikace::ZpracujRadek(const std::wstring& radek) {
 
 void Aplikace::ZpracujUdalost(const json::Hodnota& zprava) {
   const std::wstring druh = zprava.textPod(L"type");
+  if (druh == L"open-app") {
+    if (zprava.textPod(L"route") == L"#/prehled") {
+      UkazOkno();
+      Naviguj(L"#/prehled");
+    }
+    return;
+  }
   if (druh == L"badge") {
     ZmenOdznak(zprava.cisloPod(L"count"));
     return;

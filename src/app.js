@@ -1254,6 +1254,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
     return { ok: true, focused: true };
   }
+  function openExtensionApp() {
+    if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
+    desktopReport({ type: 'open-app', route: '#/prehled' });
+    return { ok: true, opened: true };
+  }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
     const previouslyDownloaded = Boolean(updates.downloadedPath());
@@ -1767,7 +1772,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent, openExtensionApp,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,

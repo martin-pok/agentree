@@ -42,7 +42,9 @@ export function createHomeStudio(el) {
       if (logo.dataset.robot !== variant || !logo.querySelector('.robot')) { logo.innerHTML = renderAgentRobot(type, p); logo.dataset.robot = variant; }
       logo.style.setProperty('--robot-delay', `${i * -1.3}s`);
       let nick = li.querySelector('.studio-nickname');
-      if (!nick) { nick = document.createElement('span'); nick.className = 'studio-nickname'; li.querySelector('.pb-agent-text').prepend(nick); }
+      if (!nick) { nick = document.createElement('span'); nick.className = 'studio-nickname'; }
+      const title = li.querySelector('.pb-agent-text b');
+      if (title?.nextElementSibling !== nick) title?.after(nick);
       nick.textContent = p.name || agentsList().find(a => a.id === li.dataset.key)?.app || tr('Agent');
     });
   };

@@ -147,8 +147,10 @@ Vlastník vybral směr „Jedna hlavní věc“ (scéna) s prvky ze směrů „V
 značka“. Závazná podoba `extension/popup.html`:
 
 - **Žádné velké číslo.** Počty jen drobně: stránkování reflektoru, počty ve skupinách, souhrnná věta.
-- **Hlavička 56 px** stojí, roluje jen zbytek: značka „Agenteeq ↗“ je odkaz, který otevírá aplikaci
-  (jediné místo s touto akcí; bez běžící aplikace jen značka), kapsle stavu spojení, kruhová obnova
+- **Hlavička 56 px** stojí, roluje jen zbytek: značka „Agenteeq ↗“ otevře Přehled v již běžícím nativním
+  okně přes tokenově omezený požadavek; nikdy neotevírá holou adresu lokálního serveru ani nepředává
+  klíč okna Chromu. Bez spárování zůstane jen značka bez navigace. Jde o jediné místo s touto akcí,
+  vedle ní je kapsle stavu spojení, kruhová obnova
   a kruh Sledované služby a port. **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
   vedle „Otevřít v Agenteeq“ bylo matoucí. Ověření stránky je kapsle u řádku aktuální karty. Dvě
   viditelná ovládání nikdy nenesou stejný nebo podobný popisek (hlídá qa-extension). Okno má
@@ -267,3 +269,12 @@ Usazení šatníku na devět postav (rozhodnutí vlastníka 18. 10. 2026, po če
 - Dlaždice Stav agentů: barva stavu (25 % odstínu na kartě) jen když je počet nenulový;
   nula zůstává neutrální. Text dlaždice je vždy v barvě textu.
 - Nadpisy sekcí 24 px, odkazy u nich 16 px, text v kartách 16 px, druhý řádek 14 px.
+
+## Agenti: hromadný výběr konverzací
+
+Vstup do výběru je plné primární tlačítko oddělené od obrysových filtrů. Po vstupu je jeho stav
+čitelný i pro asistivní technologie (`aria-pressed`), akce se změní na „Ukončit výběr“ a Esc režim
+bezpečně zavře. Spodní lišta ukazuje celkový počet, přesný rozsah „Vybrat vše“ odpovídá aktuálním
+výsledkům filtrů a upozorní, pokud část výběru leží mimo ně. Detekované procesy bez konverzace
+nejsou hromadně zařaditelné. Dialog potvrzení zopakuje počet vybraných konverzací v nadpisu i na
+tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukončí.

@@ -720,6 +720,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             showWindow()
             applyPendingAgentRoute()
         }
+        if type == "open-app", !quitting, !installing, data["route"] as? String == "#/prehled" {
+            // Popup navigation stays inside the authenticated WKWebView. Never
+            // hand the window key to Chrome or open the server's bare root URL.
+            pendingAgentRoute = "#/prehled"
+            showWindow()
+            applyPendingAgentRoute()
+        }
         if type == "owned-runs", let count = data["count"] as? Int { ownedRuns = max(0, count) }
         if type == "install-update", !installing, let zip = data["zip"] as? String, let version = data["version"] as? String {
             installUpdate(zip: zip, version: version)

@@ -602,6 +602,13 @@ export function createHttpServer(app, existingServer = null) {
       const body = await readBody(req);
       return unwrap(app.focusExtensionAgent(body && typeof body === 'object' ? body.id : null));
     }, { token: true }],
+    // Popup brand action: bring the already-running native app to its overview.
+    // The extension never receives the window key and never opens localhost in Chrome.
+    ['POST', /^\/api\/extension\/open-app$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Aplikaci lze otevřít jen na místním počítači.'));
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      return unwrap(app.openExtensionApp());
+    }, { token: true }],
     // Rozšíření se hlásí: po startu Chromu, každých 30 minut a při otevření svého okna.
     ['POST', /^\/api\/extension\/hello$/, async (req) => {
       if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);

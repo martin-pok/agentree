@@ -229,6 +229,26 @@ async function focusExistingAgent(id) {
   }
 }
 
+// The popup brand returns to the native app overview. It must never open the
+// unauthenticated localhost root (which intentionally shows only a server page).
+async function openNativeApp() {
+  await pairingReset;
+  const t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t) return { ok: false, unpaired: true };
+  try {
+    const res = await fetch(`${await zaklad()}/api/extension/open-app`, {
+      method: 'POST',
+      headers: { 'X-Agenteeq-Token': t },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.status === 401) await forgetToken();
+    const body = await res.json().catch(() => ({}));
+    return res.ok && body.ok ? { ok: true } : { ok: false, unpaired: res.status === 401, unsupported: res.status === 409, error: typeof body.error === 'string' ? body.error.slice(0, 240) : '' };
+  } catch {
+    return { ok: false, offline: true };
+  }
+}
+
 // Ohlášení aplikaci: díky němu Agenteeq ví, že je rozšíření nainstalované a v jaké verzi, i když
 // zrovna není otevřená žádná konverzace. Neplatný token (401) znamená, že je třeba spárovat znovu.
 async function hello({ hned = false, znovu = false } = {}) {
@@ -327,6 +347,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       sendResponse({ ok: false }); return false;
     }
     focusExistingAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
+    return true;
+  } else if (msg?.type === 'agenteeq:open-app') {
+    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+      sendResponse({ ok: false }); return false;
+    }
+    openNativeApp().then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
     prehled().then(sendResponse, () => sendResponse(null));
