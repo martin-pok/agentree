@@ -22,6 +22,11 @@ test('levý panel už neopakuje „Živá data“', async () => {
   assert.doesNotMatch(app, /Živá data/);
 });
 
+test('logo klienta na kartě projektu nemá vnitřní obrys v rozích', async () => {
+  const css = await zdroj('public/workbench.css');
+  assert.match(css, /\.pcard-top \.plogo:not\(\.plogo--tvar\) \{ box-shadow: 0 6px 16px -10px rgb\(12 11 16 \/ \.45\); \}/);
+});
+
 test('rozbalovací limity vypisují všechny nástroje a u neměřených to říkají', async () => {
   const { limitsAll, allToolLimits } = await import('../public/js/limits-ui.js');
   const now = Date.now();

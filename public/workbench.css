@@ -153,6 +153,8 @@ body { letter-spacing: -.012em; }
 .pcard-name { font-size: 20px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
 .pcard-top { align-items: flex-start; }
 .pcard-top > .pdot { margin-top: 5px; }
+/* Logo klienta na kartě zůstává jemně nad povrchem, ale bez vnitřní linky v rozích dlaždice. */
+.pcard-top .plogo:not(.plogo--tvar) { box-shadow: 0 6px 16px -10px rgb(12 11 16 / .45); }
 /* Projekt bez obrázku karty nemá prázdný pruh obálky (projects.js ho nevykreslí): karta začíná
    běžným okrajem a logo, které jinak přesahuje do obálky, sedí v řádku s názvem. */
 .pcard--bez-obalky { padding-top: 22px; }
