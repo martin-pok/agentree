@@ -1220,7 +1220,9 @@ for (const engine of engines) {
       assert.equal(await checkButton.isEnabled(), true, `${engine}: opakovaná kontrola aktualizací zůstala zablokovaná`);
     }
     await page.unroute('**/api/updates/check');
-    await page.route('**/api/updates/check', (route) => route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"QA update failure"}' }));
+    // Vadná odpověď procvičí chybovou cestu bez 503 v globální konzoli, kterou QA
+    // právem považuje za nečekanou chybu stránky.
+    await page.route('**/api/updates/check', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
     await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/updates/check')), checkButton.click()]);
     await page.waitForFunction(() => !document.querySelector('[data-action="check-updates"]')?.disabled);
     assert.equal(await checkButton.isEnabled(), true, `${engine}: chyba kontroly aktualizací zablokovala další pokus`);
