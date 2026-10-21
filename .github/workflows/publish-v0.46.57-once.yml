@@ -1,0 +1,119 @@
+# Owner-authorized one-shot Preview release path. The exact tested main commit
+# and source version must match. Existing release.yml builds + audits all eight
+# GitHub-hosted assets; publish.yml independently re-downloads and verifies them.
+# No stable release or Chrome Web Store publication occurs here.
+name: One-time release v0.46.57 Preview
+
+on:
+  workflow_run:
+    workflows: ['Testy']
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: one-time-release-v0.46.57-preview
+  cancel-in-progress: false
+
+jobs:
+  release-preview:
+    if: >-
+      ${{ github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_branch == 'main'
+      && github.event.workflow_run.conclusion == 'success'
+      && contains(github.event.workflow_run.head_commit.message, 'authorize verified v0.46.57 Preview once') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Verify exact current main and matching version
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.46.57
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$MAIN_SHA" != "$RELEASE_SHA" ]; then
+            echo "::error::main changed after CI. Refusing to tag a different commit."
+            exit 1
+          fi
+          VERSION=$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$RELEASE_SHA" | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version')
+          EXTENSION_VERSION=$(gh api -H 'Accept: application/vnd.github.raw+json' "repos/$GITHUB_REPOSITORY/contents/extension/manifest.json?ref=$RELEASE_SHA" | node -p 'JSON.parse(require("fs").readFileSync(0,"utf8")).version')
+          test "$VERSION" = 0.46.57
+          test "$EXTENSION_VERSION" = "$VERSION"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Release tag already exists. Never retag/rebuild published binaries."
+            exit 1
+          fi
+          echo "Verified successful full Testy run for exact main commit $RELEASE_SHA."
+      - name: Request authenticated release build and independent draft audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.57' \
+            -f "inputs[expected_sha]=$RELEASE_SHA"
+          echo "Release build dispatched for exact SHA $RELEASE_SHA."
+      - name: Require successful full release pipeline including byte audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          DONE=
+          for i in $(seq 1 240); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?event=workflow_dispatch&head_sha=$RELEASE_SHA&per_page=20" \
+              --jq '.workflow_runs[0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
+              if [ "$STATUS" = completed ]; then
+                echo "Release pipeline: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+                test "$RESULT" = success || exit 1
+                DONE=1
+                break
+              fi
+            fi
+            sleep 20
+          done
+          test "$DONE" = 1 || { echo "::error::Timed out waiting for release build + audit."; exit 1; }
+      - name: Request verified Preview publication, never Stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)" = "$RELEASE_SHA" || {
+            echo "::error::main changed before publishing; manual review required."
+            exit 1
+          }
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.57' \
+            -f 'inputs[channel]=preview' -f 'inputs[confirm_stable]=false'
+      - name: Confirm publication and eight immutable download assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          DONE=
+          for i in $(seq 1 110); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?event=workflow_dispatch&head_sha=$RELEASE_SHA&per_page=20" \
+              --jq '.workflow_runs[0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
+              if [ "$STATUS" = completed ]; then
+                echo "Publication: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+                test "$RESULT" = success || exit 1
+                DONE=1
+                break
+              fi
+            fi
+            sleep 20
+          done
+          test "$DONE" = 1 || { echo "::error::Timed out waiting for verified publication."; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.46.57" \
+            --jq '(.tag_name == "v0.46.57") and (.draft == false) and (.prerelease == true) and (.assets | length == 8)' | grep -Fx true
+          echo "Public Preview verified: https://github.com/$GITHUB_REPOSITORY/releases/tag/v0.46.57"
+          echo "### Verified public Preview v0.46.57" >> "$GITHUB_STEP_SUMMARY"
+          echo "All eight release assets were verified by the official release and publish workflows." >> "$GITHUB_STEP_SUMMARY"
+          echo "Physical UAT on the owner's Mac is NOT implied by CI." >> "$GITHUB_STEP_SUMMARY"
