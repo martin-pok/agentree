@@ -559,7 +559,7 @@ async function zkontrolujKontrastLogVCTA(page, engine) {
       return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
     };
     try {
-      const mono = ['openai', 'githubcopilot', 'grok', 'cursor', 'ollama', 'lmstudio', 'windsurf', 'kiro', 'zed', 'goose', 'opencode', 'antigravity', 'aistudio', 'notebooklm', 'trae', 'v0'];
+      const mono = ['openai', 'githubcopilot', 'grok', 'cursor', 'ollama', 'lmstudio', 'windsurf', 'zed', 'goose', 'opencode', 'aistudio', 'notebooklm', 'trae', 'v0'];
       for (const look of ['obloha', 'koncert']) for (const theme of ['light', 'dark']) {
         root.dataset.look = look;
         root.dataset.theme = theme;
