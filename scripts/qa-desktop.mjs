@@ -1201,6 +1201,13 @@ for (const engine of engines) {
     await page.goto(`${server.url}/#/nastaveni`);
     await page.locator('.settings2').waitFor();
     await page.locator('.set-nav [data-jump="set-aplikace"]').click();
+    // Linuxový testovací server nemá instalační balíček a kontrolu vypíná;
+    // samotné ovládání zkoušíme ve stavu, který dostane podporovaný Mac.
+    await page.evaluate(async () => {
+      const { state, emit } = await import('/js/state.js');
+      state.updates = { status: 'current', currentVersion: '0.46.58', latestVersion: '', checkedAt: Date.now() };
+      emit('updates');
+    });
     const checkButton = page.locator('[data-action="check-updates"]');
     await checkButton.waitFor();
     await page.route('**/api/updates/check', (route) => route.fulfill({
