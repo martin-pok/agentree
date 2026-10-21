@@ -218,3 +218,23 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
   .objev-foot--potvrzeni { flex-direction: column-reverse; }
 }
 @media (prefers-reduced-motion: reduce) { .objev-dialog[open] { animation: none; } .objev-spoj i { animation: none; opacity: .7; } }
+
+/* Žádost agenta o povolení (public/js/rozhodnuti-ui.js): karta vpravo dole nad Pomocníkem. Ukazuje
+   celý příkaz, aby se schvalovalo to, co je vidět; dvě tlačítka a odpočet do návratu do terminálu. */
+.rozh-oblast { position: fixed; z-index: 46; right: 24px; bottom: calc(var(--pm-spodek, 24px) + var(--pm-fab, 64px) + 16px); display: grid; gap: 12px; width: min(420px, calc(100vw - 32px)); max-height: calc(100dvh - 160px); overflow-y: auto; overscroll-behavior: contain; }
+.rozh-oblast[hidden] { display: none; }
+.rozh-karta { padding: 20px; border-radius: var(--r-lg); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 9%, var(--card)) 0%, var(--card) 120px); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-lg); animation: pop .25s var(--ease) both; }
+.rozh-head { display: flex; align-items: center; gap: 12px; }
+.rozh-head h2 { margin: 0; font: 500 16px/1.3 var(--f-body); }
+.rozh-logo { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: var(--r-logo); background: var(--card); box-shadow: inset 0 0 0 1px var(--line); }
+.rozh-logo .logo, .rozh-logo .glyph { width: 20px; height: 20px; }
+.rozh-nazev { margin: 2px 0 0; color: var(--mute); font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.rozh-popis { margin: 16px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink); }
+.rozh-prikaz { margin: 8px 0 0; padding: 12px; border-radius: var(--r-sm); background: var(--line-2); color: var(--ink); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 160px; overflow-y: auto; }
+.rozh-slozka { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--mute); font-size: 12px; min-width: 0; }
+.rozh-slozka .icon { width: 14px; height: 14px; flex: none; }
+.rozh-slozka span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rozh-cas { margin: 12px 0 0; color: var(--mute); font-size: 12px; }
+.rozh-akce { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+@media (max-width: 680px) { .rozh-oblast { right: 16px; left: 16px; width: auto; } .rozh-akce .btn { flex: 1; } }
+@media (prefers-reduced-motion: reduce) { .rozh-karta { animation: none; } }

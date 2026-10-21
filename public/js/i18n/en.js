@@ -7,6 +7,15 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "Claude Code žádá o povolení": "Claude Code is asking for permission",
+    "Bez rozhodnutí se za {0} s zeptá v terminálu.": "Without a decision it asks in the terminal in {0} s.",
+    "Zamítnout": "Deny",
+    "Povoleno. Agent pokračuje.": "Allowed. The agent continues.",
+    "Zamítnuto. Agent dostal zprávu, že akci nechceš.": "Denied. The agent was told you don’t want this action.",
+    "Rozhodnutí se nepodařilo odeslat. Agent se zeptá v terminálu.": "The decision couldn’t be sent. The agent will ask in the terminal.",
+    "Žádosti agentů o povolení": "Agent permission requests",
+    "Rozhodovat v Agenteeq": "Decide in Agenteeq",
+    "Když Claude Code žádá o povolení a okno Agenteeq je otevřené, rozhodneš tady. Bez rozhodnutí se za 45 s zeptá v terminálu. Beta.": "When Claude Code asks for permission and the Agenteeq window is open, you decide here. Without a decision it asks in the terminal after 45 s. Beta.",
     "webové chaty": "web chats",
     "Webové chaty v Chromu": "Web chats in Chrome",
     "běží právě teď": "running right now",

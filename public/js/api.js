@@ -38,6 +38,7 @@ export async function request(method, path, body, { keepalive = false } = {}) {
 export const api = {
   napojeni: () => request('GET', '/api/napojeni'),
   objev: () => request('GET', '/api/objev'),
+  rozhodnout: (id, akce) => request('POST', `/api/rozhodnuti/${encodeURIComponent(id)}/${akce}`, {}),
   napojit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}`),
   napojeniZrusit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/zrusit`),
   napojeniOdkaz: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/odkaz`),
@@ -127,7 +128,7 @@ export const api = {
   workAction: (id, workId, action) => request('POST', `/api/projects/${encodeURIComponent(id)}/work/${encodeURIComponent(workId)}/${action}`, {}),
 };
 
-const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'detekce', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni', 'lan'];
+const EVENTS = ['session', 'session:remove', 'transcript', 'runtimes', 'localAgents', 'detekce', 'customAgents', 'limits', 'credits', 'alert', 'alerts', 'spend', 'connectors', 'settings', 'updates', 'integrations', 'projects', 'runs', 'launch', 'license', 'usage', 'storage', 'ucet', 'napojeni', 'lan', 'rozhodnuti'];
 
 // Prodlevy před novým spojením po chybové odpovědi serveru; poslední se opakuje.
 const PRODLEVY_PROUDU = [2000, 5000, 10000, 30000];

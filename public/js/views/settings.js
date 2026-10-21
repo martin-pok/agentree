@@ -1237,6 +1237,7 @@ function update(topics) {
     <div data-push-sekce>${pushSekce()}</div>
     <div class="set-divider"></div>
     ${switchRow({ key: 'needsInput', label: tr('Agent potřebuje tvé rozhodnutí'), tip: tr('Povolení akce, otázka, schválení plánu nebo selhané spuštění.'), checked: n.needsInput })}
+    ${switchRow({ key: 'rozhodnuti', label: tr('Rozhodovat v Agenteeq'), tip: tr('Když Claude Code žádá o povolení a okno Agenteeq je otevřené, rozhodneš tady. Bez rozhodnutí se za 45 s zeptá v terminálu. Beta.'), checked: n.rozhodnuti !== false })}
     ${switchRow({ key: 'limits', label: tr('Docházející limit předplatného'), tip: tr('Při 80 %, 95 % a vyčerpání.'), checked: n.limits })}
     ${switchRow({ key: 'limitReset', label: tr('Obnovený limit'), tip: tr('Když se obnoví 5hodinový nebo týdenní limit.'), checked: n.limitReset !== false })}
     ${switchRow({ key: 'budget', label: tr('Rozpočet'), tip: tr('Při 80 % a 100 % měsíčního rozpočtu útraty i tokenů projektu.'), checked: n.budget })}

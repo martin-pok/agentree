@@ -722,7 +722,7 @@ export function createClaudeCodeConnector(ctx) {
   async function ingestHook(p, now = Date.now()) {
     if (!p || typeof p.session_id !== 'string' || !/^[A-Za-z0-9_][\w-]{7,79}$/.test(p.session_id)) return { ok: false, error: ui('Neplatné session_id.') };
     const event = String(p.hook_event_name || '');
-    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd', 'PreToolUse', 'PostToolUse'].includes(event)) return { ok: false, error: ui('Neznámá událost.') };
+    if (!['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd', 'PreToolUse', 'PostToolUse', 'PermissionRequest'].includes(event)) return { ok: false, error: ui('Neznámá událost.') };
     // Hook zná přesnou cestu k přepisu. Leží-li mimo známé kořeny (CLAUDE_CONFIG_DIR, který aplikace
     // z Finderu nevidí), přidá se jeho kořen – jinak by agent s hooky byl vidět bez přepisu a tokenů.
     const koren = korenZPrepisu(p.transcript_path, p.session_id);
@@ -773,6 +773,11 @@ export function createClaudeCodeConnector(ctx) {
         }
         break;
       }
+      // Claude Code se chystá zeptat na povolení (src/rozhodnuti.js). Přijde hned, Notification
+      // „permission_prompt“ až asi po šesti vteřinách – agent tak „potřebuje tebe“ bez prodlevy.
+      case 'PermissionRequest':
+        s.pending = { kind: 'permission', text: describeTool(p.tool_name, p.tool_input) || ui('Potřebuje povolení k akci'), at: now, source: 'hook', toolUseId: s.hookTool || undefined };
+        break;
       // Žádost o povolení skončila (schválení ani zamítnutí Claude Code samo nehlásí): začal další
       // nástroj, nebo doběhl ten, kvůli kterému se ptal. Doběhnutí souběžného nástroje (čtení během
       // čekání na povolení) žádost neruší. Pomocný agent posílá hooky pod session_id rodiče.

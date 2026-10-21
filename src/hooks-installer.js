@@ -11,8 +11,16 @@ import { ui } from './texty.js';
 // do konce tahu. Propojení jen se základní sadou dál funguje, Nastavení ho nabídne obnovit (`current: false`).
 export const HOOK_EVENTS_ZAKLAD = ['SessionStart', 'UserPromptSubmit', 'Notification', 'Stop', 'SessionEnd'];
 export const HOOK_EVENTS_NASTROJE = ['PreToolUse', 'PostToolUse'];
-export const HOOK_EVENTS = [...HOOK_EVENTS_ZAKLAD, ...HOOK_EVENTS_NASTROJE];
+// Žádost o povolení, o které jde rozhodnout přímo v Agenteeq (src/rozhodnuti.js). Jediný hook,
+// jehož výstup Claude Code čte: odpověď serveru jde na stdout. Prázdná odpověď nebo neběžící
+// Agenteeq = žádný výstup a Claude Code se zeptá v terminálu jako dřív.
+export const HOOK_EVENTS_ROZHODNUTI = ['PermissionRequest'];
+export const HOOK_EVENTS = [...HOOK_EVENTS_ZAKLAD, ...HOOK_EVENTS_NASTROJE, ...HOOK_EVENTS_ROZHODNUTI];
 export const HOOK_PATH = '/api/hooks/claude-code';
+export const ROZHODNUTI_PATH = `${HOOK_PATH}/povoleni`;
+// Server čeká nejvýš 45 s (src/rozhodnuti.js#CEKAT_MS); curl a hook mají rezervu navíc.
+const ROZHODNUTI_CURL_S = 55;
+const ROZHODNUTI_HOOK_S = 60;
 
 export const claudeSettingsPath = (sourceHome) => path.join(sourceHome, '.claude', 'settings.json');
 
@@ -57,12 +65,13 @@ const odkazujeNaHlavicky = (text, headersFile) => text.includes(odkazPosix(heade
 // Claude Code používá na Windows Git Bash nebo PowerShell, ne nutně cmd.exe.
 // Explicitní PowerShell s -EncodedCommand funguje z obou shellů a nepustí jejich
 // expanzi do skriptu. UTF-16LE je kontrakt PowerShellu, nikoli šifrování.
-function windowsCommand(url, headersFile, statusline) {
+function windowsCommand(url, headersFile, statusline, rozhodnuti = false) {
   const output = statusline
     ? "if ($LASTEXITCODE -ne 0) { Write-Output 'Agenteeq nebezi' } else { $reply }"
-    : '';
+    : rozhodnuti ? 'if ($LASTEXITCODE -eq 0) { $reply }' : '';
   const fallback = statusline ? "Write-Output 'Agenteeq nebezi'" : '';
-  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); ${odkazWindows(headersFile)}$reply = $body | & curl.exe -s -m ${statusline ? 1 : 2} -X POST -H '@${path.win32.basename(headersFile)}' --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
+  const limit = statusline ? 1 : rozhodnuti ? ROZHODNUTI_CURL_S : 2;
+  const script = `$ErrorActionPreference = 'Stop'; $OutputEncoding = [Console]::InputEncoding = [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding; try { $body = [Console]::In.ReadToEnd(); ${odkazWindows(headersFile)}$reply = $body | & curl.exe -s${rozhodnuti ? 'f' : ''} -m ${limit} -X POST -H '@${path.win32.basename(headersFile)}' --data-binary '@-' '${url}' 2>$null; ${output} } catch { ${fallback} }; exit 0`;
   return `powershell.exe -NoLogo -NoProfile -NonInteractive -EncodedCommand ${Buffer.from(script, 'utf16le').toString('base64')}`;
 }
 
@@ -84,6 +93,15 @@ export function hookCommand(port, headersFile, { windows = JE_WINDOWS } = {}) {
     return windowsCommand(url, headersFile, false);
   }
   return `curl -s -m 2 -X POST ${odkazPosix(headersFile)} --data-binary @- ${url} >/dev/null 2>&1 || true`;
+}
+
+// Žádost o povolení: odpověď serveru (rozhodnutí, nebo nic) jde na stdout. `-f` = při chybě HTTP
+// nic nevypíše; neběžící Agenteeq = nic. Claude Code se pak zeptá v terminálu.
+export function rozhodnutiCommand(port, headersFile, { windows = JE_WINDOWS } = {}) {
+  overCestu(headersFile, windows);
+  const url = `http://127.0.0.1:${Number(port)}${ROZHODNUTI_PATH}`;
+  if (windows) return windowsCommand(url, headersFile, false, true);
+  return `curl -sf -m ${ROZHODNUTI_CURL_S} -X POST ${odkazPosix(headersFile)} --data-binary @- ${url} 2>/dev/null || true`;
 }
 
 const isOurs = (h) => commandText(h?.command).includes(HOOK_PATH);
@@ -214,10 +232,15 @@ export async function installHooks(file, { port, token, headersFile, now = Date.
   stripOurs(json);
   if (!json.hooks || typeof json.hooks !== 'object') json.hooks = {};
   const command = hookCommand(port, headersFile);
+  const rozhodnuti = rozhodnutiCommand(port, headersFile);
   for (const ev of HOOK_EVENTS) {
     if (!Array.isArray(json.hooks[ev])) json.hooks[ev] = [];
+    const zRozhodnuti = HOOK_EVENTS_ROZHODNUTI.includes(ev);
     // U událostí nástrojů je matcher „*“ (všechny nástroje), ostatní události matcher nemají.
-    json.hooks[ev].push({ ...(HOOK_EVENTS_NASTROJE.includes(ev) ? { matcher: '*' } : {}), hooks: [{ type: 'command', command, timeout: 5 }] });
+    json.hooks[ev].push({
+      ...(HOOK_EVENTS_NASTROJE.includes(ev) || zRozhodnuti ? { matcher: '*' } : {}),
+      hooks: [{ type: 'command', command: zRozhodnuti ? rozhodnuti : command, timeout: zRozhodnuti ? ROZHODNUTI_HOOK_S : 5 }],
+    });
   }
   let statusLine = 'foreign';
   if (!json.statusLine || isOurStatusLine(json.statusLine)) {

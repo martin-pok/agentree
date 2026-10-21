@@ -147,6 +147,8 @@ export function createDetekce({ store, datastore, alerts, notifier, pripojene = 
     vyhodnot,
     payload,
     rozhodni,
+    // Okno Agenteeq je teď vidět (hlásí se každých 30 s) – jen tehdy má smysl čekat na rozhodnutí v něm.
+    videt: () => now() <= uiVidetDo,
     pritomnost(videt) {
       uiVidetDo = videt ? now() + VIDET_MS : 0;
       return { ok: true };

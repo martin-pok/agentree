@@ -471,6 +471,20 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   záznamů (rozhodnutí „pridat“ v `src/detekce.js`), nebo rozšíření pro Chrome. Texty „uvidí / neuvidí“
   opakují jen to, co platí pro konektory výše.
 
+### Rozhodnutí agenta v Agenteeq (od 0.46.54) 🧪 Beta
+
+- Hook Claude Code `PermissionRequest` (`src/hooks-installer.js#rozhodnutiCommand`, matcher `*`,
+  timeout 60 s) pošle žádost na `POST /api/hooks/claude-code/povoleni`. Server (`src/rozhodnuti.js`)
+  čeká nejvýš 45 s na klik v okně a vrátí `hookSpecificOutput.decision` (`allow`, nebo `deny`
+  s `message`, bez `interrupt`). Bez rozhodnutí vrátí prázdnou odpověď; curl `-sf` pak nic nevypíše.
+- Podle dokumentace hooků (code.claude.com/docs/en/hooks, 21. 10. 2026): hook bez výstupu nechá
+  žádost v běžném toku (dotaz v terminálu), `allow` nepřebije pravidlo deny. **Neověřeno na
+  skutečném Claude Code:** jestli terminál ukazuje dotaz už během čekání hooku, nebo až po něm
+  (pak se dotaz v terminálu objeví nejvýš po 45 s); proto se čeká jen, když je okno Agenteeq vidět
+  (hlášení `/api/ui/pritomnost`), a funkce jde vypnout (`notifications.rozhodnuti`).
+- V neinteraktivním režimu (`claude -p`, pomocní agenti na pozadí) Claude Code podle dokumentace
+  žádost bez rozhodnutí hooku zamítne – to je jeho výchozí chování, Agenteeq ho nemění.
+
 ## Předplatné a kurz koruny (Útrata)
 
 Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.

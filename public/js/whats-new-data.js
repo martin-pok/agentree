@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.54',
+    date: '2026-10-21',
+    title: 'Rozhodni přímo v Agenteeq',
+    items: [
+      'Když Claude Code žádá o povolení, schválíš nebo zamítneš ho přímo v aplikaci.',
+      'Uvidíš celý příkaz a složku, ve které agent pracuje.',
+      'Když nerozhodneš do 45 s, zeptá se agent v terminálu jako dřív.',
+    ],
+    en: {
+      title: 'Decide right in Agenteeq',
+      items: [
+        'When Claude Code asks for permission, approve or deny it right in the app.',
+        'You see the full command and the folder the agent works in.',
+        'If you don’t decide within 45 s, the agent asks in the terminal as before.',
+      ],
+    },
+  },
+  {
     version: '0.46.53',
     date: '2026-10-21',
     title: 'Našli jsme na tvém Macu',

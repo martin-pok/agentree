@@ -10,6 +10,7 @@ import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createDetekce } from './detekce.js';
 import { nalezeneNastroje } from './objev.js';
+import { createRozhodnuti } from './rozhodnuti.js';
 import { createHistorie } from './historie.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
@@ -405,6 +406,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const detekce = createDetekce({
     store, datastore, alerts, notifier,
     pripojene: () => new Set(connectorList().filter((c) => c.state === 'connected').map((c) => c.id)),
+  });
+
+  // Rozhodnutí agenta přímo v Agenteeq (src/rozhodnuti.js): jen když je okno vidět a funkce zapnutá.
+  const rozhodnuti = createRozhodnuti({
+    emit: (l) => store.emit('rozhodnuti', l),
+    zapnuto: () => datastore.data.settings?.notifications?.rozhodnuti !== false,
+    videt: () => detekce.videt(),
   });
 
   function connectorList() {
@@ -1625,6 +1633,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       customAgents: customAgentsPayload(),
       localAgents: store.localAgents,
       detekce: detekce.payload(),
+      rozhodnuti: rozhodnuti.seznam(),
       lan: local ? lan.status() : { ...lan.status(), pin: null, devices: [] },
       tunnels: local ? tunnelsPayload() : { at: 0, list: [], advice: null },
     };
@@ -1729,6 +1738,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function stop() {
+    rozhodnuti.stop();
     stoppingRemote = true;
     for (const t of timers) clearInterval(t);
     rateFeed.stop();
@@ -1751,7 +1761,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   return {
-    config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce,
+    config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,

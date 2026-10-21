@@ -20,6 +20,7 @@ export const state = {
   customAgents: [],
   localAgents: [],
   detekce: prazdnaDetekce(),
+  rozhodnuti: [],
   lan: prazdnyLan(),
   tunnels: { at: 0, list: [], advice: null },
   limits: [],
@@ -81,6 +82,7 @@ export function applySnapshot(s) {
     customAgents: s.customAgents || [],
     localAgents: s.localAgents || [],
     detekce: s.detekce || prazdnaDetekce(),
+    rozhodnuti: Array.isArray(s.rozhodnuti) ? s.rozhodnuti : [],
     lan: slozLan(s.lan),
     tunnels: s.tunnels || { at: 0, list: [], advice: null },
     limits: s.limits,
@@ -151,6 +153,10 @@ export function applyEvent(name, data) {
     case 'detekce':
       state.detekce = data || prazdnaDetekce();
       emit('detekce');
+      return null;
+    case 'rozhodnuti':
+      state.rozhodnuti = Array.isArray(data) ? data : [];
+      emit('rozhodnuti');
       return null;
     case 'localAgents':
       state.localAgents = data;
