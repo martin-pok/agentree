@@ -29,8 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/main"
-          release=$(gh api "repos/$GITHUB_REPOSITORY/releases/419985249")
-          jq -e '.id == 419985249 and .tag_name == "v0.46.56" and .draft == true and (.assets | length == 8)' <<<"$release" >/dev/null
+          # Exact draft, tag, eight assets, source CI and SHA256 are verified by publish.yml.
           gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
             -f ref=main \
             -f 'inputs[tag]=v0.46.56' \
