@@ -176,10 +176,11 @@ function zavri(hotovo = true) {
   }
 }
 
-export async function otevri({ fokusId } = {}) {
+// `jenSNalezem`: samo otevřené okno (po průvodci) se bez nálezu neukáže a chybu nehlásí.
+export async function otevri({ fokusId, jenSNalezem = false } = {}) {
   if (dialog || !naMacu()) return;
-  try { await nacti(); } catch (err) { toast(err.message || tr('Nástroje se nepodařilo zjistit.'), { tone: 'err' }); return; }
-  if (dialog) return;
+  try { await nacti(); } catch (err) { if (!jenSNalezem) toast(err.message || tr('Nástroje se nepodařilo zjistit.'), { tone: 'err' }); return; }
+  if (dialog || (jenSNalezem && (!data?.nastroje?.length || state.settings?.objevHotovo))) return;
   dialog = document.createElement('dialog');
   dialog.className = 'objev-dialog';
   dialog.setAttribute('aria-labelledby', 'objev-title');
@@ -210,14 +211,12 @@ export function initObjev() {
     if (state.settings.objevHotovo || !naMacu() || document.querySelector('.welcome-dialog')) return;
     // Okno má smysl, jen když něco našlo. Prázdný výsledek ho neotevře ani neodškrtne – příště
     // může být Agenteeq chytřejší (programy se hledají až chvíli po startu).
-    api.objev().then((d) => {
-      if (d?.nastroje?.length && !state.settings?.objevHotovo) otevri();
-    }).catch(() => {});
+    otevri({ jenSNalezem: true });
   });
   document.addEventListener('click', (e) => { if (e.target.closest('[data-objev]')) otevri(); });
   // Po dokončení úvodního průvodce (welcome.js) rovnou, ne až s další živou událostí.
   window.addEventListener('agenteeq-pruvodce-hotov', () => {
-    zkontrolovano = false;
-    if (!state.settings?.objevHotovo) api.objev().then((d) => { zkontrolovano = true; if (d?.nastroje?.length) otevri(); }).catch(() => {});
+    zkontrolovano = true;
+    if (!state.settings?.objevHotovo) otevri({ jenSNalezem: true });
   });
 }

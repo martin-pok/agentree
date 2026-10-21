@@ -575,9 +575,9 @@ for (const engine of engines) {
     await page.unroute('**/api/settings');
     await page.locator('[data-welcome-next]').click();
     await page.locator('.welcome-dialog').waitFor({ state: 'detached' });
-    await page.reload();
     // První spuštění pokračuje oknem „Našli jsme na tvém Macu“: nalezené nástroje, potvrzení
-    // přístupu před každým napojením, a po „Hotovo“ se samo už neukáže.
+    // přístupu před každým napojením, a po „Hotovo“ se samo už neukáže. Obnovit stránku až po
+    // otevření okna – WebKit přerušený dotaz hlásí v konzoli jako chybu.
     await page.locator('.objev-dialog[open] .objev-row').first().waitFor();
     await page.screenshot({ path: `dist/qa/${engine}-objev.png` });
     assert.ok(await page.locator('.objev-dialog .objev-row').count() >= 2, 'okno ukazuje nalezené nástroje i webové chaty');
