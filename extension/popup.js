@@ -866,16 +866,69 @@ function vykresli() {
   // Aplikaci otevírá značka v hlavičce – jediné místo s touto akcí. Bez běžící aplikace je to jen
   // značka (odkaz by vedl na nedostupnou adresu); hlavní výzvou je pak „Stáhnout“ v reflektoru.
   nastavZnacku(rezim !== 'offline');
-  const out = $('outdated');
-  out.hidden = !(pripojeno && seznam.zastarala);
-  // Z obchodu přijde nová verze, až ji Google zveřejní – to se nedá slíbit. Rozbalená kopie se jen
-  // znovu načte ze složky, kterou aplikace při aktualizaci přepíše.
-  const zObchodu = Boolean(chrome.runtime.getManifest().update_url);
-  if (!out.hidden) out.textContent = sazba(zObchodu
-    ? tr('Aplikace má novější rozšíření {0}, Chrome Web Store ho zatím nenabízí. Nainstaluješ ho v aplikaci: Nastavení → Propojení → Rozšíření pro Chrome.', seznam.ocekavana)
-    : tr('Je k dispozici verze {0}. Na stránce chrome://extensions u Agenteeq klikni na Znovu načíst.', seznam.ocekavana));
+  vykresliAktualizaci(pripojeno && seznam.zastarala);
   vykresliOsu();
 }
+
+// Aktualizace rozšíření jedním klepnutím. Rozbalená kopie (bez `update_url`) se znovu načte ze
+// složky, kterou aplikace při své aktualizaci přepíše (src/extension-install.js). Kopie z obchodu
+// se zeptá Chrome Web Store (chrome.runtime.requestUpdateCheck) a novou verzi hned nainstaluje;
+// když ji obchod ještě nemá, řekne to – nic se neslibuje. Pokus se zapamatuje, aby po znovunačtení
+// bylo poznat, že Chrome rozšíření čte odjinud a nová verze se nenačetla.
+const zObchodu = () => Boolean(chrome.runtime.getManifest().update_url);
+const aktualizace = { zprava: '', bezi: false };
+
+async function posledniPokus() {
+  try { return (await chrome.storage.local.get('aktualizacePokus')).aktualizacePokus || null; } catch { return null; }
+}
+
+async function vykresliAktualizaci(zobrazit) {
+  const out = $('outdated');
+  out.hidden = !zobrazit;
+  if (!zobrazit) return;
+  const verze = chrome.runtime.getManifest().version;
+  const pokus = await posledniPokus();
+  const nenacetlo = !zObchodu() && pokus && pokus.cil === seznam.ocekavana && pokus.od === verze && Date.now() - pokus.at < 10 * 60 * 1000;
+  const text = aktualizace.zprava || (nenacetlo
+    ? tr('Verze {0} se nenačetla: Chrome čte rozšíření z jiné složky, než kterou Agenteeq aktualizuje. Přidej ho znovu v aplikaci: Nastavení → Propojení → Rozšíření pro Chrome.', seznam.ocekavana)
+    : tr('Je k dispozici verze {0}.', seznam.ocekavana));
+  $('outdated-text').textContent = sazba(text);
+  const btn = $('outdated-btn');
+  btn.hidden = nenacetlo && !zObchodu();
+  btn.disabled = aktualizace.bezi;
+  btn.textContent = aktualizace.bezi ? tr('Aktualizuji…') : tr('Aktualizovat');
+}
+
+async function aktualizovat() {
+  if (aktualizace.bezi) return;
+  aktualizace.bezi = true;
+  aktualizace.zprava = '';
+  await vykresliAktualizaci(true);
+  const verze = chrome.runtime.getManifest().version;
+  try {
+    if (!zObchodu()) {
+      await chrome.storage.local.set({ aktualizacePokus: { od: verze, cil: seznam.ocekavana, at: Date.now() } });
+      chrome.runtime.reload();
+      return;
+    }
+    const r = await chrome.runtime.requestUpdateCheck();
+    const stav = typeof r === 'string' ? r : r?.status;
+    if (stav === 'update_available') {
+      aktualizace.zprava = tr('Instaluji verzi {0}…', r?.version || seznam.ocekavana);
+      await vykresliAktualizaci(true);
+      chrome.runtime.reload();
+      return;
+    }
+    aktualizace.zprava = stav === 'throttled'
+      ? tr('Chrome dovolí další kontrolu až za chvíli. Zkus to prosím za pár minut.')
+      : tr('Chrome Web Store verzi {0} zatím nenabízí. Rozšíření se aktualizuje samo, jakmile ji obchod zveřejní.', seznam.ocekavana);
+  } catch {
+    aktualizace.zprava = tr('Aktualizaci se nepodařilo spustit. Zkus to prosím znovu.');
+  }
+  aktualizace.bezi = false;
+  await vykresliAktualizaci(true);
+}
+$('outdated-btn').addEventListener('click', aktualizovat);
 
 function zakladniStav() {
   seznam.pripojeno = false;

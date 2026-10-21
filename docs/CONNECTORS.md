@@ -456,6 +456,21 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   (`src/platform.js#slozkaSDotazySystemu`): běží jako podproces Agenteeq a průchod takovou složkou
   by vyvolal dotazy macOS na Fotky, Zprávy a další soukromé složky jménem Agenteeq. Že je spouští
   právě průchod složkou, vychází z hlášení vlastníka a z chování TCC, ne z měření → Beta.
+### Okno „Našli jsme na tvém Macu“ (od 0.46.53) 🧪 Beta
+
+- `src/objev.js#nalezeneNastroje` + `GET /api/objev` (jen z tohoto Macu) + `public/js/objev-ui.js`.
+  Nalezeno = proces právě běží, balíček `<Název>.app` leží v `/Applications` nebo `~/Applications`
+  (`src/platform.js#appInstalled`, jen macOS), příkaz je v PATH přihlašovacího shellu
+  (`src/launcher.js#PROGRAMY`), nebo tu nástroj někdy běžel (`src/detekce.js`). Jiný systém nebo
+  dosud neproběhlé hledání vrací `hledano: false` a okno řekne „nedalo se hledat“, ne „nic tu není“.
+- Názvy balíčků aplikací (`src/objev.js#APLIKACE`) jsou stejná jména, podle kterých se nástroj pozná
+  ve výpisu procesů; ověřené na skutečném Macu jsou jen ty, které mají v katalogu `overeno: true`.
+  Hledání v PATH pro `cursor-agent`, `aider`, `opencode` a `auggie` je nové a neověřené. `goose`,
+  `amp`, `crush` a `droid` se v PATH nehledají – stejná jména nosí i jiné běžné programy.
+- Napojení vždy přes potvrzovací obrazovku: přihlášení u dodavatele (`src/napojeni.js`), sledování
+  záznamů (rozhodnutí „pridat“ v `src/detekce.js`), nebo rozšíření pro Chrome. Texty „uvidí / neuvidí“
+  opakují jen to, co platí pro konektory výše.
+
 ## Předplatné a kurz koruny (Útrata)
 
 Zjišťuje se z toho, co nástroje samy zapisují na Macu; nic osobního se neukládá ani neodesílá.

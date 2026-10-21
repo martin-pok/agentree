@@ -712,6 +712,7 @@ export function createHttpServer(app, existingServer = null) {
       }
       if (typeof body.onboardingDismissed === 'boolean') datastore.data.settings.onboardingDismissed = body.onboardingDismissed;
       if (typeof body.welcomeCompleted === 'boolean') datastore.data.settings.welcomeCompleted = body.welcomeCompleted;
+      if (typeof body.objevHotovo === 'boolean') datastore.data.settings.objevHotovo = body.objevHotovo;
       if (body.lastSeenVersion !== undefined) {
         if (typeof body.lastSeenVersion !== 'string' || !/^\d+\.\d+\.\d+$/.test(body.lastSeenVersion)) throw new HttpError(422, ui('Neplatná verze.'));
         datastore.data.settings.lastSeenVersion = body.lastSeenVersion;
@@ -899,6 +900,11 @@ export function createHttpServer(app, existingServer = null) {
     // posílá jako %3A – bez dekódování by každé „Napojit“ u webového chatu skončilo 404.
     // Napojení modelů: jen člověk u Macu. Zjišťování stavu spouští nástroje dodavatelů (claude, codex),
     // takže ani čtení nesmí jít z telefonu.
+    // Nalezené AI nástroje pro okno při prvním spuštění. Jen u Macu: ptá se nástrojů dodavatelů.
+    ['GET', /^\/api\/objev$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení modelů je vidět jen {0}.', POCITAC.naHostiteli));
+      return app.objev();
+    }],
     ['GET', /^\/api\/napojeni$/, async (req) => {
       if (!zTohotoMacu(req)) throw new HttpError(403, ui('Napojení modelů je vidět jen {0}.', POCITAC.naHostiteli));
       return { napojeni: await app.napojeni.prehled() };

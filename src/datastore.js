@@ -10,6 +10,8 @@ import { normalizeObservedAccounts } from './provider-accounts.js';
 export const DEFAULT_SETTINGS = {
   onboardingDismissed: false,
   welcomeCompleted: false,
+  // Okno „Našli jsme na tvém Macu“ (public/js/objev-ui.js) už člověk viděl a zavřel.
+  objevHotovo: false,
   lastSeenVersion: '',
   appearance: 'light',
   // Rodina vzhledu: Obloha (Úsvit a Půlnoc) nebo Koncert (Slonovina a Eben), public/js/appearance.js.
@@ -193,6 +195,7 @@ function normalizeDataInner(raw) {
       tailscaleAccess: s.tailscaleAccess === true,
       onboardingDismissed: s.onboardingDismissed === true,
       welcomeCompleted: s.welcomeCompleted === true,
+      objevHotovo: s.objevHotovo === true,
       lastSeenVersion: typeof s.lastSeenVersion === 'string' && /^\d+\.\d+\.\d+$/.test(s.lastSeenVersion) ? s.lastSeenVersion : '',
       appearance: ['light', 'dark', 'system'].includes(s.appearance) ? s.appearance : 'light',
       look: s.look === 'koncert' ? 'koncert' : 'obloha',

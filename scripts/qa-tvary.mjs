@@ -236,7 +236,7 @@ app.app.store.commit(Object.assign(app.app.store.ensure({ connector: 'codex', lo
 // Víc než 7 řádků časové osy a víc než 12 živých agentů: měří se i odkaz pod osou a kapsle s počtem dalších.
 pridejMnohoAgentu(app.app.store);
 await api(app.url).send('POST', '/api/projects', { name: 'QA projekt' });
-await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, appearance: 'light' });
+await api(app.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, appearance: 'light' });
 for (const sirka of SIRKY) {
   const page = await browser.newPage({ viewport: { width: sirka, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
   for (const trasa of ROUTES) {

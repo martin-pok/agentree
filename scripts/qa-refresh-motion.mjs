@@ -15,7 +15,7 @@ const server = await startTestServer();
 const browser = await chromium.launch(launch);
 
 try {
-  await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
+  await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0' });
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
   await context.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
   const page = await context.newPage();

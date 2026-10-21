@@ -157,3 +157,64 @@ html.is-windows .sidebar { margin-top: 0; top: 0; bottom: 24px; height: calc(100
   .welcome-copy { padding: 16px 0; }
   .welcome-content { padding: 20px 32px 24px; }
 }
+
+/* Okno „Našli jsme na tvém Macu“ (public/js/objev-ui.js): seznam nalezených nástrojů a potvrzení
+   přístupu. Stejný jazyk jako ostatní okna: karta s jemným tónem značky nahoře a obrysem, řádky
+   jako Napojené modely v Nastavení. */
+.objev-dialog { padding: 0; border: 0; border-radius: var(--r-lg); width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 8%, var(--card)) 0%, var(--card) 200px); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), var(--shadow-lg); overflow: hidden; }
+.objev-dialog[open] { display: flex; flex-direction: column; animation: welcome-in .45s var(--ease) both; }
+.objev-dialog::backdrop { background: rgba(12,11,16,.6); backdrop-filter: blur(12px); }
+.objev-obsah { padding: 32px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.objev-head { margin-bottom: 24px; }
+.objev-head h2 { font: 400 32px/1.15 var(--f-display); letter-spacing: -.02em; margin: 0 0 12px; outline: none; }
+.objev-head p:not(.objev-kicker) { margin: 0; color: var(--mute); font-size: 15px; line-height: 1.6; max-width: 52ch; }
+.objev-head--stred { text-align: center; }
+.objev-head--stred p:not(.objev-kicker) { margin-inline: auto; }
+.objev-kicker { margin: 0 0 12px; font-size: 12px; letter-spacing: .03em; color: var(--brass-ink); }
+.objev-sekce { margin: 24px 0 8px; font-size: 12px; letter-spacing: .03em; color: var(--mute); }
+.objev-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.objev-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 16px; border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 1px var(--line-2); min-width: 0; }
+.objev-main { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.objev-main b { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 15px; }
+.objev-main > span { color: var(--mute); font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.objev-row > .btn, .objev-row > .state { flex: none; }
+.model-logo--skupina { width: auto; padding: 0 8px; }
+.objev-loga { display: flex; gap: 2px; }
+.objev-loga .logo, .objev-loga .glyph { width: 16px; height: 16px; }
+.objev-dlazdice:has(.objev-loga) { width: auto; padding: 0 16px; }
+.objev-foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 24px; }
+.objev-foot .account-privacy { margin: 0; }
+.objev-foot--potvrzeni { justify-content: flex-end; }
+.objev-zpet { display: inline-flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.objev-zpet .icon { width: 16px; height: 16px; }
+.objev-par { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 8px 0 24px; }
+.objev-dlazdice { display: grid; place-items: center; width: 64px; height: 64px; border-radius: var(--r-logo); background: var(--card); box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px -14px rgba(22, 32, 58, .3); }
+.objev-dlazdice .logo, .objev-dlazdice .glyph { width: 32px; height: 32px; }
+.objev-dlazdice .objev-loga .logo, .objev-dlazdice .objev-loga .glyph { width: 20px; height: 20px; }
+.objev-spoj { display: flex; gap: 6px; }
+.objev-spoj i { width: 6px; height: 6px; border-radius: var(--r-full); background: var(--teal); opacity: .35; animation: objev-spoj 1.4s var(--ease) infinite; }
+.objev-spoj i:nth-child(2) { animation-delay: .2s; }
+.objev-spoj i:nth-child(3) { animation-delay: .4s; }
+@keyframes objev-spoj { 40% { opacity: 1; } }
+.objev-prava { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.objev-pravo { padding: 16px; border-radius: var(--r-md); box-shadow: inset 0 0 0 1px var(--line-2); background: var(--card); }
+.objev-pravo--ano { background: color-mix(in srgb, var(--teal) 8%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--teal) 28%, transparent); }
+.objev-pravo h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 14px; font-weight: 500; }
+.objev-pravo h3 .icon { width: 16px; height: 16px; flex: none; }
+.objev-pravo--ano h3 { color: var(--teal-ink); }
+.objev-pravo ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.objev-jak { margin: 16px 0 0; font-size: 14px; line-height: 1.6; color: var(--mute); }
+.objev-chyba { margin: 12px 0 0; font-size: 13px; color: var(--velvet-ink); }
+@media (max-width: 680px) {
+  .objev-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+  .objev-obsah { padding: 24px 16px; }
+  .objev-head h2 { font-size: 26px; }
+  .objev-row { flex-wrap: wrap; }
+  .objev-main { flex-basis: calc(100% - 56px); }
+  .objev-row > .btn, .objev-row > .state { margin-left: 44px; }
+  .objev-row:has(.model-logo--skupina) > .btn, .objev-row:has(.model-logo--skupina) > .state { margin-left: 0; }
+  .objev-prava { grid-template-columns: 1fr; }
+  .objev-foot { flex-direction: column; align-items: stretch; }
+  .objev-foot--potvrzeni { flex-direction: column-reverse; }
+}
+@media (prefers-reduced-motion: reduce) { .objev-dialog[open] { animation: none; } .objev-spoj i { animation: none; opacity: .7; } }

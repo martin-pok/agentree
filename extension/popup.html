@@ -124,6 +124,10 @@
     body[data-dalsi='true'] .scroll { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent); }
     .layout { display: grid; gap: 16px; }
     .note { padding: 12px 16px; border-radius: var(--r-md); background: var(--brass-tint); color: var(--brass-ink); font-size: 13px; line-height: 20px; }
+    /* Nová verze rozšíření: věta a tlačítko, které ji rovnou nainstaluje (funkce aktualizovat v okně). */
+    .update { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .update p { margin: 0; flex: 1 1 180px; }
+    .update .btn { flex: none; }
 
     /* ---------- Reflektor ---------- */
     .spot-wrap { position: relative; isolation: isolate; }
@@ -386,7 +390,10 @@
 
   <main class="scroll" id="scroll">
     <div class="layout">
-      <p class="note" id="outdated" hidden></p>
+      <div class="note update" id="outdated" hidden>
+        <p id="outdated-text" aria-live="polite"></p>
+        <button class="btn btn--primary" id="outdated-btn" type="button"></button>
+      </div>
 
       <section class="spot-wrap" aria-label="Nejdůležitější teď" data-i18n-attr="aria-label">
         <div class="spot" id="spot" data-tone="mist">

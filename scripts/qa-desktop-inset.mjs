@@ -15,7 +15,7 @@ for (const [engine, launcher] of [['chromium', chromium], ['webkit', webkit]]) {
   let browser;
   try {
     await api(server.url).send('PUT', '/api/settings', {
-      welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: '999.0.0',
+      welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0',
     });
     browser = await launcher.launch();
     const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', serviceWorkers: 'block' });

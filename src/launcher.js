@@ -40,7 +40,9 @@ const WEB = {
   qwen: { label: 'Qwen Chat', logo: 'qwen', provider: 'alibaba', url: null, base: 'https://chat.qwen.ai/' },
 };
 
-const PROGRAMY = ['claude', 'codex', 'gemini', 'qwen', 'copilot'];
+// Programy, které Agenteeq hledá. Kromě těch, které umí spustit, i agenti, které jen objevuje (src/objev.js).
+// Jména, která běžně nosí i jiné programy (goose, amp, crush, droid), se tu nehledají – byl by to odhad.
+const PROGRAMY = ['claude', 'codex', 'gemini', 'qwen', 'copilot', 'cursor-agent', 'aider', 'opencode', 'auggie'];
 const PROMENNE_PREPISU = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME'];
 
 const spustitelny = (p) => {

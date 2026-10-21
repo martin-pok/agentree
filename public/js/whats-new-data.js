@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.53',
+    date: '2026-10-21',
+    title: 'Našli jsme na tvém Macu',
+    items: [
+      'Agenteeq ukáže AI nástroje, které na počítači našel, a každý napojíš pár kliknutími.',
+      'Před každým napojením uvidíš, co Agenteeq uvidí a co ne. Bez tvého potvrzení se nic nenapojí.',
+      'Okno kdykoli znovu otevřeš v Nastavení → Propojení.',
+      'Rozšíření pro Chrome aktualizuješ jedním klepnutím přímo v jeho okně.',
+    ],
+    en: {
+      title: 'Found on your Mac',
+      items: [
+        'Agenteeq shows the AI tools it found on your computer, and you connect each one in a few clicks.',
+        'Before every connection you see what Agenteeq will and won’t see. Nothing connects without your confirmation.',
+        'Reopen the window any time in Settings → Connections.',
+        'Update the Chrome extension with one click right in its window.',
+      ],
+    },
+  },
+  {
     version: '0.46.52',
     date: '2026-10-20',
     title: 'Webové chaty jdou napojit',

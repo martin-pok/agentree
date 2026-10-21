@@ -21,6 +21,9 @@ const DIALOGY = [
   { nazev: 'Rozpočty', trasa: 'utrata', klik: '.toolbar [data-action="budgets"]', oblast: '.modal-scrim [role="dialog"]' },
   // Na telefonu je Nápověda v jiné sekci Nastavení: skok na kartu jako odkazy `data-karta` v aplikaci.
   { nazev: 'Co je nového', trasa: 'nastaveni', karta: 'help', klik: '[data-whats-new]', oblast: '.modal-scrim [role="dialog"]' },
+  // Okno „Našli jsme na tvém Macu“ (public/js/objev-ui.js): seznam i potvrzovací obrazovka.
+  { nazev: 'Nalezené nástroje', trasa: 'nastaveni', karta: 'models', klik: '[data-objev]', oblast: '.objev-dialog[open]' },
+  { nazev: 'Potvrzení přístupu', trasa: 'nastaveni', karta: 'models', klik: '[data-objev]', dalsi: '.objev-dialog [data-objev-napojit]', oblast: '.objev-dialog[open] [data-objev-povolit]', kontrola: '.objev-dialog[open]' },
   { nazev: 'Rychlé hledání', trasa: 'prehled', klik: '[data-action="palette"]', oblast: '.palette:not([hidden])' },
   { nazev: 'Upozornění', trasa: 'prehled', klik: '#bell', oblast: '#notif-pop:not([hidden])' },
   { nazev: 'Pomocník', trasa: 'prehled', klik: '.pm-fab', oblast: '#pm-okno' },
@@ -87,11 +90,18 @@ try {
           const spoust = page.locator(d.klik).locator('visible=true').first();
           if (!(await spoust.count())) { nalezy.push(`${vzhled} ${w}px ${d.nazev}: spouštěč ${d.klik} na /${d.trasa} není vidět`); continue; }
           await spoust.click();
-          const otevreno = await page.waitForSelector(d.oblast, { state: 'visible', timeout: 5000 }).then(() => true, () => false);
+          const otevreno = await page.waitForSelector(d.kontrola || d.oblast, { state: 'visible', timeout: 5000 }).then(() => true, () => false);
           if (!otevreno) { nalezy.push(`${vzhled} ${w}px ${d.nazev}: dialog ${d.oblast} se neotevřel`); continue; }
+          if (d.dalsi) {
+            await page.locator(d.dalsi).first().click();
+            const dalsi = await page.waitForSelector(d.oblast, { state: 'visible', timeout: 5000 }).then(() => true, () => false);
+            if (!dalsi) { nalezy.push(`${vzhled} ${w}px ${d.nazev}: ${d.oblast} se neukázalo`); continue; }
+          }
           await page.waitForTimeout(400);
-          for (const x of await axePoruseni(page, axe, d.oblast)) nalezy.push(`${vzhled} ${w}px dialog ${d.nazev}: ${x}`);
+          for (const x of await axePoruseni(page, axe, d.kontrola || d.oblast)) nalezy.push(`${vzhled} ${w}px dialog ${d.nazev}: ${x}`);
           await page.keyboard.press('Escape');
+          // Escape na potvrzení vrací na seznam; okno pak zavře „Hotovo“ (dva Escape po sobě bez klepnutí Chrome nedoručí).
+          if (d.kontrola) await page.locator('.objev-dialog [data-objev-hotovo]').click({ timeout: 3000 }).catch(() => {});
         }
       }
       await ctx.close();

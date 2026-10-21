@@ -9,6 +9,7 @@ import { Store } from './store.js';
 import { AlertEngine } from './alerts.js';
 import { createNotifier } from './notify.js';
 import { createDetekce } from './detekce.js';
+import { nalezeneNastroje } from './objev.js';
 import { createHistorie } from './historie.js';
 import { createSecrets } from './secrets.js';
 import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey } from './spend.js';
@@ -938,6 +939,20 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     },
   });
 
+  // Okno „Našli jsme na tvém Macu“ (src/objev.js). Stav přihlášení dodá napojeni.prehled().
+  async function objev() {
+    const prehled = await napojeni.prehled().catch(() => []);
+    return nalezeneNastroje({
+      runtimes: store.runtimes || [],
+      zaznamy: datastore.data.nastroje || {},
+      bins: () => (launchDetected || dry ? launchEnv.bins : null),
+      app: installed.app || (() => null),
+      napojeni: prehled.filter((n) => n.druh === 'agent'),
+      pripojene: new Set(connectorList().filter((c) => c.state === 'connected').map((c) => c.id)),
+      webStav: extensionStatus().state,
+    });
+  }
+
   async function refreshLaunch() {
     if (config.launchAgents && config.openMode === 'exec') {
       launchEnv = await detectLaunchEnv({ ollama, home: config.sourceHome });
@@ -1739,7 +1754,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
-    licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni,
+    licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
     launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,

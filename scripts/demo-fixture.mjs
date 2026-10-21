@@ -50,7 +50,7 @@ export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } =
   const popis = (ukazka, cisty) => (text(oznacit ? ukazka : cisty));
   const demo = await startTestServer(env, { hostIdentity: { ...UKAZKOVY_HOST, fullName: text(UKAZKOVY_HOST.fullName) } });
   const client = api(demo.url);
-  await client.send('PUT', '/api/settings', { welcomeCompleted: true, onboardingDismissed: true, lastSeenVersion: VERZE, language: jazyk });
+  await client.send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: VERZE, language: jazyk });
   const now = Date.now();
   const sessions = [
     { connector: 'claude-code', localId: 'showcase-navigation', provider: 'anthropic', app: 'Claude Code', title: u('navigace klientského portálu'), running: true, cinnost: 'Upravuje hlavičku a mobilní menu' },
