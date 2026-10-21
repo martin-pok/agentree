@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.56',
+    date: '2026-10-21',
+    title: 'Agenti na první pohled',
+    items: [
+      'Na kartě agenta teď snadno najdeš hlavní název konverzace.',
+      'Hromadně vybereš a zařadíš přesný počet konverzací.',
+      'Z rozšíření otevřeš přímo Přehled v aplikaci.',
+      'Aplikace automaticky hledá dovednosti v dalších složkách.',
+    ],
+    en: {
+      title: 'Agents at a glance',
+      items: [
+        'The agent card now gives the conversation title the main focus.',
+        'Select and assign conversations in bulk with an exact item count.',
+        'Open the app overview directly from the extension.',
+        'The app now discovers skills in additional folders automatically.',
+      ],
+    },
+  },
+  {
     version: '0.46.55',
     date: '2026-10-21',
     title: 'Rozhodování dotažené',

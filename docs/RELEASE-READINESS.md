@@ -8,7 +8,8 @@
 
 - **Draft jen na pokyn (od 20. 10. 2026, rozhodnutí vlastníka):** kandidát se sestaví ručním spuštěním „Připravit vydání“, ne po každém merge. Seznam vydání tak obsahuje jen zveřejněná vydání a nanejvýš jeden kandidát během chystaného vydání.
 - **Úklid Draftů (od 20. 10. 2026, rozhodnutí vlastníka):** po každém novém Draftu, který projde auditem, smaže `prune-drafts.yml` všechny nezveřejněné Drafty s nižší verzí. Zveřejněná vydání a tagy se nemažou. První běh po sloučení smaže překonané Drafty v0.36.4, v0.37.0, v0.46.7–v0.46.11, v0.46.13, v0.46.14, v0.46.19, v0.46.32, v0.46.34–v0.46.38, v0.46.40, v0.46.41, v0.46.44 a v0.46.45 (případně i v0.46.46 a v0.46.47, pokud mezitím vzniknou a nebudou zveřejněné); jejich zmínky níže jsou historie.
-- **v0.46.55: Preview kandidát s dotaženým rozhodováním v aplikaci.** Trvalé pravidlo podle návrhu Claude Code, tlačítka u agenta, karta zmizí po rozhodnutí jinde.
+- **v0.46.56: připravovaný Preview kandidát.** Název konverzace je na Přehledu hlavní, hromadný výběr je přístupnější a značka v rozšíření otevře nativní Přehled.
+- **v0.46.55: Preview zveřejněné 21. 10. 2026 (rozhodování v Agenteeq dotažené).**
 - **v0.46.54: Preview zveřejněné 21. 10. 2026 (rozhodnutí agenta v aplikaci, Beta).**
 - **v0.46.53: Preview zveřejněné 21. 10. 2026 (okno „Našli jsme na tvém Macu“, aktualizace rozšíření z jeho okna).**
 - **v0.46.52: Preview zveřejněné 20. 10. 2026 (napojení webových chatů).** „Napojit“ u ChatGPT a dalších webů končilo 404 (`web%3Achatgpt`).
