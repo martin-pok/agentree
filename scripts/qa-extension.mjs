@@ -87,7 +87,7 @@ try {
           };
           window.chrome = {
             storage: { local: { get: async () => data, set: async o => Object.assign(data, o), remove: async () => {} }, session: { get: async () => ({ otevrene: window.otevrene }), set: async () => {} } },
-            runtime: { getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
+            runtime: { reload: () => { fixture.znovuNacteno = (fixture.znovuNacteno || 0) + 1; }, getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují, jedna nedávná.
               if (m.type === 'agenteeq:prehled') return ['paired', 'outdated', 'novejsi'].includes(state) && fixture.paired ? window.prehledFixture : null;
               if (m.type === 'agenteeq:focus-agent') { fixture.focusedAgent = m.id; return { ok: true }; }
@@ -283,7 +283,14 @@ try {
           // Chaty v kartách rozšíření vidí i bez aplikace.
           assert.match(await page.locator('#konverzace').innerText(), /Plán marketingu na Q4[\s\S]*odpovídá/);
         }
-        if (state === 'outdated') assert.match(await page.locator('#outdated').innerText(), /0\.13\.0/);
+        if (state === 'outdated') {
+          assert.match(await page.locator('#outdated').innerText(), /0\.13\.0/);
+          // Aktualizace jedním klepnutím přímo v okně: rozbalená kopie se znovu načte ze složky,
+          // kterou aplikace přepsala, a pokus se zapamatuje (po načtení odjinud to okno řekne).
+          await page.locator('#outdated-btn').click();
+          await page.waitForFunction(() => window.fixture.znovuNacteno === 1);
+          assert.equal(await page.evaluate(async () => (await window.chrome.storage.local.get()).aktualizacePokus?.cil), '0.13.0');
+        }
         // Starší aplikace nesmí rozšíření nabízet „novou“ verzi, která je ve skutečnosti starší.
         if (state === 'novejsi') assert.equal(await page.locator('#outdated').isVisible(), false, 'aplikace je starší než rozšíření');
         if (state === 'neovereno') {
