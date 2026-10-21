@@ -374,7 +374,7 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- Trasy ---------- */
 
-  // Dovednosti se čtou přímo z disku podle `config.sourceHome`, nic se nedrží v paměti.
+  // Dovednosti se čtou přímo z lokálních adresářů uživatele, nic se nedrží v paměti.
   const skills = createSkills({ config });
 
   const routes = [

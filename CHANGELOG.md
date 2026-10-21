@@ -1,5 +1,9 @@
 # Changelog
 
+## Nepublikované změny
+
+- **Dovednosti:** seznam nově zahrnuje `~/skills`, vlastní umístění `CLAUDE_CONFIG_DIR` a `CODEX_HOME` a symlinkované soubory i složky. Stejný soubor připojený na více místech se ukáže jen jednou; cykly symlinků se bezpečně přeskočí. Odstraněn byl také tichý limit 400 položek. Seznam se dál obnovuje při otevření stránky, po návratu do okna a každých 30 sekund.
+
 ## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené
 
 - **Povolit a příště se neptat:** když Claude Code k žádosti nabídne trvalé pravidlo (stejné, jaké nabízí v terminálu), karta ho ukáže celé i s tím, kam se uloží („v tomto projektu, jen u tebe“, „jen v této konverzaci“…), a jedním klepnutím ho potvrdíš. Agenteeq žádné pravidlo nevymýšlí a nic v něm nemění.

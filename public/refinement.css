@@ -178,8 +178,8 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
 /* Vlastník, 19. 10. 2026: živější, organičtější, plastický, s hloubkou a znatelným pohybem. Dvě
    skvrny měnící tvar i polohu, pod nimi pevné světlo vpravo nahoře, lesk u horní hrany a vnitřní
    stín dole. Text vlevo zůstává na klidné ploše; skvrny se drží pravé poloviny. */
-.home-intro::before { width: 48%; height: 170%; right: -12%; top: -45%; background: radial-gradient(closest-side, color-mix(in srgb, #6260d8 34%, transparent), color-mix(in srgb, #6260d8 10%, transparent) 70%, transparent); animation: pozdrav-mesh-a 5.5s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
-.home-intro::after { width: 40%; height: 160%; right: 10%; top: -20%; background: radial-gradient(closest-side, color-mix(in srgb, #9a8cff 30%, transparent), color-mix(in srgb, #c06ad8 8%, transparent) 72%, transparent); animation: pozdrav-mesh-b 7s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
+.home-intro::before { width: 38%; height: 150%; right: -4%; top: -38%; background: radial-gradient(closest-side, color-mix(in srgb, #6260d8 30%, transparent), color-mix(in srgb, #6260d8 8%, transparent) 70%, transparent); animation: pozdrav-mesh-a 7s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
+.home-intro::after { width: 32%; height: 140%; right: 16%; top: -16%; background: radial-gradient(closest-side, color-mix(in srgb, #9a8cff 26%, transparent), color-mix(in srgb, #c06ad8 7%, transparent) 72%, transparent); animation: pozdrav-mesh-b 8s cubic-bezier(.45, .05, .35, 1) infinite alternate; }
 :root[data-theme='dark'] .home-intro::before { background: radial-gradient(closest-side, color-mix(in srgb, #6260d8 46%, transparent), color-mix(in srgb, #6260d8 14%, transparent) 70%, transparent); }
 :root[data-theme='dark'] .home-intro::after { background: radial-gradient(closest-side, color-mix(in srgb, #8b7cf6 36%, transparent), color-mix(in srgb, #c06ad8 10%, transparent) 72%, transparent); }
 .home-desk .home-intro {
@@ -192,15 +192,15 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
    dělá právě nestejné měřítko, ne animované zaoblení. */
 @keyframes pozdrav-mesh-a {
   0% { transform: translate(0, 0) rotate(0deg) scale(1, 1); }
-  33% { transform: translate(-16%, 12%) rotate(24deg) scale(1.2, .9); }
-  66% { transform: translate(-6%, -10%) rotate(-14deg) scale(.92, 1.12); }
-  100% { transform: translate(-20%, 4%) rotate(16deg) scale(1.1, .96); }
+  33% { transform: translate(5%, 8%) rotate(12deg) scale(1.08, .96); }
+  66% { transform: translate(2%, -6%) rotate(-8deg) scale(.96, 1.06); }
+  100% { transform: translate(7%, 3%) rotate(8deg) scale(1.04, .98); }
 }
 @keyframes pozdrav-mesh-b {
   0% { transform: translate(0, 0) rotate(0deg) scale(1.05, 1); }
-  33% { transform: translate(18%, -14%) rotate(-22deg) scale(.88, 1.14); }
-  66% { transform: translate(-10%, 12%) rotate(18deg) scale(1.18, .9); }
-  100% { transform: translate(8%, -4%) rotate(-8deg) scale(1, 1.06); }
+  33% { transform: translate(7%, -8%) rotate(-12deg) scale(.94, 1.08); }
+  66% { transform: translate(2%, 7%) rotate(10deg) scale(1.08, .94); }
+  100% { transform: translate(5%, -3%) rotate(-5deg) scale(1, 1.04); }
 }
 @media (prefers-reduced-motion: reduce) { .home-intro::before, .home-intro::after { animation: none; } }
 .home-dnes { display: grid; justify-items: end; gap: 6px; margin-right: 4px; color: var(--ink); }

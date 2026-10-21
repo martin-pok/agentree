@@ -4,6 +4,10 @@ Autorizace SSE se kontroluje před každou událostí i heartbeat. Odebrání za
 
 Agenteeq čte velmi citlivá data: přepisy práce s AI (kód, klientské informace, prompty). Bezpečnost je proto součást produktu, ne doplněk.
 
+### Lokální dovednosti
+
+Seznam dovedností čte pouze soubory `SKILL.md` z předem určených uživatelských složek: `~/skills`, `~/.agents/skills`, Claude (`~/.claude/skills`, pluginy a plánované úlohy) a Codex (`~/.codex/skills` a jeho paměť). Pokud Claude nebo Codex používají `CLAUDE_CONFIG_DIR` či `CODEX_HOME`, jejich cesty se respektují. Složky a soubory záměrně připojené symlinkem se sledují také; smyčky se detekují a stejný soubor se nezobrazí duplicitně. Obsah se čte lokálně z disku a není součástí synchronizace účtu Agenteeq.
+
 ## Model hrozeb
 
 | Hrozba | Opatření | Kde |

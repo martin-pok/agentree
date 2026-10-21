@@ -7,16 +7,16 @@ import { ui } from './texty.js';
 // Dovednosti = soubory SKILL.md, které si na disk ukládají Claude, jeho pluginy a Codex.
 // Čteme je jen lokálně a jen na vyžádání; nic se nikam neodesílá.
 const FILE_NAME = 'SKILL.md';
-const MAX_SKILLS = 400;
 const MAX_BYTES = 512 * 1024;
 
 export const SOURCES = [
   { id: 'shared', label: ui('Sdílené'), rel: ['.agents', 'skills'], depth: 2 },
-  { id: 'claude', label: 'Claude', rel: ['.claude', 'skills'], depth: 2 },
-  { id: 'claude-plugin', label: 'Claude · plugin', rel: ['.claude', 'plugins'], depth: 7 },
-  { id: 'claude-task', label: ui('Claude · plánovaná úloha'), rel: ['.claude', 'scheduled-tasks'], depth: 2 },
-  { id: 'codex', label: 'Codex', rel: ['.codex', 'skills'], depth: 3 },
-  { id: 'codex-memory', label: ui('Codex · paměť'), rel: ['.codex', 'memories', 'skills'], depth: 2 },
+  { id: 'user-skills', label: 'Skills', rel: ['skills'], depth: 2 },
+  { id: 'claude', label: 'Claude', tool: 'claude', rel: ['skills'], depth: 2 },
+  { id: 'claude-plugin', label: 'Claude · plugin', tool: 'claude', rel: ['plugins'], depth: 7 },
+  { id: 'claude-task', label: ui('Claude · plánovaná úloha'), tool: 'claude', rel: ['scheduled-tasks'], depth: 2 },
+  { id: 'codex', label: 'Codex', tool: 'codex', rel: ['skills'], depth: 3 },
+  { id: 'codex-memory', label: ui('Codex · paměť'), tool: 'codex', rel: ['memories', 'skills'], depth: 2 },
 ];
 
 // Hlavička souboru je YAML mezi dvěma řádky `---`. Bereme jen `name` a `description`,
@@ -60,13 +60,18 @@ const idOf = (file) => crypto.createHash('sha1').update(file).digest('hex').slic
 
 async function findSkillFiles(root, depth) {
   const out = [];
+  const visited = new Set();
   async function walk(dir, level) {
-    if (out.length >= MAX_SKILLS) return;
+    // Symlinkované skills jsou běžné (například jedna sdílená složka napojená do Claude i Codexu).
+    // Realpath zároveň zabrání smyčkám a duplicitnímu procházení téže složky.
+    let realDir;
+    try { realDir = await fs.realpath(dir); } catch { return; }
+    if (visited.has(realDir)) return;
+    visited.add(realDir);
     for (const e of await readdirSafe(dir)) {
-      if (out.length >= MAX_SKILLS) return;
       const full = path.join(dir, e.name);
-      if (e.isFile() && e.name === FILE_NAME) out.push(full);
-      else if (e.isDirectory() && level < depth && !e.name.startsWith('node_modules')) await walk(full, level + 1);
+      if (e.name === FILE_NAME && (e.isFile() || e.isSymbolicLink()) && (await statSafe(full))?.isFile()) out.push(full);
+      else if ((e.isDirectory() || e.isSymbolicLink()) && level < depth && !e.name.startsWith('node_modules') && (await statSafe(full))?.isDirectory()) await walk(full, level + 1);
     }
   }
   await walk(root, 0);
@@ -74,8 +79,13 @@ async function findSkillFiles(root, depth) {
 }
 
 export function createSkills({ config }) {
-  // Cesta se skládá ze `config.sourceHome`, aby testy běžely nad dočasným HOME a ne nad skutečným.
-  const rootOf = (src) => path.join(config.sourceHome, ...src.rel);
+  // Testovací sourceHome izoluje všechny zdroje. V běžném provozu respektujeme i vlastní
+  // umístění Claude/Codex, které jejich CLI dovolují přes CLAUDE_CONFIG_DIR a CODEX_HOME.
+  const rootOf = (src) => {
+    const toolHome = src.tool === 'claude' ? config.claudeConfigDir : src.tool === 'codex' ? config.codexHome : '';
+    const base = toolHome || (src.tool ? path.join(config.sourceHome, src.tool === 'claude' ? '.claude' : '.codex') : config.sourceHome);
+    return path.join(base, ...src.rel);
+  };
 
   async function list() {
     const seen = new Set();
@@ -84,8 +94,10 @@ export function createSkills({ config }) {
       const root = rootOf(src);
       if (!(await statSafe(root))) continue;
       for (const file of await findSkillFiles(root, src.depth)) {
-        if (seen.has(file)) continue;
-        seen.add(file);
+        let canonical;
+        try { canonical = await fs.realpath(file); } catch { continue; }
+        if (seen.has(canonical)) continue;
+        seen.add(canonical);
         const stat = await statSafe(file);
         if (!stat?.isFile()) continue;
         let head = '';

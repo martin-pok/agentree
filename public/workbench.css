@@ -4,6 +4,8 @@
    8/6 drobnosti · kapsle vše klikací na jeden řádek. Pevné px v CSS se nepoužívají. */
 :root, html[data-look] { --r-xs: 6px; --r-sm: 8px; --r-md: 12px; --r-lg: 20px; --r-xl: 24px; --r-full: 999px; }
 :root {
+  --action-brand: #5254d8;
+  --on-action-brand: #ffffff;
   --f-display: 'Satoshi', 'Onest', system-ui, sans-serif;
   --f-body: 'Satoshi', 'Onest', system-ui, sans-serif;
   --f-mono: 'Satoshi', 'Onest', system-ui, sans-serif;
@@ -68,12 +70,22 @@ body { letter-spacing: -.012em; }
 .launch-kbd { background: none; box-shadow: none; }
 .launch-kbd kbd { background: transparent; color: var(--mute); padding: 0 2px; }
 .launch-go { height: 40px; min-width: 112px; }
+.launch .launch-go:is(:hover, :focus-visible) {
+  background: var(--action-brand);
+  border-color: var(--action-brand);
+  color: var(--on-action-brand);
+}
 .decision { background: color-mix(in srgb, var(--velvet) 4%, var(--card)); box-shadow: none; border: 1px solid color-mix(in srgb, var(--velvet) 18%, var(--card)); padding: 22px; gap: 10px 14px; }
 .decision-title { font-size: 20px; font-weight: 400; letter-spacing: -.025em; }
 .decision-kicker { font-size: 12px; }
 .decision-reason { line-height: 1.6; }
 .decision-actions { margin-top: 14px; }
 .decision .btn--primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+/* Sekundární akce na tmavé kartě splývala s podkladem; samotná změna okraje nestačila. */
+.decision-actions .btn:not(.btn--primary):is(:hover, :focus-visible) {
+  background: color-mix(in srgb, var(--action) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--action) 48%, var(--line));
+}
 .pulse-bar, html[data-theme] .pulse-bar {
   --pb-bg: #101014; --pb-rim: transparent; --pb-ink: #fafafa; --pb-mute: #b0b0be;
   --pb-work: #a1c9b6; --pb-alert: #f0a5b8; --pb-wait: #e1c38e;
@@ -141,6 +153,8 @@ body { letter-spacing: -.012em; }
 .pcard-name { font-size: 20px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere; }
 .pcard-top { align-items: flex-start; }
 .pcard-top > .pdot { margin-top: 5px; }
+/* Logo klienta na kartě zůstává jemně nad povrchem, ale bez vnitřní linky v rozích dlaždice. */
+.pcard-top .plogo:not(.plogo--tvar) { box-shadow: 0 6px 16px -10px rgb(12 11 16 / .45); }
 /* Projekt bez obrázku karty nemá prázdný pruh obálky (projects.js ho nevykreslí): karta začíná
    běžným okrajem a logo, které jinak přesahuje do obálky, sedí v řádku s názvem. */
 .pcard--bez-obalky { padding-top: 22px; }
@@ -612,6 +626,29 @@ html[data-theme='dark'] .rb[data-strana='dole']::after { border-color: color-mix
 html[data-theme] .home-desk .decision { background: var(--card); border: 1px solid var(--line-2); box-shadow: none; padding: 20px; border-radius: var(--r-lg); }
 html[data-theme] .home-desk .decision .icon-tile { background: color-mix(in srgb, var(--velvet) 8%, var(--card)); }
 html[data-theme] .home-desk .calm { background: var(--card); box-shadow: none; border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 20px; }
+/* Ve světlém motivu musí bílé plochy čitelně vystoupit z mlžného podkladu. Nízký, široký stín
+   drží karty v jedné rovině a přidává hloubku bez těžkého „plovoucího“ efektu. */
+html:not([data-theme='dark']) .pcard.card,
+html:not([data-theme='dark']) .pcard--ghost,
+html:not([data-theme='dark']) .home-desk .launch-compose,
+html:not([data-theme='dark']) .home-desk .decision,
+html:not([data-theme='dark']) .home-desk .calm,
+html:not([data-theme='dark']) .home-history .card,
+html:not([data-theme='dark']) .home-live .pb-agent {
+  border-color: color-mix(in srgb, var(--line) 72%, #9AA5B8);
+  box-shadow: 0 1px 2px rgb(22 32 58 / .045), 0 12px 28px -20px rgb(22 32 58 / .22);
+}
+@media (hover: hover) {
+  html:not([data-theme='dark']) .pcard.card:hover,
+  html:not([data-theme='dark']) .pcard--ghost:hover,
+  html:not([data-theme='dark']) .home-live .pb-agent:hover {
+    box-shadow: 0 2px 4px rgb(22 32 58 / .055), 0 18px 34px -22px rgb(22 32 58 / .28);
+  }
+}
+html:not([data-theme='dark']) :is(.pcard.card, .pcard--ghost, .home-live .pb-agent):focus-visible {
+  outline: 2px solid var(--action-brand);
+  outline-offset: 3px;
+}
 .zdravi { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); }
 .zdravi-veta { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 16px; font-weight: 500; color: var(--ink); }
 .zdravi-pozn { margin: -8px 0 0 20px; font-size: 12px; color: var(--mute); }
