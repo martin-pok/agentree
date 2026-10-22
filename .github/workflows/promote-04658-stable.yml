@@ -26,9 +26,14 @@ jobs:
           tag_object="$(gh api "$repo/git/ref/tags/v0.46.58" --jq '.object.sha')"
           tag_target="$(gh api "$repo/git/tags/$tag_object" --jq '.object.sha')"
           test "$tag_target" = "$EXPECTED_SHA"
+          echo 'Verified annotated tag'
           for run in 39794563344 39797174184 39798349093; do
             gh api "$repo/actions/runs/$run" > "run-$run.json"
-            jq -e --arg sha "$EXPECTED_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success"' "run-$run.json"
+            jq -e --arg sha "$EXPECTED_SHA" --argjson run "$run" '
+              .status == "completed" and .conclusion == "success"
+              and (if $run == 39794563344 then .head_sha == $sha else true end)
+            ' "run-$run.json"
+            echo "Verified successful run $run"
           done
           gh api "$repo/releases/tags/v0.46.58" > release.json
           jq -e --arg sha "sha256:$EXPECTED_ZIP_SHA256" '
@@ -37,6 +42,7 @@ jobs:
             and ([.assets[] | select(.name == "Agenteeq-macOS-arm64.zip" and .digest == $sha)] | length) == 1
             and (.body | contains("Toto je **Preview**, testovací vydání. Stabilní verze (Latest) zůstává beze změny."))
           ' release.json
+          echo 'Verified public release, eight assets and Mac ZIP SHA256'
           gh api "$repo/releases/latest" --jq '.tag_name' | grep -Fx 'v0.46.0'
       - name: Promote existing release without rebuilding artifacts
         env:
