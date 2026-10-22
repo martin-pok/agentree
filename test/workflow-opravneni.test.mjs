@@ -21,6 +21,7 @@ const ZAPIS = {
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
   'publish-v0.46.57-once.yml': { 'release-preview': 'pouze dispatch existujících release.yml a publish.yml pro v0.46.57 Preview po zeleném main CI' },
+  'publish-v0.46.58-once.yml': { 'publish-preview': 'pouze dispatch existujícího publish.yml po úplném CI, ověřeném tagu a auditu releasu 0.46.58' },
   'merge-pr341-once.yml': { 'merge-exact-candidate': 'jen PR #341 na neměnném HEAD po úspěšných Testy a CodeQL; jediný squash merge' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
   'scorecard.yml': { scorecard: 'nahrání výsledků do code scanning (security-events) a ověření původu přes OIDC (id-token); do repozitáře nezapisuje' },
@@ -148,7 +149,7 @@ test('historical preview delivery listeners do not fire on every completed CI ru
 test('CI does not start duplicate push and pull_request matrices for feature branches', () => {
   const workflow = workflowy.find(({ f }) => f === 'test.yml')?.yml || '';
   const triggers = workflow.slice(0, workflow.indexOf('\nconcurrency:'));
-  assert.match(triggers, /\n  push:\n    branches: \[main\]/, 'push CI belongs to main only');
+  assert.match(triggers, /\n  push:\n    branches: \[main, release\/0\.46\.58\]/, 'push CI belongs only to main and the exact owner-authorized release candidate');
   assert.match(triggers, /\n  pull_request:/, 'feature branches run the complete matrix through a PR');
   assert.match(triggers, /\n  workflow_dispatch:/, 'maintainers can explicitly run CI');
   assert.doesNotMatch(triggers, /branches: \['\*\*'\]/, 'all-branches push CI duplicates PR checks');

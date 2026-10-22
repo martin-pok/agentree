@@ -1,0 +1,99 @@
+# The owner requested an immediate Preview release. This one-shot controller
+# waits for full CI on the exact branch commit, a matching tag, the official
+# release build and its independent byte audit before requesting publication.
+name: One-time release v0.46.58 Preview
+
+on:
+  push:
+    branches: [release/0.46.58]
+
+permissions:
+  contents: read
+
+jobs:
+  publish-preview:
+    if: github.event.head_commit.message == 'Authorize verified v0.46.58 Preview once'
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_SHA: ${{ github.sha }}
+    steps:
+      - name: Require complete Testy on this exact commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/release/0.46.58
+          for i in $(seq 1 120); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/runs?head_sha=$RELEASE_SHA&per_page=30" \
+              --jq '[.workflow_runs[] | select(.head_sha == env.RELEASE_SHA and .head_branch == "release/0.46.58" and .event == "push")][0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ]; then
+              echo "Full candidate CI: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+              test "$RESULT" = success
+              exit 0
+            fi
+            sleep 20
+          done
+          echo '::error::Timed out waiting for complete candidate CI.'
+          exit 1
+      - name: Wait for immutable matching release tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 90); do
+            OBJECT=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.46.58" --jq .object.sha 2>/dev/null || true)
+            if [[ "$OBJECT" =~ ^[0-9a-f]{40}$ ]]; then
+              TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJECT" --jq .object.sha)
+              test "$TAG_SHA" = "$RELEASE_SHA" || { echo '::error::Release tag points to a different commit.'; exit 1; }
+              echo "Verified v0.46.58 tag on $RELEASE_SHA"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo '::error::Matching release tag was not pushed.'
+          exit 1
+      - name: Require official build and independent draft audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 240); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/release.yml/runs?head_sha=$RELEASE_SHA&per_page=30" \
+              --jq '[.workflow_runs[] | select(.head_sha == env.RELEASE_SHA and .event == "push")][0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ]; then
+              echo "Release and byte audit: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+              test "$RESULT" = success
+              exit 0
+            fi
+            sleep 20
+          done
+          echo '::error::Timed out waiting for official release build and audit.'
+          exit 1
+      - name: Publish verified Preview through existing workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].id // 0')
+          export BEFORE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.58' \
+            -f 'inputs[channel]=preview' -f 'inputs[confirm_stable]=false'
+          for i in $(seq 1 120); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?event=workflow_dispatch&per_page=5" \
+              --jq '[.workflow_runs[] | select(.id > (env.BEFORE | tonumber))][0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ]; then
+              echo "Publication: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+              test "$RESULT" = success
+              break
+            fi
+            sleep 20
+          done
+          test "${RESULT:-}" = success || { echo '::error::Verified Preview publication did not finish.'; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.46.58" \
+            --jq '(.tag_name == "v0.46.58") and (.draft == false) and (.prerelease == true) and (.assets | length == 8)' | grep -Fx true
+          echo "Public Preview: https://github.com/$GITHUB_REPOSITORY/releases/tag/v0.46.58"
