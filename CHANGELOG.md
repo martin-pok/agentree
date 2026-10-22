@@ -2,6 +2,7 @@
 
 ## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
 
+- **Potvrzení nového nástroje:** tlačítko „Rozumím“ / „Got it“ se při najetí a zaostření klávesnicí vyplní fialově s bílým textem.
 - **ChatGPT, Codex a Claude Code v prohlížeči:** Agenteeq přebírá skutečný název z titulku stránky nebo aktivní konverzace v postranním seznamu. Už nezobrazuje poslední znaky interního ID jako název.
 - **Přepis:** spárované rozšíření posílá viditelné zprávy jen do lokální aplikace. Detail agenta je průběžně aktualizuje bez zdvojování odpovědí. Neúplně vykreslená historie může zůstat neúplná.
 - **ChatGPT ↔ Codex:** při přechodu v jedné kartě se znovu rozpozná služba i bez načtení celé stránky.

@@ -37,7 +37,7 @@ function stitek(n) {
 function radek(n) {
   const akce = !naMacu() ? ''
     : n.sledovano
-      ? `<button class="btn btn--sm" type="button" data-nastroj-akce="rozumim" data-id="${esc(n.id)}" aria-label="${esc(tr('Potvrdit {0}', n.name))}">${tr('Rozumím')}</button>`
+      ? `<button class="btn btn--sm btn--ack" type="button" data-nastroj-akce="rozumim" data-id="${esc(n.id)}" aria-label="${esc(tr('Potvrdit {0}', n.name))}">${tr('Rozumím')}</button>`
       : `<button class="btn btn--sm" type="button" data-nastroj-akce="ignorovat" data-id="${esc(n.id)}" aria-label="${esc(tr('Nesledovat {0}', n.name))}">${tr('Nesledovat')}</button>
          <button class="btn btn--sm btn--primary" type="button" data-nastroj-akce="pridat" data-id="${esc(n.id)}" aria-label="${esc(tr('Přidat {0} do Mých nástrojů', n.name))}">${tr('Sledovat')}</button>`;
   return `<li class="nt-row">
