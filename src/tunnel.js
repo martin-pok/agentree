@@ -201,8 +201,8 @@ export function remoteAdvice(tunnels) {
       doporuceni: 'tailscale',
       text: ui('Tailscale má nejlepší poměr bezpečnosti a pohodlí: vytvoří privátní síť jen mezi tvými zařízeními, žádná veřejná adresa nikde nevzniká.'),
       kroky: tailscale.running
-        ? [ui('Zapni výš přepínač „Přístup přes Tailscale“ – Agenteeq začne poslouchat i na adrese v tvé privátní síti.'), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako {0}.', POCITAC.naHostiteli), ui('Vytvoř v Agenteeq jednorázový kód a na telefonu otevři adresu z karty Tailscale.')]
-        : [ui('Přihlas se do Tailscale {0} ("tailscale up").', POCITAC.naHostiteli), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.'), ui('Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon kódem.')],
+        ? [ui('Zapni výš přepínač „Přístup přes Tailscale“.'), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem jako {0}.', POCITAC.naHostiteli), ui('V Nastavení → Otevřít na telefonu vytvoř QR kód a naskenuj ho telefonem.')]
+        : [ui('Přihlas se do Tailscale {0} ("tailscale up").', POCITAC.naHostiteli), ui('Na telefonu nainstaluj appku Tailscale a přihlas se stejným účtem.'), ui('Zapni v Agenteeq přepínač „Přístup přes Tailscale“ a spáruj telefon přes QR kód.')],
     };
   }
   // Co se nepodařilo zjistit, nesmí skončit radou „nic není nainstalované“ (CLAUDE.md).

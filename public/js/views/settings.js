@@ -138,11 +138,9 @@ function remoteCard() {
     <p class="set-note">${tr('Uložení na plochu telefonu potřebuje HTTPS. Veřejný tunel ho má sám, u Tailscale ho zapneš příkazem <code>tailscale serve</code>.')}</p>`;
 }
 
-// Tailscale: privátní síť jen mezi vlastními zařízeními. Na rozdíl od karty „Mimo domov“ tady
-// Agenteeq nejen radí – se zapnutým přepínačem začne naslouchat i na adrese tohoto Macu v tailnetu
-// (100.x, respektive jméno v MagicDNS). Žádná veřejná adresa nikde nevzniká a párování kódem
-// platí i tady: bez spárovaného telefonu se z tailnetu nepřečte nic.
-function tailscaleCard() {
+// Tailscale: privátní síť jen mezi vlastními zařízeními. Adresa zůstává interní součástí QR;
+// bez spárovaného telefonu se z tailnetu nepřečte nic.
+export function tailscaleCard() {
   const t = (state.lan || {}).tailscale || { enabled: false, available: false, addresses: [], name: '', url: '', error: '' };
   const detekce = (state.tunnels?.list || []).find((x) => x.id === 'tailscale') || null;
   const serve = detekce?.serve || null;
@@ -151,7 +149,7 @@ function tailscaleCard() {
   const bezi = Boolean(detekce?.running);
   const pripraveno = bezi && t.available;
   const popis = pripraveno
-    ? `${tr('Adresa {0} v síti Tailscale:', tohotoPocitace())} ${t.name || t.addresses[0]}`
+    ? tr('Tailscale je připravený pro spárování telefonu přes QR kód.')
     : bezi
       ? tr('Tailscale běží, ale {0} zatím nemá adresu v tailnetu.', tentoPocitac())
       : detekce?.installed === null
@@ -163,33 +161,29 @@ function tailscaleCard() {
     ${head(ICON.shield, tr('Přístup přes Tailscale'), '', '', tr('Privátní síť jen mezi tvými zařízeními. Telefon se k {0} dostane z mobilních dat i z cizí Wi-Fi bez veřejné adresy.', tomutoPocitaci()))}
     ${switchRow({ key: 'tailscaleAccess', label: tr('Přístup ze sítě Tailscale'), desc: esc(popis), checked: t.enabled, disabled: !pripraveno })}
     ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
-    ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>
-      <p class="set-note">${tr('Otevři ji na telefonu přihlášeném do stejné sítě Tailscale a spáruj ho kódem z karty Otevřít na telefonu.')}</p>` : ''}
-    ${t.enabled && t.addresses.length > 1 ? `<p class="set-note">${tr('Další adresy v síti Tailscale:')} ${esc(t.addresses.slice(1).join(', '))}</p>` : ''}
+    ${t.enabled && t.url ? `<p class="set-note">${tr('Otevři v Nastavení „Otevřít na telefonu“ a naskenuj QR kód telefonem přihlášeným do stejné sítě Tailscale.')}</p>` : ''}
     ${serve && !serve.unknown ? `<p class="set-note">${serve.running
-      ? `${tr('HTTPS přes „tailscale serve“ běží na')} <code>${esc(serve.url || '')}</code>  ${tr('Na téhle adrese si aplikaci uložíš na plochu telefonu.')}`
+      ? tr('HTTPS přes „tailscale serve“ běží. Aplikaci si můžeš uložit na plochu telefonu.')
       : tr('Pro uložení na plochu telefonu zapni HTTPS příkazem <code>tailscale serve</code>.')}</p>` : ''}
     ${!pripraveno ? `<ol class="steps steps--compact">
       <li>${tr('Nainstaluj Tailscale z tailscale.com nebo z App Storu.')}</li>
       <li>${tr('Přihlas se na {0} (', tomtoPocitaci())}<code>tailscale up</code>${tr(') i v appce na telefonu – stejným účtem.')}</li>
-      <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon kódem.')}</li>
+      <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon přes QR kód.')}</li>
     </ol>` : ''}`;
 }
 
-// Spárování telefonu: QR kód je jen zkratka k témuž jednorázovému kódu, který je vidět vedle.
-// Když čtečka selže nebo ji někdo nechce použít, číslo se dá pořád opsat – proto zůstává, a s ním
-// i adresa, kterou je potřeba na telefonu otevřít (stejná, jakou nese QR).
+// Adresa a jednorázový kód jsou pouze uvnitř QR. Ruční adresu ani kód v rozhraní nenabízíme.
 function parovaciKod(cil, pin, cas) {
   const adresa = parovaciAdresa(cil.url, pin.code);
-  const kod = adresa ? qrSvg(adresa, { popis: tr('QR kód pro spárování telefonu. Vede na {0}', cil.url) }) : null;
+  const kod = adresa ? qrSvg(adresa, { popis: tr('QR kód pro spárování telefonu') }) : null;
   const sit = cil.id === 'tailscale'
     ? tr('Telefon musí mít zapnutý Tailscale se stejným účtem.')
     : tr('Telefon musí být ve stejné Wi‑Fi jako {0}.', tentoPocitac());
   return `<div class="pair-invite">
-    ${kod ? `<div class="pair-qr">${kod}</div>` : ''}
+    ${kod ? `<div class="pair-qr" tabindex="-1">${kod}</div>` : ''}
     <div class="pair-invite-text">
-      ${kod ? `<b>${tr('Namiř na kód foťák telefonu')}</b><p class="muted small">${tr('Otevře se Agenteeq a spáruje se samo.')} ${sit}</p>` : `<p class="muted small">${sit}</p>`}
-      <div class="pin-box"><b aria-label="${esc(tr('Kód {0}', pin.code.split('').join(' ')))}">${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="small">${kod ? tr('Bez foťáku: na telefonu otevři') : tr('Na telefonu otevři')} <code class="pin-url">${esc(cil.url)}</code> ${tr('a zadej tenhle kód. Platí do {0} a jen na jedno spárování.', cas(pin.expiresAt))}</span></div>
+      ${kod ? `<b>${tr('Namiř na QR kód foťák telefonu')}</b><p class="muted small">${tr('Otevře se Agenteeq a spáruje se samo.')} ${sit}</p><p class="muted small">${tr('QR kód platí do {0} a jen pro jedno spárování.', cas(pin.expiresAt))}</p>`
+        : `<p class="form-error form-error--inline">${tr('QR kód se nepodařilo vytvořit. Zkontroluj síťové připojení a zkus to znovu.')}</p>`}
     </div>
   </div>`;
 }
@@ -203,7 +197,7 @@ function hlidejVyprseni(pin) {
 // Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
 // Kód i seznam se ukazují jen tady na Macu – z telefonu je server nevydá. Párovat jde po kterékoli
 // zapnuté cestě (domácí síť i Tailscale); kód je jeden, liší se jen adresa v QR.
-function phoneCard() {
+export function phoneCard() {
   const l = state.lan || { enabled: false, addresses: [], devices: [], tailscale: {} };
   const zapnuto = Boolean(l.enabled || l.tailscale?.enabled);
   // Platný je jen kód, který server pořád drží: po spárování ho telefon spotřebuje (událost `lan`).
@@ -214,17 +208,16 @@ function phoneCard() {
   const cas = (ms) => new Date(ms).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
   const nazevCile = { lan: tr('Domácí síť'), tailscale: 'Tailscale' };
   const parovani = !zapnuto ? '' : !cil
-    ? `<p class="set-note set-note--warn">${tr('Telefon se k {0} teď nemá jak připojit: přístup je zapnutý, ale na žádné síťové adrese neposlouchá. Kód ani QR by nikam nevedly – oprav nejdřív síť (hláška výš).', tomutoPocitaci())}</p>`
+    ? `<p class="set-note set-note--warn">${tr('Telefon se k {0} teď nemá jak připojit. Přístup je zapnutý, ale síť není připravená; zkontroluj hlášku výš.', tomutoPocitaci())}</p>`
     : `<div class="set-actions">
-        <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? tr('Nový kód') : tr('Spárovat telefon')}</button>
+        <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? tr('Nový QR kód') : tr('Spárovat telefon')}</button>
         ${cile.length > 1 ? `<div class="seg" role="group" aria-label="${tr('Kudy se telefon připojí')}">${cile.map((c) => `<button type="button" data-pair-target="${c.id}" aria-pressed="${c.id === cil.id}">${nazevCile[c.id]}</button>`).join('')}</div>` : ''}
       </div>
       ${pin ? parovaciKod(cil, pin, cas) : ''}`;
   return `
-    ${head(ICON.mac, tr('Otevřít na telefonu'), '', '', tr('Přidá adresu v domácí síti. Telefon se k datům dostane jen po spárování jednorázovým kódem.'))}
-    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? `${tr('Adresa {0}:', tohotoPocitace())} ${l.addresses.join(', ')}` : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
+    ${head(ICON.mac, tr('Otevřít na telefonu'), '', '', tr('Telefon spáruješ naskenováním jednorázového QR kódu.'))}
+    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? tr('Telefon musí být ve stejné Wi‑Fi jako {0}.', tentoPocitac()) : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
     ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
-    ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>` : ''}
     ${parovani}
     ${zapnuto ? (l.devices?.length ? `<div class="conn-source-head"><span>${tr('Spárované telefony')}</span><small>${tr('Odpárováním přestane zařízení vidět cokoli.')}</small></div>
         <ul class="privacy-list">${l.devices.map((d) => `<li><b>${esc(d.label)}</b><span>${tr('spárováno {0} ·', dateLong(d.at))} <button class="link-inline" type="button" data-action="lan-forget" data-id="${esc(d.id)}">${tr('Odpárovat')}</button></span></li>`).join('')}</ul>` : `<p class="set-note">${tr('Zatím žádný spárovaný telefon.')}</p>`) : ''}
@@ -639,12 +632,10 @@ function mount(el) {
         const { pin } = await api.lanPin();
         state.lan = { ...state.lan, pin };
         update();
-        // Fokus na nový kód: čtečka obrazovky ho přečte a klávesnice zůstane u karty.
-        v.el?.querySelector('.pin-box b')?.setAttribute('tabindex', '-1');
-        v.el?.querySelector('.pin-box b')?.focus({ preventScroll: true });
+        v.el?.querySelector('.pair-qr')?.focus({ preventScroll: true });
       } else if (a.dataset.action === 'lan-forget') {
         const zarizeni = (state.lan?.devices || []).find((d) => d.id === a.dataset.id);
-        if (await confirmDialog({ title: tr('Odpárovat zařízení'), message: `${zarizeni?.label || tr('Zařízení')} ${tr('přestane vidět cokoli z Agenteeq. Znovu se spáruje novým kódem.')}`, confirmLabel: tr('Odpárovat'), danger: true })) {
+        if (await confirmDialog({ title: tr('Odpárovat zařízení'), message: `${zarizeni?.label || tr('Zařízení')} ${tr('přestane vidět cokoli z Agenteeq. Znovu se spáruje novým QR kódem.')}`, confirmLabel: tr('Odpárovat'), danger: true })) {
           state.lan = (await api.lanForget(a.dataset.id)).lan;
           toast(tr('Zařízení odpárováno'));
           update();
@@ -795,7 +786,7 @@ async function toggleSetting(sw) {
     const tailscale = key === 'tailscaleAccess';
     try {
       state.lan = (await (tailscale ? api.setTailscaleAccess(next) : api.setLanAccess(next))).lan;
-      const zap = tailscale ? tr('Přístup přes Tailscale je zapnutý. Vytvoř kód a zadej ho v telefonu.') : tr('Přístup z telefonu je zapnutý. Vytvoř kód a zadej ho v telefonu.');
+        const zap = tailscale ? tr('Přístup přes Tailscale je zapnutý. Spáruj telefon přes QR kód.') : tr('Přístup z telefonu je zapnutý. Spáruj telefon přes QR kód.');
       const vyp = state.lan?.enabled || state.lan?.tailscale?.enabled
         ? tr('Vypnuto. Druhá cesta i spárované telefony zůstávají.')
         : tr('Vypnuto, zařízení odpárována.');

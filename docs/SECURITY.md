@@ -215,7 +215,7 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Druhý listener na **konkrétní privátní adrese** Macu, ne na `0.0.0.0` (a nikdy na veřejné adrese – `lanAddresses()` vybírá jen 10/8, 172.16/12, 192.168/16).
 - Hlavička `Host` se kontroluje proti pevnému seznamu (`127.0.0.1`, `localhost`, vlastní privátní adresy) – ochrana proti DNS rebindingu.
 - Každý požadavek z místní sítě musí mít token spárovaného zařízení. Výjimky: statické soubory (aby šla zobrazit párovací obrazovka), `/api/health` a `/api/lan/pair`.
-- Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
+- Párování: uživatel pouze naskenuje jednorázový QR na Macu; uvnitř QR je šestimístný kód s platností 5 minut a jedním použitím, nejvýš 5 pokusů, srovnání `timingSafeEqual`. Kód ani síťová adresa se vedle QR nevypisují.
 - Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash – ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
 - Z telefonu nejde číst celý přepis konverzace ani výstup agentů na pozadí (od 5. 10. 2026): `/api/sessions/:id` vrátí jen souhrn (stav, název, poslední zadání, aktivita, tokeny), `/api/sessions/:id/transcript` a `/api/runs/:id/log` odpoví 403 a událost SSE `transcript` se telefonu neposílá (`src/remote-scope.js`, `test/vzdaleny-prepis.test.mjs`).
@@ -245,7 +245,7 @@ Web Push bez serveru Agenteeq (`src/webpush.js`, `src/push.js`). Výchozí stav:
 Druhá, nezávislá cesta ke stejným datům – pro situace mimo domácí síť. Výchozí stav: **vypnuto**
 (`settings.tailscaleAccess`), zapíná se jen z Macu (`POST /api/tailscale/enable`).
 
-Platí **beze změny všechno z předchozí kapitoly** (párování PINem, token v `HttpOnly` cookie, hash
+Platí **beze změny všechno z předchozí kapitoly** (párování přes QR s jednorázovým kódem, token v `HttpOnly` cookie, hash
 v datech, CSRF, zákaz správy z telefonu) – včetně situace, kdy je před serverem `tailscale serve`
 (viz níž). Liší se jen adresa, na které server naslouchá:
 

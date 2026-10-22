@@ -128,6 +128,8 @@ zahrnuje přihlášení, licenci a odhlášení; vzhled zahrnuje motiv, jazyk a 
 chování pomocníka mají vlastní skupinu, oddělenou od vzhledu.
 Nastavení telefonu a přístupu mimo domov patří k sobě. Vyhledávání, pomocník a odkazy na kartu
 musí otevřít odpovídající skupinu i po přeskupení.
+Telefon se páruje pouze naskenováním jednorázového QR v Nastavení. Surová IP, kopírování adresy,
+ruční PIN ani pole pro síťovou adresu se v tomto toku nezobrazují. Síťová adresa zůstává jen uvnitř QR.
 
 **Výběr profilového obrázku.** Sbalený výběr ukazuje pouze jednu celou řadu avatarů. Žádný
 gradient nesmí překrývat obličeje; rozbalení přechází mezi skutečnými výškami a respektuje
