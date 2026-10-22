@@ -12,7 +12,9 @@ permissions:
 
 jobs:
   open-pr:
-    if: github.event.head_commit.message == 'Request reviewed 0.46.58 Preview release'
+    if: >-
+      ${{ github.event.head_commit.message == 'Request reviewed 0.46.58 Preview release'
+      || github.event.head_commit.message == 'Retry one-time 0.46.58 PR creation with diagnostics' }}
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -22,10 +24,16 @@ jobs:
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/release/0.46.58
-          test "$GITHUB_SHA" = "$(gh api "repos/$GITHUB_REPOSITORY/commits/release/0.46.58" --jq .sha)"
-          gh api --method POST "repos/$GITHUB_REPOSITORY/pulls" \
+          if ! gh api --method POST "repos/$GITHUB_REPOSITORY/pulls" \
             -f base=main \
             -f head=release/0.46.58 \
             -f 'title=Release 0.46.58 Preview: update check and truthful alerts' \
             -f 'body=Includes repeatable update checks, four-second offline notice, and server-confirmed unread alerts. Mac preview build, native launch, and updater QA passed on the candidate code. Full PR CI and exact-SHA release audit are required before publishing.' \
-            --jq .html_url
+            --jq .html_url > pr-url.txt 2> pr-error.txt; then
+            echo '### Pull request creation failed' >> "$GITHUB_STEP_SUMMARY"
+            cat pr-error.txt >> "$GITHUB_STEP_SUMMARY"
+            cat pr-error.txt
+            exit 1
+          fi
+          cat pr-url.txt
+          cat pr-url.txt >> "$GITHUB_STEP_SUMMARY"
