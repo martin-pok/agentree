@@ -16,7 +16,7 @@ function spust(odpoved) {
   let posluchac = null;
   const cekajici = [];
   const odeslano = [];
-  const stranka = { id: 'konverzace-1', title: '', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
+  const stranka = { site: 'chatgpt', id: 'konverzace-1', title: '', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
   const adapter = {
     id: 'chatgpt',
     messages: () => stranka.zpravy,
@@ -28,7 +28,7 @@ function spust(odpoved) {
     composer: () => null,
   };
   const kontext = vm.createContext({
-    window: { AgenteeqSites: { detect: () => adapter }, addEventListener() {} },
+    window: { AgenteeqSites: { detect: () => stranka.site === 'codex-web' ? { ...adapter, id: 'codex-web' } : adapter }, addEventListener() {} },
     location: { href: 'https://chatgpt.com/c/konverzace-1' },
     document: { documentElement: {} },
     MutationObserver: class { observe() {} },
@@ -97,6 +97,15 @@ test('rozšíření: nově zjištěný název se odešle hned i bez změny počt
   assert.equal(r.odeslano.length, 2);
   assert.equal(r.odeslano.at(-1).title, 'Skutečný název chatu');
   assert.equal(r.odeslano.at(-1).messages[0].text, 'a');
+});
+
+test('rozšíření: přechod z ChatGPT do Codexu v téže kartě změní adaptér', async () => {
+  const r = spust(() => ({ ok: true }));
+  await r.pruchod(0);
+  assert.equal(r.odeslano.at(-1).site, 'chatgpt');
+  r.stranka.site = 'codex-web';
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).site, 'codex-web');
 });
 
 test('rozšíření: prázdná stránka bez zpráv se neohlašuje', async () => {
