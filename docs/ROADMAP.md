@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Následující kandidát 0.46.59 řeší zachování angličtiny v nativním okně při aktualizaci.
+**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Pracovní kandidát 0.46.60 zahrnuje dosud nevydanou opravu 0.46.59 (zachování angličtiny) a opravy názvů a přepisů webových konverzací.
 
 **P0 dostupnost upgradu staré instalace:** Stable Latest nabízí 0.46.58 i instalacím na kanálu Stable. Potvrzení instalace a restartu na Macu vlastníka stále chybí; cloudové prostředí jeho `/Applications` nevidí.
 
@@ -10,7 +10,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **0.46.59 Preview** (`v0.46.59`) je kandidát s opravou nativního jazyka; před publikací vyžaduje zelené CI a audit Mac balíčku. Stále zbývá UAT aktualizace na skutečném Macu vlastníka; zveřejnění není důkazem lokálního upgradu.
+**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **0.46.60 je kandidát na Preview**, není zveřejněný; obsahuje opravu nativního jazyka i webových konverzací. Před publikací vyžaduje zelené CI a audit Mac balíčku, UAT názvů a přepisů na přihlášených živých stránkách ChatGPT, Claude Code a Codexu a ověření upgradu na skutečném Macu. Zveřejnění samo není důkazem lokálního upgradu.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
