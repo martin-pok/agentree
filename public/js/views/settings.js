@@ -30,6 +30,26 @@ function hlidejFokusAvataru(el) {
   });
 }
 
+function prepniAvatary(vyber, rozbalit) {
+  const okno = vyber.querySelector('.avatar-okno');
+  const grid = okno.querySelector('.avatar-grid');
+  const vyskaNahledu = grid.querySelector('.avatar-pick').getBoundingClientRect().height + 12;
+  okno.style.height = `${okno.getBoundingClientRect().height}px`;
+  // Pevný výchozí bod umožní plynule přejít i z rozbalené výšky „auto“.
+  void okno.offsetHeight;
+  vyber.toggleAttribute('data-rozbaleno', rozbalit);
+  okno.style.height = `${rozbalit ? grid.scrollHeight : vyskaNahledu}px`;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    okno.style.height = rozbalit ? 'auto' : '';
+    return;
+  }
+  okno.ontransitionend = (e) => {
+    if (e.target !== okno || e.propertyName !== 'height') return;
+    okno.style.height = vyber.hasAttribute('data-rozbaleno') ? 'auto' : '';
+    okno.ontransitionend = null;
+  };
+}
+
 const v = { avatarRozbaleno: false, folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pinTimer: 0, parovaniCil: '', ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '', push: null, pushChyba: '', pushNacita: false };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
 const FEATURE_LABEL = { launchBackground: tr('Spouštění agentů na pozadí'), localChat: tr('Chat s lokálními modely v Ollamě'), projectsUnlimited: tr('Neomezený počet projektů'), projectExport: tr('Export projektů do CSV') };
@@ -387,7 +407,7 @@ function mount(el) {
     if (e.target.closest('[data-avatar-vice]')) {
       v.avatarRozbaleno = !v.avatarRozbaleno;
       const vyber = el.querySelector('.avatar-vyber');
-      vyber.toggleAttribute('data-rozbaleno', v.avatarRozbaleno);
+      prepniAvatary(vyber, v.avatarRozbaleno);
       const tl = vyber.querySelector('[data-avatar-vice]');
       tl.setAttribute('aria-expanded', String(v.avatarRozbaleno));
       tl.firstChild.textContent = v.avatarRozbaleno ? tr('Sbalit') : tr('Zobrazit všechny ({0})', AVATAR_COUNT + 1);

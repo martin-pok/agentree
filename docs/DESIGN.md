@@ -122,6 +122,10 @@ v jiném prohlížeči, delší patička –, profil zvolí menší podobu, a kd
 **Stavy.** Najetí změní plochu nebo linku (nikdy tvar), stisk zmenší tlačítko na 98 %, zakázané
 tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice ukazuje obrys 2 px.
 
+**Výběr profilového obrázku.** Sbalený výběr ukazuje pouze jednu celou řadu avatarů. Žádný
+gradient nesmí překrývat obličeje; rozbalení přechází mezi skutečnými výškami a respektuje
+omezení pohybu v systému.
+
 ## Horní lišta při posouvání (vlastník 20. 10. 2026)
 
 Nadpis a akce vpravo nahoře (stav připojení, Obnovit, Hledat, Upozornění) se na všech obrazovkách
