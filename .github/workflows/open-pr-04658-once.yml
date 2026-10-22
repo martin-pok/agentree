@@ -1,0 +1,31 @@
+# One-time, owner-requested PR creation for the tested 0.46.58 candidate.
+# The workflow creates a reviewable PR only. CI and release remain separate gates.
+name: Open PR for 0.46.58 once
+
+on:
+  push:
+    branches: [release/0.46.58]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    if: github.event.head_commit.message == 'Request reviewed 0.46.58 Preview release'
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Open exact candidate PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/release/0.46.58
+          test "$GITHUB_SHA" = "$(gh api "repos/$GITHUB_REPOSITORY/commits/release/0.46.58" --jq .sha)"
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pulls" \
+            -f base=main \
+            -f head=release/0.46.58 \
+            -f 'title=Release 0.46.58 Preview: update check and truthful alerts' \
+            -f 'body=Includes repeatable update checks, four-second offline notice, and server-confirmed unread alerts. Mac preview build, native launch, and updater QA passed on the candidate code. Full PR CI and exact-SHA release audit are required before publishing.' \
+            --jq .html_url
