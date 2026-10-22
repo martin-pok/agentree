@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravuje se – spolehlivější zachycení prvního agenta
+
+- **Sledování složek:** na Node 24 se neexistující kořen přepisů neoznačí za aktivní, i když `fs.watch` vrátí watcher bez chyby. Po vzniku složky se sledování zapne a první konverzace se doskenuje.
+
 ## 0.46.58 – 2026-10-21 · Spolehlivější kontrola aktualizací a upozornění
 
 - **Nastavení → Aktualizace:** tlačítko „Zkontrolovat nyní“ se po dokončení kontroly znovu aktivuje, i když je verze stále stejná. Další pokus je možný také po chybě spojení.
