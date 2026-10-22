@@ -83,6 +83,7 @@
   --motion-enter: 240ms;
   --motion-calm: 600ms;  /* klidné nadechnutí (závoj obnovy) */
   --motion-move: 280ms;
+  --motion-expand: 420ms; /* odhalení celé mřížky avatarů */
   --motion-value: 800ms;
   /* Nástup obrazovky: měřidla se usadí jako ručička, bez odskoku (ease-out quart). */
   --ease-settle: cubic-bezier(.25, 1, .5, 1);
@@ -2392,7 +2393,7 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 /* Sbalený výběr ukazuje jednu celou řadu bez přechodu přes obličeje. Výška se při kliknutí
    nastaví podle skutečného obsahu; po otevření se vrátí na auto kvůli změnám šířky okna. */
 .avatar-vyber { position: relative; display: grid; justify-items: center; gap: 12px; }
-.avatar-okno { --avatar-radek: 60px; position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; height: calc(var(--avatar-radek) + 12px); overflow: hidden; transition: height 420ms var(--ease-settle); }
+.avatar-okno { --avatar-radek: 60px; position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; height: calc(var(--avatar-radek) + 12px); overflow: hidden; transition: height var(--motion-expand) var(--ease-settle); }
 .avatar-okno > .avatar-grid { grid-template-columns: repeat(auto-fill, var(--avatar-radek)); justify-content: space-between; padding: 6px 0; margin-top: 0; }
 .avatar-vyber[data-rozbaleno] .avatar-okno { height: auto; }
 .avatar-vice { position: relative; z-index: 1; gap: 6px; }

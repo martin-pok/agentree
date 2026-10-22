@@ -987,7 +987,7 @@ for (const engine of engines) {
         assert.ok(choices.length >= 25, `${engine} zachovává iniciály a kolekci avatarů`);
         assert.equal(new Set(choices.map((choice) => choice.value)).size, choices.length, `${engine} každá volba má vlastní stabilní hodnotu`);
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
-        await page.click('.set-nav [data-jump="set-ucet"]'); // vzhled je ve skupině Účet a vzhled
+        await page.click('.set-nav [data-jump="set-vzhled"]');
         // Půlnoc = tmavá podoba Oblohy. Vzhled se překreslí hned, uložení na server ho jen potvrdí.
         // Měří se v rozhraní samotném – od klepnutí do změny atributu na <html> – ne čas
         // Playwrightu na klik a čekání, který na pomalém runneru přidá stovky ms.
@@ -1040,7 +1040,7 @@ for (const engine of engines) {
         await page.screenshot({ path: `dist/qa/${engine}-dark-automatic-plans.png` });
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
-        await page.click('.set-nav [data-jump="set-ucet"]');
+        await page.click('.set-nav [data-jump="set-vzhled"]');
         // Střídání podle systému: pár Úsvit/Půlnoc sleduje systém, vypnutí nechá to, co je vidět.
         await page.locator('[data-setting="appearanceSystem"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.appearance === 'system');

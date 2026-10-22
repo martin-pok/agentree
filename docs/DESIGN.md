@@ -122,6 +122,13 @@ v jiném prohlížeči, delší patička –, profil zvolí menší podobu, a kd
 **Stavy.** Najetí změní plochu nebo linku (nikdy tvar), stisk zmenší tlačítko na 98 %, zakázané
 tlačítko má průhlednost 55 % a kurzor „nelze“. Zaostření z klávesnice ukazuje obrys 2 px.
 
+**Nastavení.** Levá navigace seskupuje karty podle úkolu: Propojení, Upozornění, Účet a licence,
+Vzhled a jazyk, Pomocník, Náklady za API, Telefon a vzdálený přístup, Aplikace na tomto počítači. Účet
+zahrnuje přihlášení, licenci a odhlášení; vzhled zahrnuje motiv, jazyk a profilový obrázek. Volby
+chování pomocníka mají vlastní skupinu, oddělenou od vzhledu.
+Nastavení telefonu a přístupu mimo domov patří k sobě. Vyhledávání, pomocník a odkazy na kartu
+musí otevřít odpovídající skupinu i po přeskupení.
+
 **Výběr profilového obrázku.** Sbalený výběr ukazuje pouze jednu celou řadu avatarů. Žádný
 gradient nesmí překrývat obličeje; rozbalení přechází mezi skutečnými výškami a respektuje
 omezení pohybu v systému.

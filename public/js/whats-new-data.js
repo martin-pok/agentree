@@ -506,12 +506,12 @@ export const RELEASES = [
     date: '2026-10-19',
     title: 'Pomocník bez AI, dokud ji nezapneš',
     items: [
-      'Pomocník ve výchozím stavu odpovídá z návodů k Agenteeq a ze stavu tvých agentů – otázky nikam neodcházejí. Odpovědi přes AI zapneš v Nastavení → Účet a vzhled.',
+      'Pomocník ve výchozím stavu odpovídá z návodů k Agenteeq a ze stavu tvých agentů – otázky nikam neodcházejí. Odpovědi přes AI zapneš v Nastavení → Pomocník.',
     ],
     en: {
       title: 'The assistant skips AI until you turn it on',
       items: [
-        'By default the assistant answers from the Agenteeq guides and your agents’ status – questions stay on this computer. Turn on AI answers in Settings → Account and appearance.',
+        'By default the assistant answers from the Agenteeq guides and your agents’ status – questions stay on this computer. Turn on AI answers in Settings → Assistant.',
       ],
     },
   },
@@ -623,7 +623,7 @@ export const RELEASES = [
       'Všichni roboti stojí nohama na zemi, i Mochi a Rover.',
       'Nová ikona prázdných stavů v barvách značky.',
       'Obnova dat je vidět přes celou aplikaci – jemný fialový závoj s logem.',
-      'Pomocník radí, kde upravit vzhled agenta; Odhlásit a Smazat účet jsou na konci sekce Účet a vzhled.',
+      'Pomocník radí, kde upravit vzhled agenta; Odhlásit a Smazat účet jsou na konci sekce Účet a licence.',
     ],
     en: {
       title: 'Robots on the ground and app-wide refresh',
@@ -631,7 +631,7 @@ export const RELEASES = [
         'Every robot stands on the ground, Mochi and Rover included.',
         'A new empty-state icon in brand colours.',
         'Refreshing data shows across the whole app – a subtle violet veil with the logo.',
-        'The assistant tells you where to change an agent’s look; Sign out and Delete account sit at the end of Account and appearance.',
+        'The assistant tells you where to change an agent’s look; Sign out and Delete account sit at the end of Account and license.',
       ],
     },
   },
@@ -1366,14 +1366,14 @@ export const RELEASES = [
     date: '2026-10-06',
     title: 'Čtyři vzhledy',
     items: [
-      'Vyber si ze čtyř vzhledů v Nastavení → Účet a vzhled: Úsvit a Půlnoc, nebo Slonovina a Eben s tmavou scénou nahoře. Přepínač Střídat podle systému střídá světlý a tmavý vzhled vybraného páru.',
+      'Vyber si ze čtyř vzhledů v Nastavení → Vzhled a jazyk: Úsvit a Půlnoc, nebo Slonovina a Eben s tmavou scénou nahoře. Přepínač Střídat podle systému střídá světlý a tmavý vzhled vybraného páru.',
       'Karta účtu ukazuje fotku, jméno a ověřený e-mail z Googlu a kdy ses naposledy přihlásil. Fotka, která se nenačte hned, se načte znovu sama.',
       'Nastavení má kartu Nápověda a zkratky a karta Soukromí přesně říká, co a kdy odchází z tohoto Macu.',
     ],
     en: {
       title: 'Four looks',
       items: [
-        'Choose from four looks in Settings → Account and appearance: Dawn and Midnight, or Ivory and Ebony with a dark stage at the top. Switch with the system alternates the light and dark look of the chosen pair.',
+        'Choose from four looks in Settings → Appearance and language: Dawn and Midnight, or Ivory and Ebony with a dark stage at the top. Switch with the system alternates the light and dark look of the chosen pair.',
         'The account card shows your Google photo, name and verified email, and when you last signed in. A photo that doesn’t load right away loads again on its own.',
         'Settings has a Help and shortcuts card, and the Privacy card says exactly what leaves this Mac and when.',
       ],
@@ -1913,7 +1913,7 @@ export const RELEASES = [
     items: [
       'Claude Code se najde i tam, kam ho instalátor přidal mimo cestu Finderu. U agenta je vidět poslední místní aktivita; neznámá instalace se už nevydává za chybějící.',
       'Menu Nastavení přepíná skupiny bez posouvání nadpisu a levého panelu. Kolečko myši má plynulý dojezd a karty při posouvání neposkakují pod kurzorem.',
-      'V Nastavení → Účet a vzhled si vybereš češtinu nebo English. Jazyk se uloží a rozhraní se načte rovnou v něm.',
+      'V Nastavení → Vzhled a jazyk si vybereš češtinu nebo English. Jazyk se uloží a rozhraní se načte rovnou v něm.',
       'Web má české i anglické ukázky aplikace a všechny hlavní sekce mají stejné boční okraje. Prohlídka funguje i bez připojení k Macu.',
     ],
     en: {
@@ -1921,7 +1921,7 @@ export const RELEASES = [
       items: [
         'Claude Code is found even where the installer put it outside Finder’s path. The agent shows its last local activity; an unknown installation no longer passes itself off as missing.',
         'The Settings menu switches groups without moving the heading or the left panel. The mouse wheel glides smoothly and cards don’t jump under the cursor while scrolling.',
-        'In Settings → Account and appearance you can choose Czech or English. The language is saved and the interface loads straight in it.',
+        'In Settings → Appearance and language you can choose Czech or English. The language is saved and the interface loads straight in it.',
         'The website has Czech and English app previews, and all main sections have the same side margins. The tour works even without a connection to your Mac.',
       ],
     },
@@ -1972,7 +1972,7 @@ export const RELEASES = [
       'Rozšíření pro Chrome už z webových chatů nebere text ani názvy konverzací – jen jestli agent pracuje, nebo čeká.',
       'Souhrny ze všech svých Maců uvidíš i na webu: agentree-fawn.vercel.app/app?ucet. Stačí se přihlásit stejným účtem Google.',
       'Po přihlášení si můžeš zapnout synchronizaci souhrnů: tokeny, útrata, limity a počty agentů. Co přesně odchází, uvidíš v kartě účtu. Vypnutím se souhrny z účtu smažou.',
-      'Nově se můžeš přihlásit přes Google v Nastavení → Účet a vzhled. Z Googlu si Agenteeq vezme jen jméno a e-mail; konverzace a kód zůstávají na tvém Macu. Bez účtu funguje všechno jako dřív.',
+      'Nově se můžeš přihlásit přes Google v Nastavení → Účet a licence. Z Googlu si Agenteeq vezme jen jméno a e-mail; konverzace a kód zůstávají na tvém Macu. Bez účtu funguje všechno jako dřív.',
       'Přehled, Projekty a Útrata se při otevření plynule rozsvítí: karty vyjedou, měřidlo rozpočtu se dokreslí a čísla vyjedou na své místo. Jen jednou po otevření, ne při každé změně. Když máš v systému omezený pohyb, ukáže se všechno rovnou.',
     ],
     en: {
@@ -1985,7 +1985,7 @@ export const RELEASES = [
         'The Chrome extension no longer takes text or conversation titles from web chats – only whether the agent is working or waiting.',
         'You can see summaries from all your Macs on the web too: agentree-fawn.vercel.app/app?ucet. Just sign in with the same Google account.',
         'After signing in you can turn on syncing of summaries: tokens, spend, limits and agent counts. The account card shows exactly what is sent. Turning it off deletes the summaries from the account.',
-        'You can now sign in with Google in Settings → Account and appearance. Agenteeq takes only your name and email from Google; conversations and code stay on your Mac. Without an account everything works as before.',
+        'You can now sign in with Google in Settings → Account and license. Agenteeq takes only your name and email from Google; conversations and code stay on your Mac. Without an account everything works as before.',
         'Overview, Projects and Spend light up smoothly when opened: cards slide in, the budget gauge draws itself and numbers roll into place. Only once after opening, not on every change. If reduced motion is on in your system, everything appears straight away.',
       ],
     },

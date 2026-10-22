@@ -58,17 +58,18 @@ const KARTY = () => [
   ['moje', tr('Propojení'), tr('Moje nástroje'), 'nastroje zachycene detekce my tools'],
   ['custom', tr('Propojení'), tr('Vlastní agenti'), 'vlastni agent comfyui ollama openai server custom agents'],
   ['notifications', tr('Upozornění'), tr('Kdy a jak tě upozornit'), 'upozorneni oznameni notifikace zvuk notifications alerts'],
-  ['account', tr('Účet a vzhled'), tr('Účet Agenteeq'), 'ucet google prihlaseni odhlaseni synchronizace sync account login logout'],
-  ['appearance', tr('Účet a vzhled'), tr('Vzhled'), 'vzhled motiv tema tmavy svetly rezim usvit pulnoc slonovina eben dark light mode theme appearance'],
-  ['language', tr('Účet a vzhled'), tr('Jazyk aplikace'), 'jazyk cestina anglictina english czech language'],
-  ['profile', tr('Účet a vzhled'), tr('Profilový obrázek'), 'avatar fotka obrazek profil picture'],
-  ['license', tr('Účet a vzhled'), tr('Licence'), 'licence klic pro aktivace license key'],
+  ['account', tr('Účet a licence'), tr('Účet Agenteeq'), 'ucet google prihlaseni odhlaseni synchronizace sync account login logout'],
+  ['appearance', tr('Vzhled a jazyk'), tr('Vzhled'), 'vzhled motiv tema tmavy svetly rezim usvit pulnoc slonovina eben dark light mode theme appearance'],
+  ['language', tr('Vzhled a jazyk'), tr('Jazyk aplikace'), 'jazyk cestina anglictina english czech language'],
+  ['profile', tr('Vzhled a jazyk'), tr('Profilový obrázek'), 'avatar fotka obrazek profil picture'],
+  ['assistant', tr('Pomocník'), tr('Nastavení pomocníka'), 'pomocnik asistent ai ollama robot otazky help assistant'],
+  ['license', tr('Účet a licence'), tr('Licence'), 'licence klic pro aktivace license key'],
   ['cloud', tr('Náklady za API'), tr('Náklady za API'), 'api admin klic naklady anthropic openai admin key costs'],
   ['system', NASTAVENI, tr('Spouštění po přihlášení'), 'spousteni start autostart prihlaseni pozadi dock login items background'],
   ['updates', NASTAVENI, tr('Aktualizace'), 'aktualizace verze nova update version upgrade'],
-  ['phone', NASTAVENI, tr('Otevřít na telefonu'), 'telefon mobil iphone android qr phone mobile'],
-  ['tailscale', NASTAVENI, tr('Přístup přes Tailscale'), 'tailscale vpn sit tailnet network'],
-  ['remote', NASTAVENI, tr('Mimo domov'), 'tunel vzdaleny pristup cloudflare ngrok remote tunnel'],
+  ['phone', tr('Telefon a vzdálený přístup'), tr('Otevřít na telefonu'), 'telefon mobil iphone android qr phone mobile'],
+  ['tailscale', tr('Telefon a vzdálený přístup'), tr('Přístup přes Tailscale'), 'tailscale vpn sit tailnet network'],
+  ['remote', tr('Telefon a vzdálený přístup'), tr('Mimo domov'), 'tunel vzdaleny pristup cloudflare ngrok remote tunnel'],
   ['share', NASTAVENI, tr('Instalace pro další lidi'), 'sdilet instalace kolegove share install'],
   ['privacy', NASTAVENI, tr('Soukromí a bezpečnost'), 'soukromi bezpecnost data gdpr privacy security'],
   ['help', NASTAVENI, tr('Nápověda a zkratky'), 'napoveda zkratky klavesy pomoc help shortcuts keyboard'],
@@ -86,7 +87,7 @@ const PREPINACE = () => [
   ['notifications', 'quietHours', tr('Noční ticho'), 'ticho noc nerusit spanek quiet hours do not disturb'],
   ['notifications', 'push-telefon', tr('Upozornění na tento telefon'), 'telefon mobil iphone android push notifikace phone mobile'],
   ['appearance', 'appearanceSystem', tr('Střídat podle systému'), 'automaticky system tmavy svetly auto dark mode'],
-  ['appearance', 'pomocnikZobrazit', tr('Pomocník'), 'pomocnik asistent chat robot tlacitko skryt schovat assistant helper'],
+  ['assistant', 'pomocnikZobrazit', tr('Pomocník'), 'pomocnik asistent chat robot tlacitko skryt schovat assistant helper'],
 ];
 
 /**
@@ -170,7 +171,7 @@ export function skore(dotaz, pole) {
 
 /**
  * Cíle seřazené podle shody s dotazem. Výsledek, který sedí jen přes cestu (např. „vzhled“ v
- * „Nastavení › Účet a vzhled“ u karty Licence), se vedle přímé shody nezobrazí – jen by zašuměl.
+ * „Nastavení › Vzhled a jazyk“ u karty Jazyk), se vedle přímé shody nezobrazí – jen by zašuměl.
  */
 export function hledejCile(dotaz, cile = cileHledani()) {
   const shody = cile

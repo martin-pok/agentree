@@ -5,7 +5,7 @@
 //   - „najdi chat, kde jsme před cca 3 měsíci řešili …“ → zeptá se serveru (src/pomocnik.js),
 //     který prohledá konverzace na tomto počítači; výsledky jdou otevřít nebo zkopírovat příkaz
 //     k pokračování.
-// Všechno běží lokálně. Skrýt jde v Nastavení → Účet a vzhled. Historie chatu žije jen v této
+// Všechno běží lokálně. Skrýt jde v Nastavení → Pomocník. Historie chatu žije jen v této
 // relaci okna (sessionStorage), nikam se neukládá.
 import { tr, LOCALE } from './i18n.js';
 import { state, agentsList } from './state.js';
@@ -31,7 +31,7 @@ const TIPY = () => ({
   utrata: tr('Bez propojeného API nejsou skutečné náklady dostupné. Ruční záznamy a předplatné uvidíš odděleně.'),
   upozorneni: tr('Otevři souvisejícího agenta a zjisti, co potřebuje. Přečtení upozornění samo požadavek agenta nevyřeší.'),
   dovednosti: tr('Tady najdeš dostupné dovednosti. Které se zobrazí, záleží na nástrojích, které máš připojené.'),
-  nastaveni: tr('V části Účet a vzhled změníš téma aplikace. Tam jde i schovat tohle tlačítko pomocníka.'),
+  nastaveni: tr('V části Vzhled a jazyk změníš téma aplikace. Tohle tlačítko schováš v části Pomocník.'),
 });
 
 const NAVRHY = () => [

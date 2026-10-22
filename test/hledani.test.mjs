@@ -46,7 +46,7 @@ test('hledání: synonyma česky i anglicky, víc slov musí sedět všechna', (
 });
 
 test('hledání: shoda jen přes cestu nezašumí vedle přímé shody', () => {
-  // „vzhled“ stojí i v cestě „Nastavení › Účet a vzhled“ u Licence a Jazyka – ty se neukážou.
+  // „vzhled“ stojí i v cestě „Nastavení › Vzhled a jazyk“ u Jazyka – ten se neukáže.
   assert.deepEqual(nazvy('vzhled'), ['Vzhled']);
 });
 

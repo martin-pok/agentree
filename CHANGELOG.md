@@ -2,6 +2,7 @@
 
 ## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
 
+- **Přehlednější Nastavení:** účet a licence, vzhled a jazyk, pomocník i telefon a vzdálený přístup mají vlastní položky v levé navigaci. Vyhledávání a nápověda vedou do správné části.
 - **Profilový obrázek:** výběr se rozbaluje podle skutečné výšky obsahu; sbalený náhled ukazuje celou první řadu bez ostrého přechodu přes avatary.
 - **Potvrzení nového nástroje:** tlačítko „Rozumím“ / „Got it“ se při najetí a zaostření klávesnicí vyplní fialově s bílým textem.
 - **ChatGPT, Codex a Claude Code v prohlížeči:** Agenteeq přebírá skutečný název z titulku stránky nebo aktivní konverzace v postranním seznamu. Už nezobrazuje poslední znaky interního ID jako název.

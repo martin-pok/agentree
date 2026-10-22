@@ -104,9 +104,12 @@ function sourceRow(c) {
 const GROUPS = [
   ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'moje', 'custom']],
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
-  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license', 'account-end']],
+  ['set-ucet', tr('Účet a licence'), ['account', 'license', 'account-end']],
+  ['set-vzhled', tr('Vzhled a jazyk'), ['appearance', 'language', 'profile']],
+  ['set-pomocnik', tr('Pomocník'), ['assistant']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
-  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy', 'help']],
+  ['set-telefon', tr('Telefon a vzdálený přístup'), ['phone', 'tailscale', 'remote']],
+  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'share', 'privacy', 'help']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -1114,12 +1117,14 @@ function update(topics) {
     </div>
     ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', systemPodmet())), checked: system })}
     <div class="set-divider"></div>
-    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
-    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
     <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
+  fill(el, 'assistant', `
+    ${head(ICON.spark, tr('Pomocník'), tr('Rady k aplikaci a hledání dřívějších konverzací na tomto počítači.'))}
+    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
+    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
+    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
   if (v.zvyrazneni && Date.now() < v.zvyrazneni.do) {
     const radek = el.querySelector(`[data-region="${v.zvyrazneni.karta}"] [data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row');
@@ -1287,7 +1292,7 @@ function update(topics) {
   const ucetEl = el.querySelector('[data-region="account"]');
   if (ucetEl) ucetEl.hidden = !state.ucet || state.ucet.stav === 'nenastaveno';
   if (ucetEl && !ucetEl.hidden) fill(el, 'account', accountCard());
-  // Odhlášení a smazání účtu stojí až na konci sekce Účet a vzhled (bug report 14. 10.: nebezpečné
+  // Odhlášení a smazání účtu stojí až na konci sekce Účet a licence (bug report 14. 10.: nebezpečné
   // akce dole, ne hned u přihlášení), jen když je člověk přihlášený.
   const konecEl = el.querySelector('[data-region="account-end"]');
   const prihlasen = Boolean(state.ucet) && ['prihlaseno', 'nedostupne'].includes(state.ucet.stav);
