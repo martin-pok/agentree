@@ -1,6 +1,6 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 21. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním.
+**Aktualizováno 22. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním. Preview 0.46.58 bylo zveřejněno po kompletním CI, nezávislém auditu osmi příloh a ověření veřejného Mac ZIPu; instalace na Macu vlastníka zůstává neověřená.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
@@ -9,7 +9,8 @@
 - **v0.46.58:** pracovní Preview kandidát s opravou opakované ruční kontroly aktualizací, nepřečtených upozornění a offline hlášení. Vytvořený zdrojový kód není release ani instalace. Před publikací: zelený PR/CI na přesném SHA, osm ověřených příloh a reálný Mac upgrade; v tomto Linux cloudovém prostředí není přístup k `/Applications` na uživatelově Macu ani funkční GitHub autentizace.
 - **Draft jen na pokyn (od 20. 10. 2026, rozhodnutí vlastníka):** kandidát se sestaví ručním spuštěním „Připravit vydání“, ne po každém merge. Seznam vydání tak obsahuje jen zveřejněná vydání a nanejvýš jeden kandidát během chystaného vydání.
 - **Úklid Draftů (od 20. 10. 2026, rozhodnutí vlastníka):** po každém novém Draftu, který projde auditem, smaže `prune-drafts.yml` všechny nezveřejněné Drafty s nižší verzí. Zveřejněná vydání a tagy se nemažou. První běh po sloučení smaže překonané Drafty v0.36.4, v0.37.0, v0.46.7–v0.46.11, v0.46.13, v0.46.14, v0.46.19, v0.46.32, v0.46.34–v0.46.38, v0.46.40, v0.46.41, v0.46.44 a v0.46.45 (případně i v0.46.46 a v0.46.47, pokud mezitím vzniknou a nebudou zveřejněné); jejich zmínky níže jsou historie.
-- **v0.46.57:** připravovaný Preview kandidát s fialovou mapou aktivity; navazuje na zveřejněné Preview `v0.46.56` a nemění jeho neměnné binární přílohy.
+- **v0.46.58: Preview zveřejněné 22. 10. 2026 (kontrola aktualizací, offline hlášení a čtení upozornění).** Navazuje na 0.46.57; veřejné Mac přílohy byly znovu staženy a ověřeny podle SHA-256. Fyzický upgrade uživatelova Macu nebyl ověřen.
+- **v0.46.57:** Preview s fialovou mapou aktivity; navazuje na zveřejněné Preview `v0.46.56` a nemění jeho neměnné binární přílohy.
 - **v0.46.56: Preview zveřejněné 21. 10. 2026 (přehled agentů, hromadný výběr, rozšíření a hledání dovedností).**
 - **v0.46.55: Preview zveřejněné 21. 10. 2026 (rozhodování v Agenteeq dotažené).**
 - **v0.46.54: Preview zveřejněné 21. 10. 2026 (rozhodnutí agenta v aplikaci, Beta).**
