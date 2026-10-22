@@ -1,0 +1,101 @@
+# Owner-requested recovery after the release draft audit raced complete CI.
+# Existing immutable draft assets are audited again; publication uses the
+# repository's standard publish.yml, which independently checks all eight bytes.
+name: Finalize v0.46.58 Preview once
+
+on:
+  push:
+    branches: [ops/finalize-04658]
+
+permissions:
+  contents: read
+
+jobs:
+  finalize:
+    if: github.event.head_commit.message == 'Finalize exact v0.46.58 Preview after CI and byte audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_SHA: 9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341
+    steps:
+      - name: Verify tag and require complete source CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBJECT=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.46.58" --jq .object.sha)
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJECT" --jq .object.sha)
+          test "$TAG_SHA" = "$SOURCE_SHA"
+          RETRIED=0
+          ORIGINAL_FAILED_ID=0
+          for i in $(seq 1 180); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/runs?head_sha=$SOURCE_SHA&per_page=10" \
+              --jq '.workflow_runs[0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ] && [ "$RESULT" = success ]; then
+              echo "Complete exact-SHA CI: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID"
+              exit 0
+            fi
+            if [ "$STATUS" = completed ] && [ "$RESULT" != success ] && [ "$RUN_ID" != "$ORIGINAL_FAILED_ID" ]; then
+              if [ "$RETRIED" = 0 ]; then
+                ORIGINAL_FAILED_ID=$RUN_ID
+                RETRIED=1
+                echo "CI run $RUN_ID failed; retrying exact tagged SHA once."
+                gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/dispatches" -f ref=v0.46.58
+              else
+                echo "::error::Exact tagged SHA failed complete CI twice: $RUN_ID"
+                exit 1
+              fi
+            fi
+            sleep 20
+          done
+          echo '::error::No successful complete CI for release tag.'
+          exit 1
+      - name: Re-audit existing immutable draft assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/audit-release-draft.yml/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].id // 0')
+          export BEFORE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/audit-release-draft.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.58'
+          for i in $(seq 1 90); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/audit-release-draft.yml/runs?event=workflow_dispatch&per_page=10" \
+              --jq '[.workflow_runs[] | select(.id > (env.BEFORE | tonumber))][0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ]; then
+              echo "Independent byte audit: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+              test "$RESULT" = success
+              exit 0
+            fi
+            sleep 20
+          done
+          echo '::error::Draft byte audit did not finish.'
+          exit 1
+      - name: Publish only verified Preview through standard workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?event=workflow_dispatch&per_page=1" --jq '.workflow_runs[0].id // 0')
+          export BEFORE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.58' \
+            -f 'inputs[channel]=preview' -f 'inputs[confirm_stable]=false'
+          for i in $(seq 1 90); do
+            LINE=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/runs?event=workflow_dispatch&per_page=10" \
+              --jq '[.workflow_runs[] | select(.id > (env.BEFORE | tonumber))][0] | [.id,.status,(.conclusion // "none")] | @tsv')
+            IFS=$'\t' read -r RUN_ID STATUS RESULT <<< "$LINE"
+            if [ "$STATUS" = completed ]; then
+              echo "Preview publication: https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID ($RESULT)"
+              test "$RESULT" = success
+              break
+            fi
+            sleep 20
+          done
+          test "${RESULT:-}" = success || { echo '::error::Preview publication did not finish.'; exit 1; }
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.46.58" \
+            --jq '(.tag_name == "v0.46.58") and (.draft == false) and (.prerelease == true) and (.assets | length == 8)' | grep -Fx true
+          echo "Public Preview: https://github.com/$GITHUB_REPOSITORY/releases/tag/v0.46.58"
