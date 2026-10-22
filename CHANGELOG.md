@@ -2,6 +2,7 @@
 
 ## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
 
+- **Zjištěné plány Claude:** každý nalezený profil Claude Code se ověřuje přímo ve svém `CLAUDE_CONFIG_DIR`, výchozí profil bez něj. Dva současně přihlášené účty s různým UUID se zobrazí odděleně; nově objevený profil se kontroluje hned. CLI spuštěné z Finderu dostává správnou cestu k `node`; neúspěšný proces není důkaz přihlášení.
 - **Přehlednější Nastavení:** účet a licence, vzhled a jazyk, pomocník i telefon a vzdálený přístup mají vlastní položky v levé navigaci. Vyhledávání a nápověda vedou do správné části.
 - **Profilový obrázek:** výběr se rozbaluje podle skutečné výšky obsahu; sbalený náhled ukazuje celou první řadu bez ostrého přechodu přes avatary.
 - **Potvrzení nového nástroje:** tlačítko „Rozumím“ / „Got it“ se při najetí a zaostření klávesnicí vyplní fialově s bílým textem.
