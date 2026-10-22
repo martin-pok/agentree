@@ -6,7 +6,7 @@ import http from 'node:http';
 import { loadConfig } from '../src/config.js';
 import { Store } from '../src/store.js';
 import { createSession, deriveStatus } from '../src/model.js';
-import { createCodexConnector, createCodexTokenState, applyCodexTokenUsage, mapCodexItem, windowLabel } from '../src/connectors/codex.js';
+import { createCodexConnector, createCodexTokenState, applyCodexTokenUsage, mapCodexItem, windowLabel, readableCodexTitle } from '../src/connectors/codex.js';
 import { applyGeminiChat } from '../src/connectors/gemini-family.js';
 import { applyVsCodeChat, applyCopilotEvent } from '../src/connectors/copilot.js';
 import { applyCursorComposer } from '../src/connectors/cursor.js';
@@ -157,6 +157,8 @@ test('Codex: přepis se smíšenými verzemi událostí zachová ověřený prů
 });
 
 test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () => {
+  assert.equal(readableCodexTitle('Oprav distribuci a aktualizaci Agɔбф'), '', 'mixed-script garbage is not a valid title');
+  assert.equal(readableCodexTitle('Исправь интеграцию Codex'), 'Исправь интеграцию Codex', 'ordinary multilingual title remains valid');
   const home = await tempDir();
   const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: home });
   const datastore = fakeDatastore();
@@ -178,6 +180,7 @@ test('Codex: přepis z item_completed, stav úlohy, limity a kredity', async () 
   await writeJsonl(path.join(home, '.codex', 'session_index.jsonl'), [
     { id, thread_name: 'Starý název', updated_at: ts(0) },
     { id, thread_name: 'BRIEF GENERATOR', updated_at: ts(5) },
+    { id, thread_name: 'Oprav distribuci Agɔбф', updated_at: ts(6) },
   ]);
   await connector.start();
   connector.stop();
@@ -330,7 +333,7 @@ test('Cursor: bubliny, generování a čekání na schválení', () => {
   assert.equal(deriveStatus(s, now).status, 'needs_input');
 });
 
-test('Web: z webových chatů se bere jen stav a počty – text ani název konverzace ne', () => {
+test('Web: skutečný název a viditelný přepis; ID se nikdy nevydává za název', () => {
   assert.equal(validateWebPayload({ site: 'neznamy' }).ok, false);
   assert.equal(validateWebPayload({ site: 'chatgpt', conversationId: 'a b', url: 'https://chatgpt.com' }).ok, false);
   const s = createSession({ connector: 'web', localId: 'chatgpt:1', provider: 'openai', app: 'ChatGPT', source: 'web' });
@@ -338,23 +341,29 @@ test('Web: z webových chatů se bere jen stav a počty – text ani název konv
   const now = Date.now();
   applyWebPayload(s, validateWebPayload({ ...base, counts: { user: 1, assistant: 1 } }).value, now);
   assert.equal(deriveStatus(s, now).status, 'working');
-  assert.equal(s.title, 'ChatGPT · konverzace 1f2e');
+  assert.equal(s.title, 'Název konverzace zatím nedostupný');
   applyWebPayload(s, validateWebPayload({ ...base, generating: false, counts: { user: 1, assistant: 1 } }).value, now + 3000);
   assert.equal(deriveStatus(s, now + 4000).status, 'waiting');
   assert.equal(deriveStatus(s, now + 4000).reason, 'Hotovo, čeká na další zadání');
   assert.equal(s.turns, 1);
-  assert.equal(s.transcript.length, 0, 'přepis webové konverzace zůstává prázdný');
+  assert.equal(s.transcript.length, 0);
 
-  // Starší rozšíření posílá text i název: spočítají se role, text se zahodí.
+  // Titles and transcript come from the paired tab, including older extension payloads.
   const stare = validateWebPayload({ ...base, title: 'Tajný plán fúze', messages: [{ role: 'user', text: 'Heslo je 1234' }, { role: 'assistant', text: 'Rozumím' }, { role: 'user', text: 'Díky' }] });
   assert.deepEqual(stare.value.counts, { user: 2, assistant: 1 });
-  assert.equal(JSON.stringify(stare.value).includes('Heslo'), false);
-  assert.equal(JSON.stringify(stare.value).includes('Tajný'), false);
+  assert.equal(stare.value.title, 'Tajný plán fúze');
   const s2 = createSession({ connector: 'web', localId: 'chatgpt:2', provider: 'openai', app: 'ChatGPT', source: 'web' });
   applyWebPayload(s2, stare.value, now);
-  assert.equal(JSON.stringify(s2).includes('Heslo'), false, 'text se neuloží ani do konverzace');
-  assert.equal(JSON.stringify(s2).includes('Tajný'), false);
-  assert.equal(s2.lastPrompt ?? '', '');
+  assert.equal(s2.title, 'Tajný plán fúze');
+  assert.deepEqual(s2.transcript.map((m) => m.text), ['Heslo je 1234', 'Rozumím', 'Díky']);
+  applyWebPayload(s2, validateWebPayload({ ...base, title: '', messages: [{ role: 'user', text: 'Heslo je 1234' }, { role: 'assistant', text: 'Rozumím' }, { role: 'user', text: 'Díky' }] }).value, now + 1000);
+  assert.equal(s2.title, 'Tajný plán fúze', 'generic page title must not overwrite a real title');
+  assert.equal(s2.transcript.length, 3, 'refresh does not duplicate transcript');
+  applyWebPayload(s2, validateWebPayload({ ...base, messages: [{ role: 'user', text: 'Heslo je 1234' }, { role: 'assistant', text: 'Rozumím' }, { role: 'user', text: 'Díky' }, { role: 'assistant', text: 'Hotovo' }] }).value, now + 2000);
+  assert.equal(s2.transcript.length, 4, 'new reply is appended');
+  applyWebPayload(s2, validateWebPayload({ ...base, messages: [{ role: 'user', text: 'Heslo je 1234' }, { role: 'assistant', text: 'Rozumím' }, { role: 'user', text: 'Díky' }, { role: 'assistant', text: 'Hotovo!' }] }).value, now + 3000);
+  assert.equal(s2.transcript.at(-1).text, 'Hotovo!', 'streaming updates last reply');
+  assert.equal(validateWebPayload({ ...base, title: 'session_abcd12345678' }).value.title, '');
   // Nesmyslné počty se ořežou.
   assert.deepEqual(validateWebPayload({ ...base, counts: { user: -3, assistant: 1.5 } }).value.counts, { user: 0, assistant: 0 });
 });
@@ -556,6 +565,7 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
     claude: 'https://claude.ai/new',
     'claude-code-web': 'https://claude.ai/code/session_01AbCdEfGh',
     gemini: 'https://gemini.google.com/app',
+    'google-ai-studio': 'https://aistudio.google.com/prompts/prompt-abc',
     mscopilot: 'https://copilot.microsoft.com/chats/abc',
     perplexity: 'https://www.perplexity.ai/search/abc',
     grok: 'https://grok.com/chat/abc',
@@ -589,4 +599,13 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
   assert.equal(validateWebPayload({ site: 'claude-code-web', conversationId: 'session_01AbCdEfGh', url: 'https://claude.ai/new' }).ok, false);
   assert.equal(normalizedWebUrl('github-copilot', 'https://github.com/settings/profile'), null,
     'GitHub Copilot must not accept unrelated pages');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/'), null,
+    'AI Studio must not accept unrelated pages');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/app/prompts/new_chat'), 'https://aistudio.google.com/app/prompts/new_chat');
+  const studio = validateWebPayload({ site: 'google-ai-studio', conversationId: 'prompt-abc', url: 'https://aistudio.google.com/prompts/prompt-abc', title: '', messages: [], generating: true });
+  assert.equal(studio.ok, true, 'AI Studio sends even before visible messages are readable');
+  const studioSession = createSession({ connector: 'web', localId: 'google-ai-studio:prompt-abc', provider: 'google', app: 'Google AI Studio', source: 'web' });
+  applyWebPayload(studioSession, studio.value, Date.now());
+  assert.equal(studioSession.title, 'Název konverzace zatím nedostupný', 'never expose route IDs as titles');
+  assert.equal(deriveStatus(studioSession, Date.now()).status, 'working');
 });

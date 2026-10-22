@@ -34,7 +34,7 @@ try {
      await capture('detail-projektu');
    }
  }
- await page.locator('[data-jump="set-ucet"]').click();
+ await page.locator('[data-jump="set-vzhled"]').click();
  await page.locator('[data-region="appearance"]').scrollIntoViewIfNeeded();
  await capture('vzhled');
  assert.deepEqual(errors, []);

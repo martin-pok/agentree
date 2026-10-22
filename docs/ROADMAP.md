@@ -1,6 +1,12 @@
 # Roadmapa Agenteeq
 
-**Stav 21. 10. 2026:** veřejné Preview je [`v0.46.56`](https://github.com/martin-pok/agentree/releases/tag/v0.46.56); připravuje se `v0.46.57` (fialová mapa aktivity navazující na veřejnou 0.46.56). Zveřejněné přílohy `v0.46.56` zůstávají neměnné. Stable Latest zůstává `v0.46.0`.
+**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Pracovní kandidát 0.46.60 zahrnuje dosud nevydanou opravu 0.46.59 (zachování angličtiny), opravy názvů a přepisů webových konverzací a detekci konverzací Google AI Studia.
+
+**P0 dostupnost upgradu staré instalace:** Stable Latest nabízí 0.46.58 i instalacím na kanálu Stable. Potvrzení instalace a restartu na Macu vlastníka stále chybí; cloudové prostředí jeho `/Applications` nevidí.
+
+**P0 zjištěné plány na Macu vlastníka:** kandidát 0.46.60 nyní ověřuje výchozí i alternativní profil Claude Code samostatně a test se dvěma současně přihlášenými účty prochází. Na skutečném Macu je nutné ověřit, zda oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid`; samotné dvě instance Claude Desktopu tento údaj nedokládají. Do zveřejnění a instalace kandidáta nelze tvrdit, že v Útratě jsou vidět oba plány.
+
+**P0 párování telefonu:** kandidát 0.46.60 odstraňuje viditelnou IP, kopírování adresy a ruční PIN z nastavení, Tailscale i webového rozcestníku; jediná uživatelská cesta je jednorázový QR. Ověřit na skutečném iPhonu/Androidu sken z domácí Wi-Fi i Tailscale, expirovaný QR, druhý pokus a odpárování. Z cloudového prostředí nelze potvrdit fyzické naskenování ani dostupnost Macu.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +14,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 21. 10. 2026:** kandidát **0.46.57 Preview** (`v0.46.57`) přidává fialovou mapu aktivity. Přehled agentů, hromadný výběr a přechod z rozšíření do aplikace již obsahuje zveřejněná `v0.46.56`. Veřejné Preview je `v0.46.56`.
+**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **v0.46.60 Preview je pracovní kandidát**, není zveřejněný; obsahuje opravu nativního jazyka, webových konverzací, detekce profilů Claude Code a QR párování telefonu. Lokálně prošly testy, syntaxe, smoke, sestavení a prohlížečové QA (podrobně v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Blokátor vydání:** GitHub API pro PR a workflow v tomto prostředí vrací `403 Forbidden`; dostupný `GH_TOKEN` je neplatný. Po obnovení přístupu vytvořit PR z `sync/released-04658`, počkat na zelené CI, sestavit a ověřit přesný Mac balíček včetně auditu příloh, otestovat živé názvy/přepisy na ChatGPT, Claude Code a Codexu a upgrade na skutečném Macu; pak zveřejnit Preview. Zveřejnění samo není důkazem lokálního upgradu.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
@@ -156,7 +162,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
-| 1 | **Ověřit rozšíření na všech 8 webech** | Viz „Teď“ #4. Od 0.25.0 rozšíření posílá jen stav a počty zpráv, takže se ověřuje: rozpoznání služby, ID konverzace z adresy, počty zpráv, přechod pracuje → hotovo a pole pro vložení zadání |
+| 1 | **Ověřit rozšíření na všech podporovaných webech** | Na skutečných přihlášených stránkách ověřit rozpoznání služby, skutečný titulek, viditelný přepis, přechod pracuje → hotovo, SPA navigaci a pole pro vložení zadání. Selektory bez takového ověření zůstávají Beta. |
 | 2 | Ověřit Cursor, Copilot CLI, VS Code, Gemini CLI na reálných datech | Každý konektor `verified: true` + fixtury z reálných souborů (anonymizované) |
 | 4 | Hooky do skutečného `~/.claude/settings.json` | Ruční QA: žádost o povolení → upozornění < 1 s; odinstalace vrátí soubor do původního stavu (zatím ověřeno jen v dočasném HOME) |
 | 5 | ~~Upozornění s akcí~~ **hotovo** | Klik na upozornění otevře aplikaci na správné obrazovce (`desktop/Agenteeq.swift`, `userNotificationCenter(_:didReceive:)`) |

@@ -1,5 +1,5 @@
 import { clip, MIN, DAY } from '../util.js';
-import { touch } from '../model.js';
+import { touch, pushEntry, updateEntry, resetTranscript } from '../model.js';
 import { ui } from '../texty.js';
 
 // Webové AI aplikace posílá rozšíření prohlížeče (extension/). Server data validuje a normalizuje.
@@ -9,6 +9,7 @@ export const WEB_SITES = {
   'claude-code-web': { name: 'Claude Code · web', provider: 'anthropic' },
   claude: { name: 'Claude.ai', provider: 'anthropic' },
   gemini: { name: 'Gemini', provider: 'google' },
+  'google-ai-studio': { name: 'Google AI Studio', provider: 'google' },
   mscopilot: { name: 'Microsoft Copilot', provider: 'microsoft' },
   perplexity: { name: 'Perplexity', provider: 'perplexity' },
   grok: { name: 'Grok', provider: 'xai' },
@@ -24,6 +25,7 @@ const WEB_ORIGINS = {
   'claude-code-web': ['claude.ai'],
   claude: ['claude.ai'],
   gemini: ['gemini.google.com'],
+  'google-ai-studio': ['aistudio.google.com'],
   mscopilot: ['copilot.microsoft.com'],
   perplexity: ['perplexity.ai', 'www.perplexity.ai'],
   grok: ['grok.com'],
@@ -40,6 +42,7 @@ export function normalizedWebUrl(site, raw) {
     if (site === 'codex-web' && !/^\/codex(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'claude-code-web' && !/^\/code(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'github-copilot' && !/^\/copilot(?:\/|$)/.test(url.pathname)) return null;
+    if (site === 'google-ai-studio' && !/^\/(?:app\/)?prompts(?:\/|$)/.test(url.pathname)) return null;
     // URLs may carry temporary tokens or user queries; only the route is needed.
     url.search = '';
     url.hash = '';
@@ -50,6 +53,13 @@ export function normalizedWebUrl(site, raw) {
 const ZASTUPNE_ID = /^tab-[a-z0-9]{1,16}$|^tab-unknown$/;
 const MAX_POCET = 100000;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
+const cleanWebTitle = (raw) => {
+  if (typeof raw !== 'string') return '';
+  const title = clip(raw.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim(), 400);
+  if (/^(?:chatgpt|codex|claude(?: code)?|gemini|new chat|nový chat|untitled)$/i.test(title) ||
+      /^(?:session_[\w-]+|[0-9a-f-]{16,})$/i.test(title)) return '';
+  return title;
+};
 
 export function validateWebPayload(p) {
   if (!p || typeof p !== 'object') return { ok: false, error: ui('Chybí data.') };
@@ -57,8 +67,8 @@ export function validateWebPayload(p) {
   if (typeof p.conversationId !== 'string' || !/^[\w.:-]{1,200}$/.test(p.conversationId)) return { ok: false, error: ui('Neplatné ID konverzace.') };
   const safeUrl = normalizedWebUrl(p.site, p.url);
   if (!safeUrl) return { ok: false, error: ui('Neplatná adresa.') };
-  // Z webových chatů bere Agenteeq jen stav a počty zpráv. Starší rozšíření (do 0.24) posílá ještě
-  // text a název konverzace – z toho se tu spočítají role a text se zahodí, nikam se neuloží.
+  // The paired extension sends only messages currently visible in the tab. Keep the
+  // payload bounded; older extensions that send no messages still provide counts.
   let counts = { user: 0, assistant: 0 };
   if (p.counts && typeof p.counts === 'object') counts = { user: pocet(p.counts.user), assistant: pocet(p.counts.assistant) };
   else if (Array.isArray(p.messages)) {
@@ -72,6 +82,9 @@ export function validateWebPayload(p) {
       url: safeUrl,
       generating: p.generating === true,
       counts,
+      title: cleanWebTitle(p.title),
+      messages: Array.isArray(p.messages) ? p.messages.slice(-60).filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.text === 'string' && m.text.trim())
+        .map((m) => ({ role: m.role, text: clip(m.text, 8000) })) : [],
       model: clip(typeof p.model === 'string' ? p.model : '', 60),
       needsInput: typeof p.needsInput === 'string' ? clip(p.needsInput, 200) : null,
       limit: typeof p.limit === 'string' ? clip(p.limit, 200) : null,
@@ -82,12 +95,39 @@ export function validateWebPayload(p) {
   };
 }
 
+function applyWebTranscript(s, messages, now) {
+  if (!messages.length) return;
+  const current = s.transcript.filter((e) => e.role === 'user' || e.role === 'assistant');
+  // The browser may virtualize earlier turns. Do not discard a longer local
+  // transcript when only a suffix of visible messages remains on screen.
+  if (current.length > messages.length && messages.every((m, i) => {
+    const old = current[current.length - messages.length + i];
+    return old.role === m.role && old.text === m.text;
+  })) return;
+  let prefix = 0;
+  while (prefix < Math.min(current.length, messages.length) && current[prefix].role === messages[prefix].role && current[prefix].text === messages[prefix].text) prefix++;
+  // Streaming can update the last response without resetting the whole conversation.
+  if (prefix === current.length - 1 && current.length === messages.length && current.at(-1).role === messages.at(-1).role) {
+    updateEntry(s, current.at(-1), { text: messages.at(-1).text, at: now });
+    return;
+  }
+  if (prefix < current.length) resetTranscript(s);
+  for (const m of messages.slice(prefix < current.length ? 0 : prefix)) pushEntry(s, { at: now, role: m.role, text: m.text });
+}
+
 export function applyWebPayload(s, v, now = Date.now()) {
   const st = s.web || (s.web = { counts: { user: 0, assistant: 0 } });
   s.source = 'web';
   s.url = v.url;
-  // Název konverzace vzniká z jejího obsahu, a tak se nebere. Rozliší ji konec jejího ID.
-  s.title = ui('{0} · konverzace {1}', WEB_SITES[v.site]?.name || ui('Webový chat'), v.conversationId.replace(/[^A-Za-z0-9]/g, '').slice(-4) || v.conversationId.slice(-4));
+  // Never display an identifier as a conversation name. Preserve the last real
+  // title if an SPA briefly reports only its generic document.title.
+  if (v.title) s.title = v.title;
+  else if (!s.title) s.title = ui('Název konverzace zatím nedostupný');
+  applyWebTranscript(s, v.messages, now);
+  if (v.messages.length) {
+    const last = v.messages.findLast((m) => m.role === 'user');
+    if (last) s.lastPrompt = last.text;
+  }
   if (v.model) s.model = v.model;
   // Chrome v kartě na pozadí (skryté déle než 5 minut) pouští časovače nejvýš jednou za minutu.
   // Při 45 s by dlouho běžící úloha – Codex na webu, hloubkový výzkum – uprostřed práce spadla
@@ -154,7 +194,7 @@ export function createWebConnector(ctx) {
     kind: 'web',
     verified: false,
     source: ui('Rozšíření Agenteeq pro Chrome'),
-    description: ui('ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.'),
+    description: ui('ChatGPT, Claude.ai, Gemini, Google AI Studio, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.'),
     async start() {},
     async scan() {},
     stop() {},
@@ -169,6 +209,8 @@ export function createWebConnector(ctx) {
       if (dvojce) {
         for (const stare of [id, v.nahrazuje && `web:${v.site}:${v.nahrazuje}`]) if (stare && store.get(stare)) store.remove(stare);
         applyKarta(dvojce, v, now);
+        if (v.title && !dvojce.title) dvojce.title = v.title;
+        if (!dvojce.transcript.length) applyWebTranscript(dvojce, v.messages, now);
         lastSeen.set(v.site, now);
         store.commit(dvojce, now);
         return { ok: true, id: dvojce.id };
@@ -180,7 +222,8 @@ export function createWebConnector(ctx) {
       const s = store.ensure({ connector: 'web', localId: `${v.site}:${v.conversationId}`, provider: site.provider, app: site.name, source: 'web' });
       if (predtim) {
         if (nova) {
-          for (const k of ['startedAt', 'lastAt', 'running', 'runningAt', 'turnStartedAt', 'turnSteps', 'pending', 'limit', 'model']) s[k] = predtim[k];
+          for (const k of ['startedAt', 'lastAt', 'running', 'runningAt', 'turnStartedAt', 'turnSteps', 'pending', 'limit', 'model', 'title', 'firstPrompt', 'lastPrompt', 'seq']) s[k] = predtim[k];
+          s.transcript = [...predtim.transcript];
           s.web = predtim.web ? { counts: { ...predtim.web.counts } } : s.web;
           for (const m of predtim.minutes) s.minutes.add(m);
         }

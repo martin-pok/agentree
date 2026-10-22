@@ -30,6 +30,26 @@ function hlidejFokusAvataru(el) {
   });
 }
 
+function prepniAvatary(vyber, rozbalit) {
+  const okno = vyber.querySelector('.avatar-okno');
+  const grid = okno.querySelector('.avatar-grid');
+  const vyskaNahledu = grid.querySelector('.avatar-pick').getBoundingClientRect().height + 12;
+  okno.style.height = `${okno.getBoundingClientRect().height}px`;
+  // Pevný výchozí bod umožní plynule přejít i z rozbalené výšky „auto“.
+  void okno.offsetHeight;
+  vyber.toggleAttribute('data-rozbaleno', rozbalit);
+  okno.style.height = `${rozbalit ? grid.scrollHeight : vyskaNahledu}px`;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    okno.style.height = rozbalit ? 'auto' : '';
+    return;
+  }
+  okno.ontransitionend = (e) => {
+    if (e.target !== okno || e.propertyName !== 'height') return;
+    okno.style.height = vyber.hasAttribute('data-rozbaleno') ? 'auto' : '';
+    okno.ontransitionend = null;
+  };
+}
+
 const v = { avatarRozbaleno: false, folds: {}, el: null, tab: null, ukazSkupinu: null, pairCode: null, customTypes: null, customError: '', customDraft: null, pinTimer: 0, parovaniCil: '', ucetUrl: '', napojeni: null, napojeniNacita: false, napojeniChyba: '', nahled: '', push: null, pushChyba: '', pushNacita: false };
 const STATE_LABEL = { connected: tr('Připojeno'), idle: tr('Bez nových dat'), missing: tr('Nenalezeno'), error: tr('Chyba'), unavailable: tr('Nedostupné') };
 const FEATURE_LABEL = { launchBackground: tr('Spouštění agentů na pozadí'), localChat: tr('Chat s lokálními modely v Ollamě'), projectsUnlimited: tr('Neomezený počet projektů'), projectExport: tr('Export projektů do CSV') };
@@ -84,9 +104,12 @@ function sourceRow(c) {
 const GROUPS = [
   ['set-propojeni', tr('Propojení'), ['models', 'claude', 'extension', 'connectors', 'moje', 'custom']],
   ['set-upozorneni', tr('Upozornění'), ['notifications']],
-  ['set-ucet', tr('Účet a vzhled'), ['account', 'appearance', 'language', 'profile', 'license', 'account-end']],
+  ['set-ucet', tr('Účet a licence'), ['account', 'license', 'account-end']],
+  ['set-vzhled', tr('Vzhled a jazyk'), ['appearance', 'language', 'profile']],
+  ['set-pomocnik', tr('Pomocník'), ['assistant']],
   ['set-naklady', tr('Náklady za API'), ['cloud']],
-  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'phone', 'tailscale', 'remote', 'share', 'privacy', 'help']],
+  ['set-telefon', tr('Telefon a vzdálený přístup'), ['phone', 'tailscale', 'remote']],
+  ['set-aplikace', tr('Aplikace na {0}', tomtoPocitaci()), ['system', 'updates', 'share', 'privacy', 'help']],
 ];
 
 // Vlastní agenti: uživatel přidá jen adresu lokální služby. Server ji pustí dál až po kontrole,
@@ -115,11 +138,9 @@ function remoteCard() {
     <p class="set-note">${tr('Uložení na plochu telefonu potřebuje HTTPS. Veřejný tunel ho má sám, u Tailscale ho zapneš příkazem <code>tailscale serve</code>.')}</p>`;
 }
 
-// Tailscale: privátní síť jen mezi vlastními zařízeními. Na rozdíl od karty „Mimo domov“ tady
-// Agenteeq nejen radí – se zapnutým přepínačem začne naslouchat i na adrese tohoto Macu v tailnetu
-// (100.x, respektive jméno v MagicDNS). Žádná veřejná adresa nikde nevzniká a párování kódem
-// platí i tady: bez spárovaného telefonu se z tailnetu nepřečte nic.
-function tailscaleCard() {
+// Tailscale: privátní síť jen mezi vlastními zařízeními. Adresa zůstává interní součástí QR;
+// bez spárovaného telefonu se z tailnetu nepřečte nic.
+export function tailscaleCard() {
   const t = (state.lan || {}).tailscale || { enabled: false, available: false, addresses: [], name: '', url: '', error: '' };
   const detekce = (state.tunnels?.list || []).find((x) => x.id === 'tailscale') || null;
   const serve = detekce?.serve || null;
@@ -128,7 +149,7 @@ function tailscaleCard() {
   const bezi = Boolean(detekce?.running);
   const pripraveno = bezi && t.available;
   const popis = pripraveno
-    ? `${tr('Adresa {0} v síti Tailscale:', tohotoPocitace())} ${t.name || t.addresses[0]}`
+    ? tr('Tailscale je připravený pro spárování telefonu přes QR kód.')
     : bezi
       ? tr('Tailscale běží, ale {0} zatím nemá adresu v tailnetu.', tentoPocitac())
       : detekce?.installed === null
@@ -140,33 +161,29 @@ function tailscaleCard() {
     ${head(ICON.shield, tr('Přístup přes Tailscale'), '', '', tr('Privátní síť jen mezi tvými zařízeními. Telefon se k {0} dostane z mobilních dat i z cizí Wi-Fi bez veřejné adresy.', tomutoPocitaci()))}
     ${switchRow({ key: 'tailscaleAccess', label: tr('Přístup ze sítě Tailscale'), desc: esc(popis), checked: t.enabled, disabled: !pripraveno })}
     ${t.error ? `<p class="form-error form-error--inline">${esc(t.error)}</p>` : ''}
-    ${t.enabled && t.url ? `<div class="code-line"><code>${esc(t.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(t.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>
-      <p class="set-note">${tr('Otevři ji na telefonu přihlášeném do stejné sítě Tailscale a spáruj ho kódem z karty Otevřít na telefonu.')}</p>` : ''}
-    ${t.enabled && t.addresses.length > 1 ? `<p class="set-note">${tr('Další adresy v síti Tailscale:')} ${esc(t.addresses.slice(1).join(', '))}</p>` : ''}
+    ${t.enabled && t.url ? `<p class="set-note">${tr('Otevři v Nastavení „Otevřít na telefonu“ a naskenuj QR kód telefonem přihlášeným do stejné sítě Tailscale.')}</p>` : ''}
     ${serve && !serve.unknown ? `<p class="set-note">${serve.running
-      ? `${tr('HTTPS přes „tailscale serve“ běží na')} <code>${esc(serve.url || '')}</code>  ${tr('Na téhle adrese si aplikaci uložíš na plochu telefonu.')}`
+      ? tr('HTTPS přes „tailscale serve“ běží. Aplikaci si můžeš uložit na plochu telefonu.')
       : tr('Pro uložení na plochu telefonu zapni HTTPS příkazem <code>tailscale serve</code>.')}</p>` : ''}
     ${!pripraveno ? `<ol class="steps steps--compact">
       <li>${tr('Nainstaluj Tailscale z tailscale.com nebo z App Storu.')}</li>
       <li>${tr('Přihlas se na {0} (', tomtoPocitaci())}<code>tailscale up</code>${tr(') i v appce na telefonu – stejným účtem.')}</li>
-      <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon kódem.')}</li>
+      <li>${tr('Vrať se sem, zapni přepínač a spáruj telefon přes QR kód.')}</li>
     </ol>` : ''}`;
 }
 
-// Spárování telefonu: QR kód je jen zkratka k témuž jednorázovému kódu, který je vidět vedle.
-// Když čtečka selže nebo ji někdo nechce použít, číslo se dá pořád opsat – proto zůstává, a s ním
-// i adresa, kterou je potřeba na telefonu otevřít (stejná, jakou nese QR).
+// Adresa a jednorázový kód jsou pouze uvnitř QR. Ruční adresu ani kód v rozhraní nenabízíme.
 function parovaciKod(cil, pin, cas) {
   const adresa = parovaciAdresa(cil.url, pin.code);
-  const kod = adresa ? qrSvg(adresa, { popis: tr('QR kód pro spárování telefonu. Vede na {0}', cil.url) }) : null;
+  const kod = adresa ? qrSvg(adresa, { popis: tr('QR kód pro spárování telefonu') }) : null;
   const sit = cil.id === 'tailscale'
     ? tr('Telefon musí mít zapnutý Tailscale se stejným účtem.')
     : tr('Telefon musí být ve stejné Wi‑Fi jako {0}.', tentoPocitac());
   return `<div class="pair-invite">
-    ${kod ? `<div class="pair-qr">${kod}</div>` : ''}
+    ${kod ? `<div class="pair-qr" tabindex="-1">${kod}</div>` : ''}
     <div class="pair-invite-text">
-      ${kod ? `<b>${tr('Namiř na kód foťák telefonu')}</b><p class="muted small">${tr('Otevře se Agenteeq a spáruje se samo.')} ${sit}</p>` : `<p class="muted small">${sit}</p>`}
-      <div class="pin-box"><b aria-label="${esc(tr('Kód {0}', pin.code.split('').join(' ')))}">${esc(pin.code.slice(0, 3))} ${esc(pin.code.slice(3))}</b><span class="small">${kod ? tr('Bez foťáku: na telefonu otevři') : tr('Na telefonu otevři')} <code class="pin-url">${esc(cil.url)}</code> ${tr('a zadej tenhle kód. Platí do {0} a jen na jedno spárování.', cas(pin.expiresAt))}</span></div>
+      ${kod ? `<b>${tr('Namiř na QR kód foťák telefonu')}</b><p class="muted small">${tr('Otevře se Agenteeq a spáruje se samo.')} ${sit}</p><p class="muted small">${tr('QR kód platí do {0} a jen pro jedno spárování.', cas(pin.expiresAt))}</p>`
+        : `<p class="form-error form-error--inline">${tr('QR kód se nepodařilo vytvořit. Zkontroluj síťové připojení a zkus to znovu.')}</p>`}
     </div>
   </div>`;
 }
@@ -180,7 +197,7 @@ function hlidejVyprseni(pin) {
 // Otevřít na telefonu: přepínač, jednorázový kód a seznam spárovaných zařízení.
 // Kód i seznam se ukazují jen tady na Macu – z telefonu je server nevydá. Párovat jde po kterékoli
 // zapnuté cestě (domácí síť i Tailscale); kód je jeden, liší se jen adresa v QR.
-function phoneCard() {
+export function phoneCard() {
   const l = state.lan || { enabled: false, addresses: [], devices: [], tailscale: {} };
   const zapnuto = Boolean(l.enabled || l.tailscale?.enabled);
   // Platný je jen kód, který server pořád drží: po spárování ho telefon spotřebuje (událost `lan`).
@@ -191,17 +208,16 @@ function phoneCard() {
   const cas = (ms) => new Date(ms).toLocaleTimeString(LOCALE, { hour: '2-digit', minute: '2-digit' });
   const nazevCile = { lan: tr('Domácí síť'), tailscale: 'Tailscale' };
   const parovani = !zapnuto ? '' : !cil
-    ? `<p class="set-note set-note--warn">${tr('Telefon se k {0} teď nemá jak připojit: přístup je zapnutý, ale na žádné síťové adrese neposlouchá. Kód ani QR by nikam nevedly – oprav nejdřív síť (hláška výš).', tomutoPocitaci())}</p>`
+    ? `<p class="set-note set-note--warn">${tr('Telefon se k {0} teď nemá jak připojit. Přístup je zapnutý, ale síť není připravená; zkontroluj hlášku výš.', tomutoPocitaci())}</p>`
     : `<div class="set-actions">
-        <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? tr('Nový kód') : tr('Spárovat telefon')}</button>
+        <button class="btn btn--sm btn--primary" type="button" data-action="lan-pin">${ICON.key}${pin ? tr('Nový QR kód') : tr('Spárovat telefon')}</button>
         ${cile.length > 1 ? `<div class="seg" role="group" aria-label="${tr('Kudy se telefon připojí')}">${cile.map((c) => `<button type="button" data-pair-target="${c.id}" aria-pressed="${c.id === cil.id}">${nazevCile[c.id]}</button>`).join('')}</div>` : ''}
       </div>
       ${pin ? parovaciKod(cil, pin, cas) : ''}`;
   return `
-    ${head(ICON.mac, tr('Otevřít na telefonu'), '', '', tr('Přidá adresu v domácí síti. Telefon se k datům dostane jen po spárování jednorázovým kódem.'))}
-    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? `${tr('Adresa {0}:', tohotoPocitace())} ${l.addresses.join(', ')}` : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
+    ${head(ICON.mac, tr('Otevřít na telefonu'), '', '', tr('Telefon spáruješ naskenováním jednorázového QR kódu.'))}
+    ${switchRow({ key: 'lanAccess', label: tr('Přístup z domácí sítě'), desc: l.addresses.length ? tr('Telefon musí být ve stejné Wi‑Fi jako {0}.', tentoPocitac()) : tr('{0} není v žádné místní síti – připoj se na Wi-Fi.', sVelkym(tentoPocitac())), checked: l.enabled, disabled: !l.addresses.length })}
     ${l.error ? `<p class="form-error form-error--inline">${esc(l.error)}</p>` : ''}
-    ${l.enabled && l.url ? `<div class="code-line"><code>${esc(l.url)}</code><button class="btn btn--sm btn--on-dark" type="button" data-copy="${esc(l.url)}" data-copy-message="${tr('Adresa zkopírována')}">${ICON.copy}${tr('Kopírovat adresu')}</button></div>` : ''}
     ${parovani}
     ${zapnuto ? (l.devices?.length ? `<div class="conn-source-head"><span>${tr('Spárované telefony')}</span><small>${tr('Odpárováním přestane zařízení vidět cokoli.')}</small></div>
         <ul class="privacy-list">${l.devices.map((d) => `<li><b>${esc(d.label)}</b><span>${tr('spárováno {0} ·', dateLong(d.at))} <button class="link-inline" type="button" data-action="lan-forget" data-id="${esc(d.id)}">${tr('Odpárovat')}</button></span></li>`).join('')}</ul>` : `<p class="set-note">${tr('Zatím žádný spárovaný telefon.')}</p>`) : ''}
@@ -387,7 +403,7 @@ function mount(el) {
     if (e.target.closest('[data-avatar-vice]')) {
       v.avatarRozbaleno = !v.avatarRozbaleno;
       const vyber = el.querySelector('.avatar-vyber');
-      vyber.toggleAttribute('data-rozbaleno', v.avatarRozbaleno);
+      prepniAvatary(vyber, v.avatarRozbaleno);
       const tl = vyber.querySelector('[data-avatar-vice]');
       tl.setAttribute('aria-expanded', String(v.avatarRozbaleno));
       tl.firstChild.textContent = v.avatarRozbaleno ? tr('Sbalit') : tr('Zobrazit všechny ({0})', AVATAR_COUNT + 1);
@@ -580,9 +596,15 @@ function mount(el) {
         toast(r.dry ? tr('Zkušební režim: Finder se neotevřel') : tr('Balíček je vidět ve Finderu'));
       } else if (a.dataset.action === 'check-updates') {
         a.disabled = true;
-        state.updates = (await api.checkUpdates()).updates;
-        toast(state.updates.status === 'current' ? tr('Máš nejnovější verzi.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
-        update();
+        try {
+          state.updates = (await api.checkUpdates()).updates;
+          toast(state.updates.status === 'current' ? tr('V tomto kanálu není novější verze.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
+          update();
+        } finally {
+          // fill() nemusí oblast přepsat, pokud se stav vydání nezměnil. V tom případě
+          // zůstává na stránce právě toto tlačítko a musí jít znovu použít.
+          a.disabled = false;
+        }
       } else if (a.dataset.action === 'download-update') {
         a.disabled = true;
         const r = await api.downloadUpdate();
@@ -610,12 +632,10 @@ function mount(el) {
         const { pin } = await api.lanPin();
         state.lan = { ...state.lan, pin };
         update();
-        // Fokus na nový kód: čtečka obrazovky ho přečte a klávesnice zůstane u karty.
-        v.el?.querySelector('.pin-box b')?.setAttribute('tabindex', '-1');
-        v.el?.querySelector('.pin-box b')?.focus({ preventScroll: true });
+        v.el?.querySelector('.pair-qr')?.focus({ preventScroll: true });
       } else if (a.dataset.action === 'lan-forget') {
         const zarizeni = (state.lan?.devices || []).find((d) => d.id === a.dataset.id);
-        if (await confirmDialog({ title: tr('Odpárovat zařízení'), message: `${zarizeni?.label || tr('Zařízení')} ${tr('přestane vidět cokoli z Agenteeq. Znovu se spáruje novým kódem.')}`, confirmLabel: tr('Odpárovat'), danger: true })) {
+        if (await confirmDialog({ title: tr('Odpárovat zařízení'), message: `${zarizeni?.label || tr('Zařízení')} ${tr('přestane vidět cokoli z Agenteeq. Znovu se spáruje novým QR kódem.')}`, confirmLabel: tr('Odpárovat'), danger: true })) {
           state.lan = (await api.lanForget(a.dataset.id)).lan;
           toast(tr('Zařízení odpárováno'));
           update();
@@ -766,7 +786,7 @@ async function toggleSetting(sw) {
     const tailscale = key === 'tailscaleAccess';
     try {
       state.lan = (await (tailscale ? api.setTailscaleAccess(next) : api.setLanAccess(next))).lan;
-      const zap = tailscale ? tr('Přístup přes Tailscale je zapnutý. Vytvoř kód a zadej ho v telefonu.') : tr('Přístup z telefonu je zapnutý. Vytvoř kód a zadej ho v telefonu.');
+        const zap = tailscale ? tr('Přístup přes Tailscale je zapnutý. Spáruj telefon přes QR kód.') : tr('Přístup z telefonu je zapnutý. Spáruj telefon přes QR kód.');
       const vyp = state.lan?.enabled || state.lan?.tailscale?.enabled
         ? tr('Vypnuto. Druhá cesta i spárované telefony zůstávají.')
         : tr('Vypnuto, zařízení odpárována.');
@@ -1053,7 +1073,7 @@ function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), '', '', tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
     ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul><div class="set-actions"><button class="btn btn--sm" type="button" data-objev>${ICON.search}${tr('Najít AI nástroje na {0}', tomtoPocitaci())}</button></div>` : v.napojeniChyba ? `<p class="set-note set-note--warn">${esc(v.napojeniChyba)}</p>` : kostraNapojeni()}
-    <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
+    <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Spárované rozšíření předává názvy a viditelné zprávy webových chatů jen místní aplikaci.')}</span></p>`;
 }
 
 // `tip` = vysvětlení bez stavu (k čemu karta je, jak funguje). Patří pod „i“ u nadpisu, ne do odstavce –
@@ -1088,12 +1108,14 @@ function update(topics) {
     </div>
     ${switchRow({ key: 'appearanceSystem', label: tr('Střídat podle systému'), desc: system ? esc(tr('Ve dne {0}, v noci {1} – podle {2}.', nazevMotivu(look, 'light'), nazevMotivu(look, 'dark'), podleSystemu())) : esc(tr('Světlou a tmavou podobu vybraného páru přepne {0} sám.', systemPodmet())), checked: system })}
     <div class="set-divider"></div>
-    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
-    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}
     <div class="set-row"><div class="set-row-text"><span class="set-label">${tr('Pohyb robotů')}</span><p class="set-desc">${tr('Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.')}</p></div><button class="btn btn--sm" type="button" data-mascot-motion aria-pressed="true">${tr('Omezit pohyb')}</button></div>
     <div class="set-row-inline"><span><strong>${tr('Uspořádání karet')}</strong><small>${tr('Karty v pravém panelu detailu agenta a projektu si přesuneš tažením za úchyt nahoře. Pořadí se pamatuje.')}</small></span>
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
+  fill(el, 'assistant', `
+    ${head(ICON.spark, tr('Pomocník'), tr('Rady k aplikaci a hledání dřívějších konverzací na tomto počítači.'))}
+    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
+    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
+    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
   if (v.zvyrazneni && Date.now() < v.zvyrazneni.do) {
     const radek = el.querySelector(`[data-region="${v.zvyrazneni.karta}"] [data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row');
@@ -1261,7 +1283,7 @@ function update(topics) {
   const ucetEl = el.querySelector('[data-region="account"]');
   if (ucetEl) ucetEl.hidden = !state.ucet || state.ucet.stav === 'nenastaveno';
   if (ucetEl && !ucetEl.hidden) fill(el, 'account', accountCard());
-  // Odhlášení a smazání účtu stojí až na konci sekce Účet a vzhled (bug report 14. 10.: nebezpečné
+  // Odhlášení a smazání účtu stojí až na konci sekce Účet a licence (bug report 14. 10.: nebezpečné
   // akce dole, ne hned u přihlášení), jen když je člověk přihlášený.
   const konecEl = el.querySelector('[data-region="account-end"]');
   const prihlasen = Boolean(state.ucet) && ['prihlaseno', 'nedostupne'].includes(state.ucet.stav);
@@ -1356,7 +1378,7 @@ function update(topics) {
   // se nesmí tvářit jako probíhající kontrola.
   const updTitle = upd.status === 'available' ? tr('Je dostupná verze {0}', upd.latestVersion)
     : upd.status === 'downloaded' ? tr('Aktualizace je připravená')
-      : upd.status === 'current' ? tr('Používáš aktuální verzi')
+      : upd.status === 'current' ? tr('Pro zvolený kanál není novější verze')
         : upd.status === 'error' ? tr('Aktualizaci se nepodařilo ověřit')
           : upd.status === 'unsupported' ? tr('Verze {0} zatím bez balíčku', upd.latestVersion)
             : upd.status === 'disabled' ? tr('Kontrola aktualizací je vypnutá')
@@ -1366,7 +1388,9 @@ function update(topics) {
     : upd.status === 'downloaded' ? tr('Otevři balíček ve Finderu a nahraď aplikaci v Aplikacích.')
       : upd.status === 'error' ? esc(upd.error || tr('Zkus kontrolu znovu.'))
         : upd.status === 'unsupported' ? tr('Nové vydání nemá ověřený balíček pro {0}.', tentoPocitac())
-          : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
+      : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
+        : upd.status === 'current' && channel === 'stable' ? tr('Kontrolují se jen stabilní vydání. Pro novější testovací verze zvol Preview.')
+          : upd.status === 'current' ? tr('V kanálu Preview není novější vydání.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;

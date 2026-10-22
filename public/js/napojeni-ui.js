@@ -8,7 +8,7 @@ import { modal, toast, stateBadge } from './ui.js';
 import { tr } from './i18n.js';
 
 const DODAVATEL = { anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', perplexity: 'Perplexity' };
-const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.');
+const SOUKROMI = tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Spárované rozšíření předává názvy a viditelné zprávy webových chatů jen místní aplikaci.');
 
 let cekajici = null; // { id, label, scrim, close }
 // Žádosti o napojení na cestě. Zpráva „napojeno“ může přijít dřív než odpověď na samotnou žádost

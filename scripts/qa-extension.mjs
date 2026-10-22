@@ -48,7 +48,7 @@ async function spolecne(page, kde, errors) {
   assert.equal(popisky.filter((x) => /^otevřít( v)? agenteeq|^open( in)? agenteeq/.test(x)).length, 0, `${kde}: nejasné „Otevřít Agenteeq“`);
   // Hlavička se vejde: značka, stav, obnova a služby na jednom řádku.
   assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5 && x.getBoundingClientRect().height <= 32.5)), `${kde}: hlavička přetéká`);
-  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 10);
+  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 11);
   assert.equal(await page.locator('#sites-open').isVisible(), true, `${kde}: služby a port jsou dostupné vždy`);
   // Obrys zaostření nemění tvar: kapsle zůstane kapslí, kruh kruhem.
   await page.locator('#refresh-popup').focus();
@@ -177,7 +177,7 @@ try {
           await page.locator('#sites input[type=checkbox]').first().focus();
           await page.keyboard.press('Space');
           assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
-          assert.equal(await page.locator('#sites-count').textContent(), '9 z 10');
+          assert.equal(await page.locator('#sites-count').textContent(), '10 z 11');
           if (state === 'paired') {
             await page.locator('#port').fill('80');
             await page.locator('#port-form button').click();

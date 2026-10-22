@@ -37,7 +37,7 @@ tomuto Macu přidělil tailnet, takže telefon otevře aplikaci odkudkoli bez je
 | Adresa | `tailscaleAddresses()` v `src/lan.js` bere z rozhraní Macu jen IPv4 z rozsahu `100.64.0.0/10` (CGNAT), který Tailscale přiděluje. Veřejná adresa tam být nemůže. |
 | Jméno | `tailscale status --json` → `Self.DNSName` (MagicDNS, třeba `mac-mini.tailabcd.ts.net`). Bez zapnutého MagicDNS zůstane prázdné a pracuje se jen s adresou – nic se nedomýšlí. |
 | Listener | Vzniká výhradně po zapnutí přepínače (`POST /api/tailscale/enable`, jen z Macu) a jen na té konkrétní adrese, nikdy na `0.0.0.0`. Vypnutí ho zavře. |
-| Ochrana | Beze změny: párování šestimístným PINem, token v `HttpOnly` cookie, v datech jen jeho hash, kontrola `Host` a `Origin`, CSRF hlavička. Viz `docs/SECURITY.md`. |
+| Ochrana | Párování výhradně naskenováním jednorázového QR. Ten obsahuje krátkodobý šestimístný kód, který se nikde nevypisuje; token je v `HttpOnly` cookie, v datech jen jeho hash, kontrola `Host` a `Origin`, CSRF hlavička. Viz `docs/SECURITY.md`. |
 | Nezávislost | Domácí síť a Tailscale jsou dva samostatné přepínače. Vypnutí jednoho nezavře druhý a telefony se odpárují, teprve když se zavírá poslední otevřená cesta. |
 | HTTPS | Stav `tailscale serve` se jen **čte** (`tailscale serve status --json`) a hlásí se jako zapnutý jen tehdy, když proxy skutečně míří na port Agenteeq. Čemu modul nerozumí, hlásí jako neznámé. **Beta:** ověřeno proti dokumentaci, ne proti živému tailnetu. |
 
@@ -59,17 +59,15 @@ Proto se při startu jednou zeptáme na `/api/health` (`jeStatickaKopie()` v
 `public/js/connect.js`):
 
 - **Odpoví Agenteeq** → načte se aplikace jako vždycky.
-- **Odpoví 404 nebo něco jiného** → místo aplikace se ukáže rozcestník „Kde máš Agenteeq?“:
-  zeptá se na adresu Macu, zapamatuje si ji a prohlížeč tam pošle. Od té chvíle běží všechno
-  na adrese tvého Macu – párování kódem, cookie i stream (`docs/SECURITY.md`).
+- **Odpoví 404 nebo něco jiného** → ukáže se rozcestník s ukázkou a instrukcí naskenovat QR
+  v aplikaci na Macu. Ruční zadávání ani kopírování adresy či párovacího kódu se nenabízí.
+  Po naskenování se telefon otevře na Macu a dokončí párování automaticky.
 - **Spadne samotné spojení** (server neodpovídá) → to je výpadek vlastního Agenteeq, ne cizí
   hosting: zůstává karta „server neběží“ a čekání na návrat.
 
-Adresa se normalizuje podle toho, jak vypadá: IP v domácí síti nebo jméno `.local` po `http`
-s doplněným portem 4620, tunel venku po `https` na svém vlastním jménu. Jiné schéma než
-`http(s)` a adresa s přihlašovacími údaji se odmítnou – rozcestník nikam jinam neodejde.
+Síťová adresa je interní součást QR a přenosu; rozhraní ji uživateli nenabízí jako způsob párování.
 
-Statická kopie tedy nic neukládá ani nepřeposílá; je to jen dveře, za kterými je pořád tvůj Mac.
+Statická kopie tedy nic neukládá ani nepřeposílá; skutečné připojení začíná jen QR z Macu.
 
 Druhé dveře jsou **účet Agenteeq** (`/app?ucet`, `docs/ACCOUNTS.md`): po přihlášení přes Google
 ukáže souhrny, které do účtu poslal Mac se zapnutou synchronizací – i když je Mac vypnutý.

@@ -80,29 +80,38 @@ function webBezRozsireniHtml() {
   </aside>`;
 }
 
-function bezPrepisuHtml(sessions) {
-  const bezi = (state.runtimes || []).filter((r) => r.running && bezPrepisu(r.id, sessions));
-  const lokalni = state.localAgents || [];
-  const web = webBezRozsireniHtml();
+function bezPrepisuHtml(sessions, sledovane = false) {
+  const moje = new Set((state.detekce?.moje || []).map((n) => n.id));
+  const jeSledovaneOkno = (r) => r.id.startsWith('pwa-') && moje.has(r.id);
+  const bezi = (state.runtimes || []).filter((r) => r.running && bezPrepisu(r.id, sessions) && jeSledovaneOkno(r) === sledovane);
+  const lokalni = sledovane ? [] : state.localAgents || [];
+  const web = sledovane || (state.detekce?.moje || []).some((n) => n.id.startsWith('pwa-') &&
+    (state.runtimes || []).some((r) => r.id === n.id && r.running)) ? '' : webBezRozsireniHtml();
   const pocet = bezi.length + lokalni.length;
   if (!pocet) return web;
   const doba = (sec) => (sec >= 3600 ? `${Math.floor(sec / 3600)} h ${Math.floor((sec % 3600) / 60)} min` : `${Math.max(1, Math.floor(sec / 60))} min`);
-  return `<section class="card pad runtime-note" aria-labelledby="rt-h">
-    <div class="sec-head"><h2 id="rt-h">${tr('Běží na {0}, ale bez přepisu', tomtoPocitaci())}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
+  const heading = sledovane ? tr('Sledované webové aplikace právě běží') : tr('Běží na {0}, ale bez přepisu', tomtoPocitaci());
+  return `<section class="card pad runtime-note" aria-labelledby="${sledovane ? 'rt-tracked-h' : 'rt-h'}">
+    <div class="sec-head"><h2 id="${sledovane ? 'rt-tracked-h' : 'rt-h'}">${heading}</h2><span class="muted small">${pocet} ${plural(pocet, 'položka', 'položky', 'položek')}</span></div>
     <ul class="runtime-list">${bezi.map((r) => {
     const i = BEZ_PREPISU[r.id];
-    const konverzaci = sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length;
+    const webSessions = r.id.startsWith('pwa-')
+      ? sessions.filter((s) => s.connector === 'web' && s.app === r.name.replace(/ \(web\)$/, '')) : [];
+    const konverzaci = webSessions.length || (!r.id.startsWith('pwa-')
+      ? sessions.filter((s) => pkey(s.provider) === pkey(r.provider)).length : 0);
+    const odkaz = webSessions.length === 1
+      ? { href: agentHref(webSessions[0].id), text: tr('Otevřít konverzaci') } : i.odkaz;
     return `<li>
         <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
         <div class="runtime-main">
           <b>${esc(r.name)}</b>
-          <span class="muted small">${tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
+          <span class="muted small">${tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${r.id.startsWith('pwa-') ? tr('· {0} {1} v této službě', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací')) : tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
           <p class="small">${esc(i.duvod)}</p>
           <p class="small muted">${esc(i.rada)}</p>
         </div>
         <div class="runtime-actions">
           ${PREPNUTELNE.has(r.id) ? `<button class="btn btn--sm btn--primary" type="button" data-focus-runtime="${esc(r.id)}">${ICON.open}${tr('Přepnout do aplikace')}</button>` : ''}
-          <a class="btn btn--sm" href="${esc(i.odkaz.href)}"${i.odkaz.karta ? ` data-karta="${esc(i.odkaz.karta)}"` : ''}>${esc(i.odkaz.text)}</a>
+          <a class="btn btn--sm" href="${esc(odkaz.href)}"${odkaz.karta ? ` data-karta="${esc(odkaz.karta)}"` : ''}>${esc(odkaz.text)}</a>
         </div>
       </li>`;
   }).join('')}${lokalni.map(lokalniHtml).join('')}</ul>
@@ -210,6 +219,7 @@ function mount(el, _params, query) {
     <button class="btn btn--primary agent-select-toggle" type="button" data-select-toggle aria-pressed="false"><span data-region="select-icon">${ICON.check}</span><span data-region="select-label">${tr('Vybrat konverzace')}</span></button>
       </div>
     </div>
+    <div data-enter style="--i:3" data-region="tracked-runtimes"></div>
     <div class="card table" data-enter style="--i:3" data-region="table"></div>
     <div data-enter style="--i:4" data-region="runtimes"></div>
     <div class="selbar" data-region="selbar" role="region" aria-label="${tr('Hromadné akce')}"></div>`;
@@ -299,6 +309,8 @@ function update() {
   const el = v.el;
   if (!el) return;
   const all = agentsList();
+  const sledovaneWeby = new Set((state.detekce?.moje || []).filter((n) => n.id.startsWith('pwa-')).map((n) => n.id));
+  const beziSledovanyWeb = (state.runtimes || []).some((r) => r.running && sledovaneWeby.has(r.id));
   // Filtry nad prázdným seznamem nemají co filtrovat – devět nul ve stavech by vypadalo jako data.
   for (const n of el.querySelectorAll('[data-jen-s-agenty]')) n.hidden = !all.length;
   if (f.project !== 'all' && f.project !== 'none' && !projectById(f.project)) f.project = 'all';
@@ -366,9 +378,13 @@ function update() {
   if (!list.length) table?.classList.remove('table--roboti');
   if (!all.length) {
     zivy(el, 'table', emptyState({
-      title: tr('Zatím tu nejsou žádní agenti'),
-      text: esc(tr('Agenteeq je najde sám, jakmile na {0} poběží Claude Code, Codex nebo Cursor. Nebo spusť prvního rovnou odsud.', tomtoPocitaci())),
-      action: `<div class="empty-actions"><button class="btn btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button><a class="btn" href="#/nastaveni" data-karta="connectors">${tr('Zkontrolovat zdroje dat')}</a></div>`,
+      title: beziSledovanyWeb ? tr('Zatím žádná webová konverzace') : tr('Zatím tu nejsou žádní agenti'),
+      text: beziSledovanyWeb
+        ? tr('Běžící aplikace je uvedená výše. Konverzace se objeví, až rozšíření odešle její stav.')
+        : esc(tr('Agenteeq je najde sám, jakmile na {0} poběží Claude Code, Codex nebo Cursor. Nebo spusť prvního rovnou odsud.', tomtoPocitaci())),
+      action: beziSledovanyWeb
+        ? ''
+        : `<div class="empty-actions"><button class="btn btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button><a class="btn" href="#/nastaveni" data-karta="connectors">${tr('Zkontrolovat zdroje dat')}</a></div>`,
     }));
   } else if (!list.length) {
     zivy(el, 'table', emptyState({
@@ -388,6 +404,7 @@ function update() {
     else if (list.length <= v.limit) v.limit = Infinity;
   }
 
+  zivy(el, 'tracked-runtimes', bezPrepisuHtml(all, true));
   zivy(el, 'runtimes', bezPrepisuHtml(all));
 
   const n = f.selected.size;

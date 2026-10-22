@@ -27,12 +27,12 @@ test('Pomocník: vzhled agenta vede do detailu agenta, vzhled aplikace do Nastav
   const { guideAnswer } = await import('../public/js/assistant-guide.js');
   assert.match(guideAnswer('Jak upravím vzhled agenta?').text, /detailu.*robota s tužkou/);
   assert.match(guideAnswer('jak dám agentovi čepici').text, /detailu/);
-  assert.match(guideAnswer('Jak přepnu tmavý vzhled?').text, /Účet a vzhled/);
+  assert.match(guideAnswer('Jak přepnu tmavý vzhled?').text, /Vzhled a jazyk/);
 });
 
-test('Odhlásit a Smazat účet stojí na konci sekce Účet a vzhled, ne u přihlášení', async () => {
+test('Odhlásit a Smazat účet stojí na konci sekce Účet a licence, ne u přihlášení', async () => {
   const s = await zdroj('public/js/views/settings.js');
-  assert.match(s, /\['set-ucet', tr\('Účet a vzhled'\), \[[^\]]*'license', 'account-end'\]\]/);
+  assert.match(s, /\['set-ucet', tr\('Účet a licence'\), \[[^\]]*'license', 'account-end'\]\]/);
   const karta = s.slice(s.indexOf('function accountCard()'), s.indexOf('function', s.indexOf('function accountCard()') + 20));
   assert.doesNotMatch(karta, /data-action="ucet-smazat"/);
 });

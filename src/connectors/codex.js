@@ -9,6 +9,15 @@ import { POCITAC } from '../platform.js';
 const UUID_TAIL = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TASK_TAG = /^\s*<scheduled-task\s+name="([^"<>]{1,80})"/;
+// A few provider-generated index titles contain visually deceptive mixed-script
+// glyphs inside a single word (e.g. Latin + Cyrillic). Prefer the last valid
+// index title or the actual first user prompt over displaying corrupt text.
+export function readableCodexTitle(value) {
+  if (typeof value !== 'string') return '';
+  const title = value.normalize('NFC').replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
+  if (!title || title.includes('\uFFFD') || /\p{Script=Latin}\p{Script=Cyrillic}|\p{Script=Cyrillic}\p{Script=Latin}/u.test(title)) return '';
+  return clip(title, 400);
+}
 const TOKEN_COUNTER_KEYS = ['input', 'cached', 'output', 'cacheWrite'];
 
 const finiteToken = (value) => Number.isFinite(Number(value)) && Number(value) >= 0 ? Number(value) : 0;
@@ -220,12 +229,14 @@ export function createCodexConnector(ctx) {
     }
     const changed = new Set();
     await indexTail.read(stat.size, (r) => {
-      if (typeof r?.id !== 'string' || typeof r.thread_name !== 'string' || !r.thread_name.trim()) return;
+      if (typeof r?.id !== 'string') return;
+      const name = readableCodexTitle(r.thread_name);
+      if (!name) return;
       const at = toTs(r.updated_at);
       const prev = titles.get(r.id);
       if (prev && prev.at > at) return;
       // Jen horní mez; na zobrazení zkracuje model.js#summarize na hranici slova s „…“.
-      titles.set(r.id, { name: clip(r.thread_name, 400), at });
+      titles.set(r.id, { name, at });
       changed.add(r.id);
     });
     for (const id of changed) {

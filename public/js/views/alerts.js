@@ -1,4 +1,4 @@
-import { state, emit } from '../state.js';
+import { state, alertsRevision, confirmAlertsRead } from '../state.js';
 import { api } from '../api.js';
 import { esc, timeHM, startOfDay, dayStart, dateLong } from '../format.js';
 import { ICON } from '../icons.js';
@@ -19,12 +19,13 @@ const FILTERS = [
 ];
 
 export async function markRead(ids) {
-  for (const a of state.alerts.items) if (ids === 'all' || ids.includes(a.id)) a.read = true;
-  emit('alerts');
+  // Neoznačovat zprávy před potvrzením: při výpadku by z nepřečtených zmizely.
+  // „Vše“ zachytí jen nynější položky; nový SSE alert nesmí přečíst stará odpověď.
+  const selected = new Set(state.alerts.items.filter((a) => ids === 'all' || ids.includes(a.id)).map((a) => a.id));
+  const revision = alertsRevision;
   try {
     const r = await api.readAlerts(ids);
-    state.alerts.unread = r.unread;
-    emit('alerts');
+    confirmAlertsRead(selected, r.unread, revision);
   } catch (err) {
     toast(err.message, { tone: 'err' });
   }

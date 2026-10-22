@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
+
+- **Google AI Studio:** běžící samostatná webová aplikace je po volbě „Sledovat“ vidět mezi sledovanými běžícími nástroji. Spárované rozšíření nyní rozpozná uložené prompty na `aistudio.google.com` a předá jejich stav aplikaci. Samotný běžící proces neprokazuje aktivní konverzaci; pro její název, zprávy a stav je nutné hlášení rozšíření.
+- **Telefon přes QR:** Nastavení už nevypisuje IP adresu ani nenabízí její kopírování. Telefon se páruje naskenováním jednorázového QR bez ručního zadávání adresy nebo PINu; stejné instrukce platí i pro Tailscale a webový rozcestník.
+- **Zjištěné plány Claude:** každý nalezený profil Claude Code se ověřuje přímo ve svém `CLAUDE_CONFIG_DIR`, výchozí profil bez něj. Dva současně přihlášené účty s různým UUID se zobrazí odděleně; nově objevený profil se kontroluje hned. CLI spuštěné z Finderu dostává správnou cestu k `node`; neúspěšný proces není důkaz přihlášení.
+- **Přehlednější Nastavení:** účet a licence, vzhled a jazyk, pomocník i telefon a vzdálený přístup mají vlastní položky v levé navigaci. Vyhledávání a nápověda vedou do správné části.
+- **Profilový obrázek:** výběr se rozbaluje podle skutečné výšky obsahu; sbalený náhled ukazuje celou první řadu bez ostrého přechodu přes avatary.
+- **Potvrzení nového nástroje:** tlačítko „Rozumím“ / „Got it“ se při najetí a zaostření klávesnicí vyplní fialově s bílým textem.
+- **ChatGPT, Codex a Claude Code v prohlížeči:** Agenteeq přebírá skutečný název z titulku stránky nebo aktivní konverzace v postranním seznamu. Už nezobrazuje poslední znaky interního ID jako název.
+- **Přepis:** spárované rozšíření posílá viditelné zprávy jen do lokální aplikace. Detail agenta je průběžně aktualizuje bez zdvojování odpovědí. Neúplně vykreslená historie může zůstat neúplná.
+- **ChatGPT ↔ Codex:** při přechodu v jedné kartě se znovu rozpozná služba i bez načtení celé stránky.
+- **Codex v aplikaci:** poškozený název z indexu (například smíšené znaky latinky a cyrilice v jednom slově) už nepřepíše poslední čitelný název; případně se ukáže skutečné první zadání.
+
+## 0.46.59 – 2026-10-22 · Angličtina i po aktualizaci
+
+- **Jazyk při restartu:** úvodní obrazovka aplikace pro Mac, průběh aktualizace, nabídka a systémové dialogy používají uloženou volbu češtiny nebo angličtiny. Aktualizace ji nemění.
+- **Sledování složek:** na Node 24 se neexistující kořen přepisů neoznačí za aktivní, i když `fs.watch` vrátí watcher bez chyby. Po vzniku složky se sledování zapne a první konverzace se doskenuje.
+- **Aktualizace:** když zvolený kanál nenabízí novější vydání, aplikace to uvede přesně a nezamění tento stav za nejnovější verzi ve všech kanálech.
+
+## 0.46.58 – 2026-10-21 · Spolehlivější kontrola aktualizací a upozornění
+
+- **Nastavení → Aktualizace:** tlačítko „Zkontrolovat nyní“ se po dokončení kontroly znovu aktivuje, i když je verze stále stejná. Další pokus je možný také po chybě spojení.
+- **Výpadek spojení:** hlášení se zobrazí čtyři sekundy od začátku výpadku. Opakované pokusy o spojení už časovač neposouvají stále dál.
+- **Nepřečtená upozornění:** jako přečtená se v aplikaci označí až po potvrzení serverem. Neúspěšný požadavek neschová nepřečtené položky a opožděná odpověď nepřepíše novější počet.
+
 ## 0.46.57 – 2026-10-21 · Přehlednější mapa práce agentů
 
 - **Statistiky:** mapa „Kdy agenti pracují“ používá místo okrové značkovou fialovou škálu. Intenzita stále odpovídá skutečné aktivitě; barva se přizpůsobuje světlému a tmavému vzhledu.

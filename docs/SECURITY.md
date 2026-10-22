@@ -55,7 +55,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Agent spuštěný z Agenteeq má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agenteeq/prompts` (0600) a výstup běhů v `~/.agenteeq/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
 - **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq – to je vlastnost macOS, ne Agenteeq.
-- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele, ale na `127.0.0.1` posílá jen stav a počty zpráv (od 0.25.0), nikdy text. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy (odpovědi do formuláře obchodu: `docs/CHROME-WEB-STORE.md`).
+- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a spárované lokální aplikaci na `127.0.0.1` předává stav, skutečný název a nejvýš 60 viditelných zpráv. Přepisy ani názvy nejdou do cloudové synchronizace. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb, veřejné zásady soukromí a Chrome Web Store policy (`docs/CHROME-WEB-STORE.md`).
 
 ## Nezávislý audit 2026-09-20: co je opraveno a co ne
 
@@ -215,7 +215,7 @@ Po zapnutí (jen z Macu, `POST /api/lan/enable`):
 - Druhý listener na **konkrétní privátní adrese** Macu, ne na `0.0.0.0` (a nikdy na veřejné adrese – `lanAddresses()` vybírá jen 10/8, 172.16/12, 192.168/16).
 - Hlavička `Host` se kontroluje proti pevnému seznamu (`127.0.0.1`, `localhost`, vlastní privátní adresy) – ochrana proti DNS rebindingu.
 - Každý požadavek z místní sítě musí mít token spárovaného zařízení. Výjimky: statické soubory (aby šla zobrazit párovací obrazovka), `/api/health` a `/api/lan/pair`.
-- Párování: šestimístný PIN, platnost 5 minut, jedno použití, nejvýš 5 pokusů, srovnání `timingSafeEqual`. PIN vzniká a zobrazuje se jen na Macu.
+- Párování: uživatel pouze naskenuje jednorázový QR na Macu; uvnitř QR je šestimístný kód s platností 5 minut a jedním použitím, nejvýš 5 pokusů, srovnání `timingSafeEqual`. Kód ani síťová adresa se vedle QR nevypisují.
 - Token: 32 náhodných bajtů, cookie `HttpOnly; SameSite=Lax; Max-Age=90 dní`. V `data.json` je jen `sha256` hash – ze zálohy dat se přihlásit nedá. Nejvýš 10 zařízení.
 - Z telefonu nelze: vytvořit PIN, zapnout/vypnout přístup, odpárovat zařízení, zjistit seznam zařízení (filtruje se i v `/api/state`).
 - Z telefonu nejde číst celý přepis konverzace ani výstup agentů na pozadí (od 5. 10. 2026): `/api/sessions/:id` vrátí jen souhrn (stav, název, poslední zadání, aktivita, tokeny), `/api/sessions/:id/transcript` a `/api/runs/:id/log` odpoví 403 a událost SSE `transcript` se telefonu neposílá (`src/remote-scope.js`, `test/vzdaleny-prepis.test.mjs`).
@@ -245,7 +245,7 @@ Web Push bez serveru Agenteeq (`src/webpush.js`, `src/push.js`). Výchozí stav:
 Druhá, nezávislá cesta ke stejným datům – pro situace mimo domácí síť. Výchozí stav: **vypnuto**
 (`settings.tailscaleAccess`), zapíná se jen z Macu (`POST /api/tailscale/enable`).
 
-Platí **beze změny všechno z předchozí kapitoly** (párování PINem, token v `HttpOnly` cookie, hash
+Platí **beze změny všechno z předchozí kapitoly** (párování přes QR s jednorázovým kódem, token v `HttpOnly` cookie, hash
 v datech, CSRF, zákaz správy z telefonu) – včetně situace, kdy je před serverem `tailscale serve`
 (viz níž). Liší se jen adresa, na které server naslouchá:
 

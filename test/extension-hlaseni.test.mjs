@@ -16,18 +16,19 @@ function spust(odpoved) {
   let posluchac = null;
   const cekajici = [];
   const odeslano = [];
-  const stranka = { id: 'konverzace-1', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
+  const stranka = { site: 'chatgpt', id: 'konverzace-1', title: '', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
   const adapter = {
     id: 'chatgpt',
     messages: () => stranka.zpravy,
     generating: () => stranka.generuje,
     conversationId: () => stranka.id,
     model: () => 'gpt',
+    title: () => stranka.title,
     limit: () => null,
     composer: () => null,
   };
   const kontext = vm.createContext({
-    window: { AgenteeqSites: { detect: () => adapter }, addEventListener() {} },
+    window: { AgenteeqSites: { detect: () => ({ ...adapter, id: stranka.site }) }, addEventListener() {} },
     location: { href: 'https://chatgpt.com/c/konverzace-1' },
     document: { documentElement: {} },
     MutationObserver: class { observe() {} },
@@ -88,12 +89,43 @@ test('rozšíření: klidná konverzace se ohlásí jednou za minutu, generován
   assert.equal(r.odeslano.at(-1).generating, true);
 });
 
+test('rozšíření: nově zjištěný název se odešle hned i bez změny počtu zpráv', async () => {
+  const r = spust(() => ({ ok: true }));
+  await r.pruchod(0);
+  r.stranka.title = 'Skutečný název chatu';
+  await r.pruchod();
+  assert.equal(r.odeslano.length, 2);
+  assert.equal(r.odeslano.at(-1).title, 'Skutečný název chatu');
+  assert.equal(r.odeslano.at(-1).messages[0].text, 'a');
+});
+
+test('rozšíření: přechod z ChatGPT do Codexu v téže kartě změní adaptér', async () => {
+  const r = spust(() => ({ ok: true }));
+  await r.pruchod(0);
+  assert.equal(r.odeslano.at(-1).site, 'chatgpt');
+  r.stranka.site = 'codex-web';
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).site, 'codex-web');
+});
+
 test('rozšíření: prázdná stránka bez zpráv se neohlašuje', async () => {
   const r = spust(() => ({ ok: true }));
   r.stranka.zpravy = [];
   await r.pruchod(0);
   await r.pruchod(60000);
   assert.equal(r.odeslano.length, 0);
+});
+
+test('uložený prompt Google AI Studio se nahlásí i při změně DOM bez čitelných zpráv', async () => {
+  const r = spust(() => ({ ok: true }));
+  r.stranka.site = 'google-ai-studio';
+  r.stranka.id = 'studio-conversation-123';
+  r.stranka.zpravy = [];
+  await r.pruchod(0);
+  assert.equal(r.odeslano.length, 1);
+  assert.equal(r.odeslano[0].site, 'google-ai-studio');
+  assert.equal(r.odeslano[0].conversationId, 'studio-conversation-123');
+  assert.deepEqual(JSON.parse(JSON.stringify(r.odeslano[0].counts)), { user: 0, assistant: 0 });
 });
 
 test('ruční obnova vynutí nové hlášení i beze změny a počká na jeho výsledek', async () => {

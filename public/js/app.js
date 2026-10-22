@@ -33,7 +33,7 @@ import { rozhodnutiPro } from './rozhodnuti-data.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, applyLook, initAppearance } from './appearance.js';
 import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
-import { tr, tohotoPocitace, tomtoPocitaci, tvehoPocitace, tvemPocitaci, tvujPocitac } from './i18n.js';
+import { tr, tohotoPocitace, tomtoPocitaci, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { popisPoctu } from './stav-vety.js';
 import { modifikator, ariaZkratka, JE_MAC } from './system.js';
 import { adresaSouboru } from './verze.js';
@@ -911,10 +911,18 @@ function renderOffline(show) {
 
 function onConnection(s) {
   state.connection = s;
-  clearTimeout(offlineTimer);
-  if (s === 'live') renderOffline(false);
-  // Krátké výpadky (restart serveru) nezobrazujeme; po 4 s už je to skutečný výpadek.
-  else offlineTimer = setTimeout(() => { if (state.connection !== 'live') renderOffline(true); }, 4000);
+  if (s === 'live') {
+    clearTimeout(offlineTimer);
+    offlineTimer = null;
+    renderOffline(false);
+  } else if (offlineTimer === null && offlineEl.hidden) {
+    // Čtyři sekundy od začátku výpadku, ne od posledního pokusu: SSE zkouší
+    // spojení každé 2 s a nesmí tím hlášku donekonečna odkládat.
+    offlineTimer = setTimeout(() => {
+      offlineTimer = null;
+      if (state.connection !== 'live') renderOffline(true);
+    }, 4000);
+  }
   updateChrome();
 }
 
@@ -1142,40 +1150,29 @@ const proud = connectStream({
   },
 });
 
-// Telefon, který ještě není spárovaný, dostane od serveru 401. Místo prázdné aplikace se zeptáme
-// na jednorázový kód z Agenteeq na Macu; po spárování se stránka načte znovu už s daty.
+// Telefon, který ještě není spárovaný, dostane od serveru 401. Párování začne jen QR kódem
+// z Macu; jednorázový kód se z adresy hned smaže a pošle serveru bez ručního zadávání.
 function parovaciObrazovka(zprava = '') {
+  const code = !zprava ? kodZQr : '';
+  kodZQr = '';
   document.body.innerHTML = `<main class="pair">
-    <form class="pair-box" novalidate>
+    <div class="pair-box">
       <img src="${adresaSouboru('/icons/icon-192.png')}" alt="" width="64" height="64">
       <h1>${tr('Připojit telefon')}</h1>
-      <p>${tr('V Agenteeq na {0} otevři', tvemPocitaci())} <b>${tr('Nastavení → Otevřít na telefonu')}</b> ${tr('a vytvoř kód. Platí pět minut a jen na jedno spárování.')}</p>
-      <label class="sr-only" for="pin">${tr('Kód z {0}', tvehoPocitace())}</label>
-      <input id="pin" name="pin" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]*" maxlength="7" placeholder="000 000" required>
+      <p>${code ? tr('Probíhá spárování telefonu…') : tr('V Agenteeq na {0} otevři Nastavení → Otevřít na telefonu a naskenuj nový QR kód.', tvemPocitaci())}</p>
       ${zprava ? `<p class="pair-error" role="alert">${esc(zprava)}</p>` : ''}
-      <button class="btn btn--primary" type="submit">${tr('Spárovat')}</button>
-    </form>
+    </div>
   </main>`;
-  const form = document.querySelector('.pair-box');
-  const input = form.elements.pin;
-  input.focus();
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = form.querySelector('button');
-    btn.disabled = true;
-    try {
-      await api.pairDevice(input.value.replace(/\D/g, ''), `${navigator.platform || tr('Telefon')}`);
-      location.reload();
-    } catch (err) {
-      parovaciObrazovka(err.message);
-    }
-  });
-  // Kód z QR (z adresy už smazaný při startu): spárujeme rovnou, jen jednou.
-  // Při neúspěchu se obrazovka překreslí s hláškou a už bez kódu, takže se to nezacyklí.
-  if (kodZQr && !zprava) {
-    input.value = kodZQr;
-    kodZQr = '';
-    form.requestSubmit();
+  if (code) {
+    // QR is single-use. Never retry a failed code automatically after rendering an error.
+    void (async () => {
+      try {
+        await api.pairDevice(code, `${navigator.platform || tr('Telefon')}`);
+        location.reload();
+      } catch (err) {
+        parovaciObrazovka(err.message);
+      }
+    })();
   }
 }
 

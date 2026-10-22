@@ -12,7 +12,7 @@ const TAJNE = 'Tajný projekt Sokol';
 const relace = [
   { id: 'claude-code:a', provider: 'anthropic', status: 'working', title: TAJNE, cwd: '/Users/eva/Tajné/sokol', lastPrompt: 'Heslo je 1234', hourly: { [hodina(24, 9)]: 1000, [hodina(24, 10)]: 500, [hodina(23, 9)]: 200 } },
   { id: 'codex:b', provider: 'openai', status: 'needs_input', title: 'Další', hourly: { [hodina(24, 11)]: 300 } },
-  { id: 'web:chatgpt:c', provider: 'openai', status: 'waiting', title: 'ChatGPT · konverzace 1f2e', hourly: {} },
+  { id: 'web:chatgpt:c', provider: 'openai', status: 'waiting', title: 'Oprava přihlášení', hourly: {} },
   { id: 'claude-code:d', provider: 'anthropic', status: 'failed', hourly: { '2026-07-01T09': 999 } },
 ];
 const zaznamy = [
