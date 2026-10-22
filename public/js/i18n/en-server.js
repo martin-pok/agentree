@@ -323,7 +323,7 @@ export default {
   "Generuje odpověď…": "Generating a reply…",
   "Webové aplikace (rozšíření prohlížeče)": "Web apps (browser extension)",
   "Rozšíření Agenteeq pro Chrome": "Agenteeq extension for Chrome",
-  "ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.": "ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat and GitHub Copilot in the browser.",
+  "ChatGPT, Claude.ai, Gemini, Google AI Studio, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.": "ChatGPT, Claude.ai, Gemini, Google AI Studio, Microsoft Copilot, Perplexity, Grok, Qwen Chat and GitHub Copilot in the browser.",
   "Aktivní: {0}.": "Active: {0}.",
   "Rozšíření posílalo data během dne.": "The extension sent data during the day.",
   "Rozšíření je připojené. Jakmile otevřeš konverzaci v Chromu, objeví se tady.": "The extension is connected. As soon as you open a conversation in Chrome, it appears here.",

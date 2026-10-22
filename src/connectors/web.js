@@ -9,6 +9,7 @@ export const WEB_SITES = {
   'claude-code-web': { name: 'Claude Code · web', provider: 'anthropic' },
   claude: { name: 'Claude.ai', provider: 'anthropic' },
   gemini: { name: 'Gemini', provider: 'google' },
+  'google-ai-studio': { name: 'Google AI Studio', provider: 'google' },
   mscopilot: { name: 'Microsoft Copilot', provider: 'microsoft' },
   perplexity: { name: 'Perplexity', provider: 'perplexity' },
   grok: { name: 'Grok', provider: 'xai' },
@@ -24,6 +25,7 @@ const WEB_ORIGINS = {
   'claude-code-web': ['claude.ai'],
   claude: ['claude.ai'],
   gemini: ['gemini.google.com'],
+  'google-ai-studio': ['aistudio.google.com'],
   mscopilot: ['copilot.microsoft.com'],
   perplexity: ['perplexity.ai', 'www.perplexity.ai'],
   grok: ['grok.com'],
@@ -40,6 +42,7 @@ export function normalizedWebUrl(site, raw) {
     if (site === 'codex-web' && !/^\/codex(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'claude-code-web' && !/^\/code(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'github-copilot' && !/^\/copilot(?:\/|$)/.test(url.pathname)) return null;
+    if (site === 'google-ai-studio' && !/^\/(?:app\/)?prompts(?:\/|$)/.test(url.pathname)) return null;
     // URLs may carry temporary tokens or user queries; only the route is needed.
     url.search = '';
     url.hash = '';
@@ -191,7 +194,7 @@ export function createWebConnector(ctx) {
     kind: 'web',
     verified: false,
     source: ui('Rozšíření Agenteeq pro Chrome'),
-    description: ui('ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.'),
+    description: ui('ChatGPT, Claude.ai, Gemini, Google AI Studio, Microsoft Copilot, Perplexity, Grok, Qwen Chat a GitHub Copilot v prohlížeči.'),
     async start() {},
     async scan() {},
     stop() {},

@@ -267,6 +267,22 @@ test('HTTP: napojení jen z tohoto Macu, potvrzení přijde živým proudem i z 
     assert.equal(ingest.status, 200);
     const w = await waitFor(() => proud.events.find((e) => e.event === 'napojeni' && e.data.id === 'web:chatgpt'));
     assert.equal(w.data.label, 'ChatGPT');
+
+    // Běžící PWA Google AI Studio se nesmí zastavit na pouhém záznamu procesu v Mých nástrojích.
+    // První stav z rozšíření vytváří skutečnou konverzaci v seznamu agentů.
+    const studio = await klient.send('POST', '/api/ingest/web', {
+      site: 'google-ai-studio', conversationId: 'prompt-123',
+      url: 'https://aistudio.google.com/prompts/prompt-123',
+      title: 'Oprav nasazení', generating: true, counts: { user: 1, assistant: 0 },
+      messages: [{ role: 'user', text: 'Oprav nasazení' }],
+    }, { 'X-Agenteeq-Token': par.token, Origin: EXTENSION_ORIGIN });
+    assert.equal(studio.status, 200);
+    assert.equal(studio.body.id, 'web:google-ai-studio:prompt-123');
+    const agent = (await klient.get('/api/state')).body.sessions.find((s) => s.id === 'web:google-ai-studio:prompt-123');
+    assert.equal(agent?.title, 'Oprav nasazení');
+    assert.equal(agent?.status, 'working');
+    const prepis = await klient.get(`/api/sessions/${encodeURIComponent(agent.id)}/transcript`);
+    assert.equal(prepis.body.entries[0].text, 'Oprav nasazení');
   } finally {
     proud.close();
     await srv.close();

@@ -60,6 +60,7 @@ export const WEBY = {
   'claude-code-web': { label: 'Claude Code · web', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/code' },
   claude: { label: 'Claude.ai', provider: 'anthropic', logo: 'claude', url: 'https://claude.ai/new' },
   gemini: { label: 'Gemini', provider: 'google', logo: 'gemini', url: 'https://gemini.google.com/app' },
+  'google-ai-studio': { label: 'Google AI Studio', provider: 'google', logo: 'gemini', url: 'https://aistudio.google.com/prompts/new_chat' },
   mscopilot: { label: 'Microsoft Copilot', provider: 'microsoft', logo: 'copilot', url: 'https://copilot.microsoft.com/' },
   perplexity: { label: 'Perplexity', provider: 'perplexity', logo: 'perplexity', url: 'https://www.perplexity.ai/' },
   grok: { label: 'Grok', provider: 'xai', logo: 'grok', url: 'https://grok.com/' },

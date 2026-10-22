@@ -565,6 +565,7 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
     claude: 'https://claude.ai/new',
     'claude-code-web': 'https://claude.ai/code/session_01AbCdEfGh',
     gemini: 'https://gemini.google.com/app',
+    'google-ai-studio': 'https://aistudio.google.com/prompts/prompt-abc',
     mscopilot: 'https://copilot.microsoft.com/chats/abc',
     perplexity: 'https://www.perplexity.ai/search/abc',
     grok: 'https://grok.com/chat/abc',
@@ -598,4 +599,13 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
   assert.equal(validateWebPayload({ site: 'claude-code-web', conversationId: 'session_01AbCdEfGh', url: 'https://claude.ai/new' }).ok, false);
   assert.equal(normalizedWebUrl('github-copilot', 'https://github.com/settings/profile'), null,
     'GitHub Copilot must not accept unrelated pages');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/'), null,
+    'AI Studio must not accept unrelated pages');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/app/prompts/new_chat'), 'https://aistudio.google.com/app/prompts/new_chat');
+  const studio = validateWebPayload({ site: 'google-ai-studio', conversationId: 'prompt-abc', url: 'https://aistudio.google.com/prompts/prompt-abc', title: '', messages: [], generating: true });
+  assert.equal(studio.ok, true, 'AI Studio sends even before visible messages are readable');
+  const studioSession = createSession({ connector: 'web', localId: 'google-ai-studio:prompt-abc', provider: 'google', app: 'Google AI Studio', source: 'web' });
+  applyWebPayload(studioSession, studio.value, Date.now());
+  assert.equal(studioSession.title, 'Název konverzace zatím nedostupný', 'never expose route IDs as titles');
+  assert.equal(deriveStatus(studioSession, Date.now()).status, 'working');
 });

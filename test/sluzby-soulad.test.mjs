@@ -20,7 +20,7 @@ const { SITES, detect } = kontext.window.AgenteeqSites;
 const manifest = JSON.parse(await fs.readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
 const vzor = (glob, url) => new RegExp(`^${glob.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*')}$`).test(url);
 const pokryto = (seznam, url) => seznam.some((g) => vzor(g, url));
-const CESTA = { 'codex-web': '/codex', 'claude-code-web': '/code', 'github-copilot': '/copilot' };
+const CESTA = { 'codex-web': '/codex', 'claude-code-web': '/code', 'github-copilot': '/copilot', 'google-ai-studio': '/prompts/new_chat' };
 
 test('soulad služeb: adresa z „Napojit“ pozná rozšíření jako tutéž službu a smí ji číst i server', () => {
   for (const [id, w] of Object.entries(WEBY)) {

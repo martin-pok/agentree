@@ -45,7 +45,7 @@ export const PROGRAMY = {
 };
 
 // Webové aplikace Chromu (`pwa-chatgpt`…) čte rozšíření z téže služby v záložce.
-const WEB_PRO = { 'pwa-chatgpt': 'chatgpt', 'pwa-claude': 'claude', 'pwa-gemini': 'gemini', 'pwa-perplexity': 'perplexity', 'pwa-grok': 'grok', 'pwa-copilot': 'mscopilot', perplexity: 'perplexity', grok: 'grok', 'ms-copilot': 'mscopilot', comet: 'perplexity' };
+const WEB_PRO = { 'pwa-chatgpt': 'chatgpt', 'pwa-claude': 'claude', 'pwa-gemini': 'gemini', 'pwa-google-ai-studio': 'google-ai-studio', 'pwa-perplexity': 'perplexity', 'pwa-grok': 'grok', 'pwa-copilot': 'mscopilot', perplexity: 'perplexity', grok: 'grok', 'ms-copilot': 'mscopilot', comet: 'perplexity' };
 
 // Jak se nástroj napojí: přihlášením u dodavatele (CLI agent s napojením tlačítkem), sledováním
 // jeho záznamů na tomto počítači, přes rozšíření pro Chrome, nebo jen sledováním, kdy běží.
