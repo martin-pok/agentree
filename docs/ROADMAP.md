@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Pracovní kandidát 0.46.60 zahrnuje dosud nevydanou opravu 0.46.59 (zachování angličtiny) a opravy názvů a přepisů webových konverzací.
+**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Pracovní kandidát 0.46.60 zahrnuje dosud nevydanou opravu 0.46.59 (zachování angličtiny), opravy názvů a přepisů webových konverzací a detekci konverzací Google AI Studia.
 
 **P0 dostupnost upgradu staré instalace:** Stable Latest nabízí 0.46.58 i instalacím na kanálu Stable. Potvrzení instalace a restartu na Macu vlastníka stále chybí; cloudové prostředí jeho `/Applications` nevidí.
 

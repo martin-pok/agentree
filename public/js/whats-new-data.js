@@ -11,6 +11,7 @@ export const RELEASES = [
       'ChatGPT, Codex a Claude Code v prohlížeči ukazují skutečný název konverzace, pokud ho stránka zpřístupní; interní kód se jako název nezobrazuje.',
       'Viditelné zprávy z webové konverzace se zobrazují v detailu agenta jen na tomto počítači.',
       'Přepnutí ChatGPT na Codex ve stejné kartě i poškozené názvy z indexu Codexu se zpracují správně.',
+      'Google AI Studio je po volbě Sledovat vidět mezi běžícími nástroji. Spárované rozšíření přidá jeho konkrétní prompt jako konverzaci a zpřístupní viditelné zprávy.',
     ],
     en: {
       title: 'Real browser chat titles and transcripts',
@@ -18,6 +19,7 @@ export const RELEASES = [
         'ChatGPT, Codex and Claude Code show the real conversation title when the page exposes it; an internal ID is never shown as a title.',
         'Visible browser chat messages appear in the agent detail only on this computer.',
         'Switching from ChatGPT to Codex in one tab and corrupt Codex index titles are handled correctly.',
+        'After you choose Track, Google AI Studio appears among running tools. The paired extension adds its specific prompt as a conversation and shows visible messages.',
       ],
     },
   },

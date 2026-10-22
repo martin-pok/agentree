@@ -2,6 +2,7 @@
 
 ## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
 
+- **Google AI Studio:** běžící samostatná webová aplikace je po volbě „Sledovat“ vidět mezi sledovanými běžícími nástroji. Spárované rozšíření nyní rozpozná uložené prompty na `aistudio.google.com` a předá jejich stav aplikaci. Samotný běžící proces neprokazuje aktivní konverzaci; pro její název, zprávy a stav je nutné hlášení rozšíření.
 - **Telefon přes QR:** Nastavení už nevypisuje IP adresu ani nenabízí její kopírování. Telefon se páruje naskenováním jednorázového QR bez ručního zadávání adresy nebo PINu; stejné instrukce platí i pro Tailscale a webový rozcestník.
 - **Zjištěné plány Claude:** každý nalezený profil Claude Code se ověřuje přímo ve svém `CLAUDE_CONFIG_DIR`, výchozí profil bez něj. Dva současně přihlášené účty s různým UUID se zobrazí odděleně; nově objevený profil se kontroluje hned. CLI spuštěné z Finderu dostává správnou cestu k `node`; neúspěšný proces není důkaz přihlášení.
 - **Přehlednější Nastavení:** účet a licence, vzhled a jazyk, pomocník i telefon a vzdálený přístup mají vlastní položky v levé navigaci. Vyhledávání a nápověda vedou do správné části.

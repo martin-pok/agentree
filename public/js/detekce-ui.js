@@ -10,9 +10,9 @@ import { ICON, glyph } from './icons.js';
 import { toast } from './ui.js';
 import { goToExtension } from './jump.js';
 
-// Webové služby, u kterých rozšíření Agenteeq v běžné záložce Chromu hlásí stav (pracuje, čeká, limit).
-// Text zpráv rozšíření neposílá (0.25.0), takže se tu nic takového neslibuje.
-const UMI_ROZSIRENI = new Set(['pwa-chatgpt', 'pwa-claude', 'pwa-gemini', 'pwa-perplexity', 'pwa-grok', 'pwa-copilot', 'ms-copilot', 'perplexity', 'grok']);
+// Webové služby, u kterých rozšíření Agenteeq hlásí konverzaci. Název a viditelné zprávy
+// posílá pouze místní aplikaci; běžící proces bez hlášení rozšíření konverzaci nedokazuje.
+const UMI_ROZSIRENI = new Set(['pwa-chatgpt', 'pwa-claude', 'pwa-gemini', 'pwa-google-ai-studio', 'pwa-perplexity', 'pwa-grok', 'pwa-copilot', 'ms-copilot', 'perplexity', 'grok']);
 
 // Stejné logo jako v přehledu (overview.js) – nástroj má všude jednu tvář.
 const logo = (n) => glyph({ runtime: n.id, provider: n.provider });
@@ -79,7 +79,12 @@ async function rozhodni(btn) {
     state.detekce = await api.nastroj(id, akce);
     // Přehled, Nastavení i karta se překreslí přes stejné téma jako při změně ze serveru.
     emit('detekce');
-    if (akce === 'pridat') toast(tr('{0} je v Mých nástrojích', nazev), { tone: 'ok' });
+    if (akce === 'pridat') {
+      if (id === 'pwa-google-ai-studio') {
+        toast(tr('Google AI Studio se sleduje jako běžící aplikace. Konverzace se zobrazí, až rozšíření odešle její stav.'), { tone: 'info', timeout: 8000 });
+        if ((state.connectors || []).find((c) => c.id === 'web')?.state !== 'connected') goToExtension();
+      } else toast(tr('{0} je v Mých nástrojích', nazev), { tone: 'ok' });
+    }
     if (akce === 'ignorovat') toast(tr('{0} se už hlásit nebude', nazev), { tone: 'info' });
     if (akce === 'odebrat') toast(tr('{0} je odebraný z Mých nástrojů', nazev), { tone: 'info' });
   } catch (err) {
