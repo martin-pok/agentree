@@ -1,0 +1,47 @@
+# Recovery for a GitHub Actions workflow that remains "in_progress" even
+# after its exact draft audit job completed successfully. The normal publish
+# workflow performs its own full eight-asset byte audit before publication.
+name: Publish verified v0.46.58 Preview recovery once
+
+on:
+  push:
+    branches: [ops/publish-04658]
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    if: github.event.head_commit.message == 'Dispatch verified v0.46.58 Preview publication'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Require exact tag, successful full CI and successful draft byte audit job
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA=9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341
+          OBJECT=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.46.58" --jq .object.sha)
+          test "$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJECT" --jq .object.sha)" = "$SHA"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/runs?head_sha=$SHA&per_page=20" \
+            --jq '[.workflow_runs[] | select(.head_sha == "9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341" and .status == "completed" and .conclusion == "success")] | length > 0' | grep -Fx true
+          gh api "repos/$GITHUB_REPOSITORY/actions/jobs/119887314078" \
+            --jq '(.run_id == 39797174184) and (.name == "Audit actual draft bytes") and (.conclusion == "success")' | grep -Fx true
+      - name: Dispatch standard Preview publication once
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh api "repos/$GITHUB_REPOSITORY/releases/tags/v0.46.58" \
+            --jq '(.draft == false) and (.prerelease == true) and (.assets | length == 8)' 2>/dev/null | grep -Fxq true; then
+            echo 'Preview is already public.'
+            exit 0
+          fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f 'inputs[tag]=v0.46.58' \
+            -f 'inputs[channel]=preview' -f 'inputs[confirm_stable]=false'
+          echo 'Standard publication dispatched for v0.46.58 Preview.'
