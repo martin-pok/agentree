@@ -1,0 +1,47 @@
+name: Mac preview 0.46.58
+
+on:
+  push:
+    branches: [preview/mac-04658-20261022]
+
+permissions:
+  contents: read
+
+jobs:
+  mac-preview:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - run: npm run check
+      - run: npm test
+      - run: npm run build:mac
+      - run: npm run build:dmg
+      - run: npm run qa:native
+      - run: npm run qa:update
+      - name: Verify and checksum Mac packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          zip="$(find dist -maxdepth 1 -name 'Agenteeq-0.46.58-macOS-arm64.zip' -print -quit)"
+          dmg="$(find dist -maxdepth 1 -name 'Agenteeq-0.46.58-macOS-arm64.dmg' -print -quit)"
+          test -s "$zip"
+          test -s "$dmg"
+          hdiutil verify "$dmg"
+          mkdir -p dist/qa-preview-bundle
+          ditto -x -k "$zip" dist/qa-preview-bundle
+          codesign --verify --deep --strict dist/qa-preview-bundle/Agenteeq.app
+          shasum -a 256 "$zip" "$dmg" > dist/SHA256SUMS-preview.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: Agenteeq-0.46.58-Mac-preview
+          path: |
+            dist/Agenteeq-0.46.58-macOS-arm64.zip
+            dist/Agenteeq-0.46.58-macOS-arm64.dmg
+            dist/SHA256SUMS-preview.txt
+          retention-days: 14
