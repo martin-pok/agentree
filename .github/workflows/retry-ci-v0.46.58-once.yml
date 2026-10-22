@@ -1,0 +1,30 @@
+# Owner-requested one-time rerun on the immutable release tag while the first
+# browser runner is nearing its timeout after a slow Playwright installation.
+name: Retry exact v0.46.58 CI once
+
+on:
+  push:
+    branches: [ops/retry-ci-04658]
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    if: github.event.head_commit.message == 'Retry complete v0.46.58 CI on exact tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Verify immutable tag and start complete Testy
+        shell: bash
+        run: |
+          set -euo pipefail
+          OBJECT=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v0.46.58" --jq .object.sha)
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/tags/$OBJECT" --jq .object.sha)
+          test "$TAG_SHA" = 9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/workflows/test.yml/dispatches" -f ref=v0.46.58
+          echo "Dispatched complete Testy on v0.46.58 ($TAG_SHA)."
