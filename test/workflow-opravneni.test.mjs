@@ -21,6 +21,7 @@ const ZAPIS = {
   'publish.yml': { zverejnit: 'zveřejnění konceptu' },
   'prepare-preview-draft.yml': { prepare: 'jen spuštění existujícího release.yml (actions:write)' },
   'publish-v0.46.57-once.yml': { 'release-preview': 'pouze dispatch existujících release.yml a publish.yml pro v0.46.57 Preview po zeleném main CI' },
+  'open-04659-pr.yml': { open: 'založení běžného PR pro otestovaný kandidát 0.46.59; neslučuje ani nevydává' },
   'merge-pr341-once.yml': { 'merge-exact-candidate': 'jen PR #341 na neměnném HEAD po úspěšných Testy a CodeQL; jediný squash merge' },
   'audit-release-draft.yml': { verify: 'pro čtení neveřejného Draftu GitHub vyžaduje push oprávnění, žádná mutace' },
   'scorecard.yml': { scorecard: 'nahrání výsledků do code scanning (security-events) a ověření původu přes OIDC (id-token); do repozitáře nezapisuje' },
