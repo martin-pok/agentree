@@ -1,0 +1,43 @@
+# Cancels only the known first CI run after its browser job timed out, to let
+# the already queued exact-tag retry pass the same concurrency group.
+name: Unblock timed-out v0.46.58 CI once
+
+on:
+  push:
+    branches: [ops/unblock-ci-04658]
+
+permissions:
+  contents: read
+
+jobs:
+  cancel-stale:
+    if: github.event.head_commit.message == 'Unblock exact timed-out v0.46.58 CI run'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Cancel only timed-out first CI run
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=39789995218
+          RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
+          SHA=$(printf '%s' "$RUN" | jq -r .head_sha)
+          STATUS=$(printf '%s' "$RUN" | jq -r .status)
+          test "$SHA" = 9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341
+          if [ "$STATUS" = completed ]; then
+            echo 'Original run is already complete; no cancellation needed.'
+            exit 0
+          fi
+          test "$STATUS" = in_progress
+          JOB=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name == "rozhraní a přístupnost")][0].conclusion')
+          case "$JOB" in
+            timed_out|failure|cancelled) ;;
+            *) echo "::error::Browser job is not conclusively timed out ($JOB); refusing cancellation."; exit 1 ;;
+          esac
+          gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/cancel"
+          echo "Cancelled only timed-out run $RUN_ID; exact-tag CI retry remains queued."
