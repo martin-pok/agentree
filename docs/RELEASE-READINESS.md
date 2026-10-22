@@ -1,12 +1,13 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 22. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním. Preview 0.46.58 bylo zveřejněno po kompletním CI, nezávislém auditu osmi příloh a ověření veřejného Mac ZIPu; instalace na Macu vlastníka zůstává neověřená.
+**Aktualizováno 22. 10. 2026.** Tento dokument je kontrolní seznam, nikoliv potvrzení, že konkrétní instalace prošla ručním testováním. 0.46.58 bylo po kompletním CI, auditu osmi příloh a ověření veřejného Mac ZIPu propagováno na Stable Latest; instalace na Macu vlastníka zůstává neověřená.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
 ## Zdroj pravdy
 
-- **v0.46.58:** pracovní Preview kandidát s opravou opakované ruční kontroly aktualizací, nepřečtených upozornění a offline hlášení. Vytvořený zdrojový kód není release ani instalace. Před publikací: zelený PR/CI na přesném SHA, osm ověřených příloh a reálný Mac upgrade; v tomto Linux cloudovém prostředí není přístup k `/Applications` na uživatelově Macu ani funkční GitHub autentizace.
+- **v0.46.59:** kandidát s opravou jazyka nativního macOS okna při aktualizaci a restartu. Před publikací: zelené CI na přesném SHA, sestavení a audit osmi příloh. Fyzický Mac vlastníka z cloudu ověřit nelze.
+- **v0.46.58:** zveřejněno a propagováno na Stable Latest po ověření přesného tagu, tří úspěšných běhů a Mac ZIP SHA-256; [propagace](https://github.com/martin-pok/agentree/actions/runs/39809927554) prošla. Přímý upgrade vlastníkovy instalace z cloudu ověřen nebyl.
 - **Draft jen na pokyn (od 20. 10. 2026, rozhodnutí vlastníka):** kandidát se sestaví ručním spuštěním „Připravit vydání“, ne po každém merge. Seznam vydání tak obsahuje jen zveřejněná vydání a nanejvýš jeden kandidát během chystaného vydání.
 - **Úklid Draftů (od 20. 10. 2026, rozhodnutí vlastníka):** po každém novém Draftu, který projde auditem, smaže `prune-drafts.yml` všechny nezveřejněné Drafty s nižší verzí. Zveřejněná vydání a tagy se nemažou. První běh po sloučení smaže překonané Drafty v0.36.4, v0.37.0, v0.46.7–v0.46.11, v0.46.13, v0.46.14, v0.46.19, v0.46.32, v0.46.34–v0.46.38, v0.46.40, v0.46.41, v0.46.44 a v0.46.45 (případně i v0.46.46 a v0.46.47, pokud mezitím vzniknou a nebudou zveřejněné); jejich zmínky níže jsou historie.
 - **v0.46.58: Preview zveřejněné 22. 10. 2026 (kontrola aktualizací, offline hlášení a čtení upozornění).** Navazuje na 0.46.57; veřejné Mac přílohy byly znovu staženy a ověřeny podle SHA-256. Fyzický upgrade uživatelova Macu nebyl ověřen.
@@ -100,6 +101,8 @@
 | Schválení a kanál | výslovně zvolit `preview` nebo `stable` při ručním `publish.yml`; pro Stable navíc potvrdit změnu `Latest` | Preview nikdy nesmí změnit stabilní `Latest`; koncept bez schválení ponechat neveřejný |
 
 ## Jaký je další postup
+
+`v0.46.59` jako Preview: ověřit CI pro přesný commit, sestavit osm příloh, nezávisle stáhnout a ověřit jejich SHA-256, pak zveřejnit a ověřit nabídku aktualizace. Po úspěšné publikaci propagovat na Stable Latest, aby opravu dostal i výchozí kanál. Instalaci na Macu vlastníka potvrzuje teprve reálné zařízení.
 
 **Audit release draft** se automaticky spouští po úspěšném sestavení nového Draftu a jednorázově po zavedení tohoto workflow pro již hotovou 0.46.9. Volitelně lze stejný audit spustit ručně z GitHub Actions s přesným tagem, např. `v0.46.9`. Workflow provádí pouze čtecí operace, ale auditovací úloha potřebuje omezené oprávnění `contents: write` jen k zobrazení neveřejných GitHub Draftů; žádný příkaz nic neupravuje. Stáhne všechny skutečné přílohy, porovná jejich SHA-256 s GitHub API i `SHA256SUMS.txt` a uloží malý `release-draft-audit` report. Úspěšný audit **nenahrazuje** instalaci, Google OAuth, vizuální kontrolu ikony ani další reálné UAT. Nespouští publikaci.
 

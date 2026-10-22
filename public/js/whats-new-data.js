@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.59',
+    date: '2026-10-22',
+    title: 'Angličtina i po aktualizaci',
+    items: [
+      'Mac při spuštění a aktualizaci používá uložený jazyk i v úvodní obrazovce, nabídce a systémových dialozích.',
+      'Kontrola aktualizací popisuje přesně stav zvoleného kanálu.',
+      'Po vzniku složky nového agenta se jeho první konverzace na Node 24 správně načte.',
+    ],
+    en: {
+      title: 'English stays after updating',
+      items: [
+        'The Mac app uses your saved language during startup and updates, including the loading screen, menu and system dialogs.',
+        'Update checks accurately describe the selected channel.',
+        'On Node 24, the first conversation is detected when a new agent folder appears.',
+      ],
+    },
+  },
+  {
     version: '0.46.58',
     date: '2026-10-21',
     title: 'Aktualizace a upozornění spolehlivěji',

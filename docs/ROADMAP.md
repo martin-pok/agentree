@@ -1,8 +1,8 @@
 # Roadmapa Agenteeq
 
-**Stav 22. 10. 2026:** veřejné Preview [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) obsahuje opravy kontroly aktualizací, upozornění a offline stavu. [Kompletní CI na vydaném commitu](https://github.com/martin-pok/agentree/actions/runs/39794563344), [audit osmi skutečně uložených příloh](https://github.com/martin-pok/agentree/actions/runs/39797174184) a [publikace](https://github.com/martin-pok/agentree/actions/runs/39798349093) prošly. Stažený veřejný Mac ZIP má shodný SHA-256 s otiskem na GitHubu a obsahuje `.app` verze 0.46.58 včetně Satoshi, současného brandu a oprav UI. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Stable Latest zůstává `v0.46.0`.
+**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Následující kandidát 0.46.59 řeší zachování angličtiny v nativním okně při aktualizaci.
 
-**P0 dostupnost upgradu staré instalace:** 0.36.4 sleduje pouze stabilní kanál, takže Preview 0.46.58 sama nenabídne. Od pozdějšího vydání lze v aplikaci výslovně zapnout Preview; starší instalace potřebuje jednorázově veřejný Mac instalátor nebo samostatně schválené stabilní vydání. Neoznačovat 0.36.4 za aktualizovanou bez ověření na daném Macu.
+**P0 dostupnost upgradu staré instalace:** Stable Latest nabízí 0.46.58 i instalacím na kanálu Stable. Potvrzení instalace a restartu na Macu vlastníka stále chybí; cloudové prostředí jeho `/Applications` nevidí.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -10,7 +10,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Release vlak 22. 10. 2026:** **0.46.58 Preview je zveřejněné** z přesně otestovaného tagu. Tato synchronizační větev převádí tři vydané opravy na `main` bez jednorázových pomocných workflow. Stále zbývá ověřit instalaci/aktualizaci na skutečném Macu vlastníka; zveřejnění není důkazem lokálního upgradu.
+**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **0.46.59 Preview** (`v0.46.59`) je kandidát s opravou nativního jazyka; před publikací vyžaduje zelené CI a audit Mac balíčku. Stále zbývá UAT aktualizace na skutečném Macu vlastníka; zveřejnění není důkazem lokálního upgradu.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 

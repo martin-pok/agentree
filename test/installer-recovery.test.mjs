@@ -19,7 +19,7 @@ test('native updater has bounded Quit, prevents permanent loading overlay and sh
     'respond to AppKit exactly once even when watchdog races child completion');
   assert.match(swift, /if baseURL != nil \{ hideLoading\(\) \}\s*else \{ setLoading\(message, retry: true\) \}/,
     'a failed pre-swap installer must return to usable existing app instead of blank loader');
-  assert.match(swift, /showLoading\(\)\s*setLoading\(target\.relocated \? "Instalujeme Agenteeq \\\(version\) do složky Aplikace…" : "Připravujeme Agenteeq \\\(version\)…", progress: true, value: 0\.05\)/,
+  assert.match(swift, /showLoading\(\)\s*setLoading\(target\.relocated \? localized\([\s\S]*?progress: true, value: 0\.05\)/,
     'stage indication must start before ZIP extraction');
   for (const stage of [
     'Rozbalujeme Agenteeq', 'Kontrolujeme podpis aplikace',
@@ -112,9 +112,13 @@ test('loader shows an honest indeterminate update bar with accessible text and Q
   }
   const win = { webkit: { messageHandlers: { nacitani: { postMessage(value) { messages.push(value); } } } } };
   vm.runInNewContext(await fs.readFile(file('public/js/nacitani.js'), 'utf8'), {
-    document: { getElementById(id) { return fields.get(id); } },
+    document: { documentElement: { lang: 'cs' }, getElementById(id) { return fields.get(id); } },
     window: win,
   });
+  win.agenteeqNacitani({ language: 'en', text: 'Preparing your workspace…' });
+  assert.equal(fields.get('nacitani-znovu').textContent, 'Try again');
+  assert.equal(fields.get('nacitani-ukoncit').textContent, 'Quit Agenteeq');
+  assert.equal(fields.get('nacitani-progress').attrs['aria-label'], 'Installing Agenteeq update');
   win.agenteeqNacitani({ text: 'Rozbalujeme aktualizaci…', progress: true, znovu: false });
   assert.equal(fields.get('nacitani-progress').hidden, false);
   assert.equal(fields.get('nacitani-ukoncit').hidden, false);

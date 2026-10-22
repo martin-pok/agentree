@@ -24,6 +24,18 @@ final class DragStrip: NSView {
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler, WKDownloadDelegate, UNUserNotificationCenterDelegate {
+    // The native shell appears before the server starts. Read the same persisted
+    // preference as src/datastore.js so an update/relaunch never flashes Czech.
+    var interfaceLanguage: String {
+        let env = ProcessInfo.processInfo.environment
+        let dir = env["AGENTEEQ_HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) }
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".agenteeq", isDirectory: true)
+        guard let data = try? Data(contentsOf: dir.appendingPathComponent("data.json")),
+              let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let settings = root["settings"] as? [String: Any] else { return "cs" }
+        return settings["language"] as? String == "en" ? "en" : "cs"
+    }
+    func localized(_ cs: String, _ en: String) -> String { interfaceLanguage == "en" ? en : cs }
     var window: NSWindow!
     var web: WKWebView!
     var child: Process?
@@ -35,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     // prvního snímku okna až do načtení dat, takže animace značky jede souvisle bez střihu.
     var loaderWeb: WKWebView!
     var loaderURL: URL?
-    var loaderText = "Připravujeme tvůj pracovní prostor…"
+    var loaderText = ""
     var loaderRetry = false
     var loaderProgress = false
     var loaderValue: Double? = nil
@@ -109,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                 NSApp.terminate(nil); return
             }
         }
+        loaderText = localized("Připravujeme tvůj pracovní prostor…", "Preparing your workspace…")
         buildMenu()
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "agenteeq")
@@ -147,25 +160,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let menu = NSMenu()
         let appItem = NSMenuItem(); menu.addItem(appItem)
         let appMenu = NSMenu(); appItem.submenu = appMenu
-        appMenu.addItem(withTitle: "O aplikaci Agenteeq", action: #selector(about), keyEquivalent: "")
+        appMenu.addItem(withTitle: localized("O aplikaci Agenteeq", "About Agenteeq"), action: #selector(about), keyEquivalent: "")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Nastavení…", action: #selector(settings), keyEquivalent: ",")
+        appMenu.addItem(withTitle: localized("Nastavení…", "Settings…"), action: #selector(settings), keyEquivalent: ",")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Skrýt Agenteeq", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
-        appMenu.addItem(withTitle: "Ukončit Agenteeq", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: localized("Skrýt Agenteeq", "Hide Agenteeq"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: localized("Ukončit Agenteeq", "Quit Agenteeq"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         let editItem = NSMenuItem(); menu.addItem(editItem)
-        let edit = NSMenu(title: "Úpravy"); editItem.submenu = edit
-        for (title, selector, key) in [("Zpět", "undo:", "z"), ("Vyjmout", "cut:", "x"), ("Kopírovat", "copy:", "c"), ("Vložit", "paste:", "v"), ("Vybrat vše", "selectAll:", "a")] {
+        let edit = NSMenu(title: localized("Úpravy", "Edit")); editItem.submenu = edit
+        for (title, selector, key) in [(localized("Zpět", "Undo"), "undo:", "z"), (localized("Vyjmout", "Cut"), "cut:", "x"), (localized("Kopírovat", "Copy"), "copy:", "c"), (localized("Vložit", "Paste"), "paste:", "v"), (localized("Vybrat vše", "Select All"), "selectAll:", "a")] {
             edit.addItem(withTitle: title, action: Selector(selector), keyEquivalent: key)
         }
         let windowItem = NSMenuItem(); menu.addItem(windowItem)
-        let win = NSMenu(title: "Okno"); windowItem.submenu = win; NSApp.windowsMenu = win
-        win.addItem(withTitle: "Zobrazit Agenteeq", action: #selector(showWindow), keyEquivalent: "0")
-        win.addItem(withTitle: "Minimalizovat", action: #selector(NSWindow.miniaturize(_:)), keyEquivalent: "m")
-        win.addItem(withTitle: "Zavřít okno", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        let win = NSMenu(title: localized("Okno", "Window")); windowItem.submenu = win; NSApp.windowsMenu = win
+        win.addItem(withTitle: localized("Zobrazit Agenteeq", "Show Agenteeq"), action: #selector(showWindow), keyEquivalent: "0")
+        win.addItem(withTitle: localized("Minimalizovat", "Minimize"), action: #selector(NSWindow.miniaturize(_:)), keyEquivalent: "m")
+        win.addItem(withTitle: localized("Zavřít okno", "Close Window"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
         let helpItem = NSMenuItem(); menu.addItem(helpItem)
-        let help = NSMenu(title: "Nápověda"); helpItem.submenu = help
-        help.addItem(withTitle: "Průvodce Agenteeq", action: #selector(welcome), keyEquivalent: "")
+        let help = NSMenu(title: localized("Nápověda", "Help")); helpItem.submenu = help
+        help.addItem(withTitle: localized("Průvodce Agenteeq", "Agenteeq Guide"), action: #selector(welcome), keyEquivalent: "")
         NSApp.mainMenu = menu
     }
 
@@ -198,7 +211,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.image = AppDelegate.robotIkonaListy()
         statusItem.button?.title = " —" // unknown until first confirmed local snapshot
-        statusItem.button?.toolTip = "Agenteeq – zobrazit přehled"
+        statusItem.button?.toolTip = localized("Agenteeq – zobrazit přehled", "Agenteeq – show overview")
         statusItem.button?.target = self; statusItem.button?.action = #selector(showWindow)
     }
 
@@ -238,6 +251,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
 
         let config = WKWebViewConfiguration()
         config.userContentController.add(self, name: "nacitani")
+        config.userContentController.addUserScript(WKUserScript(source: "window.agenteeqLoaderLanguage = '\(interfaceLanguage)';", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         loaderWeb = WKWebView(frame: .zero, configuration: config)
         loaderWeb.navigationDelegate = self
         loaderWeb.setValue(false, forKey: "drawsBackground")
@@ -249,7 +263,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         statusLabel = NSTextField(wrappingLabelWithString: loaderText)
         statusLabel.font = .systemFont(ofSize: 15); statusLabel.textColor = NSColor(white: 0.75, alpha: 1); statusLabel.alignment = .center
         statusLabel.preferredMaxLayoutWidth = 420
-        retryButton = NSButton(title: "Zkusit znovu", target: self, action: #selector(retry))
+        retryButton = NSButton(title: localized("Zkusit znovu", "Try again"), target: self, action: #selector(retry))
         retryButton.bezelStyle = .rounded; retryButton.isHidden = true
         fallback = NSStackView(views: [title, statusLabel, retryButton]); fallback.orientation = .vertical; fallback.spacing = 24
         fallback.translatesAutoresizingMaskIntoConstraints = false; loading.addSubview(fallback)
@@ -272,7 +286,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         applyLoaderState()
     }
     func applyLoaderState() {
-        var state: [String: Any] = ["text": loaderText, "znovu": loaderRetry, "progress": loaderProgress]
+        var state: [String: Any] = ["text": loaderText, "znovu": loaderRetry, "progress": loaderProgress, "language": interfaceLanguage]
         if let value = loaderValue { state["hodnota"] = value }
         guard loaderURL != nil, let data = try? JSONSerialization.data(withJSONObject: state), let json = String(data: data, encoding: .utf8) else { return }
         loaderWeb.evaluateJavaScript("window.agenteeqNacitani && window.agenteeqNacitani(\(json))")
@@ -298,7 +312,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     @objc func showWindow() { window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     @objc func settings() { showWindow(); web?.evaluateJavaScript("location.hash='#/nastaveni'") }
     @objc func welcome() { showWindow(); web?.evaluateJavaScript("window.dispatchEvent(new Event('agenteeq-welcome'))") }
-    @objc func about() { NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agenteeq", .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "", .credits: NSAttributedString(string: "Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.")]) }
+    @objc func about() { NSApp.orderFrontStandardAboutPanel(options: [.applicationName: "Agenteeq", .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "", .credits: NSAttributedString(string: localized("Všichni AI agenti na jednom místě.\nLokální desktopová verze pro macOS.", "All your AI agents in one place.\nLocal desktop app for macOS."))]) }
     @objc func retry() { guard child?.isRunning != true else { return }; retries = 0; startServer() }
 
     func startServer() {
@@ -306,9 +320,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         generation += 1
         let currentGeneration = generation
         statusItem.button?.title = " —" // no current count until a fresh local server snapshot
-        statusItem.button?.toolTip = "Agenteeq – stav agentů se načítá"
+        statusItem.button?.toolTip = localized("Agenteeq – stav agentů se načítá", "Agenteeq – loading agent status")
         showLoading()
-        setLoading(retries == 0 ? "Připravujeme tvůj pracovní prostor…" : "Obnovujeme spojení s tvými agenty…")
+        setLoading(retries == 0 ? localized("Připravujeme tvůj pracovní prostor…", "Preparing your workspace…") : localized("Obnovujeme spojení s tvými agenty…", "Reconnecting to your agents…"))
         failedMessage = nil; buffer = ""; baseURL = nil
         let resources = Bundle.main.resourceURL!
         let process = Process(); process.executableURL = resources.appendingPathComponent("node")
@@ -358,22 +372,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                 guard let self, !self.quitting, self.generation == currentGeneration else { return }
                 self.input = nil; self.output = nil; self.child = nil
                 self.statusItem.button?.title = " —"
-                self.statusItem.button?.toolTip = "Agenteeq – spojení s agenty přerušeno"
+                self.statusItem.button?.toolTip = self.localized("Agenteeq – spojení s agenty přerušeno", "Agenteeq – connection to agents lost")
                 self.showLoading()
                 if self.failedMessage == nil && self.retries < 3 {
                     self.retries += 1
                     DispatchQueue.main.asyncAfter(deadline: .now() + Double(self.retries)) { self.startServer() }
                 } else {
-                    self.setLoading(self.failedMessage ?? "Spojení se nepodařilo obnovit. Zkus aplikaci spustit znovu.", retry: true)
+                    self.setLoading(self.failedMessage ?? self.localized("Spojení se nepodařilo obnovit. Zkus aplikaci spustit znovu.", "Could not reconnect. Try opening the app again."), retry: true)
                 }
             }
         }
         do { try process.run() } catch {
-            child = nil; setLoading("Aplikaci se nepodařilo spustit. Rozbal celý balíček Agenteeq a zkus to znovu.", retry: true)
+            child = nil; setLoading(localized("Aplikaci se nepodařilo spustit. Rozbal celý balíček Agenteeq a zkus to znovu.", "Could not start the app. Extract the complete Agenteeq package and try again."), retry: true)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
             guard let self, self.generation == currentGeneration, self.baseURL == nil, self.child?.isRunning == true else { return }
-            self.failedMessage = "Načítání trvá příliš dlouho. Zkus to znovu; při opakovaném problému ověř přístup k souborům agentů."
+            self.failedMessage = self.localized("Načítání trvá příliš dlouho. Zkus to znovu; při opakovaném problému ověř přístup k souborům agentů.", "Loading is taking too long. Try again; if it keeps happening, check access to your agent files.")
             self.child?.terminate()
         }
     }
@@ -411,7 +425,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }
         if webView === loaderWeb { loaderURL = nil; loaderWeb.isHidden = true; fallback.isHidden = false; return }
-        showLoading(); setLoading("Obnovujeme zobrazení Agenteeq…")
+        showLoading(); setLoading(localized("Obnovujeme zobrazení Agenteeq…", "Restoring the Agenteeq window…"))
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             if let url = self?.baseURL, !self!.quitting { self?.web.load(URLRequest(url: url)) }
         }
@@ -568,12 +582,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func installUpdate(zip: String, version: String) {
         guard version.range(of: "^\\d+\\.\\d+\\.\\d+$", options: .regularExpression) != nil, zip.hasSuffix(".zip"), FileManager.default.fileExists(atPath: zip) else {
-            reportUpdateError("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.")
+            reportUpdateError(localized("Stažený balíček aktualizace už není dostupný. Stáhni ho znovu.", "The downloaded update is no longer available. Download it again."))
             return
         }
         let running = Bundle.main.bundleURL.standardizedFileURL
         guard let target = updateTarget(running: running) else {
-            reportUpdateError("Agenteeq nejde nainstalovat do složky Aplikace. Přetáhni ho tam ručně z DMG a spusť znovu.")
+            reportUpdateError(localized("Agenteeq nejde nainstalovat do složky Aplikace. Přetáhni ho tam ručně z DMG a spusť znovu.", "Agenteeq could not be installed in Applications. Drag it there from the DMG and reopen it."))
             return
         }
         let current = target.bundle
@@ -583,7 +597,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         // Feedback must start BEFORE extracting the downloaded archive. Otherwise
         // large ZIPs look like a frozen black screen until the last file is copied.
         showLoading()
-        setLoading(target.relocated ? "Instalujeme Agenteeq \(version) do složky Aplikace…" : "Připravujeme Agenteeq \(version)…", progress: true, value: 0.05)
+        setLoading(target.relocated ? localized("Instalujeme Agenteeq \(version) do složky Aplikace…", "Installing Agenteeq \(version) in Applications…") : localized("Připravujeme Agenteeq \(version)…", "Preparing Agenteeq \(version)…"), progress: true, value: 0.05)
         let bundleID = Bundle.main.bundleIdentifier ?? "cz.agenteeq.desktop"
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
@@ -594,7 +608,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                 DispatchQueue.main.async { self.qaWrite(["udalost": "aktualizace", "krok": key]); self.setLoading(text, progress: true, value: value) }
             }
             guard fm.isWritableFile(atPath: dest.path) else {
-                DispatchQueue.main.async { self.reportUpdateError("Do složky \(dest.path) nejde zapisovat. Stáhni Agenteeq z webu a nahraď aplikaci ručně.") }
+                DispatchQueue.main.async { self.reportUpdateError(self.localized("Do složky \(dest.path) nejde zapisovat. Stáhni Agenteeq z webu a nahraď aplikaci ručně.", "Cannot write to \(dest.path). Download Agenteeq from the website and replace the app manually.")) }
                 return
             }
             self.removeStaleUpdateStages(in: dest)
@@ -605,13 +619,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
                 try? fm.removeItem(at: work)
                 DispatchQueue.main.async { self.reportUpdateError(message) }
             }
-            step("Rozbalujeme Agenteeq \(version)…", 0.15, "rozbaleni")
-            guard (try? fm.createDirectory(at: work, withIntermediateDirectories: true)) != nil, self.runTool("/usr/bin/ditto", ["-x", "-k", zip, work.path]) == 0 else { fail("Balíček aktualizace nejde rozbalit. Nic se nezměnilo."); return }
+            step(self.localized("Rozbalujeme Agenteeq \(version)…", "Extracting Agenteeq \(version)…"), 0.15, "rozbaleni")
+            guard (try? fm.createDirectory(at: work, withIntermediateDirectories: true)) != nil, self.runTool("/usr/bin/ditto", ["-x", "-k", zip, work.path]) == 0 else { fail(self.localized("Balíček aktualizace nejde rozbalit. Nic se nezměnilo.", "Could not extract the update. Nothing was changed.")); return }
             let fresh = work.appendingPathComponent("Agenteeq.app")
             let info = NSDictionary(contentsOf: fresh.appendingPathComponent("Contents/Info.plist"))
-            guard info?["CFBundleIdentifier"] as? String == bundleID, info?["CFBundleShortVersionString"] as? String == version else { fail("V balíčku není Agenteeq \(version). Nic se nezměnilo."); return }
-            step("Kontrolujeme podpis aplikace…", 0.5, "podpis")
-            guard self.runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path]) == 0 else { fail("Podpis nové verze neprošel kontrolou. Nic se nezměnilo."); return }
+            guard info?["CFBundleIdentifier"] as? String == bundleID, info?["CFBundleShortVersionString"] as? String == version else { fail(self.localized("V balíčku není Agenteeq \(version). Nic se nezměnilo.", "The package does not contain Agenteeq \(version). Nothing was changed.")); return }
+            step(self.localized("Kontrolujeme podpis aplikace…", "Verifying the app signature…"), 0.5, "podpis")
+            guard self.runTool("/usr/bin/codesign", ["--verify", "--deep", "--strict", fresh.path]) == 0 else { fail(self.localized("Podpis nové verze neprošel kontrolou. Nic se nezměnilo.", "The new app failed signature verification. Nothing was changed.")); return }
             self.runTool("/usr/bin/xattr", ["-dr", "com.apple.quarantine", fresh.path])
             let backup = dest.appendingPathComponent(".agenteeq-previous-\(UUID().uuidString).app")
             let trash = fm.urls(for: .trashDirectory, in: .userDomainMask).first?.appendingPathComponent("Agenteeq \(self.runningVersion) \(Int(Date().timeIntervalSince1970)).app")
@@ -661,14 +675,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             open "$current" || :
             exit 1
             """
-            step("Ukládáme data a restartujeme…", 0.75, "ukonceni")
+            step(self.localized("Ukládáme data a restartujeme…", "Saving data and restarting…"), 0.75, "ukonceni")
             let helper = Process(); helper.executableURL = URL(fileURLWithPath: "/bin/sh")
             helper.arguments = ["-c", script, "agenteeq-update", String(ProcessInfo.processInfo.processIdentifier), current.path, fresh.path, work.path, backup.path, trash?.path ?? "", self.updateLogPath, running.path]
             helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
-            do { try helper.run() } catch { fail("Aktualizaci se nepodařilo spustit. Nic se nezměnilo."); return }
+            do { try helper.run() } catch { fail(self.localized("Aktualizaci se nepodařilo spustit. Nic se nezměnilo.", "Could not start the update. Nothing was changed.")); return }
             // Server se zastaví tady, s časovým limitem, ne až uvnitř ukončení AppKitu.
             self.stopServerBounded()
-            step("Spouštíme Agenteeq \(version)…", 0.9, "restart")
+            step(self.localized("Spouštíme Agenteeq \(version)…", "Opening Agenteeq \(version)…"), 0.9, "restart")
             DispatchQueue.main.async {
                 self.armExitWatchdog(seconds: 6)
                 NSApp.terminate(nil)
@@ -704,8 +718,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             let uncertain = max(0, min(data["uncertain"] as? Int ?? 0, 999))
             let title = uncertain == 0 ? " \(active)" : (active == 0 ? " ?" : " \(active)+")
             let tip = uncertain == 0
-                ? "Agenteeq – aktivně pracující agenti: \(active)"
-                : "Agenteeq – aktivně pracující agenti: \(active); u dalších \(uncertain) chybí čerstvý stav (naposledy pracovali)"
+                ? localized("Agenteeq – aktivně pracující agenti: \(active)", "Agenteeq – active agents: \(active)")
+                : localized("Agenteeq – aktivně pracující agenti: \(active); u dalších \(uncertain) chybí čerstvý stav (naposledy pracovali)", "Agenteeq – active agents: \(active); \(uncertain) more have no fresh status")
             statusItem.button?.title = title
             statusItem.button?.toolTip = tip
             statusItem.button?.setAccessibilityLabel(tip)
@@ -761,7 +775,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         helper.arguments = ["-c", "n=0; while kill -0 \"$1\" 2>/dev/null && [ \"$n\" -lt 300 ]; do sleep 0.2; n=$((n+1)); done; open \"$2\"", "agenteeq-relaunch", String(ProcessInfo.processInfo.processIdentifier), bundle.path]
         helper.standardOutput = FileHandle.nullDevice; helper.standardError = FileHandle.nullDevice; helper.standardInput = FileHandle.nullDevice
         do { try helper.run() } catch { installing = false; return }
-        showLoading(); setLoading("Spouštíme Agenteeq \(disk)…")
+        showLoading(); setLoading(localized("Spouštíme Agenteeq \(disk)…", "Opening Agenteeq \(disk)…"))
         NSApp.terminate(nil)
     }
     func applicationDidBecomeActive(_ notification: Notification) { relaunchIfReplaced() }
@@ -782,10 +796,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         let agenti = n == 1 ? "1 agent spuštěný" : (2...4).contains(n) ? "\(n) agenti spuštění" : "\(n) agentů spuštěných"
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Ukončit Agenteeq?"
-        alert.informativeText = "Běží \(agenti) z Agenteeq. Ukončením je zastavíš. Agenti v Terminálu a jiných aplikacích poběží dál."
-        alert.addButton(withTitle: "Ukončit")
-        alert.addButton(withTitle: "Zrušit")
+        alert.messageText = localized("Ukončit Agenteeq?", "Quit Agenteeq?")
+        alert.informativeText = localized("Běží \(agenti) z Agenteeq. Ukončením je zastavíš. Agenti v Terminálu a jiných aplikacích poběží dál.", "\(n) agents launched from Agenteeq are running. Quitting will stop them. Agents in Terminal and other apps will keep running.")
+        alert.addButton(withTitle: localized("Ukončit", "Quit"))
+        alert.addButton(withTitle: localized("Zrušit", "Cancel"))
         NSApp.activate(ignoringOtherApps: true)
         return alert.runModal() == .alertFirstButtonReturn
     }

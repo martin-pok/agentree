@@ -1,8 +1,10 @@
 # Changelog
 
-## Připravuje se – spolehlivější zachycení prvního agenta
+## 0.46.59 – 2026-10-22 · Angličtina i po aktualizaci
 
+- **Jazyk při restartu:** úvodní obrazovka aplikace pro Mac, průběh aktualizace, nabídka a systémové dialogy používají uloženou volbu češtiny nebo angličtiny. Aktualizace ji nemění.
 - **Sledování složek:** na Node 24 se neexistující kořen přepisů neoznačí za aktivní, i když `fs.watch` vrátí watcher bez chyby. Po vzniku složky se sledování zapne a první konverzace se doskenuje.
+- **Aktualizace:** když zvolený kanál nenabízí novější vydání, aplikace to uvede přesně a nezamění tento stav za nejnovější verzi ve všech kanálech.
 
 ## 0.46.58 – 2026-10-21 · Spolehlivější kontrola aktualizací a upozornění
 

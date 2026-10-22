@@ -582,7 +582,7 @@ function mount(el) {
         a.disabled = true;
         try {
           state.updates = (await api.checkUpdates()).updates;
-          toast(state.updates.status === 'current' ? tr('Máš nejnovější verzi.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
+          toast(state.updates.status === 'current' ? tr('V tomto kanálu není novější verze.') : state.updates.status === 'available' ? tr('Nová verze je připravená ke stažení.') : tr('Kontrola aktualizací je hotová.'));
           update();
         } finally {
           // fill() nemusí oblast přepsat, pokud se stav vydání nezměnil. V tom případě
@@ -1362,7 +1362,7 @@ function update(topics) {
   // se nesmí tvářit jako probíhající kontrola.
   const updTitle = upd.status === 'available' ? tr('Je dostupná verze {0}', upd.latestVersion)
     : upd.status === 'downloaded' ? tr('Aktualizace je připravená')
-      : upd.status === 'current' ? tr('Používáš aktuální verzi')
+      : upd.status === 'current' ? tr('Pro zvolený kanál není novější verze')
         : upd.status === 'error' ? tr('Aktualizaci se nepodařilo ověřit')
           : upd.status === 'unsupported' ? tr('Verze {0} zatím bez balíčku', upd.latestVersion)
             : upd.status === 'disabled' ? tr('Kontrola aktualizací je vypnutá')
@@ -1372,7 +1372,9 @@ function update(topics) {
     : upd.status === 'downloaded' ? tr('Otevři balíček ve Finderu a nahraď aplikaci v Aplikacích.')
       : upd.status === 'error' ? esc(upd.error || tr('Zkus kontrolu znovu.'))
         : upd.status === 'unsupported' ? tr('Nové vydání nemá ověřený balíček pro {0}.', tentoPocitac())
-          : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
+      : upd.status === 'disabled' ? tr('Tahle kopie Agenteeq se na nová vydání neptá.')
+        : upd.status === 'current' && channel === 'stable' ? tr('Kontrolují se jen stabilní vydání. Pro novější testovací verze zvol Preview.')
+          : upd.status === 'current' ? tr('V kanálu Preview není novější vydání.')
             : tr('Nové vydání se ověřuje při spuštění a pak pravidelně.');
   const updateOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-mode="${value}" aria-pressed="${mode === value}"><span class="appearance-icon">${value === 'automatic' ? ICON.down : ICON.hand}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
   const channelOption = (value, title, desc) => `<button class="appearance-option" type="button" data-update-channel="${value}" aria-pressed="${channel === value}"><span class="appearance-icon">${value === 'stable' ? ICON.shield : ICON.refresh}</span><span><strong>${title}</strong><small>${desc}</small></span></button>`;
