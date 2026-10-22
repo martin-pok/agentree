@@ -1,0 +1,53 @@
+name: Promote verified v0.46.58 to Stable Latest
+
+on:
+  push:
+    branches: [ops/promote-04658]
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    if: github.event.head_commit.message == 'Promote verified v0.46.58 to Stable Latest'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Verify exact tag, successful checks and release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: 9e0226f7b0e8cc1c0895bbcc54e6a06b7d871341
+          EXPECTED_ZIP_SHA256: 18d5af3e5205ff1a88991f787621f95fb816348dd3624068ab0d9c5ef17d740c
+        run: |
+          set -euo pipefail
+          repo="repos/$GITHUB_REPOSITORY"
+          tag_object="$(gh api "$repo/git/ref/tags/v0.46.58" --jq '.object.sha')"
+          tag_target="$(gh api "$repo/git/tags/$tag_object" --jq '.object.sha')"
+          test "$tag_target" = "$EXPECTED_SHA"
+          for run in 39794563344 39797174184 39798349093; do
+            gh api "$repo/actions/runs/$run" > "run-$run.json"
+            jq -e --arg sha "$EXPECTED_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success"' "run-$run.json"
+          done
+          gh api "$repo/releases/tags/v0.46.58" > release.json
+          jq -e --arg sha "sha256:$EXPECTED_ZIP_SHA256" '
+            .tag_name == "v0.46.58" and .draft == false and .prerelease == true
+            and (.assets | length) == 8
+            and ([.assets[] | select(.name == "Agenteeq-macOS-arm64.zip" and .digest == $sha)] | length) == 1
+            and (.body | contains("Toto je **Preview**, testovací vydání. Stabilní verze (Latest) zůstává beze změny."))
+          ' release.json
+          gh api "$repo/releases/latest" --jq '.tag_name' | grep -Fx 'v0.46.0'
+      - name: Promote existing release without rebuilding artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          repo="repos/$GITHUB_REPOSITORY"
+          jq -r '.body | sub("Toto je \\*\\*Preview\\*\\*, testovací vydání\\. Stabilní verze \\(Latest\\) zůstává beze změny\\."; "Toto vydání je stabilní (Latest).")' release.json > stable-notes.md
+          release_id="$(jq -r '.id' release.json)"
+          gh api --method PATCH "$repo/releases/$release_id" \
+            -F prerelease=false -f make_latest=true \
+            -f body="$(cat stable-notes.md)" > promoted.json
+          jq -e '.tag_name == "v0.46.58" and .prerelease == false and .draft == false' promoted.json
+          gh api "$repo/releases/latest" --jq '.tag_name' | grep -Fx 'v0.46.58'
