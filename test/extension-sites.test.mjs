@@ -10,7 +10,7 @@ import { WEB_SITES } from '../src/connectors/web.js';
 // „aplikace mi agenta nevidí".
 const okno = { sessionStorage: { getItem: () => null, setItem: () => {} } };
 class Udalost { constructor(type, init = {}) { this.type = type; Object.assign(this, init); } }
-const kontext = vm.createContext({ window: okno, sessionStorage: okno.sessionStorage, Event: Udalost, InputEvent: Udalost });
+const kontext = vm.createContext({ window: okno, sessionStorage: okno.sessionStorage, Event: Udalost, InputEvent: Udalost, URL });
 const kod = await fs.readFile(new URL('../extension/sites.js', import.meta.url), 'utf8');
 vm.runInContext(kod, kontext);
 const { SITES, detect, insertPrompt, composerText } = kontext.window.AgenteeqSites;
@@ -59,6 +59,17 @@ test('ID konverzace se bere z adresy, ne z náhody', () => {
   assert.equal(chatgpt.conversationId(loc('https://chatgpt.com/c/conv-9')), 'conv-9');
   const claude = SITES.find((s) => s.id === 'claude');
   assert.equal(claude.conversationId(loc('https://claude.ai/chat/abc-def')), 'abc-def');
+});
+
+test('ChatGPT and Claude Code read the actual selected conversation title', () => {
+  const link = (href, label) => ({ getAttribute: (k) => k === 'href' ? href : null, innerText: label, textContent: label });
+  const doc = (title, links) => ({ title, querySelectorAll: () => links });
+  const chat = SITES.find((s) => s.id === 'chatgpt');
+  const url = loc('https://chatgpt.com/c/conv-9');
+  assert.equal(chat.title(doc('ChatGPT', [link('/c/conv-9', 'Oprav přihlášení')]), url), 'Oprav přihlášení', 'sidebar title wins over generic page title');
+  assert.equal(chat.title(doc('ChatGPT', [link('/c/another', 'Cizí konverzace')]), url), '', 'unrelated sidebar chat is not used');
+  const code = SITES.find((s) => s.id === 'claude-code-web');
+  assert.equal(code.title(doc('Claude Code', [link('/code/session_12345678', 'Vydat novou verzi')]), loc('https://claude.ai/code/session_12345678')), 'Vydat novou verzi', 'Claude Code uses selected session label');
 });
 
 test('každá služba v seznamu má vlastní rozpoznání adresy', () => {

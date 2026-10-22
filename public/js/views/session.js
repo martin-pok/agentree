@@ -320,7 +320,7 @@ function renderTranscript(el, t) {
   }
   fill(el, 'tr-count', entries.length ? `${entries.length} ${plural(entries.length, 'záznam', 'záznamy', 'záznamů')}` : '');
   const session = state.sessions.get(v.id);
-  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : t.jenNaHostiteli ? `<p class="muted">${tr('Celý přepis je vidět jen na {0}.', tvemPocitaci())}</p>` : !t.loaded ? `<div class="loading" role="status"><span class="loader" aria-hidden="true"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('Text zpráv z webových chatů se nečte.')}</p>${session.open?.length ? `<div class="set-actions">${openButtons(session, { small: true, max: 1 })}</div>` : ''}` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
+  fill(el, 'tr-empty', t.error ? `<p class="muted">${esc(t.error)}</p>` : t.jenNaHostiteli ? `<p class="muted">${tr('Celý přepis je vidět jen na {0}.', tvemPocitaci())}</p>` : !t.loaded ? `<div class="loading" role="status"><span class="loader" aria-hidden="true"></span>${tr('Načítám přepis…')}</div>` : entries.length ? '' : session?.proces ? `<p class="muted">${tr('K tomuto procesu zatím není dostupný přepis.')}</p>` : session?.connector === 'web' ? `<p class="muted">${tr('V otevřené kartě zatím nejsou dostupné zprávy.')}</p>${session.open?.length ? `<div class="set-actions">${openButtons(session, { small: true, max: 1 })}</div>` : ''}` : `<p class="muted">${tr('Přepis je zatím prázdný.')}</p>`);
   if (added) {
     if (v.follow) list.scrollTop = list.scrollHeight;
     else jump.hidden = false;

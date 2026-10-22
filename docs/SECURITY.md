@@ -55,7 +55,7 @@ Podklady: [Apple SecItem](https://developer.apple.com/documentation/security/upd
 - **Agent spuštěný z Agenteeq má stejná práva jako uživatel.** Na pozadí výchozí režim jen čte/plánuje; „Smí upravovat soubory“ je volba uživatele. Zadání pro Terminál leží až 24 h v `~/.agenteeq/prompts` (0600) a výstup běhů v `~/.agenteeq/runs` (0600).
 - **Offline licence je ochrana proti náhodnému sdílení, ne DRM** (podrobně `docs/LICENSING.md`).
 - **Jiné lokální programy** téhož uživatele mohou číst stejné zdroje jako Agenteeq – to je vlastnost macOS, ne Agenteeq.
-- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele, ale na `127.0.0.1` posílá jen stav a počty zpráv (od 0.25.0), nikdy text. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb a Chrome Web Store policy (odpovědi do formuláře obchodu: `docs/CHROME-WEB-STORE.md`).
+- **Rozšíření čte obsah stránek AI aplikací** v prohlížeči uživatele a spárované lokální aplikaci na `127.0.0.1` předává stav, skutečný název a nejvýš 60 viditelných zpráv. Přepisy ani názvy nejdou do cloudové synchronizace. Před veřejnou distribucí je nutné ověřit podmínky jednotlivých služeb, veřejné zásady soukromí a Chrome Web Store policy (`docs/CHROME-WEB-STORE.md`).
 
 ## Nezávislý audit 2026-09-20: co je opraveno a co ne
 

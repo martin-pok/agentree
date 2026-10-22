@@ -21,6 +21,24 @@
     doc.querySelector('button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Zastavit" i], button[aria-label*="Přestat" i], button[aria-label*="Cancel generating" i]');
 
   const cleanTitle = (t, patterns) => patterns.reduce((s, re) => s.replace(re, ''), String(t || '')).trim();
+  const genericTitle = /^(?:chatgpt|codex|claude(?: code)?|gemini|google gemini|new chat|nový chat|untitled|bez názvu)$/i;
+  // A number of SPAs keep document.title at the product name. The selected conversation
+  // in the sidebar is then the only actual title available to a content script.
+  function conversationTitle(doc, loc, patterns = []) {
+    const page = cleanTitle(doc.title, patterns);
+    if (page && !genericTitle.test(page)) return page;
+    if (!loc) return '';
+    const path = loc.pathname.replace(/\/$/, '');
+    if (!path || path === '/') return '';
+    for (const a of all(doc, 'a[href][aria-current="page"], a[href][data-active="true"], nav a[href], aside a[href], [data-testid*="history"] a[href]')) {
+      let href;
+      try { href = new URL(a.getAttribute('href'), loc.href); } catch { continue; }
+      if (href.origin !== loc.origin || href.pathname.replace(/\/$/, '') !== path) continue;
+      const label = cleanTitle(text(a) || a.getAttribute('aria-label'), patterns);
+      if (label && !genericTitle.test(label) && !/^(?:session_[\w-]+|[0-9a-f-]{16,})$/i.test(label)) return label;
+    }
+    return '';
+  }
 
   // Zpráva = nejhlubší prvek, jehož atributy nebo třída prozrazují roli.
   function genericMessages(doc) {
@@ -34,6 +52,12 @@
       if (role && t) out.push({ role, text: t });
     }
     return out;
+  }
+  function openAiMessages(doc) {
+    const exact = all(doc, '[data-message-author-role]')
+      .map((el) => ({ role: el.getAttribute('data-message-author-role'), text: text(el) }))
+      .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.text);
+    return exact.length ? exact : genericMessages(doc);
   }
 
   // Pole pro zprávu. Nejdřív přesný selektor služby, pak obecná záloha – redesign služby tak
@@ -206,22 +230,18 @@
       hosts: ['chatgpt.com', 'chat.openai.com'],
       path: /^\/codex(\/|$)/,
       conversationId: (loc) => idFrom(loc, /\/codex\/(?:tasks|task|c)\/([\w-]+)/) || idFrom(loc, /\/codex\/([\w-]+)/) || tabId(),
-      messages: (doc) => all(doc, '[data-message-author-role]')
-        .map((el) => ({ role: el.getAttribute('data-message-author-role'), text: text(el) }))
-        .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.text),
+      messages: openAiMessages,
       generating: (doc) => Boolean(doc.querySelector('[data-testid="stop-button"]')) || Boolean(stopButton(doc)),
-      title: (doc) => cleanTitle(doc.title, [/^Codex\s*[-–|]\s*/i, /\s*[-–|]\s*Codex$/i, /\s*[-–|]\s*ChatGPT$/i]),
+      title: (doc, loc) => conversationTitle(doc, loc, [/^Codex\s*[-–|]\s*/i, /\s*[-–|]\s*Codex$/i, /\s*[-–|]\s*ChatGPT$/i]),
       composerSelector: '#prompt-textarea, textarea[name="prompt-textarea"]',
     },
     {
       id: 'chatgpt',
       hosts: ['chatgpt.com', 'chat.openai.com'],
       conversationId: (loc) => idFrom(loc, /\/c\/([\w-]+)/) || tabId(),
-      messages: (doc) => all(doc, '[data-message-author-role]')
-        .map((el) => ({ role: el.getAttribute('data-message-author-role'), text: text(el) }))
-        .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.text),
+      messages: openAiMessages,
       generating: (doc) => Boolean(doc.querySelector('[data-testid="stop-button"]')) || Boolean(stopButton(doc)),
-      title: (doc) => cleanTitle(doc.title, [/^ChatGPT\s*[-–|]\s*/i, /\s*[-–|]\s*ChatGPT$/i]),
+      title: (doc, loc) => conversationTitle(doc, loc, [/^ChatGPT\s*[-–|]\s*/i, /\s*[-–|]\s*ChatGPT$/i]),
       model: (doc) => text(doc.querySelector('[data-testid="model-switcher-dropdown-button"]')).slice(0, 60),
       composerSelector: '#prompt-textarea, textarea[name="prompt-textarea"]',
     },
@@ -235,7 +255,10 @@
       path: /^\/code(\/|$)/,
       conversationId: (loc) => idFrom(loc, /^\/code\/(session_[\w-]+)/) || tabId(),
       generating: (doc) => Boolean(doc.querySelector('[data-is-streaming="true"]')) || Boolean(stopButton(doc)),
-      title: (doc) => cleanTitle(doc.title, [/\s*[-–|]\s*Claude(?: Code)?$/i, /^Claude Code$/i]),
+      title: (doc, loc) => conversationTitle(doc, loc, [/\s*[-–|]\s*Claude(?: Code)?$/i, /^Claude Code$/i]),
+      messages: (doc) => all(doc, '[data-testid="user-message"], [data-testid="assistant-message"], [data-is-streaming]')
+        .map((el) => ({ role: el.matches('[data-testid="user-message"]') ? 'user' : 'assistant', text: text(el) }))
+        .filter((m) => m.text),
       composerSelector: 'div.ProseMirror[contenteditable="true"]',
     },
     {
@@ -246,7 +269,7 @@
         .map((el) => ({ role: el.matches('[data-testid="user-message"]') ? 'user' : 'assistant', text: text(el) }))
         .filter((m) => m.text),
       generating: (doc) => Boolean(doc.querySelector('[data-is-streaming="true"]')) || Boolean(stopButton(doc)),
-      title: (doc) => cleanTitle(doc.title, [/\s*[-–|]\s*Claude$/i]),
+      title: (doc, loc) => conversationTitle(doc, loc, [/\s*[-–|]\s*Claude$/i]),
       composerSelector: 'div.ProseMirror[contenteditable="true"], [data-testid="chat-input"] [contenteditable="true"]',
     },
     {
@@ -257,7 +280,7 @@
         .map((el) => ({ role: el.tagName.toLowerCase() === 'user-query' ? 'user' : 'assistant', text: text(el.querySelector('.query-text, message-content') || el) }))
         .filter((m) => m.text),
       generating: (doc) => Boolean(stopButton(doc)),
-      title: (doc) => cleanTitle(doc.title, [/^Gemini\s*[-–|]?\s*/i]),
+      title: (doc, loc) => conversationTitle(doc, loc, [/^Gemini\s*[-–|]?\s*/i]),
       composerSelector: 'rich-textarea .ql-editor[contenteditable="true"], .ql-editor[contenteditable="true"]',
     },
     { id: 'mscopilot', hosts: ['copilot.microsoft.com'], conversationId: (loc) => idFrom(loc, /\/chats\/([\w-]+)/) || tabId() },

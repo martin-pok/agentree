@@ -371,7 +371,7 @@ Pravidla: testy nikdy nečtou skutečné `~/.claude`, `~/.codex` ani `~/.agentee
 
 - [ ] Načti `extension/` jako rozbalené, otevři web, pošli zprávu a počkej na odpověď.
 - [ ] Během generování je session „Pracuje“, po dokončení „Čeká na zadání“ do 2 s.
-- [ ] Session nese jen stav a počty zpráv: žádný přepis, název „<Služba> · konverzace <konec ID>“.
+- [ ] Session nese skutečný název ze stránky či vybrané položky v seznamu a viditelné zprávy v detailu; pokud název stránka nevystaví, ukáže se výslovně jeho nedostupnost, nikdy konec ID.
 - [ ] Nová konverzace = nová session; přepnutí konverzace nesmíchá počty.
 - [ ] Rozšíření se po načtení spáruje samo (okno ukáže **Připojeno**), bez kódu.
 - [ ] Okno rozšíření ukáže konverzaci v seznamu („odpovídá · 0:12“, po dopsání „právě dokončil“)

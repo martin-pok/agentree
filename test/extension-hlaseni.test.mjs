@@ -16,13 +16,14 @@ function spust(odpoved) {
   let posluchac = null;
   const cekajici = [];
   const odeslano = [];
-  const stranka = { id: 'konverzace-1', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
+  const stranka = { id: 'konverzace-1', title: '', generuje: false, zpravy: [{ role: 'user', text: 'a' }, { role: 'assistant', text: 'b' }] };
   const adapter = {
     id: 'chatgpt',
     messages: () => stranka.zpravy,
     generating: () => stranka.generuje,
     conversationId: () => stranka.id,
     model: () => 'gpt',
+    title: () => stranka.title,
     limit: () => null,
     composer: () => null,
   };
@@ -86,6 +87,16 @@ test('rozšíření: klidná konverzace se ohlásí jednou za minutu, generován
   await r.pruchod();
   assert.equal(r.odeslano.length, 4, 'během generování po 10 s');
   assert.equal(r.odeslano.at(-1).generating, true);
+});
+
+test('rozšíření: nově zjištěný název se odešle hned i bez změny počtu zpráv', async () => {
+  const r = spust(() => ({ ok: true }));
+  await r.pruchod(0);
+  r.stranka.title = 'Skutečný název chatu';
+  await r.pruchod();
+  assert.equal(r.odeslano.length, 2);
+  assert.equal(r.odeslano.at(-1).title, 'Skutečný název chatu');
+  assert.equal(r.odeslano.at(-1).messages[0].text, 'a');
 });
 
 test('rozšíření: prázdná stránka bez zpráv se neohlašuje', async () => {

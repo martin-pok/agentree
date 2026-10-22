@@ -1,10 +1,10 @@
 // Sleduje stránku AI aplikace a posílá změny (generuje / hotovo / nová zpráva) do background workeru.
-// Posílá jen stav a počty – text zpráv ani název konverzace stránku neopustí (docs/ACCOUNTS.md).
+// Název a viditelné zprávy posílá pouze spárované lokální aplikaci na 127.0.0.1.
 (() => {
   // Manifest injection and post-update reinjection may both run on the same tab.
   // Never create duplicate observers, intervals or duplicate telemetry streams.
   if (globalThis.__agenteeqContentActive) return;
-  const adapter = window.AgenteeqSites?.detect(location);
+  let adapter = window.AgenteeqSites?.detect(location);
   if (!adapter) return;
   globalThis.__agenteeqContentActive = true;
 
@@ -23,7 +23,22 @@
   // Pro ověření v okně rozšíření: viděli jsme na téhle stránce, že agent pracoval a pak skončil?
   // Jednorázový pohled do stránky to nepozná, přechod ano.
   const videl = { generovani: false, konec: false };
+  function visibleMessages(zpravy) {
+    // Keep the JSON body below the local API's 1 MB limit even with multibyte text.
+    let remaining = 150000;
+    const out = [];
+    for (const m of zpravy.slice(-60).reverse()) {
+      if (!remaining) break;
+      const value = m.text.slice(0, Math.min(8000, remaining));
+      remaining -= value.length;
+      out.unshift({ role: m.role, text: value });
+    }
+    return out;
+  }
   function collect() {
+    // ChatGPT and Codex navigate between /c and /codex without reloading the content script.
+    adapter = window.AgenteeqSites.detect(location);
+    if (!adapter) return null;
     const zpravy = adapter.messages(document);
     posledniDelka = zpravy.length ? zpravy[zpravy.length - 1].text.length : 0;
     const generating = adapter.generating(document);
@@ -36,6 +51,8 @@
       url: `${location.origin}${location.pathname}`,
       generating,
       counts: { user: zpravy.filter((m) => m.role === 'user').length, assistant: zpravy.filter((m) => m.role === 'assistant').length },
+      title: adapter.title(document, location).slice(0, 400),
+      messages: visibleMessages(zpravy),
       model: adapter.model(document) || '',
       limit: adapter.limit(document),
     };
@@ -52,8 +69,9 @@
     } catch {
       return Promise.resolve({ ok: false });
     }
-    if (!payload.counts.user && !payload.counts.assistant && !payload.generating) return Promise.resolve({ ok: true, empty: true });
-    const sig = JSON.stringify([payload.conversationId, payload.generating, payload.counts, posledniDelka, payload.limit]);
+    if (!payload) return Promise.resolve({ ok: true, empty: true });
+    if (!payload.counts.user && !payload.counts.assistant && !payload.generating && !payload.title) return Promise.resolve({ ok: true, empty: true });
+    const sig = JSON.stringify([payload.site, payload.conversationId, payload.generating, payload.title, payload.messages, payload.limit]);
     const now = Date.now();
     // Beze změny se posílá jen udržovací signál: během generování po 10 s (agent stále pracuje),
     // jinak po minutě – aplikace, která se mezitím restartovala, tak otevřenou konverzaci nepřehlédne.

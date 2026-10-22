@@ -1059,7 +1059,7 @@ function modelsCard() {
   const list = v.napojeni;
   return `${head(ICON.plug, tr('Napojené modely'), '', '', tr('Práce, limity a spotřeba z účtů u dodavatelů.'))}
     ${list ? `<ul class="model-list">${seznamNapojeni(list)}</ul><div class="set-actions"><button class="btn btn--sm" type="button" data-objev>${ICON.search}${tr('Najít AI nástroje na {0}', tomtoPocitaci())}</button></div>` : v.napojeniChyba ? `<p class="set-note set-note--warn">${esc(v.napojeniChyba)}</p>` : kostraNapojeni()}
-    <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Z webových chatů se dozví jen stav konverzace, text zpráv ne.')}</span></p>`;
+    <p class="account-privacy">${ICON.shield}<span>${tr('Hesla ani přístupové klíče Agenteeq neuvidí, přihlašuješ se přímo u dodavatele. Spárované rozšíření předává názvy a viditelné zprávy webových chatů jen místní aplikaci.')}</span></p>`;
 }
 
 // `tip` = vysvětlení bez stavu (k čemu karta je, jak funguje). Patří pod „i“ u nadpisu, ne do odstavce –

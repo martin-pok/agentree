@@ -158,7 +158,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
-| 1 | **Ověřit rozšíření na všech 8 webech** | Viz „Teď“ #4. Od 0.25.0 rozšíření posílá jen stav a počty zpráv, takže se ověřuje: rozpoznání služby, ID konverzace z adresy, počty zpráv, přechod pracuje → hotovo a pole pro vložení zadání |
+| 1 | **Ověřit rozšíření na všech podporovaných webech** | Na skutečných přihlášených stránkách ověřit rozpoznání služby, skutečný titulek, viditelný přepis, přechod pracuje → hotovo, SPA navigaci a pole pro vložení zadání. Selektory bez takového ověření zůstávají Beta. |
 | 2 | Ověřit Cursor, Copilot CLI, VS Code, Gemini CLI na reálných datech | Každý konektor `verified: true` + fixtury z reálných souborů (anonymizované) |
 | 4 | Hooky do skutečného `~/.claude/settings.json` | Ruční QA: žádost o povolení → upozornění < 1 s; odinstalace vrátí soubor do původního stavu (zatím ověřeno jen v dočasném HOME) |
 | 5 | ~~Upozornění s akcí~~ **hotovo** | Klik na upozornění otevře aplikaci na správné obrazovce (`desktop/Agenteeq.swift`, `userNotificationCenter(_:didReceive:)`) |

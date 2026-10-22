@@ -378,10 +378,11 @@ Desktopu (`claude-desktop-code:session_…`), hlášení nevytvoří webovou kon
 (`{ ok, id: "claude-desktop-code:session_…" }`) a případný záznam `web:claude-code-web:session_…`
 odebere. Stav pak odvozuje `deriveStatus` z čerstvé karty (do 150 s od posledního hlášení), jinak z cache.
 
-Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
-Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text
-i název zahodí, nic z toho neuloží. Konverzace z webu se v Agenteeq jmenuje podle služby a konce
-svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
+Rozšíření posílá spárované aplikaci na `127.0.0.1` také skutečný `title` a posledních nejvýš
+60 viditelných `messages[{ role, text }]` (nejvýš 8 000 znaků na zprávu). Server validuje role a
+délky a ukládá zprávy do lokálního přepisu. Do cloudu se název ani přepis neposílá. Pokud stránka
+skutečný název nevystaví, karta výslovně řekne, že název zatím není dostupný; nikdy neukazuje
+ID konverzace jako název. Přepis webové služby je omezen tím, co prohlížeč právě vykreslil.
 
 ## Trvalá data `~/.agenteeq/data.json`
 

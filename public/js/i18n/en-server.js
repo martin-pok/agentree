@@ -320,8 +320,6 @@ export default {
   "Neznámá služba.": "Unknown service.",
   "Neplatné ID konverzace.": "Invalid conversation ID.",
   "Neplatná adresa.": "Invalid address.",
-  "{0} · konverzace {1}": "{0} · conversation {1}",
-  "Webový chat": "Web chat",
   "Generuje odpověď…": "Generating a reply…",
   "Webové aplikace (rozšíření prohlížeče)": "Web apps (browser extension)",
   "Rozšíření Agenteeq pro Chrome": "Agenteeq extension for Chrome",
@@ -556,6 +554,7 @@ export default {
   "Zatím bez odpovědi agenta": "No reply from the agent yet",
   "Plánovaná úloha · {0}": "Scheduled task · {0}",
   "Konverzace bez názvu": "Untitled conversation",
+  "Název konverzace zatím nedostupný": "Conversation title is not available yet",
 
   // src/napojeni.js
   "Přihlášení {0} skončilo bez napojení. Zkus to prosím znovu.": "The {0} sign-in ended without connecting. Please try again.",

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
+
+- **ChatGPT, Codex a Claude Code v prohlížeči:** Agenteeq přebírá skutečný název z titulku stránky nebo aktivní konverzace v postranním seznamu. Už nezobrazuje poslední znaky interního ID jako název.
+- **Přepis:** spárované rozšíření posílá viditelné zprávy jen do lokální aplikace. Detail agenta je průběžně aktualizuje bez zdvojování odpovědí. Neúplně vykreslená historie může zůstat neúplná.
+- **ChatGPT ↔ Codex:** při přechodu v jedné kartě se znovu rozpozná služba i bez načtení celé stránky.
+- **Codex v aplikaci:** poškozený název z indexu (například smíšené znaky latinky a cyrilice v jednom slově) už nepřepíše poslední čitelný název; případně se ukáže skutečné první zadání.
+
 ## 0.46.59 – 2026-10-22 · Angličtina i po aktualizaci
 
 - **Jazyk při restartu:** úvodní obrazovka aplikace pro Mac, průběh aktualizace, nabídka a systémové dialogy používají uloženou volbu češtiny nebo angličtiny. Aktualizace ji nemění.

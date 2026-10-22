@@ -12,7 +12,7 @@
     "description": "Short name."
   },
   "popis": {
-    "message": "Your web AI chats in the Agenteeq app on your computer: whether the agent is working and how many messages. Sends no message text.",
+    "message": "Web AI chats in Agenteeq: agent status, real titles and visible messages. Data goes only to the app on your computer.",
     "description": "Description in Chrome and in the store, at most 132 characters."
   },
   "titulek": {
