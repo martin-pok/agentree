@@ -6,7 +6,8 @@
 
 ## Zdroj pravdy
 
-- **v0.46.59:** kandidát s opravou jazyka nativního macOS okna při aktualizaci a restartu. Lokální `npm test`: 1457 úspěšných, 0 selhání, 13 přeskočeno. [Mac CI nad kandidátem](https://github.com/martin-pok/agentree/actions/runs/39812654480) úspěšně dokončilo testy, sestavení `.app` a `qa:native`. Před publikací zbývá PR/CI na cílové větvi, release sestavení a audit osmi příloh. Fyzický Mac vlastníka z cloudu ověřit nelze.
+- **v0.46.60:** pracovní kandidát s názvy a místními přepisy webových konverzací a s opravou jazyka z nevydané 0.46.59. Lokálně prošly cílené testy, sestavení rozšíření a webu i instalační smoke. Úplné CI nad přesným commitem, Mac build, audit příloh a živé UAT na přihlášených webových chatech dosud chybí. Není vydaný a Mac vlastníka z cloudu ověřit nelze.
+- **v0.46.59:** nevydaný mezikandidát s opravou jazyka nativního macOS okna při aktualizaci a restartu. Lokální `npm test`: 1457 úspěšných, 0 selhání, 13 přeskočeno. [Mac CI nad kandidátem](https://github.com/martin-pok/agentree/actions/runs/39812654480) úspěšně dokončilo testy, sestavení `.app` a `qa:native`. Jeho změny jsou v pracovním kandidátu 0.46.60.
 - **v0.46.58:** zveřejněno a propagováno na Stable Latest po ověření přesného tagu, tří úspěšných běhů a Mac ZIP SHA-256; [propagace](https://github.com/martin-pok/agentree/actions/runs/39809927554) prošla. Přímý upgrade vlastníkovy instalace z cloudu ověřen nebyl.
 - **Draft jen na pokyn (od 20. 10. 2026, rozhodnutí vlastníka):** kandidát se sestaví ručním spuštěním „Připravit vydání“, ne po každém merge. Seznam vydání tak obsahuje jen zveřejněná vydání a nanejvýš jeden kandidát během chystaného vydání.
 - **Úklid Draftů (od 20. 10. 2026, rozhodnutí vlastníka):** po každém novém Draftu, který projde auditem, smaže `prune-drafts.yml` všechny nezveřejněné Drafty s nižší verzí. Zveřejněná vydání a tagy se nemažou. První běh po sloučení smaže překonané Drafty v0.36.4, v0.37.0, v0.46.7–v0.46.11, v0.46.13, v0.46.14, v0.46.19, v0.46.32, v0.46.34–v0.46.38, v0.46.40, v0.46.41, v0.46.44 a v0.46.45 (případně i v0.46.46 a v0.46.47, pokud mezitím vzniknou a nebudou zveřejněné); jejich zmínky níže jsou historie.
@@ -102,7 +103,7 @@
 
 ## Jaký je další postup
 
-`v0.46.59` jako Preview: ověřit CI pro přesný commit, sestavit osm příloh, nezávisle stáhnout a ověřit jejich SHA-256, pak zveřejnit a ověřit nabídku aktualizace. Po úspěšné publikaci propagovat na Stable Latest, aby opravu dostal i výchozí kanál. Instalaci na Macu vlastníka potvrzuje teprve reálné zařízení.
+`v0.46.60` jako Preview: ověřit CI pro přesný commit, sestavit osm příloh, nezávisle stáhnout a ověřit jejich SHA-256, pak zveřejnit a ověřit nabídku aktualizace. Po úspěšné publikaci propagovat na Stable Latest, aby opravu dostal i výchozí kanál. Instalaci na Macu vlastníka potvrzuje teprve reálné zařízení.
 
 **Audit release draft** se automaticky spouští po úspěšném sestavení nového Draftu a jednorázově po zavedení tohoto workflow pro již hotovou 0.46.9. Volitelně lze stejný audit spustit ručně z GitHub Actions s přesným tagem, např. `v0.46.9`. Workflow provádí pouze čtecí operace, ale auditovací úloha potřebuje omezené oprávnění `contents: write` jen k zobrazení neveřejných GitHub Draftů; žádný příkaz nic neupravuje. Stáhne všechny skutečné přílohy, porovná jejich SHA-256 s GitHub API i `SHA256SUMS.txt` a uloží malý `release-draft-audit` report. Úspěšný audit **nenahrazuje** instalaci, Google OAuth, vizuální kontrolu ikony ani další reálné UAT. Nespouští publikaci.
 

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.60',
+    date: '2026-10-22',
+    title: 'Skutečné názvy a přepisy webových chatů',
+    items: [
+      'ChatGPT, Codex a Claude Code v prohlížeči ukazují skutečný název konverzace, pokud ho stránka zpřístupní; interní kód se jako název nezobrazuje.',
+      'Viditelné zprávy z webové konverzace se zobrazují v detailu agenta jen na tomto počítači.',
+      'Přepnutí ChatGPT na Codex ve stejné kartě i poškozené názvy z indexu Codexu se zpracují správně.',
+    ],
+    en: {
+      title: 'Real browser chat titles and transcripts',
+      items: [
+        'ChatGPT, Codex and Claude Code show the real conversation title when the page exposes it; an internal ID is never shown as a title.',
+        'Visible browser chat messages appear in the agent detail only on this computer.',
+        'Switching from ChatGPT to Codex in one tab and corrupt Codex index titles are handled correctly.',
+      ],
+    },
+  },
+  {
     version: '0.46.59',
     date: '2026-10-22',
     title: 'Angličtina i po aktualizaci',
