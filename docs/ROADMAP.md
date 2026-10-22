@@ -14,7 +14,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **v0.46.60 Preview je pracovní kandidát**, není zveřejněný; obsahuje opravu nativního jazyka i webových konverzací. Před publikací vyžaduje zelené CI a audit Mac balíčku, UAT názvů a přepisů na přihlášených živých stránkách ChatGPT, Claude Code a Codexu a ověření upgradu na skutečném Macu. Zveřejnění samo není důkazem lokálního upgradu.
+**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **v0.46.60 Preview je pracovní kandidát**, není zveřejněný; obsahuje opravu nativního jazyka, webových konverzací, detekce profilů Claude Code a QR párování telefonu. Lokálně prošly testy, syntaxe, smoke, sestavení a prohlížečové QA (podrobně v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Blokátor vydání:** GitHub API pro PR a workflow v tomto prostředí vrací `403 Forbidden`; dostupný `GH_TOKEN` je neplatný. Po obnovení přístupu vytvořit PR z `sync/released-04658`, počkat na zelené CI, sestavit a ověřit přesný Mac balíček včetně auditu příloh, otestovat živé názvy/přepisy na ChatGPT, Claude Code a Codexu a upgrade na skutečném Macu; pak zveřejnit Preview. Zveřejnění samo není důkazem lokálního upgradu.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
