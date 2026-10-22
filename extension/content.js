@@ -70,7 +70,10 @@
       return Promise.resolve({ ok: false });
     }
     if (!payload) return Promise.resolve({ ok: true, empty: true });
-    if (!payload.counts.user && !payload.counts.assistant && !payload.generating && !payload.title) return Promise.resolve({ ok: true, empty: true });
+    // AI Studio may render a saved prompt without message elements recognizable to our
+    // fallback reader. Its durable URL still identifies a real conversation to follow.
+    const savedStudioPrompt = payload.site === 'google-ai-studio' && !jeZastupne(payload.conversationId);
+    if (!payload.counts.user && !payload.counts.assistant && !payload.generating && !payload.title && !savedStudioPrompt) return Promise.resolve({ ok: true, empty: true });
     const sig = JSON.stringify([payload.site, payload.conversationId, payload.generating, payload.title, payload.messages, payload.limit]);
     const now = Date.now();
     // Beze změny se posílá jen udržovací signál: během generování po 10 s (agent stále pracuje),

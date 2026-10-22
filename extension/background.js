@@ -305,6 +305,7 @@ const SITE_HOSTS = {
   'claude-code-web': ['claude.ai'],
   claude: ['claude.ai'],
   gemini: ['gemini.google.com'],
+  'google-ai-studio': ['aistudio.google.com'],
   mscopilot: ['copilot.microsoft.com'],
   perplexity: ['www.perplexity.ai', 'perplexity.ai'],
   grok: ['grok.com'],

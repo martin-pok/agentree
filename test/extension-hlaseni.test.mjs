@@ -28,7 +28,7 @@ function spust(odpoved) {
     composer: () => null,
   };
   const kontext = vm.createContext({
-    window: { AgenteeqSites: { detect: () => stranka.site === 'codex-web' ? { ...adapter, id: 'codex-web' } : adapter }, addEventListener() {} },
+    window: { AgenteeqSites: { detect: () => ({ ...adapter, id: stranka.site }) }, addEventListener() {} },
     location: { href: 'https://chatgpt.com/c/konverzace-1' },
     document: { documentElement: {} },
     MutationObserver: class { observe() {} },
@@ -114,6 +114,18 @@ test('rozšíření: prázdná stránka bez zpráv se neohlašuje', async () => 
   await r.pruchod(0);
   await r.pruchod(60000);
   assert.equal(r.odeslano.length, 0);
+});
+
+test('uložený prompt Google AI Studio se nahlásí i při změně DOM bez čitelných zpráv', async () => {
+  const r = spust(() => ({ ok: true }));
+  r.stranka.site = 'google-ai-studio';
+  r.stranka.id = 'studio-conversation-123';
+  r.stranka.zpravy = [];
+  await r.pruchod(0);
+  assert.equal(r.odeslano.length, 1);
+  assert.equal(r.odeslano[0].site, 'google-ai-studio');
+  assert.equal(r.odeslano[0].conversationId, 'studio-conversation-123');
+  assert.deepEqual(JSON.parse(JSON.stringify(r.odeslano[0].counts)), { user: 0, assistant: 0 });
 });
 
 test('ruční obnova vynutí nové hlášení i beze změny a počká na jeho výsledek', async () => {

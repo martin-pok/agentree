@@ -61,6 +61,23 @@ test('ID konverzace se bere z adresy, ne z náhody', () => {
   assert.equal(claude.conversationId(loc('https://claude.ai/chat/abc-def')), 'abc-def');
 });
 
+test('Google AI Studio has its own adapter and exact browser permissions', async () => {
+  const studio = SITES.find((s) => s.id === 'google-ai-studio');
+  assert.equal(detect(loc('https://aistudio.google.com/prompts/abc-123')).id, studio.id);
+  assert.equal(detect(loc('https://aistudio.google.com/app/prompts/abc-123')).id, studio.id);
+  assert.equal(studio.conversationId(loc('https://aistudio.google.com/prompts/abc-123')), 'abc-123');
+  assert.match(studio.conversationId(loc('https://aistudio.google.com/prompts/new_chat')), /^tab-/);
+  assert.equal(studio.title({ title: 'Oprav API – Google AI Studio' }), 'Oprav API');
+  assert.equal(studio.title({ title: 'Google AI Studio' }), '');
+  assert.equal(detect(loc('https://aistudio.google.com/library')), null);
+
+  const manifest = JSON.parse(await fs.readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
+  assert.ok(manifest.content_scripts[0].matches.includes('https://aistudio.google.com/*'));
+  assert.ok(manifest.host_permissions.includes('https://aistudio.google.com/*'));
+  const background = await fs.readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
+  assert.match(background, /'google-ai-studio': \['aistudio\.google\.com'\]/);
+});
+
 test('ChatGPT and Claude Code read the actual selected conversation title', () => {
   const link = (href, label) => ({ getAttribute: (k) => k === 'href' ? href : null, innerText: label, textContent: label });
   const doc = (title, links) => ({ title, querySelectorAll: () => links });

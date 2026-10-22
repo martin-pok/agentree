@@ -21,7 +21,7 @@
     doc.querySelector('button[data-testid="stop-button"], button[aria-label*="Stop" i], button[aria-label*="Zastavit" i], button[aria-label*="Přestat" i], button[aria-label*="Cancel generating" i]');
 
   const cleanTitle = (t, patterns) => patterns.reduce((s, re) => s.replace(re, ''), String(t || '')).trim();
-  const genericTitle = /^(?:chatgpt|codex|claude(?: code)?|gemini|google gemini|new chat|nový chat|untitled|bez názvu)$/i;
+  const genericTitle = /^(?:chatgpt|codex|claude(?: code)?|gemini|google gemini|google ai studio|ai studio|new chat|nový chat|untitled|bez názvu)$/i;
   // A number of SPAs keep document.title at the product name. The selected conversation
   // in the sidebar is then the only actual title available to a content script.
   function conversationTitle(doc, loc, patterns = []) {
@@ -282,6 +282,20 @@
       generating: (doc) => Boolean(stopButton(doc)),
       title: (doc, loc) => conversationTitle(doc, loc, [/^Gemini\s*[-–|]?\s*/i]),
       composerSelector: 'rich-textarea .ql-editor[contenteditable="true"], .ql-editor[contenteditable="true"]',
+    },
+    // Google AI Studio is a separate product and host from Gemini. Its public chat URLs
+    // use /prompts/<id>; a new, unsaved prompt has no durable conversation ID yet.
+    // The message selectors remain a documented fallback until verified on a live page.
+    {
+      id: 'google-ai-studio',
+      hosts: ['aistudio.google.com'],
+      path: /^\/(?:app\/)?prompts(?:\/|$)/,
+      conversationId: (loc) => {
+        const id = idFrom(loc, /^\/(?:app\/)?prompts\/([\w-]+)/);
+        return id && id !== 'new_chat' ? id : tabId();
+      },
+      title: (doc, loc) => conversationTitle(doc, loc, [/\s*[-–|]\s*Google AI Studio$/i]),
+      composerSelector: 'textarea[aria-label*="prompt" i], [contenteditable="true"][role="textbox"]',
     },
     { id: 'mscopilot', hosts: ['copilot.microsoft.com'], conversationId: (loc) => idFrom(loc, /\/chats\/([\w-]+)/) || tabId() },
     { id: 'perplexity', hosts: ['www.perplexity.ai', 'perplexity.ai'], conversationId: (loc) => idFrom(loc, /\/search\/([\w.-]+)/) || tabId(), composerSelector: '#ask-input, textarea' },
