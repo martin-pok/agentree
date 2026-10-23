@@ -1,7 +1,7 @@
 # Po zveřejnění vydání nahraje přesně ten ZIP rozšíření, který je v jeho přílohách (ověřený proti
 # SHA256SUMS.txt), do existující položky Chrome Web Store a odešle ho ke kontrole Googlu.
 # Přístup k Chrome Web Store API dávají tři tajné hodnoty repozitáře (docs/CHROME-WEB-STORE.md):
-# CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN. Bez nich úloha jen ohlásí, co chybí.
+# CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN. Bez nich musí vydání skončit chybou.
 name: Chrome Web Store
 
 # Vydání zveřejňuje publish.yml tokenem GITHUB_TOKEN – takové zveřejnění událost `release`
@@ -75,8 +75,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "$CWS_CLIENT_ID" ] || [ -z "$CWS_CLIENT_SECRET" ] || [ -z "$CWS_REFRESH_TOKEN" ]; then
-            echo "::warning::Chybí CWS_CLIENT_ID, CWS_CLIENT_SECRET nebo CWS_REFRESH_TOKEN – $ZIP se do obchodu nenahrál (docs/CHROME-WEB-STORE.md)."
-            exit 0
+            echo "::error::Chybí CWS_CLIENT_ID, CWS_CLIENT_SECRET nebo CWS_REFRESH_TOKEN – $ZIP se do obchodu nenahrál (docs/CHROME-WEB-STORE.md)."
+            exit 1
           fi
           TOKEN=$(curl -fsS https://oauth2.googleapis.com/token \
             --data-urlencode "client_id=$CWS_CLIENT_ID" --data-urlencode "client_secret=$CWS_CLIENT_SECRET" \
