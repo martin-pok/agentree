@@ -1,5 +1,9 @@
 # Changelog
 
+## Nepublikované změny
+
+- **Chrome Web Store:** vydávací workflow nyní skončí chybou, pokud chybí OAuth secrets; prázdné nahrání už nemůže vypadat jako úspěšné vydání.
+
 ## Web – 2026-10-23 · Snímky aplikace z aktuální verze
 
 - Úvod webu (CZ i EN, počítač i telefon) ukazuje Přehled z aktuální verze: Vyžaduje pozornost, Stav agentů a dnešní den v pozdravu. Dřív tam byl snímek ze 13. 10.
