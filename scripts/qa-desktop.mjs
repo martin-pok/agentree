@@ -659,6 +659,31 @@ async function zkontrolujKontrastLogVCTA(page, engine) {
   assert.deepEqual(result, [], `${engine}: kontrast poskytovatelských log na tlačítkách\n${result.join('\n')}`);
 }
 
+async function zkontrolujHoverNovinek(browser, engine) {
+  const server = await startTestServer();
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  try {
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0', language: 'cs' });
+    const page = await ctx.newPage();
+    await page.goto(server.url);
+    await page.waitForSelector('[data-whats-new]');
+    for (const width of [1440, 375]) for (const theme of ['light', 'dark']) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(async (t) => {
+        (await import('/js/appearance.js')).applyAppearance(t);
+        await (await import('/js/whats-new.js')).showWhatsNew();
+      }, theme);
+      const button = page.locator('.wn-ack, .btn--ack').filter({ hasText: /Rozumím|Got it/ });
+      await button.hover();
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
+      const colors = () => button.evaluate(b => ({ bg: getComputedStyle(b).backgroundColor, fg: getComputedStyle(b).color }));
+      assert.deepEqual(await colors(), { bg: 'rgb(98, 96, 216)', fg: 'rgb(255, 255, 255)' }, `${engine} ${theme} ${width}: fialový hover s bílým textem`);
+      await page.screenshot({ path: `${out}/${engine}-novinky-${theme}-${width}.png` });
+      await button.click();
+    }
+  } finally { await ctx.close(); await server.close(); }
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   let accountSnapshot = null;
@@ -681,6 +706,7 @@ for (const engine of engines) {
   await zkontrolujListuPriPosunu(browser, engine);
   await zkontrolujObdobi(browser, engine);
   await zkontrolujVyskyRadku(browser, engine);
+  await zkontrolujHoverNovinek(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   }
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });

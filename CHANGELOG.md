@@ -2,6 +2,8 @@
 
 ## 0.46.63 – 2026-10-23 · Roboti v dílně
 
+- **Co je nového:** tlačítko Rozumím při najetí a fokusu zfialoví s bílým textem.
+
 - **Roboti jsou tělesa, ne samolepky:** hlava i trup mají objem (světlo zleva shora, stín vpravo dole) a při otočce se točí jako zaoblené těleso – obrys se plynule zúží do profilu, obličej s očima po povrchu přejede za okraj, bližší ucho přejde přes hlavu a z druhé strany se vynoří záda.
 - **Oblečení drží:** čepice a klobouky se otáčejí s hlavou, brýle a doplňky na obličeji jedou po hlavě s očima a zezadu se neukazují, oblečení a převleky se točí s trupem – i při práci a volání anténou.
 - **Kdo čeká na zadání, fláká se:** vyhazuje míček, hraje si s jojem, nebo si hvízdá a pohupuje se do rytmu (každý agent má svou zábavu).

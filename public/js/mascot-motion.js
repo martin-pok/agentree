@@ -34,6 +34,8 @@ export function initMascotMotion() {
  // aspoň zčásti vidět. Mimo okno se nic nepřekresluje.
  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((zaznamy) => {
   for (const z of zaznamy) {
+   // IO může doručit starý záznam až po výměně obrazovky. Odpojené SVG nesmí zůstat v Setu.
+   if (!z.target.isConnected) { io.unobserve(z.target); vOkne.delete(z.target); gaze.delete(z.target); continue; }
    z.target.classList.toggle('is-zivy', z.isIntersecting);
    if (z.isIntersecting && z.intersectionRatio >= 0.99) vOkne.add(z.target); else vOkne.delete(z.target);
   }
@@ -44,7 +46,7 @@ export function initMascotMotion() {
   new MutationObserver((zmeny) => {
    for (const z of zmeny) {
     for (const n of z.addedNodes) for (const r of roboti(n)) io.observe(r);
-    for (const n of z.removedNodes) for (const r of roboti(n)) { io.unobserve(r); vOkne.delete(r); }
+    for (const n of z.removedNodes) for (const r of roboti(n)) { io.unobserve(r); vOkne.delete(r); gaze.delete(r); }
    }
   }).observe(document.body, { childList: true, subtree: true });
  }

@@ -45,7 +45,7 @@ export async function showWhatsNew({ releases } = {}) {
     ${list.map((r, i) => releaseHtml(r, { lead: i === 0 })).join('')}
     ${older.length ? `<details class="wn-older"><summary>${tr('Starší změny')}</summary>${older.map((r) => releaseHtml(r)).join('')}</details>` : ''}
   </div>`;
-  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? tr('Obnovit rozšíření') : ext?.repair ? tr('Spárovat rozšíření') : tr('Nainstalovat rozšíření')}</button>` : ''}<button type="submit" class="btn btn--primary">${tr('Rozumím')}</button>`;
+  const footer = `${offerExtension ? `<button type="button" class="btn" data-wn-extension>${ext?.outdated ? tr('Obnovit rozšíření') : ext?.repair ? tr('Spárovat rozšíření') : tr('Nainstalovat rozšíření')}</button>` : ''}<button type="submit" class="btn btn--primary btn--ack">${tr('Rozumím')}</button>`;
   await modal({
     title: tr('Co je nového?'),
     body,
