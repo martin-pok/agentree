@@ -1,21 +1,17 @@
 # Rozšíření v Chrome Web Store
 
-## Aktuální distribuce — 13. 10. 2026
+## Aktuální distribuce — 23. 10. 2026
 
-**Veřejný Chrome Web Store stále nabízí 0.31.4 (aktualizace 4. 10. 2026).** To je aktuální známý distribuční dluh, nikoli chyba instalace nových zdrojů; dokud vlastník z účtu vydavatele nenahraje nový balíček a Google jej nezveřejní, mají zákazníci starší produkt a mohou vidět starou ikonu. Aktivní P0 [#172](https://github.com/martin-pok/agentree/issues/172); reálné device UAT a celé Preview vydání [#208](https://github.com/martin-pok/agentree/issues/208).
+**Veřejný Chrome Web Store nabízí 0.46.55.** Ověřeno na [veřejné kartě rozšíření](https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch) 23. 10. 2026; jde o samostatný stav vůči [desktopovému Preview v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60). Veřejný release obsahuje `agenteeq-extension-0.46.60.zip` (267 110 B, SHA-256 `0e6f312c4b909a5fa90219e70d6b050df31697d087ea001ef066f6e4ff0f2ab5`), jehož příloha prošla auditem vydání. Dostupnost ZIPu na GitHubu **neznamená zveřejnění v obchodě**.
 
-**Jediný aktuální publisher kit: 0.46.11 z otestovaného `main` commitu `1e72a0057637ad249e70388444346a80526e7083`.** [Přesné CI #38430918556](https://github.com/martin-pok/agentree/actions/runs/38430918556) prošlo 8/8. V jeho artefaktech:
-- `chrome-store-review-kit` **ID `11830811619`** — package, listing, CZ/EN screenshots, promo, SHA256SUMS a STORE-KIT.json.
-- `agenteeq-extension-store-upload` **ID `11830607078`** — přesný ZIP pro upload.
-- `chrome-store-screenshots` ID `11830681898`, `chrome-store-branding` ID `11830707040` pro kontrolu vizuálu.
-- Zkontrolovaná souborová shoda: **10/10 kontrolních hashů** publisher kitu, 6 CZ/EN screenshotů 1280×800, promo 440×280, marquee 1400×560, ikona 128×128. `listing/icon-128.png` se rovná ikonce uvnitř ZIPu; ZIP v kitu se **bajtově shoduje** s oficiálním souborem `agenteeq-extension-0.46.11.zip` (244 358 B, SHA-256 `2bb203b13b0b54d3a9ec00c3892ecd697755d20690fb6dfc3af58cd095e5038b`) v neveřejném Draftu v0.46.11, osm skutečných assetů ověřeno nezávislým [auditem](https://github.com/martin-pok/agentree/actions/runs/38432569881).
+[Workflow pro Chrome Web Store v0.46.60](https://github.com/martin-pok/agentree/actions/runs/39906389905) skončilo jako `success`, ale jeho log uvádí, že `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` a `CWS_REFRESH_TOKEN` jsou prázdné. Krok proto odešel s varováním a ZIP do obchodu **nenahrál**. Po doplnění přístupu nebo ručním nahrání musí Google balíček přijmout a veřejná karta musí ukazovat správnou verzi. Zelený stav workflow sám tento krok nedokazuje. Aktuální koordinace: [#172](https://github.com/martin-pok/agentree/issues/172).
 
-**Před zveřejněním stále vyžadujeme:** reálný Chrome s přihlášenými podporovanými službami, spárovaný aktuální nainstalovaný Mac, přepnutí do původní session (bez 403), chybové stavy, foto/skutečné UI screenshotů, CZ/EN a proporce robota. Potom vlastník nahraje **tento jediný aktuální ZIP+listing** v <https://chrome.google.com/webstore/devconsole>, projde review a ověří veřejné číslo **0.46.11** a správné logo. Žádná CI úloha ani GitHub release nepublikuje samo Chrome Store.
+**Před odesláním 0.46.60 do obchodu:** ověřit balíček na skutečném Chrome s aktuální nainstalovanou aplikací na Macu: párování, CZ/EN, názvy a viditelné zprávy podporovaných chatů, přepnutí do původní relace, výpadek spojení a obnovu po restartu. Zkontrolovat, že popis obchodu odpovídá skutečně odesílané verzi, protože veřejný popis pro 0.46.55 výslovně říká, že text zpráv nepředává, zatímco 0.46.60 je předává pouze místní aplikaci. Pro ruční upload použít jediný ZIP a odpovídající listing/snímky z ověřeného aktuálního buildu; postup a kontrolní součty jsou níže. Stav fyzického UAT je veden v [RELEASE-READINESS.md](RELEASE-READINESS.md) a [#208](https://github.com/martin-pok/agentree/issues/208).
 
 ---
-### Historické podklady níže (0.46.8 a starší)
+### Historické podklady níže (stav k 13. 10. 2026)
 
-Následující inventáře dokazují starší opravy pipeline, ale **nesmějí se znovu používat k uploadu**. Pro aktuální vydání platí výhradně kit 0.46.11 výše.
+Následující inventáře dokazují starší opravy pipeline, ale **nesmějí se znovu používat k uploadu aktuální verze**. Balíček pro 0.46.60 je určen výše; jeho odpovídající podklady je nutné vybrat z aktuálního ověřeného buildu.
 
 Stav ověřený k 12. 10. 2026: **položka je zveřejněná, ale veřejná verze je stále 0.31.4** (záznam Chrome Web Store, aktualizace 4. 10. 2026). Vlastník potvrdil, že položka je v Chrome Web Store veřejně
 dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
