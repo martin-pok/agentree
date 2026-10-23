@@ -1,5 +1,11 @@
 # Changelog
 
+## Nepublikované změny
+
+- **Celý příkaz všude, kde jde rozhodnout:** karta ve „Vyžaduje pozornost“ na Přehledu dřív ukazovala jen tlačítka a popis, který si agent napsal sám. Teď ukáže celý příkaz (nebo soubor, adresu), složku, přesné pravidlo pro „Povolit a příště se neptat“ i odpočet do návratu do terminálu, stejně jako karta v rohu. V detailu agenta přibylo pravidlo a odpočet.
+- **Odpočet běží u každé kopie žádosti**, ne jen v rohu.
+- **Hlídané v CI:** kontrola v prohlížeči (Chromium i WebKit) pošle skutečnou žádost, ověří přesný příkaz na Přehledu i v rohu, že Povolit a Zamítnout dojde až do odpovědi hooku a že se karta vejde na úzké okno.
+
 ## Web – 2026-10-23 · Snímky aplikace z aktuální verze
 
 - Úvod webu (CZ i EN, počítač i telefon) ukazuje Přehled z aktuální verze: Vyžaduje pozornost, Stav agentů a dnešní den v pozdravu. Dřív tam byl snímek ze 13. 10.
