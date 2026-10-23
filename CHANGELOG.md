@@ -6,7 +6,7 @@
 - **Viditelný výpadek zdroje:** když seznam cloudových úloh nejde načíst nebo chybí přihlášení, Nastavení ukáže chybu zdroje místo závěru, že žádný běh neexistuje. Pracovní stav se po výpadku přestane vydávat za čerstvý.
 - **Codex.app:** Agenteeq najde také Codex CLI zabalené v nativní aplikaci.
 
-Neveřejný Draft 0.46.61 vznikl před touto opravou a zůstává nezveřejněný; nový kandidát má vlastní tag.
+Veřejné Preview 0.46.61 vzniklo před touto opravou a cloudové běhy Codexu nedetekuje; oprava proto dostává nový tag.
 
 ## 0.46.61 – 2026-10-23 · Živí roboti a nikdy naslepo
 
