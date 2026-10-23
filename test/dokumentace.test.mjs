@@ -162,7 +162,12 @@ test('current release status follows package version and distinguishes Draft fro
   assert.ok(readme.includes('**' + verze + '**'), 'README shows the current package version');
   assert.ok(roadmap.includes('v' + verze), 'roadmap records the current package version, including a blocked Draft');
   assert.ok(readiness.includes('**v' + verze + ':'), 'release readiness refers to current version');
-  assert.match(readme, /neveřejný Draft|neveřejné vydání/, 'unpublished draft must not be advertised as public');
+  if (readiness.includes(`**v${verze}: veřejné Preview`)) {
+    assert.ok(readme.includes(`/releases/tag/v${verze}`), 'public Preview must link to its exact release');
+    assert.match(readme, /Stable Latest/, 'public Preview must remain distinct from the stable channel');
+  } else {
+    assert.match(readme, /neveřejný Draft|neveřejné vydání/, 'unpublished draft must not be advertised as public');
+  }
   assert.match(roadmap, /nezávislý byte audit|nezávislý SHA-256 audit/, 'roadmap keeps real bytes audit evidence');
   assert.match(readiness, /assetsVerified=8/, 'release readiness records verified actual release assets');
   assert.match(readiness, /Mac|Chrome|Windows/, 'device UAT requirements remain explicit');

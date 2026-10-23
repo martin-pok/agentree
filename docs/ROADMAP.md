@@ -1,12 +1,12 @@
 # Roadmapa Agenteeq
 
-**Stav 22. 10. 2026:** [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je Stable Latest po [úspěšném ověření a propagaci](https://github.com/martin-pok/agentree/actions/runs/39809927554). Obsahuje opravy kontroly aktualizací, upozornění a offline stavu; osm příloh prošlo auditem. Instalace na Macu vlastníka nebyla z tohoto cloudového prostředí ověřena. Pracovní kandidát 0.46.60 zahrnuje dosud nevydanou opravu 0.46.59 (zachování angličtiny), opravy názvů a přepisů webových konverzací a detekci konverzací Google AI Studia.
+**Stav 23. 10. 2026:** [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
-**P0 dostupnost upgradu staré instalace:** Stable Latest nabízí 0.46.58 i instalacím na kanálu Stable. Potvrzení instalace a restartu na Macu vlastníka stále chybí; cloudové prostředí jeho `/Applications` nevidí.
+**P0 dostupnost upgradu staré instalace:** Na tomto Macu je potvrzen přechod z nainstalované 0.46.58 na 0.46.60 a běh aplikace. Přesný uživatelský průchod updaterem během uzamčení Macu nebyl pozorován. Stable kanál nadále nabízí 0.46.58.
 
-**P0 zjištěné plány na Macu vlastníka:** kandidát 0.46.60 nyní ověřuje výchozí i alternativní profil Claude Code samostatně a test se dvěma současně přihlášenými účty prochází. Na skutečném Macu je nutné ověřit, zda oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid`; samotné dvě instance Claude Desktopu tento údaj nedokládají. Do zveřejnění a instalace kandidáta nelze tvrdit, že v Útratě jsou vidět oba plány.
+**P0 zjištěné plány na Macu vlastníka:** v0.46.60 ověřuje výchozí i alternativní profil Claude Code samostatně a simulovaný test dvou přihlášených účtů prochází. Na skutečném Macu je ještě nutné doložit, že oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid` a oba jsou vidět v Útratě.
 
-**P0 párování telefonu:** kandidát 0.46.60 odstraňuje viditelnou IP, kopírování adresy a ruční PIN z nastavení, Tailscale i webového rozcestníku; jediná uživatelská cesta je jednorázový QR. Ověřit na skutečném iPhonu/Androidu sken z domácí Wi-Fi i Tailscale, expirovaný QR, druhý pokus a odpárování. Z cloudového prostředí nelze potvrdit fyzické naskenování ani dostupnost Macu.
+**P0 párování telefonu:** v0.46.60 odstraňuje viditelnou IP, kopírování adresy a ruční PIN z nastavení, Tailscale i webového rozcestníku; jediná uživatelská cesta je jednorázový QR. Ještě je třeba na skutečném iPhonu/Androidu ověřit sken z domácí Wi-Fi i Tailscale, expirovaný QR, druhý pokus a odpárování.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -14,7 +14,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Release vlak 22. 10. 2026:** **0.46.58 Stable je zveřejněné** z přesně otestovaného tagu. **v0.46.60 Preview je pracovní kandidát**, není zveřejněný; obsahuje opravu nativního jazyka, webových konverzací, detekce profilů Claude Code a QR párování telefonu. Lokálně prošly testy, syntaxe, smoke, sestavení a prohlížečové QA (podrobně v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Blokátor vydání:** GitHub API pro PR a workflow v tomto prostředí vrací `403 Forbidden`; dostupný `GH_TOKEN` je neplatný. Po obnovení přístupu vytvořit PR z `sync/released-04658`, počkat na zelené CI, sestavit a ověřit přesný Mac balíček včetně auditu příloh, otestovat živé názvy/přepisy na ChatGPT, Claude Code a Codexu a upgrade na skutečném Macu; pak zveřejnit Preview. Zveřejnění samo není důkazem lokálního upgradu.
+**Release vlak 23. 10. 2026:** **v0.46.60 Preview je zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
