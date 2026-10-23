@@ -220,16 +220,17 @@ function praceNad(g) {
 
 // Flákání (čeká na zadání): míček nahoru a dolů, jojo, nebo si hvízdá (notičky a pohupování).
 // Kreslí se nad tělem od konce pravé paže; které hraní robot má, říká data-hra u agenta.
-function zabava(g) {
+function zabava(g, druh = true) {
   const { pravo: [, , rx, ry] } = paze(g);
   const h = g.head;
   const nx = 54 + h.w / 2 - 2;
   const ny = h.top + h.h * 0.45;
   const nota = (x, y, i) => `<g class="hra-nota" style="--i:${i};transform-origin:${n(x)}px ${n(y)}px"><path d="M${n(x + 1.6)} ${n(y)}V${n(y - 6.5)}l3.4 1.4"/><ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.5"/></g>`;
+  const vse = druh === true;
   return `<g class="robot-hra">`
-    + `<circle class="hra-micek" cx="${n(rx + 1)}" cy="${n(ry - 3.2)}" r="3.2"/>`
-    + `<g class="hra-jojo"><path class="hra-provazek" style="transform-origin:${n(rx)}px ${n(ry)}px" d="M${n(rx)} ${n(ry)}V${n(ry + 23)}"/><g class="hra-kotouc"><circle cx="${n(rx)}" cy="${n(ry + 23)}" r="4.4"/><circle class="hra-kotouc-stred" cx="${n(rx)}" cy="${n(ry + 23)}" r="1.4"/></g></g>`
-    + `<g class="hra-noty">${nota(nx, ny, 0)}${nota(nx + 4, ny - 3, 1)}</g>`
+    + (vse || druh === 'micek' ? `<circle class="hra-micek" cx="${n(rx + 1)}" cy="${n(ry - 3.2)}" r="3.2"/>` : '')
+    + (vse || druh === 'jojo' ? `<g class="hra-jojo"><path class="hra-provazek" style="transform-origin:${n(rx)}px ${n(ry)}px" d="M${n(rx)} ${n(ry)}V${n(ry + 23)}"/><g class="hra-kotouc"><circle cx="${n(rx)}" cy="${n(ry + 23)}" r="4.4"/><circle class="hra-kotouc-stred" cx="${n(rx)}" cy="${n(ry + 23)}" r="1.4"/></g></g>` : '')
+    + (vse || druh === 'pisen' ? `<g class="hra-noty">${nota(nx, ny, 0)}${nota(nx + 4, ny - 3, 1)}</g>` : '')
     + `</g>`;
 }
 
@@ -260,20 +261,25 @@ function zada(g) {
   const f = g.face;
   const s = g.s;
   const w = 10 * s;
+  // Větrání i šrouby jsou jedna cesta (šroub jako dva oblouky) – zezadu stejný vzhled, méně uzlů.
+  const sroub = (x, y, r) => `M${n(x - r)} ${n(y)}a${r} ${r} 0 1 0 ${n(2 * r)} 0a${r} ${r} 0 1 0 ${n(-2 * r)} 0`;
   const vent = [-4, 0, 4].map((d) => `M${n(54 - w)} ${n(g.eyeY + d * g.es)}H${n(54 + w)}`).join('');
   return `<g class="robot-zada"><rect class="zada-deska" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
     + `<path class="zada-vetrani" d="${vent}"/>`
-    + `<circle class="zada-sroub" cx="${n(f.x + 4 * s)}" cy="${n(f.top + 4 * s)}" r="1.5"/><circle class="zada-sroub" cx="${n(f.x + f.w - 4 * s)}" cy="${n(f.top + 4 * s)}" r="1.5"/></g>`;
+    + `<path class="zada-sroub" d="${sroub(f.x + 4 * s, f.top + 4 * s, 1.5)}${sroub(f.x + f.w - 4 * s, f.top + 4 * s, 1.5)}"/></g>`;
 }
 function zadaTrup(t) {
   const w = t.w * 0.5;
   const h = t.h * 0.42;
   const y = t.top + t.h * 0.3;
+  const sroub = (x) => `M${n(x - 1.1)} ${n(y + h / 2)}a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0`;
   return `<g class="robot-zada"><rect class="zada-panel" x="${n(54 - w / 2)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="2.5"/>`
-    + `<circle class="zada-sroub" cx="${n(54 - w / 2 + 3)}" cy="${n(y + h / 2)}" r="1.1"/><circle class="zada-sroub" cx="${n(54 + w / 2 - 3)}" cy="${n(y + h / 2)}" r="1.1"/></g>`;
+    + `<path class="zada-sroub" d="${sroub(54 - w / 2 + 3)}${sroub(54 + w / 2 - 3)}"/></g>`;
 }
 
-export function robot(type = 'Scout') {
+// `kusy` omezí, co se kreslí navíc podle stavu agenta: dílna (práce), hraní (čeká) a signál (volá tě).
+// Bez nich je robot o polovinu menší – na seznamu se stovkou agentů to drží přepnutí obrazovky pod 50 ms.
+export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: true }) {
   const kind = POSTAVY[type] ? type : 'Scout';
   const g = geometry(kind);
   const { head: h, torso: t, s } = g;
@@ -285,7 +291,7 @@ export function robot(type = 'Scout') {
   const cheeks = g.cheeks ? `<ellipse class="robot-cheek" cx="${n(54 - 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/><ellipse class="robot-cheek" cx="${n(54 + 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/>` : '';
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
     + `<ellipse class="robot-shadow" cx="54" cy="${n(ZEME + 1.5)}" rx="${n(shadow)}" ry="4"/>`
-    + dilna(g)
+    + (kusy.prace ? dilna(g) : '')
     + `<g class="robot-body">${legs(g.legs, t)}`
     + `<path class="robot-limbs robot-arm-left" style="--tw:${n(t.w)}px;transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
     + `<path class="robot-limbs robot-arm-right" style="--tw:${n(t.w)}px;transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`
@@ -305,5 +311,5 @@ export function robot(type = 'Scout') {
     + cheeks
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
     + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`
-    + praceNad(g) + zabava(g) + signal(g) + '</svg>';
+    + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + (kusy.signal ? signal(g) : '') + '</svg>';
 }

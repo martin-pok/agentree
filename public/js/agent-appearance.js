@@ -20,9 +20,9 @@ const DEFAULT_COUNT = 4;
 
 // Robot s oblečením. `look` je buď uložená volba ({hat, face, outfit, costume}), nebo starý
 // text „accessory“ z dřívější verze. Robot samotný se nepřeškálovává ani nemění.
-export function renderAgentRobot(type, look = 'none') {
+export function renderAgentRobot(type, look = 'none', kusy) {
   const kind = PERSONA_AVATARS.includes(type) ? type : PERSONA_AVATARS[0];
-  return renderWardrobe(robot(kind), look);
+  return renderWardrobe(robot(kind, kusy), look);
 }
 export function loadPersonas() {
   try {

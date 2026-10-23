@@ -69,8 +69,14 @@ export const postupPrace = (od, ted = Date.now()) => {
 // Atributy dílny pro prvek, který nese stav agenta: nástroj (kladivo/pilka), začátek a fáze práce.
 export function dilnaAtributy(s) {
   const od = s.status === 'working' && s.turnStartedAt > 0 ? s.turnStartedAt : 0;
-  return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}" data-hra="${['micek', 'jojo', 'pisen'][(otisk(s.id) >>> 3) % 3]}"${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
+  return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}" data-hra="${hraAgenta(s.id)}"${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
 }
+
+// Jen to, co stav agenta opravdu ukáže (refinement.css): dílna při práci, hračky při čekání,
+// signál, když tě potřebuje. Při změně stavu živé sloučení chybějící části doplní.
+const HRY = ['micek', 'jojo', 'pisen'];
+const hraAgenta = (id) => HRY[(otisk(id) >>> 3) % 3];
+const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: s.status === 'waiting' || s.status === 'idle' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
 
 export function agentRobot(s) {
   let p = {};
@@ -80,5 +86,5 @@ export function agentRobot(s) {
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
   // Vlastní fáze dechu a rozhlížení (refinement.css): roboti vedle sebe se nehýbou v zákrytu.
   const faze = -((otisk(s.id) % 997) / 100);
-  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)}>${renderAgentRobot(type, p)}</span>`;
+  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)}>${renderAgentRobot(type, p, kusyPodleStavu(s))}</span>`;
 }

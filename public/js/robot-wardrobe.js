@@ -612,8 +612,8 @@ export function renderWardrobe(svg, source) {
   if (!hat && !face && !outfit && !costume) return svg;
   // Paže s nástrojem (robot při práci) leží nad tělem až za ním; vrstvy šatníku se kotví ke konci
   // hlavy a těla, proto se na chvíli odloží a vrátí se nakonec.
-  const nadIndex = svg.indexOf('<g class="robot-prace">');
-  const nad = nadIndex < 0 ? '' : svg.slice(nadIndex, -'</svg>'.length);
+  const nadIndex = Math.min(...['<g class="robot-prace">', '<g class="robot-hra">', '<g class="robot-signal"'].map((z) => svg.indexOf(z)).filter((i) => i >= 0), Infinity);
+  const nad = nadIndex === Infinity ? '' : svg.slice(nadIndex, -'</svg>'.length);
   if (nad) svg = svg.slice(0, nadIndex) + '</svg>';
   const body = costume || outfit;
   // Vlastní pokrývku hlavy převlek ztrácí, když si uživatel vybral čepici. Pokrývka hlavy se kotví
