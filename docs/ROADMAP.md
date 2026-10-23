@@ -2,6 +2,8 @@
 
 **Stav 23. 10. 2026:** připravuje se Preview `v0.46.62` s detekcí cloudových běhů Codexu. Veřejné Preview `v0.46.61` tuto kritickou opravu neobsahuje. [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
+**P0 Codex Cloud na Macu vlastníka:** Ověřit, že přihlášení nativní Codex.app zpřístupní `codex cloud list --json` z procesu Agenteeq a že právě běžící cloudová úloha se do 20 s ukáže v Přehledu se správným stavem a odkazem. Bez tohoto ověření zůstává konektor Beta a vydání nesmí slibovat detekci každého běhu.
+
 **P0 dostupnost upgradu staré instalace:** Na tomto Macu je potvrzen přechod z nainstalované 0.46.58 na 0.46.60 a běh aplikace. Přesný uživatelský průchod updaterem během uzamčení Macu nebyl pozorován. Stable kanál nadále nabízí 0.46.58.
 
 **P0 zjištěné plány na Macu vlastníka:** v0.46.60 ověřuje výchozí i alternativní profil Claude Code samostatně a simulovaný test dvou přihlášených účtů prochází. Na skutečném Macu je ještě nutné doložit, že oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid` a oba jsou vidět v Útratě.
