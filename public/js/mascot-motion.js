@@ -35,18 +35,30 @@ export function initMascotMotion() {
  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((zaznamy) => {
   for (const z of zaznamy) {
    // IO může doručit starý záznam až po výměně obrazovky. Odpojené SVG nesmí zůstat v Setu.
-   if (!z.target.isConnected) { io.unobserve(z.target); vOkne.delete(z.target); gaze.delete(z.target); continue; }
+   if (!z.target.isConnected) { uvolniRobota(z.target); continue; }
    z.target.classList.toggle('is-zivy', z.isIntersecting);
    if (z.isIntersecting && z.intersectionRatio >= 0.99) vOkne.add(z.target); else vOkne.delete(z.target);
   }
  }, { threshold: [0, 1] }) : null;
  const roboti = (uzel) => (uzel.nodeType !== 1 ? [] : [...(uzel.matches('.robot') ? [uzel] : []), ...uzel.querySelectorAll('.robot')]);
+ // Uvolni animace a silné reference ještě při odpojení SVG. Nekonečné CSS animace
+ // by jinak mohly v paměti držet již odstraněné potomky mezi přepnutími obrazovek.
+ const uvolniRobota = (r) => {
+  io?.unobserve(r);
+  vOkne.delete(r);
+  gaze.delete(r);
+  if (active === r) { clearTimeout(timer); active = null; }
+  r.classList.remove('is-zivy');
+  r.style.removeProperty('--gaze-x');
+  r.style.removeProperty('--gaze-y');
+  for (const a of r.getAnimations({ subtree: true })) a.cancel();
+ };
  if (io) {
   for (const r of roboti(document.body)) io.observe(r);
   new MutationObserver((zmeny) => {
    for (const z of zmeny) {
     for (const n of z.addedNodes) for (const r of roboti(n)) io.observe(r);
-    for (const n of z.removedNodes) for (const r of roboti(n)) { io.unobserve(r); vOkne.delete(r); gaze.delete(r); }
+    for (const n of z.removedNodes) for (const r of roboti(n)) uvolniRobota(r);
    }
   }).observe(document.body, { childList: true, subtree: true });
  }
