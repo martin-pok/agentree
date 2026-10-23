@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.46.61 – 2026-10-23 · Nikdy neschvaluješ naslepo
+## 0.46.61 – 2026-10-23 · Živí roboti a nikdy naslepo
 
+- **Roboti jako živí:** dýchají, rozhlížejí se, anténa se pohupuje a každý má vlastní rytmus. Pracující robot se soustředí, píše a jádro mu pulzuje; robot, který tě potřebuje, zvedá ruku, naklání hlavu a netrpělivě poskočí; hotový je spokojený a občas radostně poskočí; po selhání svěsí hlavu, na limitu dřímá. Když na robota najedeš, natáhne se k tobě a pozdraví, a když agent dokončí práci, začne tě potřebovat nebo selže, robot na to sám zareaguje. Hýbou se jen roboti na obrazovce (seznam se stovkou agentů zůstává plynulý) a „Omezit pohyb“ i systémové omezení pohybu vše vypnou.
 - **Celý příkaz všude, kde jde rozhodnout:** karta ve „Vyžaduje pozornost“ na Přehledu dřív ukazovala jen tlačítka a popis, který si agent napsal sám. Teď ukáže celý příkaz (nebo soubor, adresu), složku, přesné pravidlo pro „Povolit a příště se neptat“ i odpočet do návratu do terminálu, stejně jako karta v rohu. V detailu agenta přibylo pravidlo a odpočet.
 - **Odpočet běží u každé kopie žádosti**, ne jen v rohu.
 - **Hlídané v CI:** kontrola v prohlížeči (Chromium i WebKit) pošle skutečnou žádost, ověří přesný příkaz na Přehledu i v rohu, že Povolit a Zamítnout dojde až do odpovědi hooku a že se karta vejde na úzké okno.

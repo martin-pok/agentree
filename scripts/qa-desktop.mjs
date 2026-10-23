@@ -311,7 +311,8 @@ async function zkontrolujPlynulost(browser, engine) {
     mereni.mutaciNaUdalost = Math.round((await p.evaluate(() => window.__qaMut)) / 3);
     assert.ok(mereni.mutaciNaUdalost <= 60, `${engine}: živá událost vyměnila ${mereni.mutaciNaUdalost} uzlů tabulky (seznam se má slučovat, ne přepisovat)`);
     await p.waitForTimeout(600);
-    const zbytky = await p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.target?.closest?.('[data-region="table"]')).length);
+    // Klidový život robotů (dech, rozhlížení) běží záměrně pořád; hlídá se přesun řádků.
+    const zbytky = await p.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && a.effect?.target?.closest?.('[data-region="table"]') && !a.effect.target.closest('.robot')).length);
     assert.equal(zbytky, 0, `${engine}: po živé události zůstal v tabulce rozjetý přesun`);
     const pruhledne = await p.evaluate(() => [...document.querySelectorAll('[data-region="table"] [data-key]')].filter((n) => getComputedStyle(n).opacity !== '1').length);
     assert.equal(pruhledne, 0, `${engine}: po živé události zůstal průhledný řádek`);

@@ -58,5 +58,7 @@ export function agentRobot(s) {
   const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % 4;
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
-  return `<span class="agent-portrait" style="--persona:${color}" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p)}</span>`;
+  // Vlastní fáze dechu a rozhlížení (refinement.css): roboti vedle sebe se nehýbou v zákrytu.
+  const faze = -((([...String(s.id)].reduce((n, c) => Math.imul(n ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0) % 997) / 100);
+  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p)}</span>`;
 }

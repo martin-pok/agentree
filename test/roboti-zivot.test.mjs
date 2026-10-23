@@ -1,0 +1,38 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+
+// Roboti mají působit živě (rozhodnutí vlastníka 23. 10. 2026), ale nesmí zpomalit seznam se
+// stovkou agentů ani ignorovat omezení pohybu.
+const zdroj = (p) => fs.readFile(new URL(`../${p}`, import.meta.url), 'utf8');
+
+test('život robotů: klidový pohyb jen u robota v okně a nikdy přes gesto', async () => {
+  const css = await zdroj('public/refinement.css');
+  const zivot = css.slice(css.indexOf('/* Život robotů'));
+  assert.ok(zivot.length > 500, 'chybí sekce Život robotů');
+  for (const pravidlo of zivot.match(/^[^@\n/][^{\n]*\{[^}]*animation[^}]*\}/gm) || []) {
+    assert.match(pravidlo, /\.robot\.is-zivy/, `animace mimo okno: ${pravidlo.slice(0, 80)}`);
+  }
+  for (const stav of ['working', 'needs_input', 'failed', 'limited', 'waiting']) assert.match(zivot, new RegExp(`data-status='${stav}'`), stav);
+  // Jen transform a opacity: žádné animace rozměrů, barev ani filtrů.
+  for (const kf of zivot.match(/@keyframes[^{]*\{(?:[^{}]*\{[^}]*\})*\s*\}/g) || []) assert.doesNotMatch(kf, /width|height|fill|filter|color/, kf.slice(0, 40));
+  assert.match(css, /\.mascot-motion-off \.robot \* \{ animation: none !important/);
+  assert.match(css, /prefers-reduced-motion: reduce\) \{ \.robot \* \{ animation: none !important/);
+});
+
+test('život robotů: viditelnost řídí IntersectionObserver, reakce na změnu stavu podle agenta', async () => {
+  const js = await zdroj('public/js/mascot-motion.js');
+  assert.match(js, /classList\.toggle\('is-zivy', z\.isIntersecting\)/);
+  assert.match(js, /const REAKCE = \{ waiting: 'poskok', needs_input: 'mavnuti', failed: 'naklon' \}/);
+  assert.match(js, /stav === 'waiting' && byl !== 'working'/, 'poskok jen za dokončenou práci');
+});
+
+test('život robotů: každý agent má vlastní fázi, roboti se nehýbou v zákrytu', async () => {
+  const { agentRobot } = await import('../public/js/home-studio.js').catch(() => ({}));
+  const js = await zdroj('public/js/home-studio.js');
+  assert.match(js, /--robot-delay:\$\{faze\}s/);
+  if (agentRobot) {
+    const faze = new Set(['a', 'b', 'c', 'd', 'e'].map((id) => /--robot-delay:(-?[\d.]+)s/.exec(agentRobot({ id, status: 'working' }))?.[1]));
+    assert.ok(faze.size >= 4);
+  }
+});

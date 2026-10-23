@@ -206,14 +206,15 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1 axe-core@4.10.3
       # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
       # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
-      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu (runner bere zrcadla
+      # z /etc/apt/apt-mirrors.txt přes mirror+file:, proto se přepisuje hlavně ten). Třetí selhání je skutečné.
       - name: Nainstalovat prohlížeče (chromium webkit)
         run: |
           for pokus in 1 2 3; do
             timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium webkit && exit 0
             echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
             sudo pkill -f apt-get || true; sleep 3
-            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+            echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
           done
           exit 1
       - run: npm run qa:desktop
@@ -253,14 +254,15 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1 axe-core@4.10.3
       # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
       # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
-      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu (runner bere zrcadla
+      # z /etc/apt/apt-mirrors.txt přes mirror+file:, proto se přepisuje hlavně ten). Třetí selhání je skutečné.
       - name: Nainstalovat prohlížeče (chromium webkit)
         run: |
           for pokus in 1 2 3; do
             timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium webkit && exit 0
             echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
             sudo pkill -f apt-get || true; sleep 3
-            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+            echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
           done
           exit 1
       - run: npm run qa:site
@@ -292,14 +294,15 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.62.1
       # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
       # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
-      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu (runner bere zrcadla
+      # z /etc/apt/apt-mirrors.txt přes mirror+file:, proto se přepisuje hlavně ten). Třetí selhání je skutečné.
       - name: Nainstalovat prohlížeče (chromium)
         run: |
           for pokus in 1 2 3; do
             timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium && exit 0
             echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
             sudo pkill -f apt-get || true; sleep 3
-            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+            echo 'http://archive.ubuntu.com/ubuntu/' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null; sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
           done
           exit 1
 
