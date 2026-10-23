@@ -381,6 +381,9 @@ async function zkontrolujPlynulost(browser, engine) {
       const cdp = await ctx.newCDPSession(p);
       await cdp.send('Performance.enable');
       const stav = async () => {
+        // Počkej na dávky řádků (700 ms) i dokončení gest (1600 ms);
+        // měření během přechodu počítalo dočasné SVG jako únik.
+        await p.waitForTimeout(2000);
         await cdp.send('HeapProfiler.collectGarbage');
         const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
         return { posluchacu: m.JSEventListeners, uzlu: m.Nodes };
@@ -673,14 +676,14 @@ async function zkontrolujHoverNovinek(browser, engine) {
         (await import('/js/appearance.js')).applyAppearance(t);
         void (await import('/js/whats-new.js')).showWhatsNew();
       }, theme);
-      const button = page.locator('dialog[open] .btn--ack').filter({ hasText: /Rozumím|Got it/ });
+      const button = page.locator('.modal-scrim:not(.is-leaving) .btn--ack').filter({ hasText: /Rozumím|Got it/ });
       await button.hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('dialog[open] .btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.modal-scrim:not(.is-leaving) .btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
       const colors = () => button.evaluate(b => ({ bg: getComputedStyle(b).backgroundColor, fg: getComputedStyle(b).color }));
       assert.deepEqual(await colors(), { bg: 'rgb(98, 96, 216)', fg: 'rgb(255, 255, 255)' }, `${engine} ${theme} ${width}: fialový hover s bílým textem`);
       await page.screenshot({ path: `${out}/${engine}-novinky-${theme}-${width}.png` });
       await button.click();
-      await page.waitForSelector('dialog[open] .btn--ack', { state: 'hidden' });
+      await page.waitForSelector('.modal-scrim:not(.is-leaving) .btn--ack', { state: 'hidden' });
     }
   } finally { await ctx.close(); await server.close(); }
 }
