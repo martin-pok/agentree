@@ -2247,7 +2247,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .nt-akce { display: flex; gap: 8px; }
 .nt-dalsi { margin: 4px 0 16px; }
 .pill[data-tone="ok"] { background: var(--teal-tint); color: var(--teal-ink); }
-.pill--link { height: 32px; border: 0; cursor: pointer; background: var(--line-2); color: var(--ink); font: inherit; font-size: 13px; }
+.pill--link { height: 44px; border: 0; cursor: pointer; background: var(--line-2); color: var(--ink); font: inherit; font-size: 13px; }
 .pill--link:hover { background: var(--line); }
 .pill--link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 720px) {

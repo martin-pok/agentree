@@ -896,6 +896,7 @@ test('drobnosti: šipka u „Raději přes Terminál?“, Co je nového, průvod
   for (const pravidlo of [/\.pill\[data-status='waiting'\] \{[^}]*\}/, /\.state\[data-state='missing'\] \{[^}]*\}/, /\.rt-flag \{[^}]*\}/, /\.pill--link \{[^}]*\}/, /\.cloud-stale \{[^}]*\}/]) {
     assert.doesNotMatch(css.match(pravidlo)?.[0] || 'chybí', /brass|chybí/, `${pravidlo}: klidový stav bez varovné barvy`);
   }
+  assert.match(css.match(/\.pill--link \{[^}]*\}/)?.[0] || '', /height:\s*44px/, 'akce v kartě nově zachyceného nástroje má desktopový cíl 44 px');
 });
 
 test('Linux: „přepne systém sám“, ne „systému“', async () => {
