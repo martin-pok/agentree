@@ -441,6 +441,12 @@ totéž pravidlo: co není ověřené na skutečných datech, je **Beta**.
   vnitřního `codex` zdroj neuvádí – **neověřeno na skutečném stroji**. Vlákna aplikace čte konektor
   Codexu z `~/.codex/sessions` (`originator: "Codex Desktop"`); session se jmenuje „Codex · aplikace“,
   protože z přepisu nejde poznat, jestli šlo o Codex.app, nebo ChatGPT.app.
+- **Codex Cloud (`codex-cloud`):** vzdálené běhy z nativní aplikace nemají na Macu místní JSONL.
+  Agenteeq je proto pravidelně načítá oficiálním `codex cloud list --json` přes přihlášení CLI
+  ke stejnému účtu. Zobrazuje název, stav a odkaz; vzdálený přepis ani tokeny z tohoto seznamu
+  nedostává. Pokud příkaz selže nebo přihlášení chybí, zdroj je ve stavu chyba. Běh se neodvozuje
+  z pouhého otevřeného okna aplikace. **Beta:** načtení běhu z účtu nativní aplikace
+  ještě nebylo ověřeno na Macu vlastníka; do té doby nelze zaručit pokrytí všech běhů.
 
 ### Běžící agenti bez čitelného přepisu (od 0.46.51) 🧪 Beta
 

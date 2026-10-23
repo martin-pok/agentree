@@ -80,6 +80,12 @@ function appPlan(s, apps) {
   switch (s.connector) {
     case 'codex':
       return apps.codex && UUID.test(id) ? { kind: 'open', args: [`codex://threads/${id}`], label: 'Codex', title: ui('Otevřít v Codexu') } : null;
+    case 'codex-cloud': {
+      let url;
+      try { url = new URL(s.url); } catch { return null; }
+      return url.protocol === 'https:' && url.hostname === 'chatgpt.com' && url.pathname.startsWith('/codex/')
+        ? { kind: 'open', args: [url.href], label: 'Codex', title: ui('Otevřít v Codexu') } : null;
+    }
     case 'claude-code':
       return apps.claude ? { kind: 'open', args: ['-a', APPS.claude.name], label: 'Claude', title: ui('Otevřít Claude') } : null;
     case 'cursor':
@@ -113,7 +119,7 @@ export function planOpen(s, target, apps = {}, { aplikace = true, bezi = null } 
     // Odkaz na webovou konverzaci otevře prohlížeč, a ten je všude – na rozdíl od `open -a`.
     const plan = appPlan(s, apps);
     if (!plan) return null;
-    return aplikace || (['web', 'desktop-cache'].includes(s.source) && plan.args.length === 1) ? plan : null;
+    return aplikace || (['web', 'desktop-cache', 'cloud'].includes(s.source) && plan.args.length === 1) ? plan : null;
   }
   if (target === 'terminal') {
     if (!aplikace) return null;
