@@ -23,6 +23,7 @@ import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWor
 import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector, korenyClaudeCode } from './connectors/claude-code.js';
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
+import { createCodexCloudConnector } from './connectors/codex-cloud.js';
 import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
 import { createPomocnikAi } from './pomocnik-ai.js';
 import { createCursorConnector } from './connectors/cursor.js';
@@ -44,7 +45,7 @@ import { createPush } from './push.js';
 import { detectTunnels, remoteAdvice, remoteUrl } from './tunnel.js';
 import { AGENT_TYPES, MAX_AGENTS, normalizeAgent, probeAgent } from './custom-agents.js';
 import { appInstalled, oknoDoPopredi, otevritVProhlizeciSRozsirenim, idRozbalenehoRozsireni, SYSTEM, POCITAC } from './platform.js';
-import { detectLaunchEnv, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
+import { detectLaunchEnv, findCodexBinary, launchTargets, planLaunch, writePromptFile, promptFilePath, MODES, PROMPT_MAX } from './launcher.js';
 import { verifyLicense } from './license.js';
 import { PLANS, PAID_FEATURES, planOf, canUse } from './plans.js';
 import { createUcet } from './ucet.js';
@@ -311,7 +312,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (s.proces) return { status: 409, error: ui('Detekovaný proces nemá dostupný přepis ani konverzaci k otevření.') };
     if (config.openMode === 'off') return { status: 422, error: ui('Otevírání odsud tenhle systém neumí.') };
     // Otevřít aplikaci nebo Terminál umí jen macOS; složku a odkaz i Windows.
-    if (!config.openApps && (target === 'terminal' || (target === 'app' && s.connector !== 'web'))) {
+    if (!config.openApps && (target === 'terminal' || (target === 'app' && !['web', 'codex-cloud'].includes(s.connector)))) {
       return { status: 422, error: target === 'terminal'
         ? ui('Pokračovat v Terminálu umí Agenteeq zatím jen na macOS. Příkaz si můžeš zkopírovat.')
         : ui('Otevřít konverzaci přímo v aplikaci umí Agenteeq zatím jen na macOS.') };
@@ -340,10 +341,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (store.ready) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
     },
     extensionRecord: () => datastore.data.extension,
+    codexCloudBin: () => dry ? null : launchEnv.bins?.codex || findCodexBinary(config.sourceHome),
+    codexCloudHome: () => launchEnv.env?.CODEX_HOME || config.codexHome || path.join(config.sourceHome, '.codex'),
   };
   const list = [
     createClaudeCodeConnector(ctx),
     createCodexConnector(ctx),
+    createCodexCloudConnector({ ...ctx, bin: ctx.codexCloudBin, home: ctx.codexCloudHome }),
     createCursorConnector(ctx),
     createCopilotCliConnector(ctx),
     createVsCodeCopilotConnector(ctx),
@@ -401,7 +405,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
   // Počet u konektorů se sessions = sessions viditelné v okně sledování (ne počet souborů na disku).
-  const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
+  const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'codex-cloud', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
 
   // Detekce agentů v činnosti: oznámí nástroj, o kterém Agenteeq zatím nic neví (src/detekce.js).
   // `connectorList` je deklarace funkce, takže tady už existuje.
@@ -978,6 +982,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (launchEnv.env?.CLAUDE_CONFIG_DIR) await connectors['claude-code']?.pridejKoren(path.join(launchEnv.env.CLAUDE_CONFIG_DIR, 'projects'));
       if (launchEnv.env?.CODEX_HOME) await connectors.codex?.pridejDomov(launchEnv.env.CODEX_HOME);
     } else launchEnv = { bins: dry ? DRY_BINS : {}, chatgptApp: dry, claudeApp: dry, ollama: await ollama.models() };
+    if (!dry) connectors['codex-cloud']?.scan(true).catch(() => {});
     launchHledano = launchDetected || dry;
     const payload = launchPayload();
     if (store.ready) store.emit('launch', payload);

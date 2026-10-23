@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.62 – 2026-10-23 · Cloudové běhy Codexu
+
+- **Codex v nativní aplikaci:** cloudové úlohy se zjišťují z autorizovaného seznamu Codexu. Jejich název, stav a odkaz se zobrazí mezi agenty i tehdy, když k nim na Macu neexistuje místní přepis.
+- **Viditelný výpadek zdroje:** když seznam cloudových úloh nejde načíst nebo chybí přihlášení, Nastavení ukáže chybu zdroje místo závěru, že žádný běh neexistuje. Pracovní stav se po výpadku přestane vydávat za čerstvý.
+- **Codex.app:** Agenteeq najde také Codex CLI zabalené v nativní aplikaci.
+
+Neveřejný Draft 0.46.61 vznikl před touto opravou a zůstává nezveřejněný; nový kandidát má vlastní tag.
+
 ## 0.46.61 – 2026-10-23 · Živí roboti a nikdy naslepo
 
 - **Roboti jako živí:** dýchají, rozhlížejí se, anténa se pohupuje a každý má vlastní rytmus. Pracující robot se soustředí, píše a jádro mu pulzuje; robot, který tě potřebuje, zvedá ruku, naklání hlavu a netrpělivě poskočí; hotový je spokojený a občas radostně poskočí; po selhání svěsí hlavu, na limitu dřímá. Když na robota najedeš, natáhne se k tobě a pozdraví, a když agent dokončí práci, začne tě potřebovat nebo selže, robot na to sám zareaguje. Hýbou se jen roboti na obrazovce (seznam se stovkou agentů zůstává plynulý) a „Omezit pohyb“ i systémové omezení pohybu vše vypnou.
