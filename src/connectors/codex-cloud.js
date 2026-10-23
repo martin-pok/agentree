@@ -104,7 +104,7 @@ export function createCodexCloudConnector({ store, config, bin = () => null,
 
   return {
     id: 'codex-cloud', name: 'Codex Cloud', provider: 'openai', kind: 'local',
-    verified: true, source: 'codex cloud list --json',
+    verified: false, source: 'codex cloud list --json',
     description: ui('Vzdálené úlohy z účtu Codex včetně běhů nativní aplikace.'),
     async start() {}, scan, stop() {}, idle: () => pending || Promise.resolve(),
     status() {
