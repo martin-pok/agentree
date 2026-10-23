@@ -8,6 +8,8 @@
     texty: {
       // Horní lišta a stavy spojení
       'Zjišťuji…': 'Checking…',
+      // Tečka stavu na ikoně (odznak.js)
+      'Agenteeq neodpovídá – stav agentů nezjištěn': 'Agenteeq isn’t responding – agent status unknown',
       'Připojeno': 'Connected',
       'Neběží': 'Not running',
       'Neověřeno': 'Not verified',
@@ -172,6 +174,7 @@
       'Problém má {0} agent|Problém mají {0} agenti|Problém má {0} agentů': ['{0} agent has a problem', '{0} agents have a problem'],
       'Potřebuje tě {0} agent|Potřebují tě {0} agenti|Potřebuje tě {0} agentů': ['{0} agent needs you', '{0} agents need you'],
       'pracuje|pracují|pracuje': ['working', 'working'],
+      'Pracuje {0} agent|Pracují {0} agenti|Pracuje {0} agentů': ['{0} agent is working', '{0} agents are working'],
       'U {0} agenta chybí čerstvý stav|U {0} agentů chybí čerstvý stav|U {0} agentů chybí čerstvý stav': ['No fresh status for {0} agent', 'No fresh status for {0} agents'],
     },
   };

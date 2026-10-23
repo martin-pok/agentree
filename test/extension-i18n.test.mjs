@@ -23,7 +23,7 @@ const promenne = (t) => [...t.matchAll(/\{(\d+)\}/g)].map((m) => m[1]).sort().jo
 
 test('rozšíření: každý český text v okně má anglický překlad a slovník nic navíc', async () => {
   const { EN } = await nactiI18n('en');
-  const js = bezKomentaru(await cti('extension/popup.js')) + bezKomentaru(await cti('extension/sites.js'));
+  const js = bezKomentaru(await cti('extension/popup.js')) + bezKomentaru(await cti('extension/sites.js')) + bezKomentaru(await cti('extension/odznak.js'));
   const html = await cti('extension/popup.html');
   const trojice = new Set(Object.keys(EN.mnozne).flatMap((k) => k.split('|')));
 
