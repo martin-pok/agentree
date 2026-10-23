@@ -1,6 +1,6 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 23. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.60 je veřejné Preview, v0.46.58 zůstává Stable Latest. Na Macu vlastníka běží v0.46.60; rozsah ověřeného UAT je popsán níže.
+**Aktualizováno 23. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.61 je poslední veřejné Preview, v0.46.58 zůstává Stable Latest. Na Macu vlastníka běží v0.46.60; rozsah ověřeného UAT je popsán níže.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
