@@ -4,6 +4,8 @@
 
 **P0 dostupnost upgradu staré instalace:** Na tomto Macu je potvrzen přechod z nainstalované 0.46.58 na 0.46.60 a běh aplikace. Přesný uživatelský průchod updaterem během uzamčení Macu nebyl pozorován. Stable kanál nadále nabízí 0.46.58.
 
+**P0 loga služeb v nativní aplikaci:** Snímek nainstalované 0.46.60 ukázal prázdné ikony u služby ve spouštěči a v části „Vyžaduje pozornost“. Oprava v PR #354 zachovává i právě načítaná loga při živém překreslení a při chybě použije přibalenou kopii stejného SVG. Ještě je nutné ověřit loga v nainstalované nové verzi na Macu, včetně ztráty spojení a živých aktualizací.
+
 **P0 zjištěné plány na Macu vlastníka:** v0.46.60 ověřuje výchozí i alternativní profil Claude Code samostatně a simulovaný test dvou přihlášených účtů prochází. Na skutečném Macu je ještě nutné doložit, že oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid` a oba jsou vidět v Útratě.
 
 **P0 párování telefonu:** v0.46.60 odstraňuje viditelnou IP, kopírování adresy a ruční PIN z nastavení, Tailscale i webového rozcestníku; jediná uživatelská cesta je jednorázový QR. Ještě je třeba na skutečném iPhonu/Androidu ověřit sken z domácí Wi-Fi i Tailscale, expirovaný QR, druhý pokus a odpárování.
