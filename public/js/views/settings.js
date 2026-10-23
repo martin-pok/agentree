@@ -87,7 +87,7 @@ function webChip(id, site, web, now) {
 const fold = (key, summary, body, { open = false, count = null, cls = '' } = {}) =>
   `<details class="src-fold${cls ? ` ${cls}` : ''}" data-fold="${key}"${(v.folds[key] ?? open) ? ' open' : ''}><summary>${summary}${count ? `<span class="src-count">${count}</span>` : ''}</summary>${body}</details>`;
 
-const SOURCE_IDS = ['claude-code', 'codex', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code'];
+const SOURCE_IDS = ['claude-code', 'codex', 'codex-cloud', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code'];
 const EXTRA_IDS = ['claude-desktop-usage', 'processes', 'local-agents', 'cloud-billing'];
 
 function sourceRow(c) {
