@@ -430,3 +430,83 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 .tip-glue { white-space: nowrap; }
 /* Nadpis karty s „i“ teče jako text (flex by „i“ odsunul pod nadpis). */
 .set-card-head h3.eyebrow--tip { display: block; }
+
+/* Život robotů (rozhodnutí vlastníka 23. 10. 2026: „ať jsou jako živí, ne figury bez duše“).
+   Nahrazuje klid z 8. 10.: robot dýchá, rozhlíží se, anténa se pohupuje a každý stav má vlastní
+   povahu. Stav dál nese text a štítek, pohyb ho jen doprovází. Pravidla:
+   - Nohy zůstávají na zemi: dech je pružení od chodidel (scale s kotvou v bodě dopadu), ne vznášení.
+   - Jen transform a opacity přes samostatné vlastnosti (scale/rotate/translate), takže se skládají
+     s pózami a gesty; gesto (data-gesto) má přednost a klidový pohyb po něm plynule naváže.
+   - Hýbe se jen robot v okně (.is-zivy z mascot-motion.js) – 140 karet agentů nepřekresluje nic
+     mimo obrazovku. Každý agent má vlastní fázi (--robot-delay), roboti nedýchají v zákrytu.
+   - Omezení pohybu (systém nebo „Omezit pohyb“) vše vypne pravidly výše (.mascot-motion-off, reduce). */
+.robot.is-zivy:not([data-gesto]) .robot-body { transform-box: view-box; transform-origin: 54px 103px; animation: rz-dech 4.6s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto]) .robot-head { transform-box: view-box; animation: rz-rozhled 11s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto]) .robot-aerial { animation: rz-antena 3.4s ease-in-out var(--robot-delay, 0s) infinite; }
+@keyframes rz-dech { 0%, 100% { scale: 1 1; } 45% { scale: 1.012 1.03; } }
+@keyframes rz-rozhled {
+  0%, 100% { rotate: 0deg; translate: 0 0; }
+  14% { rotate: -3deg; translate: -.4px 0; }
+  26% { rotate: -2.4deg; translate: -.4px 0; }
+  40% { rotate: 0deg; translate: 0 0; }
+  58% { rotate: 2.6deg; translate: .4px -.3px; }
+  72% { rotate: 2deg; translate: .4px -.3px; }
+  86% { rotate: 0deg; translate: 0 0; }
+}
+@keyframes rz-antena { 0%, 100% { rotate: 0deg; } 30% { rotate: 6deg; } 62% { rotate: -5deg; } 82% { rotate: 2deg; } }
+
+/* Pracuje: rychlejší, soustředěný dech, hlava skloněná k práci s drobným přikyvováním, jádro na
+   hrudi pulzuje jako kontrolka. Paže píšou a anténa vysílá (pravidla výše). */
+:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-name: rz-dech-prace; animation-duration: 1.7s; }
+:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-soustredeni 2.6s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy .robot-core { transform-box: fill-box; transform-origin: center; animation: rz-jadro 1.3s ease-in-out infinite; }
+@keyframes rz-dech-prace { 0%, 100% { scale: 1 1; } 50% { scale: 1.01 1.035; } }
+@keyframes rz-soustredeni { 0%, 100% { rotate: 1.5deg; translate: 0 .4px; } 30% { rotate: 2.8deg; translate: 0 1px; } 60% { rotate: .6deg; translate: 0 .2px; } }
+@keyframes rz-jadro { 0%, 100% { opacity: .55; scale: .82; } 50% { opacity: 1; scale: 1.18; } }
+
+/* Potřebuje tebe: zvednutá ruka (pravidla výše), hlava nakloněná k tobě a každé tři vteřiny dva
+   netrpělivé poskoky na špičkách. Anténa bliká rychleji. */
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation: rz-netrpelivost 3.2s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-otazka 3.2s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy .robot-aerial { animation: robot-signal .8s ease-in-out infinite, rz-antena 1.6s ease-in-out infinite; }
+@keyframes rz-netrpelivost {
+  0%, 62%, 100% { translate: 0 0; scale: 1 1; }
+  68% { translate: 0 0; scale: 1.03 .96; }
+  74% { translate: 0 -3.5px; scale: .99 1.03; }
+  80% { translate: 0 0; scale: 1.03 .96; }
+  86% { translate: 0 -2.5px; scale: .99 1.02; }
+  93% { translate: 0 0; scale: 1.01 .99; }
+}
+@keyframes rz-otazka { 0%, 100% { rotate: -7deg; } 50% { rotate: -9.5deg; } 74%, 86% { rotate: -5deg; } }
+
+/* Hotovo (doběhl): spokojený, pomalejší dech a jednou za čas malý radostný poskok. */
+:is([data-status='waiting'], [data-state='waiting']:not([data-status])):not([data-done='false']) .robot.is-zivy:not([data-gesto]) .robot-body { animation: rz-spokojenost 9s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
+@keyframes rz-spokojenost {
+  0%, 100% { translate: 0 0; scale: 1 1; }
+  40% { translate: 0 0; scale: 1.012 1.03; }
+  80% { translate: 0 0; scale: 1 1; }
+  84% { translate: 0 0; scale: 1.04 .95; }
+  88% { translate: 0 -4px; scale: .98 1.04; }
+  92% { translate: 0 0; scale: 1.03 .97; }
+  95% { translate: 0 0; scale: 1 1; }
+}
+
+/* Selhalo: svěšená hlava, pomalý těžký dech. Limit: dřímá – hlava pomalu klesá a trhne sebou,
+   oči napůl zavřené. */
+:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6.5s; }
+:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-smutek 6.5s ease-in-out var(--robot-delay, 0s) infinite; }
+@keyframes rz-smutek { 0%, 100% { rotate: 6deg; translate: 0 2px; } 50% { rotate: 8deg; translate: 0 2.6px; } }
+:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6s; }
+:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-drimota 7s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot .robot-eyes { scale: 1 .4; }
+@keyframes rz-drimota { 0%, 100% { rotate: 0deg; translate: 0 0; } 70% { rotate: 7deg; translate: 0 2px; } 76% { rotate: -1.5deg; translate: 0 -.4px; } 84% { rotate: 0deg; translate: 0 0; } }
+
+/* V klidu (bez práce, archiv): jen pomalý dech a občasné rozhlédnutí. */
+:is([data-status='idle'], [data-status='archived'], [data-state='idle']:not([data-status]), [data-state='archived']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6.4s; }
+
+/* Robot si všimne, že na něj míříš: pružně se natáhne (měřítko celého SVG, takže se skládá
+   s dechem i gesty), po odjetí se zase usadí. */
+.robot { transition: scale .45s cubic-bezier(.34, 1.56, .64, 1); }
+:is(.home-robot, .pb-agent, .table--roboti .row, .session-kicker):hover .robot.is-zivy { scale: 1.06; }
+.mascot-motion-off .robot { transition: none; scale: 1; }
+@media (prefers-reduced-motion: reduce) { .robot { transition: none; scale: none !important; } }

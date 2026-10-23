@@ -6,15 +6,17 @@ export const RELEASES = [
   {
     version: '0.46.61',
     date: '2026-10-23',
-    title: 'Nikdy neschvaluješ naslepo',
+    title: 'Živí roboti a nikdy naslepo',
     items: [
+      'Roboti dýchají, rozhlížejí se a podle stavu agenta pracují, mávají na tebe, radují se nebo dřímají. Po najetí myší tě pozdraví.',
       'Karta ve „Vyžaduje pozornost“ ukazuje celý příkaz, složku a přesné pravidlo pro „Povolit a příště se neptat“.',
       'V detailu agenta přibylo pravidlo a odpočet do návratu do terminálu.',
       'Odpočet běží u každé kopie žádosti, ne jen v kartě v rohu.',
     ],
     en: {
-      title: 'Never approve blind',
+      title: 'Living robots, never approve blind',
       items: [
+        'Robots breathe, look around and, depending on the agent, work, wave at you, cheer or doze. Hover over one and it greets you.',
         'The “Needs attention” card shows the full command, the folder and the exact rule for “Allow and don’t ask again”.',
         'The agent detail now shows the rule and the countdown until the terminal takes over.',
         'The countdown runs on every copy of a request, not only in the corner card.',
