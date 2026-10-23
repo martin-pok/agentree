@@ -53,6 +53,6 @@ test('instalace prohlížečů má časový limit a opakování', () => {
   const yml = workflow;
   const radky = yml.split('\n').filter((r) => r.includes('playwright install --with-deps') && !r.trim().startsWith('#'));
   assert.ok(radky.length >= 3);
-  for (const r of radky) assert.match(r, /timeout \d+ \.\/node_modules\/\.bin\/playwright install/, r.trim());
+  for (const r of radky) assert.match(r, /timeout (-k \d+ )?\d+ \.\/node_modules\/\.bin\/playwright install/, r.trim());
   assert.equal((yml.match(/for pokus in 1 2 3/g) || []).length, radky.length);
 });
