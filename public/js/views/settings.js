@@ -309,12 +309,13 @@ function callout(karta, prepinac = '') {
   if (!card) return;
   const skupina = card.closest('.set-group');
   if (skupina?.hidden) v.ukazSkupinu?.(skupina.id);
+  // Živá data mohou kartu během pulzu překreslit. Cíl proto krátce držíme i mimo DOM a po
+  // překreslení ho znovu označíme, aby hledání vždy ukázalo přesné místo.
+  v.zvyrazneni = { karta, prepinac, do: Date.now() + 2600 };
   // Konkrétní přepínač (z vyhledávání): zvýrazní se jeho řádek a fokus dostane sám přepínač.
   const prepinacEl = prepinac ? card.querySelector(`[data-setting="${CSS.escape(prepinac)}"]`) : null;
   if (prepinacEl) {
     vyvolejMisto(prepinacEl.closest('.set-row') || prepinacEl, prepinacEl);
-    // Karta se může vzápětí překreslit (dočtený stav, živá data) – zvýraznění se pak obnoví.
-    v.zvyrazneni = { karta, prepinac, do: Date.now() + 2400 };
     return;
   }
   vyvolejMisto(card, card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn'));
@@ -1118,8 +1119,9 @@ function update(topics) {
     ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
   if (v.zvyrazneni && Date.now() < v.zvyrazneni.do) {
-    const radek = el.querySelector(`[data-region="${v.zvyrazneni.karta}"] [data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row');
-    radek?.classList.add('is-called-out');
+    const karta = el.querySelector(`[data-region="${v.zvyrazneni.karta}"]`);
+    const radek = v.zvyrazneni.prepinac ? karta?.querySelector(`[data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row') : null;
+    (radek || karta)?.classList.add('is-called-out');
   }
 
   const lang = jazyk();

@@ -61,25 +61,42 @@ export function takeSectionJump(route) {
 }
 
 /**
- * Přivede místo na obrazovku a krátce ho zvýrazní (styles.css `.is-called-out`). Stránka má v CSS
- * `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule – a v okně, které
- * zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá přesně a u skrytého
- * okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou. `fokus` dostane fokus
- * bez dalšího posunu, aby čtečka obrazovky i klávesnice pokračovaly odtud – ne však, když člověk
- * právě píše do pole mimo cíl.
+ * Přivede místo na začátek viditelné plochy a krátce ho zvýrazní (styles.css `.is-called-out`).
+ * Odstup se neodhaduje: vychází ze skutečné spodní hrany lepivé horní lišty. Díky tomu sekce po
+ * přechodu z hledání nezačne pod ní ani zbytečně nízko. Pulz začne až po dojetí posunu; při delší
+ * cestě tedy nikdy neproběhne mimo zorné pole. `fokus` dostane fokus bez dalšího posunu, aby
+ * čtečka obrazovky i klávesnice pokračovaly odtud – ne však, když člověk právě píše do pole mimo
+ * cíl.
  */
 export function vyvolejMisto(misto, fokus = null) {
   if (!misto) return;
   const instant = document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const top = Math.max(0, window.scrollY + misto.getBoundingClientRect().top - 96);
+  const lista = document.querySelector('.topbar');
+  const rect = lista?.getBoundingClientRect();
+  // Lišta může být při pohybu schovaná transformací. Jen opravdu viditelná část smí zabrat místo.
+  const podListou = rect && rect.bottom > 0 && rect.top < innerHeight ? Math.max(24, Math.ceil(rect.bottom + 24)) : 24;
+  const top = Math.max(0, window.scrollY + misto.getBoundingClientRect().top - podListou);
+  const zvyrazni = () => {
+    misto.classList.remove('is-called-out');
+    void misto.offsetWidth;
+    misto.classList.add('is-called-out');
+    if (!pisePrave(misto)) fokus?.focus({ preventScroll: true });
+  };
   if (instant) skocNa(top);
   else window.scrollTo({ top, behavior: 'smooth' });
-  misto.classList.remove('is-called-out');
-  void misto.offsetWidth;
-  misto.classList.add('is-called-out');
-  // Kdo mezitím píše jinde (třeba další dotaz pomocníkovi), tomu fokus neukrade: Enter by jinak
-  // dopadl na zvýrazněný přepínač a přepnul ho.
-  if (!pisePrave(misto)) fokus?.focus({ preventScroll: true });
+  if (instant) { zvyrazni(); return; }
+
+  const maximum = () => Math.max(0, document.documentElement.scrollHeight - innerHeight);
+  const deadline = performance.now() + 1400;
+  const poDojedu = () => {
+    // Při spodním kraji stránky nemůže cíl ležet přesně na vypočtené souřadnici; maximum je tam
+    // správný a jediný možný konec. Jinak čekáme, až se horní hrana cíle skutečně usadí.
+    const poloha = misto.getBoundingClientRect().top;
+    const usazeno = Math.abs(poloha - podListou) <= 3 || window.scrollY >= maximum() - 1;
+    if (usazeno || performance.now() >= deadline) { zvyrazni(); return; }
+    requestAnimationFrame(poDojedu);
+  };
+  requestAnimationFrame(poDojedu);
 }
 
 /** Píše teď člověk do pole mimo `oblast`? Pak mu fokus nikdo nebere (přechod stránky, zvýraznění). */

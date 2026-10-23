@@ -966,6 +966,20 @@ for (const engine of engines) {
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.activeElement?.dataset?.setting === 'quietHours');
     assert.equal(await page.evaluate(() => document.activeElement.closest('.set-row').classList.contains('is-called-out')), true, `${engine} nastavení z hledání zvýrazní přepínač`);
+    // Výsledek z hledání musí začít hned pod skutečně viditelnou horní lištou, ne někde uprostřed
+    // dlouhé stránky. Pulz se spouští až po dojetí, proto je zároveň důkazem, že výsledná poloha
+    // už sedí. Tohle je konkrétní regrese pro „Rozšíření pro Chrome“ z Nastavení.
+    await page.keyboard.press('ControlOrMeta+k');
+    await page.locator('.palette input').pressSequentially('rozsireni pro chrome');
+    const extension = page.locator('.palette-list [role="option"]', { hasText: 'Rozšíření pro Chrome' });
+    await extension.click();
+    await page.waitForFunction(() => document.querySelector('[data-region="extension"]')?.classList.contains('is-called-out'));
+    const kotvaRozsireni = await page.evaluate(() => {
+      const cil = document.querySelector('[data-region="extension"]')?.getBoundingClientRect();
+      const lista = document.querySelector('.topbar')?.getBoundingClientRect();
+      return { cil: Math.round(cil?.top || 0), podListou: Math.max(24, Math.ceil((lista?.bottom || 0) + 24)) };
+    });
+    assert.ok(Math.abs(kotvaRozsireni.cil - kotvaRozsireni.podListou) <= 3, `${engine} hledání zarovná Rozšíření pro Chrome pod horní lištu`);
     await page.goto(`${server.url}/#/utrata`);
     await page.locator('.toolbar').waitFor();
     assert.match(await page.locator('.spend-hero').textContent(), /Náklady za API nejsou připojené/);
