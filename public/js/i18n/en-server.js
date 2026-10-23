@@ -3,6 +3,16 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Codex Cloud není dostupný nebo není přihlášený.": "Codex Cloud is unavailable or not signed in.",
+  "Codex Cloud vrátil nečitelný seznam úloh.": "Codex Cloud returned an unreadable task list.",
+  "Codex Cloud nevrátil seznam úloh.": "Codex Cloud did not return a task list.",
+  "Spustitelný Codex není dostupný.": "The Codex executable is unavailable.",
+  "Cloudová úloha Codexu": "Codex cloud task",
+  "Cloudová úloha běží · podle Codexu": "Cloud task running · according to Codex",
+  "Codex Cloud hlásí selhání úlohy.": "Codex Cloud reports that the task failed.",
+  "Vzdálené úlohy z účtu Codex včetně běhů nativní aplikace.": "Remote tasks from your Codex account, including desktop app runs.",
+  "Cloudové úlohy Codexu: {0}. Poslední načtení {1}.": "Codex cloud tasks: {0}. Last loaded {1}.",
+  "Čekám na první načtení cloudových úloh Codexu.": "Waiting for the first Codex cloud task list.",
   "Claude Code k této žádosti trvalé povolení nenabídl.": "Claude Code didn’t offer a permanent permission for this request.",
   "Rozhodnout za agenta lze jen {0}.": "You can decide for the agent only {0}.",
   "Neznámé rozhodnutí.": "Unknown decision.",
