@@ -1,6 +1,6 @@
 # Changelog
 
-## Nepublikované změny
+## 0.46.61 – 2026-10-23 · Nikdy neschvaluješ naslepo
 
 - **Celý příkaz všude, kde jde rozhodnout:** karta ve „Vyžaduje pozornost“ na Přehledu dřív ukazovala jen tlačítka a popis, který si agent napsal sám. Teď ukáže celý příkaz (nebo soubor, adresu), složku, přesné pravidlo pro „Povolit a příště se neptat“ i odpočet do návratu do terminálu, stejně jako karta v rohu. V detailu agenta přibylo pravidlo a odpočet.
 - **Odpočet běží u každé kopie žádosti**, ne jen v rohu.

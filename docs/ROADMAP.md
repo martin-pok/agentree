@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**Stav 23. 10. 2026:** [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
+**Stav 23. 10. 2026:** připravuje se Preview `v0.46.61` (celý příkaz u každé žádosti o povolení). [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
 **P0 dostupnost upgradu staré instalace:** Na tomto Macu je potvrzen přechod z nainstalované 0.46.58 na 0.46.60 a běh aplikace. Přesný uživatelský průchod updaterem během uzamčení Macu nebyl pozorován. Stable kanál nadále nabízí 0.46.58.
 
@@ -14,7 +14,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Release vlak 23. 10. 2026:** **v0.46.60 Preview je zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
+**Release vlak 23. 10. 2026:** **Připravuje se v0.46.61 Preview** (celý příkaz, pravidlo a odpočet u každé žádosti o povolení; CWS workflow bez přístupových údajů skončí chybou). **v0.46.60 Preview je zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
