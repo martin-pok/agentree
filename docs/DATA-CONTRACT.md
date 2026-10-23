@@ -26,6 +26,7 @@ Server: `http://127.0.0.1:4620`. Všechny odpovědi JSON (UTF-8). Chyby: `{ "err
 | POST | `/api/extension/handoff` | `{ site }` (token instalace + `Origin`) → `{ prompt: string \| null, prefilled? }`; zadání jen jednou a jen pro danou službu |
 | POST | `/api/extension/hello` | `{ version? }` (token instalace + `Origin`) → stav rozšíření |
 | POST | `/api/extension/focus-agent` | Spárovaný **lokální** Chrome popup (per-installation token + ověřený `Origin`; žádný LAN/Tailscale ani content script) → `{ id }` pouze pro právě viditelný existující agent z extension přehledu (`rozhodnuti`, `pracuji` nebo `nedavne`) → `{ ok, focused }` a jednosměrná událost do existujícího nativního macOS WKWebView. Nevrací klíč, text ani adresu přepisu; žádný proces se nespouští. `401` při chybě tokenu, `403` mimo hostitele, `404/422` neplatný či skrytý agent, `409` bez macOS desktopu. |
+| POST | `/api/extension/open-app` | Jen z lokálního spárovaného Chrome popupu (token instalace + ověřený `Origin`). Požádá již běžící nativní obal o zobrazení existujícího okna Přehledu; v prohlížeči nikdy neotevře technickou adresu serveru a nepředává klíč, obsah ani cestu. `401` při chybě tokenu, `403` mimo hostitele, `409` bez běžícího nativního obalu. |
 | POST | `/api/extension/prehled` | Párované Chrome rozšíření (token instalace + `Origin`) → `{ zdravi: { stav, veta, pracuje, cekaNaTebe, selhalo, limit, procesyNevim: boolean }, rozhodnuti: Agent[], pracuji: Agent[], nedavne: { id, title, app, status, at }[] }`. Čísla odpovídají viditelným agentům na hlavní obrazovce: podřízené vlákno s existujícím rodičem se nezapočítává zvlášť, u opakované plánované úlohy se bere poslední běh; archivované záznamy se v živém souhrnu nezobrazují. `procesyNevim` informuje o neúplném výpisu procesů i při současně známé chybě nebo rozhodnutí, bez přenosu procesních metadat. Max. 4 položky v `rozhodnuti` a `pracuji`. `nedavne` = nejvýš 8 nejnovějších viditelných nearchivovaných konverzací napříč nástroji, které nejsou v `rozhodnuti` ani `pracuji` (i rozhodnutí a pracující nad limit čtyř); jen titulek (≤ 120 znaků), nástroj (≤ 40), stav z `deriveStatus` a čas. **Žádné přepisy, cesty ani důvody.** |
 | POST | `/api/extension/obchod` | Jen z tohoto Macu → `{ ok, prohlizec, dry? }`; otevře stránku rozšíření v Chrome Web Store v prohlížeči, který rozšíření umí. 409 dokud adresa obchodu v `public/js/obchod.js` není, 422 když se prohlížeč nepodařilo otevřít |
 | POST | `/api/extension/pripojit` | Párování bez kódu. Jen z tohoto Macu, hlavička `Origin: chrome-extension://…` a volitelně `X-Agenteeq-Installation-Id` → `{ token, version }`, když ID rozšíření odpovídá Chrome Web Store nebo složce, kterou připravila aplikace; jinak 409 (spárovat jednorázovým kódem) |
@@ -377,10 +378,11 @@ Desktopu (`claude-desktop-code:session_…`), hlášení nevytvoří webovou kon
 (`{ ok, id: "claude-desktop-code:session_…" }`) a případný záznam `web:claude-code-web:session_…`
 odebere. Stav pak odvozuje `deriveStatus` z čerstvé karty (do 150 s od posledního hlášení), jinak z cache.
 
-Od 0.25.0 rozšíření **neposílá text zpráv ani název konverzace**, jen stav a počty zpráv podle role.
-Starší rozšíření posílá ještě `title` a `messages[{ role, text }]`: server z nich spočítá role a text
-i název zahodí, nic z toho neuloží. Konverzace z webu se v Agenteeq jmenuje podle služby a konce
-svého ID („ChatGPT · konverzace 3f2a“) a nemá přepis.
+Rozšíření posílá spárované aplikaci na `127.0.0.1` také skutečný `title` a posledních nejvýš
+60 viditelných `messages[{ role, text }]` (nejvýš 8 000 znaků na zprávu). Server validuje role a
+délky a ukládá zprávy do lokálního přepisu. Do cloudu se název ani přepis neposílá. Pokud stránka
+skutečný název nevystaví, karta výslovně řekne, že název zatím není dostupný; nikdy neukazuje
+ID konverzace jako název. Přepis webové služby je omezen tím, co prohlížeč právě vykreslil.
 
 ## Trvalá data `~/.agenteeq/data.json`
 

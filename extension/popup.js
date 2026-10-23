@@ -8,6 +8,7 @@ const SITES = [
   ['claude-code-web', 'Claude Code na webu', 'claude'],
   ['claude', 'Claude.ai', 'claude'],
   ['gemini', 'Gemini', 'gemini'],
+  ['google-ai-studio', 'Google AI Studio', 'gemini'],
   ['mscopilot', 'Microsoft Copilot', 'copilot'],
   ['perplexity', 'Perplexity', 'perplexity'],
   ['grok', 'Grok', 'grok'],
@@ -18,11 +19,11 @@ const SITES = [
 const MONO = new Set(['openai', 'grok', 'githubcopilot', 'cursor', 'ollama', 'lmstudio', 'windsurf', 'zed', 'goose', 'opencode']);
 // Logo nástroje podle názvu aplikace, jak ho hlásí Agenteeq (tatáž loga jako public/js/icons.js).
 const LOGO_APLIKACE = [[/antigravity/i, 'antigravity'], [/claude/i, 'claude'], [/codex/i, 'codex'], [/chatgpt|openai/i, 'openai'],
-  [/cursor/i, 'cursor'], [/gemini/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot|vs ?code/i, 'githubcopilot'],
+  [/cursor/i, 'cursor'], [/gemini|google ai studio/i, 'gemini'], [/microsoft copilot/i, 'copilot'], [/copilot|vs ?code/i, 'githubcopilot'],
   [/perplexity/i, 'perplexity'], [/grok/i, 'grok'], [/qwen/i, 'qwen'], [/ollama/i, 'ollama'], [/lm ?studio/i, 'lmstudio'],
   [/warp/i, 'warp'], [/windsurf/i, 'windsurf'], [/kiro/i, 'kiro'], [/\bzed\b/i, 'zed'], [/goose/i, 'goose'], [/opencode/i, 'opencode']];
 // Webové aplikace, jak je pojmenovává aplikace (src/connectors/web.js): jejich konverzace jsou „chaty“.
-const WEBOVE_APLIKACE = new Set(['ChatGPT', 'Codex · web', 'Claude.ai', 'Gemini', 'Microsoft Copilot', 'Perplexity', 'Grok', 'Qwen Chat', 'GitHub Copilot']);
+const WEBOVE_APLIKACE = new Set(['ChatGPT', 'Codex · web', 'Claude.ai', 'Gemini', 'Google AI Studio', 'Microsoft Copilot', 'Perplexity', 'Grok', 'Qwen Chat', 'GitHub Copilot']);
 // Adresa aplikace: výchozí port 4620, jiný se nastaví v listu Sledované služby a port.
 // Port mimo výchozí potřebuje volitelné oprávnění pro 127.0.0.1 (manifest, optional_host_permissions).
 const VYCHOZI_PORT = 4620;
@@ -865,7 +866,7 @@ function vykresli() {
   if (s) { souhrn.textContent = sazba(s.text); souhrn.dataset.tone = s.ton; }
   // Aplikaci otevírá značka v hlavičce – jediné místo s touto akcí. Bez běžící aplikace je to jen
   // značka (odkaz by vedl na nedostupnou adresu); hlavní výzvou je pak „Stáhnout“ v reflektoru.
-  nastavZnacku(rezim !== 'offline');
+  nastavZnacku(rezim === 'sparovano');
   vykresliAktualizaci(pripojeno && seznam.zastarala);
   vykresliOsu();
 }
@@ -934,16 +935,29 @@ function zakladniStav() {
   seznam.pripojeno = false;
   seznam.zastarala = false;
   delete $('konverzace').dataset.podpis; // Po obnovení spojení se osa vykreslí znovu i se stejnými daty.
-  nastavZnacku(true);
+  nastavZnacku(false);
 }
 function nastavZnacku(odkaz) {
   const z = $('brand');
   if (odkaz) {
-    z.href = APLIKACE;
+    z.disabled = false;
     z.setAttribute('aria-label', tr('Otevřít aplikaci Agenteeq'));
     z.title = tr('Otevřít aplikaci Agenteeq');
-  } else for (const a of ['href', 'aria-label', 'title']) z.removeAttribute(a);
+  } else {
+    z.disabled = true;
+    z.setAttribute('aria-label', tr('Agenteeq'));
+    z.removeAttribute('title');
+  }
 }
+$('brand').addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (rezim !== 'sparovano') return;
+  const result = await chrome.runtime.sendMessage({ type: 'agenteeq:open-app' }).catch(() => null);
+  if (result?.ok) window.close();
+  else if (result?.error) toast(result.error);
+  else if (result?.unsupported) toast(tr('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.'));
+  else if (result?.offline) toast(tr('Agenteeq právě neodpovídá. Obnov seznam a zkus to znovu.'));
+});
 
 // Offline stav je skutečná dostupnost lokální služby, ne přítomnost starého snapshotu.
 // Kontrolujeme jej také při otevřeném okně: jinak by náhlý restart aplikace nechal

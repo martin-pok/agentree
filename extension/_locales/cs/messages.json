@@ -12,7 +12,7 @@
     "description": "Krátký název."
   },
   "popis": {
-    "message": "Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.",
+    "message": "Webové chaty v Agenteeq: stav agenta, skutečné názvy a viditelné zprávy. Údaje předává jen aplikaci na tvém počítači.",
     "description": "Popis v Chromu a v obchodě, nejvýš 132 znaků."
   },
   "titulek": {

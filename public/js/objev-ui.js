@@ -35,7 +35,7 @@ function kde(n) {
 function radek(n) {
   const beta = n.overeno ? '' : `<span class="badge badge--beta" title="${esc(tr('Rozpoznání zatím neověřené na skutečném počítači.'))}">${tr('Beta')}</span>`;
   const akce = n.napojeno === true
-    ? stateBadge('connected', tr('Napojeno'))
+    ? stateBadge('connected', n.cesta === 'rozsireni' ? tr('Rozšíření spárované') : tr('Napojeno'))
     : `<button class="btn btn--sm${n.web ? '' : ' btn--primary'}" type="button" data-objev-napojit="${esc(n.id)}" aria-label="${esc(tr('Napojit {0}', n.name))}">${tr('Napojit')}</button>`;
   return `<li class="objev-row"><span class="model-logo${n.web ? ' model-logo--skupina' : ''}">${logo(n)}</span>
     <span class="objev-main"><b>${esc(n.name)}${beta}</b><span>${esc(kde(n))}</span></span>${akce}</li>`;
@@ -72,8 +72,8 @@ function prava(n) {
   }
   if (n.cesta === 'rozsireni') {
     return {
-      ano: [tr('Stav konverzace v záložce: pracuje, čeká na tebe, dosažený limit'), tr('Počet zpráv v konverzaci')],
-      ne: [tr('Text zpráv'), tr('Přihlašovací údaje k webu služby')],
+      ano: [tr('Stav konverzace v záložce: pracuje, čeká na tebe, dosažený limit'), tr('Název a nejvýš 60 viditelných zpráv konverzace')],
+      ne: [tr('Přílohy, soubory cookie a přihlašovací údaje'), tr('Zprávy, které stránka právě nevykresluje')],
       jak: data?.web?.sparovano ? tr('Rozšíření pro Chrome už je spárované. Stačí mít službu otevřenou v záložce.') : tr('Přidáš rozšíření Agenteeq do Chromu a spáruješ ho kódem z této aplikace.'),
       tlacitko: data?.web?.sparovano ? tr('Povolit') : tr('Povolit a přidat rozšíření'),
     };
@@ -156,7 +156,9 @@ async function povolit(n, tlacitko) {
       return;
     }
     await nacti();
-    toast(tr('Napojeno: {0}', n.name), { tone: 'ok' });
+    toast(n.cesta === 'rozsireni'
+      ? tr('Rozšíření je spárované. Konverzace se zobrazí, až odešle stav.')
+      : tr('Napojeno: {0}', n.name), { tone: n.cesta === 'rozsireni' ? 'info' : 'ok' });
     ukazSeznam(n.id);
   } catch (err) {
     chyba.textContent = err.message || tr('Napojení se nepodařilo. Zkus to prosím znovu.');

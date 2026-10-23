@@ -1,21 +1,17 @@
 # Rozšíření v Chrome Web Store
 
-## Aktuální distribuce — 13. 10. 2026
+## Aktuální distribuce — 23. 10. 2026
 
-**Veřejný Chrome Web Store stále nabízí 0.31.4 (aktualizace 4. 10. 2026).** To je aktuální známý distribuční dluh, nikoli chyba instalace nových zdrojů; dokud vlastník z účtu vydavatele nenahraje nový balíček a Google jej nezveřejní, mají zákazníci starší produkt a mohou vidět starou ikonu. Aktivní P0 [#172](https://github.com/martin-pok/agentree/issues/172); reálné device UAT a celé Preview vydání [#208](https://github.com/martin-pok/agentree/issues/208).
+**Veřejný Chrome Web Store nabízí 0.46.55.** Ověřeno na [veřejné kartě rozšíření](https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch) 23. 10. 2026; jde o samostatný stav vůči [desktopovému Preview v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60). Veřejný release obsahuje `agenteeq-extension-0.46.60.zip` (267 110 B, SHA-256 `0e6f312c4b909a5fa90219e70d6b050df31697d087ea001ef066f6e4ff0f2ab5`), jehož příloha prošla auditem vydání. Dostupnost ZIPu na GitHubu **neznamená zveřejnění v obchodě**.
 
-**Jediný aktuální publisher kit: 0.46.11 z otestovaného `main` commitu `1e72a0057637ad249e70388444346a80526e7083`.** [Přesné CI #38430918556](https://github.com/martin-pok/agentree/actions/runs/38430918556) prošlo 8/8. V jeho artefaktech:
-- `chrome-store-review-kit` **ID `11830811619`** — package, listing, CZ/EN screenshots, promo, SHA256SUMS a STORE-KIT.json.
-- `agenteeq-extension-store-upload` **ID `11830607078`** — přesný ZIP pro upload.
-- `chrome-store-screenshots` ID `11830681898`, `chrome-store-branding` ID `11830707040` pro kontrolu vizuálu.
-- Zkontrolovaná souborová shoda: **10/10 kontrolních hashů** publisher kitu, 6 CZ/EN screenshotů 1280×800, promo 440×280, marquee 1400×560, ikona 128×128. `listing/icon-128.png` se rovná ikonce uvnitř ZIPu; ZIP v kitu se **bajtově shoduje** s oficiálním souborem `agenteeq-extension-0.46.11.zip` (244 358 B, SHA-256 `2bb203b13b0b54d3a9ec00c3892ecd697755d20690fb6dfc3af58cd095e5038b`) v neveřejném Draftu v0.46.11, osm skutečných assetů ověřeno nezávislým [auditem](https://github.com/martin-pok/agentree/actions/runs/38432569881).
+[Workflow pro Chrome Web Store v0.46.60](https://github.com/martin-pok/agentree/actions/runs/39906389905) skončilo jako `success`, ale jeho log uvádí, že `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` a `CWS_REFRESH_TOKEN` jsou prázdné. Krok proto odešel s varováním a ZIP do obchodu **nenahrál**. Po doplnění přístupu nebo ručním nahrání musí Google balíček přijmout a veřejná karta musí ukazovat správnou verzi. Zelený stav workflow sám tento krok nedokazuje. Aktuální koordinace: [#172](https://github.com/martin-pok/agentree/issues/172).
 
-**Před zveřejněním stále vyžadujeme:** reálný Chrome s přihlášenými podporovanými službami, spárovaný aktuální nainstalovaný Mac, přepnutí do původní session (bez 403), chybové stavy, foto/skutečné UI screenshotů, CZ/EN a proporce robota. Potom vlastník nahraje **tento jediný aktuální ZIP+listing** v <https://chrome.google.com/webstore/devconsole>, projde review a ověří veřejné číslo **0.46.11** a správné logo. Žádná CI úloha ani GitHub release nepublikuje samo Chrome Store.
+**Před odesláním 0.46.60 do obchodu:** ověřit balíček na skutečném Chrome s aktuální nainstalovanou aplikací na Macu: párování, CZ/EN, názvy a viditelné zprávy podporovaných chatů, přepnutí do původní relace, výpadek spojení a obnovu po restartu. Zkontrolovat, že popis obchodu odpovídá skutečně odesílané verzi, protože veřejný popis pro 0.46.55 výslovně říká, že text zpráv nepředává, zatímco 0.46.60 je předává pouze místní aplikaci. Pro ruční upload použít jediný ZIP a odpovídající listing/snímky z ověřeného aktuálního buildu; postup a kontrolní součty jsou níže. Stav fyzického UAT je veden v [RELEASE-READINESS.md](RELEASE-READINESS.md) a [#208](https://github.com/martin-pok/agentree/issues/208).
 
 ---
-### Historické podklady níže (0.46.8 a starší)
+### Historické podklady níže (stav k 13. 10. 2026)
 
-Následující inventáře dokazují starší opravy pipeline, ale **nesmějí se znovu používat k uploadu**. Pro aktuální vydání platí výhradně kit 0.46.11 výše.
+Následující inventáře dokazují starší opravy pipeline, ale **nesmějí se znovu používat k uploadu aktuální verze**. Balíček pro 0.46.60 je určen výše; jeho odpovídající podklady je nutné vybrat z aktuálního ověřeného buildu.
 
 Stav ověřený k 12. 10. 2026: **položka je zveřejněná, ale veřejná verze je stále 0.31.4** (záznam Chrome Web Store, aktualizace 4. 10. 2026). Vlastník potvrdil, že položka je v Chrome Web Store veřejně
 dostupná. Příznak `CHROME_WEB_STORE_PUBLISHED` v `public/js/obchod.js` je zapnutý od verze 0.37.1:
@@ -91,7 +87,7 @@ OAuth klienta v Google Cloud, který si musí vytvořit vlastník.
 | Pole | Hodnota |
 |---|---|
 | Název | z `extension/_locales`: `Agenteeq – AI agenti v reálném čase` / `Agenteeq – AI agents in real time` |
-| Shrnutí | z `extension/_locales` (nejvýš 132 znaků): „Webové chaty s AI v aplikaci Agenteeq na tvém počítači: jestli agent pracuje a kolik má konverzace zpráv. Text zpráv neposílá.“ / „Your web AI chats in the Agenteeq app on your computer: whether the agent is working and how many messages. Sends no message text.“ |
+| Shrnutí | z `extension/_locales` (nejvýš 132 znaků): uvádí stav agenta, skutečné názvy a viditelné zprávy předávané jen místní aplikaci. |
 | Kategorie | Productivity → Workflow & Planning |
 | Jazyk | angličtina (výchozí, `default_locale`) a čeština. Okno i název v Chromu se řídí jazykem prohlížeče: český Chrome dostane češtinu, ostatní angličtinu. Obchod vyplní obě karty z `_locales` sám; popis a snímky se zadávají pro každý jazyk zvlášť. |
 | Ikona obchodu | `branding/chrome-web-store/export/icon-128.png` (obraz 96 × 96, průhledný okraj 16 px) |
@@ -116,12 +112,13 @@ Agenteeq ukazuje všechny tvoje AI agenty na jednom místě: Claude Code, Codex 
 Co rozšíření dělá
 • Pozná, jestli služba právě odpovídá, nebo už dopsala, a jak dlouho odpovídá.
 • Spočítá zprávy v konverzaci a zachytí upozornění na vyčerpaný limit.
+• Ukáže skutečný název konverzace a viditelné zprávy v místní aplikaci.
 • V okně rozšíření ukáže všechny otevřené konverzace s AI; kliknutím se přepneš do karty.
 • Pošle to do aplikace Agenteeq, kde vidíš, kdo pracuje a kdo čeká na tebe.
 • Zadání z aplikace („Spustit agenta“) vloží rovnou do okna služby.
 
 Soukromí
-• Neposílá text tvých zpráv ani odpovědí, názvy konverzací ani historii prohlížení.
+• Názvy a viditelné zprávy posílá jen spárované místní aplikaci; přílohy, cookies ani historii prohlížení neposílá.
 • Data jdou jen do aplikace Agenteeq na tomtéž počítači (127.0.0.1), nikdy na internet.
 • Každou službu můžeš v okně rozšíření vypnout.
 
@@ -140,11 +137,13 @@ Agenteeq is a local dashboard for the status of AI work on your Mac. The extensi
 What it does
 • Detects whether a supported conversation is replying, waiting or finished.
 • Shows how long a reply has been in progress and counts messages in the active conversation.
+• Shows the real conversation title and visible messages in the local app.
 • Lists the open conversations that the extension can see; click one to switch to its tab.
 • Brings the current status into Agenteeq and can paste a prompt from the app into that chat.
 
 Privacy
-• It never sends the text of messages, responses, titles or browsing history.
+• It sends visible messages and conversation titles only to the paired local Agenteeq app.
+• It never sends attachments, cookies or browsing history to the app.
 • All data stays on your computer and reaches only the local Agenteeq app at 127.0.0.1.
 • You can turn off individual services in the extension window.
 
@@ -169,16 +168,17 @@ Privacy policy: https://agentree-fawn.vercel.app/en/privacy
 | Host `http://127.0.0.1:4620/*` | Jediná adresa, kam rozšíření posílá data: aplikace Agenteeq na tomtéž počítači (localhost). Na internet nic neposílá. |
 | Host chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai, github.com/copilot | Tytéž weby jako u content skriptů. Oprávnění slouží jen k vložení sledovacího skriptu do karet, které byly otevřené už před instalací nebo aktualizací (`scripting`). Z těchto webů se nic neposílá jinam než do aplikace na tomtéž počítači. |
 | Volitelné: host 127.0.0.1 (libovolný port) | Jen když uživatel v okně rozšíření nastaví jiný port aplikace Agenteeq než výchozí 4620 (aplikace spuštěná s proměnnou `PORT`). Chrome se na oprávnění zeptá v tu chvíli; bez něj rozšíření dál mluví jen s 127.0.0.1:4620. Data nikdy neodcházejí mimo tento počítač. |
-| `content_scripts` na chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai, github.com/copilot | Na stránce otevřené konverzace zjistí, jestli služba odpovídá, kolik je zpráv, název modelu a případné upozornění na limit. Text zpráv neodesílá. Na jiných webech neběží. |
+| `content_scripts` na chatgpt.com, chat.openai.com, claude.ai, gemini.google.com, copilot.microsoft.com, perplexity.ai, grok.com, chat.qwen.ai, github.com/copilot | Na stránce otevřené konverzace zjistí stav, počty, skutečný název, viditelné zprávy, model a případný limit. Údaje předává jen spárované místní aplikaci. Na jiných webech neběží. |
 
 **Vzdálený kód (Remote code):** Ne. Veškerý kód je v balíčku.
 
 **Shromažďovaná data (Data usage):** data neopouštějí počítač uživatele, ale rozšíření je
 předává místní aplikaci, proto je poctivé je přiznat:
 
-- ☑ **Obsah webu (Website content)** – počty zpráv, název modelu, text upozornění na limit.
+- ☑ **Obsah webu (Website content)** – počty a text viditelných zpráv, název konverzace, název modelu, text upozornění na limit.
+- ☑ **Osobní komunikace (Personal communications)** – text viditelných zpráv; jen přenos do spárované místní aplikace, bez serveru provozovatele.
 - ☑ **Historie webu (Web history)** – adresa a identifikátor otevřené konverzace na podporované službě.
-- ☐ všechno ostatní (osobní údaje, přihlašovací údaje, finance, zdraví, poloha, komunikace,
+- ☐ všechno ostatní (osobní údaje, přihlašovací údaje, finance, zdraví, poloha,
   aktivita uživatele) – nesbírá se.
 
 Zaškrtni všechna tři potvrzení: data se neprodávají třetím stranám, nepoužívají se k účelu, který
@@ -193,7 +193,7 @@ https://agentree-fawn.vercel.app/en/privacy). Zdroj: `site/soukromi/index.html`,
 ```
 The extension works together with the free Agenteeq desktop app for macOS (https://github.com/martin-pok/agentree/releases). Without the app, the extension window shows "Agenteeq isn’t running on this computer" – this is expected. The extension window follows the browser language (English, or Czech in a Czech browser).
 To test: install and open the app. Once the extension is published, it pairs with the app automatically. During review the app doesn't know the store ID yet, so pair it with a one-time code: in the app open Settings → Connections → Chrome extension → "Nespárovalo se samo? Použij jednorázový kód" (didn't pair on its own? use a one-time code), click "Vytvořit jednorázový kód" (create one-time code), paste the code into the extension window and click "Pair". (The app can be switched to English in Settings → Account and appearance.) Then open any conversation on chatgpt.com or claude.ai – it appears in the app's Overview within a few seconds.
-The extension only sends conversation status and message counts to http://127.0.0.1:4620 (the local app). It never sends message text.
+The extension sends conversation status, real titles and visible messages to http://127.0.0.1:4620 (the paired local app). It does not send them to a remote server.
 ```
 
 ## Distribuce

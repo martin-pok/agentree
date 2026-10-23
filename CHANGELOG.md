@@ -3,6 +3,53 @@
 ## Nepublikované změny
 
 - **Chrome Web Store:** vydávací workflow nyní skončí chybou, pokud chybí OAuth secrets; prázdné nahrání už nemůže vypadat jako úspěšné vydání.
+
+## Web – 2026-10-23 · Snímky aplikace z aktuální verze
+
+- Úvod webu (CZ i EN, počítač i telefon) ukazuje Přehled z aktuální verze: Vyžaduje pozornost, Stav agentů a dnešní den v pozdravu. Dřív tam byl snímek ze 13. 10.
+- Dlaždice „Vědět včas“ ukazuje karty agentů s roboty (na počítači první řada, na telefonu jedna karta) místo staré tabulky; rozměry a popis obrázku odpovídají.
+- Ukázková data mají u konverzací model (`claude-opus-5-5`, `claude-sonnet-5-5`, `gpt-5-codex`), takže karty nemají místo modelu pomlčku.
+- `shots:site` fotí jen snímky, které web používá, a prohlížeč bere z `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` stejně jako `shots:hero`. Nepoužívané staré snímky jsou odstraněné. Desktopová binárka se tím nemění.
+
+## Web – 2026-10-23 · Aktuální odkaz na Preview
+
+- Úvodní a instalační stránka v češtině i angličtině ukazují veřejné Preview 0.46.60 i v případě, že prohlížeč nenačte seznam vydání z GitHubu. Tlačítko stabilního vydání dál míří na Stable Latest. Tato změna webu není součástí již zveřejněné desktopové binárky 0.46.60.
+
+## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
+
+- **Google AI Studio:** běžící samostatná webová aplikace je po volbě „Sledovat“ vidět mezi sledovanými běžícími nástroji. Spárované rozšíření nyní rozpozná uložené prompty na `aistudio.google.com` a předá jejich stav aplikaci. Samotný běžící proces neprokazuje aktivní konverzaci; pro její název, zprávy a stav je nutné hlášení rozšíření.
+- **Telefon přes QR:** Nastavení už nevypisuje IP adresu ani nenabízí její kopírování. Telefon se páruje naskenováním jednorázového QR bez ručního zadávání adresy nebo PINu; stejné instrukce platí i pro Tailscale a webový rozcestník.
+- **Zjištěné plány Claude:** každý nalezený profil Claude Code se ověřuje přímo ve svém `CLAUDE_CONFIG_DIR`, výchozí profil bez něj. Dva současně přihlášené účty s různým UUID se zobrazí odděleně; nově objevený profil se kontroluje hned. CLI spuštěné z Finderu dostává správnou cestu k `node`; neúspěšný proces není důkaz přihlášení.
+- **Přehlednější Nastavení:** účet a licence, vzhled a jazyk, pomocník i telefon a vzdálený přístup mají vlastní položky v levé navigaci. Vyhledávání a nápověda vedou do správné části.
+- **Profilový obrázek:** výběr se rozbaluje podle skutečné výšky obsahu; sbalený náhled ukazuje celou první řadu bez ostrého přechodu přes avatary.
+- **Potvrzení nového nástroje:** tlačítko „Rozumím“ / „Got it“ se při najetí a zaostření klávesnicí vyplní fialově s bílým textem.
+- **ChatGPT, Codex a Claude Code v prohlížeči:** Agenteeq přebírá skutečný název z titulku stránky nebo aktivní konverzace v postranním seznamu. Už nezobrazuje poslední znaky interního ID jako název.
+- **Přepis:** spárované rozšíření posílá viditelné zprávy jen do lokální aplikace. Detail agenta je průběžně aktualizuje bez zdvojování odpovědí. Neúplně vykreslená historie může zůstat neúplná.
+- **ChatGPT ↔ Codex:** při přechodu v jedné kartě se znovu rozpozná služba i bez načtení celé stránky.
+- **Codex v aplikaci:** poškozený název z indexu (například smíšené znaky latinky a cyrilice v jednom slově) už nepřepíše poslední čitelný název; případně se ukáže skutečné první zadání.
+
+## 0.46.59 – 2026-10-22 · Angličtina i po aktualizaci
+
+- **Jazyk při restartu:** úvodní obrazovka aplikace pro Mac, průběh aktualizace, nabídka a systémové dialogy používají uloženou volbu češtiny nebo angličtiny. Aktualizace ji nemění.
+- **Sledování složek:** na Node 24 se neexistující kořen přepisů neoznačí za aktivní, i když `fs.watch` vrátí watcher bez chyby. Po vzniku složky se sledování zapne a první konverzace se doskenuje.
+- **Aktualizace:** když zvolený kanál nenabízí novější vydání, aplikace to uvede přesně a nezamění tento stav za nejnovější verzi ve všech kanálech.
+
+## 0.46.58 – 2026-10-21 · Spolehlivější kontrola aktualizací a upozornění
+
+- **Nastavení → Aktualizace:** tlačítko „Zkontrolovat nyní“ se po dokončení kontroly znovu aktivuje, i když je verze stále stejná. Další pokus je možný také po chybě spojení.
+- **Výpadek spojení:** hlášení se zobrazí čtyři sekundy od začátku výpadku. Opakované pokusy o spojení už časovač neposouvají stále dál.
+- **Nepřečtená upozornění:** jako přečtená se v aplikaci označí až po potvrzení serverem. Neúspěšný požadavek neschová nepřečtené položky a opožděná odpověď nepřepíše novější počet.
+
+## 0.46.57 – 2026-10-21 · Přehlednější mapa práce agentů
+
+- **Statistiky:** mapa „Kdy agenti pracují“ používá místo okrové značkovou fialovou škálu. Intenzita stále odpovídá skutečné aktivitě; barva se přizpůsobuje světlému a tmavému vzhledu.
+- Navazuje na veřejné Preview 0.46.56; změny této verze jsou popsány níže.
+
+## 0.46.56 – 2026-10-21 · Přehled agentů, výběr a napojení rozšíření
+
+- **Agenti:** hromadné zařazování konverzací jasně odlišuje plné tlačítko od filtrů, přesně počítá vybratelné konverzace, zachová výběr napříč filtry s viditelným upozorněním a potvrzuje počet položek v dialogu.
+- **Přehled:** karty agentů dávají název konverzace do hlavní typografické úrovně; jméno agenta nebo nástroje zůstává menší podpůrný údaj.
+- **Rozšíření Chrome:** značka v hlavičce už nikdy neotevře prázdnou stránku lokálního serveru. Spárované rozšíření požádá běžící nativní Agenteeq, aby zobrazil Přehled; klíč okna se do Chromu nepředává.
 - **Dovednosti:** seznam nově zahrnuje `~/skills`, vlastní umístění `CLAUDE_CONFIG_DIR` a `CODEX_HOME` a symlinkované soubory i složky. Stejný soubor připojený na více místech se ukáže jen jednou; cykly symlinků se bezpečně přeskočí. Odstraněn byl také tichý limit 400 položek. Seznam se dál obnovuje při otevření stránky, po návratu do okna a každých 30 sekund.
 
 ## 0.46.55 – 2026-10-21 · Rozhodování v Agenteeq dotažené

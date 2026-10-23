@@ -121,7 +121,7 @@ export function limitsAll(state, now = Date.now()) {
   const items = rows.filter((r) => !nenalezene.includes(r)).map(({ t, spojene, okna, tok, maData }) => {
     const stari = okna.length ? Math.max(...okna.map((l) => l.at || 0)) : 0;
     const nota = t.web
-      ? `<span class="ltool-note">–${infoTip(tr('Z webových chatů Agenteeq limity nečte, jen konverzace a tokeny přes rozšíření.'), tr('Proč tu limit není'))}</span>`
+      ? `<span class="ltool-note">–${infoTip(tr('Rozšíření čte viditelné konverzace v prohlížeči; skutečnou spotřebu tokenů nezná.'), tr('Proč tu limit není'))}</span>`
       : `<span class="ltool-note">${esc(poznamka(t, spojene, maData, state, now))}</span>`;
     return `<li class="ltool${!okna.length && !maData && !t.web && spojene.every((c) => c.state === 'missing') ? ' is-off' : ''}">
       <span class="lwin-logo">${glyph(t.logo)}</span>

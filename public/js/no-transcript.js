@@ -67,7 +67,8 @@ export const BEZ_PREPISU = {
   // záložkách Chromu, ne v těchto oknech – proto u služeb, které rozšíření umí, radíme záložku.
   ...Object.fromEntries(['pwa-chatgpt', 'pwa-claude', 'pwa-gemini', 'pwa-perplexity', 'pwa-grok', 'pwa-copilot']
     .map((id) => [id, { duvod: WEB_OKNO, rada: tr('V běžné záložce Chromu službu sleduje rozšíření Agenteeq.'), odkaz: ROZSIRENI_ODKAZ }])),
-  ...Object.fromEntries(['pwa-google-ai-studio', 'pwa-notebooklm', 'pwa-stitch', 'pwa-deepseek', 'pwa-replit', 'pwa-lovable', 'pwa-v0', 'pwa-bolt']
+  'pwa-google-ai-studio': { duvod: WEB_OKNO, rada: tr('Konverzaci Google AI Studia přečte spárované rozšíření Agenteeq; samotný běžící proces potvrzuje jen otevřené okno.'), odkaz: ROZSIRENI_ODKAZ },
+  ...Object.fromEntries(['pwa-notebooklm', 'pwa-stitch', 'pwa-deepseek', 'pwa-replit', 'pwa-lovable', 'pwa-v0', 'pwa-bolt']
     .map((id) => [id, { duvod: WEB_OKNO, rada: MOJE_RADA, odkaz: MOJE_ODKAZ }])),
 };
 

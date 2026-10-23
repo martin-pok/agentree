@@ -52,7 +52,7 @@ import { createNapojeni } from './napojeni.js';
 import { createBeziciAgenti, AGENTI as AGENTI_PROCESU, PROMENNE_DOMOVA, jeProcesovyId } from './bezici-agenti.js';
 import { createKonecProcesu } from './konec-procesu.js';
 import { planOdpovedi, lzeOdpovedet, beziVeSlozce } from './odpoved.js';
-import { spustPrihlaseni } from './prihlaseni.js';
+import { spustPrihlaseni, prostrediPro } from './prihlaseni.js';
 import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, projectMonthTokens as mesicniTokenyProjektu, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
@@ -371,12 +371,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   async function beziciAgenti(procesy) {
     posledniProcesy = Array.isArray(procesy) ? procesy.map((p) => ({ runtime: p.runtime, cwd: p.cwd })) : null;
     procesyProOtevreni.seznam = posledniProcesy;
+    let newClaudeProfile = false;
     for (const p of procesy || []) {
       const domov = AGENTI_PROCESU[p.runtime]?.domov && p.env?.[AGENTI_PROCESU[p.runtime].domov];
       if (!domov || !path.isAbsolute(domov)) continue;
-      if (p.runtime === 'claude-code') await connectors['claude-code']?.pridejKoren(path.join(domov, 'projects'));
+      if (p.runtime === 'claude-code') newClaudeProfile = await connectors['claude-code']?.pridejKoren(path.join(domov, 'projects')) || newClaudeProfile;
       if (p.runtime === 'codex') await connectors.codex?.pridejDomov(domov);
     }
+    if (newClaudeProfile) refreshSubscriptions().catch(() => {});
     bezici.upravit(procesy);
     // Běží agent, ke kterému se nenašel přepis: jeho kořen možná právě vznikl (první spuštění nástroje
     // založí ~/.claude i projects/ najednou a strážce nad neexistujícím rodičem hlídat nemohl).
@@ -456,31 +458,39 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     for (const home of claudeHomes) if (!claudeAccountWatchers.has(home)) {
       claudeAccountWatchers.set(home, watchExactFile(path.join(home, '.claude.json'), () => refreshSubscriptions().catch(() => {}), { retryMs: 1000 }));
     }
-    const [auth, codexResults] = await Promise.all([
-      napojeni.stav('claude-code').catch(() => ({ napojeno: null })),
+    const [claudeProfiles, codexResults] = await Promise.all([
+      Promise.all(claudeHomes.map(async (home) => {
+        if (!launchEnv.bins?.claude) return { home, loggedIn: null, account: null };
+        const env = prostrediPro(launchEnv.bins.claude, { ...process.env, HOME: config.sourceHome });
+        // The default CLI profile and each CLAUDE_CONFIG_DIR must be authenticated in their
+        // own environment. A global auth check can otherwise authorize the wrong account file.
+        if (home === config.sourceHome) delete env.CLAUDE_CONFIG_DIR;
+        else {
+          try { await fsp.access(path.join(home, '.claude.json')); } catch { return { home, loggedIn: null, account: null }; }
+          env.CLAUDE_CONFIG_DIR = home;
+        }
+        try {
+          const result = await (napojeniRun || run)(launchEnv.bins.claude, ['auth', 'status', '--json'], { timeout: 10000, env });
+          if (result?.ok === false) return { home, loggedIn: null, account: null };
+          const status = JSON.parse(result.stdout);
+          if (typeof status.loggedIn !== 'boolean') return { home, loggedIn: null, account: null };
+          return { home, loggedIn: status.loggedIn,
+            account: status.loggedIn ? await readClaudeAccount(home) : null };
+        } catch { return { home, loggedIn: null, account: null }; }
+      })),
       (launchEnv.bins?.codex || codexAccountReader !== readCodexAccount
         ? Promise.all(codexHomes.map((home) => codexAccountReader(launchEnv.bins?.codex, { home }).catch(() => null)))
         : Promise.resolve([])),
     ]);
     if (generation !== subscriptionRefreshGeneration) return;
-    const loggedIn = typeof auth.napojeno === 'boolean' ? auth.napojeno : null;
+    const loggedIn = claudeProfiles.some((profile) => profile.loggedIn === true) ? true
+      : claudeProfiles.some((profile) => profile.loggedIn === false) ? false : null;
     const authChanged = claudeAuth.loggedIn !== loggedIn;
     claudeAuth = { loggedIn, checkedAt: Date.now() };
-    const extraClaude = await Promise.all(claudeHomes.filter((home) => home !== config.sourceHome).map(async (home) => {
-      if (!launchEnv.bins?.claude) return null;
-      try { await fsp.access(path.join(home, '.claude.json')); } catch { return null; }
-      const result = await (napojeniRun || run)(launchEnv.bins.claude, ['auth', 'status', '--json'],
-        { timeout: 10000, env: { ...process.env, CLAUDE_CONFIG_DIR: home } });
-      let status;
-      try { status = JSON.parse(result.stdout); } catch { return null; }
-      return status.loggedIn === true ? { home, account: await readClaudeAccount(home) } : null;
-    }));
-    const primary = auth.napojeno === true ? { home: config.sourceHome, account: await readClaudeAccount(config.sourceHome) } : null;
-    if (generation !== subscriptionRefreshGeneration) return;
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
     // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
     // Neoznačujeme jej jako aktivní ověřenou licenci ani mu nepřiřazujeme kvóty.
-    const authenticatedClaudeProfiles = [primary, ...extraClaude].filter((item) => item?.account)
+    const authenticatedClaudeProfiles = claudeProfiles.filter((item) => item?.account)
       .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
       .filter((item) => item.accountId);
     claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
@@ -1254,6 +1264,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
     return { ok: true, focused: true };
   }
+  function openExtensionApp() {
+    if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
+    desktopReport({ type: 'open-app', route: '#/prehled' });
+    return { ok: true, opened: true };
+  }
   async function installUpdate() {
     if (!config.selfInstall || !desktopReport) return { status: 422, error: ui('Aktualizaci tu nainstaluje jen aplikace pro Mac. Otevři balíček a nahraď aplikaci ručně.') };
     const previouslyDownloaded = Boolean(updates.downloadedPath());
@@ -1767,7 +1782,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent, openExtensionApp,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,

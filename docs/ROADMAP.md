@@ -1,6 +1,12 @@
 # Roadmapa Agenteeq
 
-**Stav 21. 10. 2026:** veřejné Preview je [`v0.46.54`](https://github.com/martin-pok/agentree/releases/tag/v0.46.54); připravuje se `v0.46.55` (rozhodování v Agenteeq dotažené). Stable Latest zůstává `v0.46.0`.
+**Stav 23. 10. 2026:** [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
+
+**P0 dostupnost upgradu staré instalace:** Na tomto Macu je potvrzen přechod z nainstalované 0.46.58 na 0.46.60 a běh aplikace. Přesný uživatelský průchod updaterem během uzamčení Macu nebyl pozorován. Stable kanál nadále nabízí 0.46.58.
+
+**P0 zjištěné plány na Macu vlastníka:** v0.46.60 ověřuje výchozí i alternativní profil Claude Code samostatně a simulovaný test dvou přihlášených účtů prochází. Na skutečném Macu je ještě nutné doložit, že oba Claude účty mají vlastní profil Claude Code s čitelným `oauthAccount.accountUuid` a oba jsou vidět v Útratě.
+
+**P0 párování telefonu:** v0.46.60 odstraňuje viditelnou IP, kopírování adresy a ruční PIN z nastavení, Tailscale i webového rozcestníku; jediná uživatelská cesta je jednorázový QR. Ještě je třeba na skutečném iPhonu/Androidu ověřit sken z domácí Wi-Fi i Tailscale, expirovaný QR, druhý pokus a odpárování.
 
 **Aktuální prioritní plán: [Komplexní produkční audit a checklist 10/10](QUALITY-AUDIT-2026-10-13.md).** Stav ověřen 13. 10. 2026 proti GitHub a Vercelu. Nezastupitelné rozlišení: *hotovo v kódu* / *prošlo CI* / *otestováno na reálném zařízení* / *zveřejněno*. Nesmí se vypisovat staré Drafty jako aktuální P0 práce.
 
@@ -8,7 +14,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Aktuální release vlak 21. 10. 2026:** kandidát **0.46.55 Preview** (`v0.46.55`) dotahuje rozhodování v aplikaci: trvalé pravidlo podle návrhu Claude Code, tlačítka u agenta, okamžité zmizení karty po rozhodnutí jinde. Veřejné Preview je `v0.46.54`.
+**Release vlak 23. 10. 2026:** **v0.46.60 Preview je zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
 
@@ -16,8 +22,8 @@
 
 | Priorita | Výsledek | Důkaz a stav | Dokončení |
 |---|---|---|---|
-| **P0** | **UAT zveřejněného Preview** | Poslední veřejné [v0.46.43](https://github.com/martin-pok/agentree/releases/tag/v0.46.43) (prerelease, otisky příloh ověřené při zveřejnění); Stable Latest `v0.46.0`. **Zdokumentované fyzické UAT na zařízení neproběhlo.** [#208](https://github.com/martin-pok/agentree/issues/208) | Mac z veřejného DMG/ZIP: instalace, aktualizace v aplikaci, Finder/Gatekeeper, Google SSO/avatar, rollback, živý stav vzdálených agentů Claude Code; Chrome a Windows UAT; nalezená závada = nová verze |
-| **P0** | **Aktualizovat skutečný Chrome Web Store** | Veřejný Store **0.31.4** (rozbité úzké okno) vs. rozšíření v každém Preview (`agenteeq-extension-<verze>.zip`). Nahrání se od 0.46.27 spouští samo po zveřejnění vydání (`chrome-web-store.yml`), ale končí varováním: v repozitáři chybí `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN` (účet vydavatele, jen vlastník). [#172](https://github.com/martin-pok/agentree/issues/172) | Vlastník doplní tři secrets nebo jednou nahraje ZIP v Developer Console; pak obchod zveřejní aktuální verzi a ověří se live instalace a párování v Chromu |
+| **P0** | **UAT zveřejněného Preview** | Poslední veřejné [v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60), Stable Latest `v0.46.58`. Na Macu vlastníka je ověřená nainstalovaná verze, podpis, spuštění, účet a zachování uložených dat; Chrome rozšíření tam stále hlásí 0.46.58. Windows a úplné fyzické UAT nejsou hotové. [#208](https://github.com/martin-pok/agentree/issues/208) | Ověřit nový Chrome ZIP se skutečnými chaty, Windows beta, Finder/Gatekeeper, nové Google SSO, živé Claude profily, QR telefon a případný rollback; nalezená závada = nová verze |
+| **P0** | **Aktualizovat skutečný Chrome Web Store** | Veřejná karta 23. 10. 2026 ukazuje **0.46.55**; GitHub Preview obsahuje `agenteeq-extension-0.46.60.zip`, ale [workflow po vydání](https://github.com/martin-pok/agentree/actions/runs/39906389905) kvůli chybějícím `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` a `CWS_REFRESH_TOKEN` upload výslovně přeskočilo. Zelený workflow není publikace. [#172](https://github.com/martin-pok/agentree/issues/172) | Po fyzickém Chrome/Mac UAT vlastník doplní přístup pro upload nebo nahraje ověřený 0.46.60 ZIP a odpovídající listing v Developer Console; pak ověřit veřejnou verzi a párování |
 | **P0** | **Bezpečný nativní focus agenta a autentizace** | Zdrojový 403 bug již opraven. `POST /api/extension/focus-agent` validuje token, origin, viditelné ID a existující okno; testy prochází. [#174](https://github.com/martin-pok/agentree/issues/174) | Reálný párovaný Mac+Chrome, čekající/běžící agent kliknutím otevře původní session bez duplikace, offline/unpair/focus je přístupný |
 | **P0** | **Brand na každé platformě, bez trojzubce** | Staré tracked PNG/ICO/ICNS odstraněny, web/404 favicon a Windows ZIP QA hotovy; Mac Dock z 0.46.11 vizuálně ověřen; PWA/Apple PNG v Draftu **prokazatelně staré**, zdroj opravuje PR #231; Explorer a dashboard Vercel avatar neověřeny. [#213](https://github.com/martin-pok/agentree/issues/213) | Pixelová shoda zdrojů, malých ikon, promo i skutečně nainstalovaných UI a avataru |
 | **P0** | **Pravdivé live stavy a první Claude event** | V CI historický timing fail 2s, teď 8/8 na vydávaném SHA; falešně potvrzenou práci nelze tolerovat. [#180](https://github.com/martin-pok/agentree/issues/180) | Reálné Claude/Codex/Chrome statusy, restart/offline, provenance a nejistoty doložené live UAT |
@@ -156,7 +162,7 @@ balíčku a restart). Podrobnosti jsou v `CHANGELOG.md`.
 
 | # | Úkol | Akceptační kritéria |
 |---|---|---|
-| 1 | **Ověřit rozšíření na všech 8 webech** | Viz „Teď“ #4. Od 0.25.0 rozšíření posílá jen stav a počty zpráv, takže se ověřuje: rozpoznání služby, ID konverzace z adresy, počty zpráv, přechod pracuje → hotovo a pole pro vložení zadání |
+| 1 | **Ověřit rozšíření na všech podporovaných webech** | Na skutečných přihlášených stránkách ověřit rozpoznání služby, skutečný titulek, viditelný přepis, přechod pracuje → hotovo, SPA navigaci a pole pro vložení zadání. Selektory bez takového ověření zůstávají Beta. |
 | 2 | Ověřit Cursor, Copilot CLI, VS Code, Gemini CLI na reálných datech | Každý konektor `verified: true` + fixtury z reálných souborů (anonymizované) |
 | 4 | Hooky do skutečného `~/.claude/settings.json` | Ruční QA: žádost o povolení → upozornění < 1 s; odinstalace vrátí soubor do původního stavu (zatím ověřeno jen v dočasném HOME) |
 | 5 | ~~Upozornění s akcí~~ **hotovo** | Klik na upozornění otevře aplikaci na správné obrazovce (`desktop/Agenteeq.swift`, `userNotificationCenter(_:didReceive:)`) |

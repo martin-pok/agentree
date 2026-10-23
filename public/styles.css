@@ -83,6 +83,7 @@
   --motion-enter: 240ms;
   --motion-calm: 600ms;  /* klidné nadechnutí (závoj obnovy) */
   --motion-move: 280ms;
+  --motion-expand: 420ms; /* odhalení celé mřížky avatarů */
   --motion-value: 800ms;
   /* Nástup obrazovky: měřidla se usadí jako ručička, bez odskoku (ease-out quart). */
   --ease-settle: cubic-bezier(.25, 1, .5, 1);
@@ -196,6 +197,15 @@ code { font-family: var(--f-code); font-size: max(12px, .9em); }
 html[data-theme='dark'] .logo--mono { filter: invert(1); }
 /* Výjimka: bílý čip v živém pásu zůstává bílý i v noci, takže tam platí černá varianta. */
 html[data-theme='dark'] .pb-agent-logo .logo--mono { filter: none; }
+/* Primární tlačítko má opačnou polaritu než plocha stránky: ve Dni tmavé pozadí,
+   v Noci světlé. Logo nelze barvit podle data-theme samotného; černý SVG v tmavém
+   režimu na světlém CTA splýval s pozadím (ChatGPT, Copilot, Cursor, Grok...).
+   Platí pro všechny monochromatické značky a obě rodiny vzhledu (Obloha/Koncert). */
+.btn--primary .logo--mono { filter: invert(1); }
+html[data-theme='dark'] .btn--primary .logo--mono { filter: none; }
+/* Záložní vektorová značka musí stejně jako text použít barvu konkrétního CTA,
+   ne natvrdo bílou z glyph(..., {onDark:true}). */
+.btn--primary .glyph { color: var(--on-action) !important; }
 .g { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .gf { fill: currentColor; stroke: none; }
 .muted { color: var(--mute); }
@@ -1288,7 +1298,7 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .heat { position: relative; display: grid; gap: 4px; }
 .heat-row { display: grid; grid-template-columns: 24px repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center; }
 .heat-day { font-size: 12px; color: var(--mute); transition: color var(--motion-response) var(--ease); }
-.heat-cell { position: relative; display: block; aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--brass) calc(var(--v) * 100%), var(--line-2)); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease), border-radius var(--motion-response) var(--ease); }
+.heat-cell { position: relative; display: block; aspect-ratio: 1; border-radius: 3px; background: color-mix(in srgb, var(--brand) calc(var(--v) * 100%), var(--line-2)); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease), border-radius var(--motion-response) var(--ease); }
 .heat-hours span { font: 400 12px/1 var(--f-mono); color: var(--mute); transition: color var(--motion-response) var(--ease); }
 .heat-day.is-hot, .heat-hours span.is-hot { color: var(--ink); }
 .heat-tip { position: absolute; z-index: 4; left: 0; top: 0; min-width: 176px; padding: 10px 12px; border-radius: var(--r-sm); background: var(--ink-surface); color: var(--on-ink); box-shadow: var(--shadow-sm); display: grid; gap: 4px; pointer-events: none; font-size: 12px; animation: heat-tip-in .16s var(--ease) both; }
@@ -1320,22 +1330,9 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .pair-box img { border-radius: var(--r-md); }
 .pair-box h1 { margin: 0; font: 400 26px/1.2 var(--f-display); }
 .pair-box p { margin: 0; font-size: 14px; color: var(--ink-2); }
-.pair-box input { width: 100%; padding: 14px; border: 1px solid var(--line); border-radius: var(--r-full); background: var(--paper); color: var(--ink); font: 500 24px/1 var(--f-mono); letter-spacing: .18em; text-align: center; }
-.pair-box input.pair-adresa { font: 400 16px/1.4 var(--f-mono); letter-spacing: 0; }
 .pair-box .btn { width: 100%; justify-content: center; min-height: 48px; }
 .pair-box small { color: var(--mute); font-size: 12px; }
-/* Oddělovač mezi ukázkou a připojením ke skutečnému Macu – ne další odstavec, jen nadpisek. */
 .pair-navod { width: 100%; padding: 12px 16px; border-radius: var(--r-sm); background: var(--paper); text-align: left; }
-.pair-rucne { width: 100%; display: grid; gap: 12px; }
-.pair-rucne summary { min-height: 40px; display: flex; align-items: center; justify-content: center; border-radius: var(--r-full); color: var(--ink-2); font-size: 14px; cursor: pointer; }
-.pair-rucne summary::-webkit-details-marker { display: none; }
-.pair-rucne summary { list-style: none; gap: 8px; }
-.pair-rucne summary::after { content: ''; width: 7px; height: 7px; margin-top: -4px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform var(--motion-response) var(--ease); }
-.pair-rucne[open] summary::after { margin-top: 3px; transform: rotate(-135deg); }
-.pair-rucne[open] summary { color: var(--mute); }
-.pair-rucne > :not(summary) { margin: 0; }
-.pair-or { margin: -4px 0; font-size: 12px; color: var(--mute); }
-/* Druhá cesta pro toho, kdo aplikaci ještě nemá: bez ní je pole na adresu slepá ulička. */
 .pair-jinak { margin-top: -4px; }
 /* Jen textové odkazy – tlačítko (a.btn) si barvu nese samo, jinak by tu mělo černé písmo na černé. */
 .pair-box a:not(.btn) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
@@ -1400,7 +1397,7 @@ html.is-cloud body { background: var(--paper); }
   .cloud-who > span:not(.account-avatar) { display: none; }
 }
 
-/* Pozvánka pro telefon: QR vedle čísla, ne místo něj. Na úzkém okně jde QR nad text. */
+/* Pozvánka pro telefon: QR je jediný způsob párování. Na úzkém okně jde nad text. */
 .pair-invite { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; }
 /* QR je vždy tmavý na bílé – i v tmavém režimu. Čtečky v telefonech inverzní kód často nenajdou.
    Tichá zóna čtyř modulů je přímo v SVG (public/js/qr.js); bílý rámeček kolem ji jen rozšiřuje.
@@ -1409,14 +1406,8 @@ html.is-cloud body { background: var(--paper); }
 .pair-qr svg { display: block; width: 100%; height: auto; }
 .pair-invite-text { flex: 1 1 220px; min-width: 0; }
 .pair-invite-text > b { display: block; margin-bottom: 2px; }
-.pair-invite .pin-box { margin-top: 10px; }
-.pair-invite .pin-box b { font-size: 26px; }
 @media (max-width: 560px) { .pair-invite { flex-direction: column; align-items: stretch; } .pair-qr { width: 100%; max-width: 264px; margin-inline: auto; } }
-.pin-box .pin-url { font: 500 13px/1.4 var(--f-mono); color: var(--on-ink); overflow-wrap: anywhere; }
 
-.pin-box { display: grid; gap: 4px; margin-top: 12px; padding: 16px; border-radius: var(--r-md); background: var(--ink-surface); color: var(--on-ink); text-align: center; }
-.pin-box b { font: 500 32px/1 var(--f-mono); letter-spacing: .12em; }
-.pin-box span { color: rgba(255, 255, 255, .72); }
 
 .steps--compact { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
 .runtime-note { margin-top: 16px; }
@@ -2256,7 +2247,7 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
 .nt-akce { display: flex; gap: 8px; }
 .nt-dalsi { margin: 4px 0 16px; }
 .pill[data-tone="ok"] { background: var(--teal-tint); color: var(--teal-ink); }
-.pill--link { height: 32px; border: 0; cursor: pointer; background: var(--line-2); color: var(--ink); font: inherit; font-size: 13px; }
+.pill--link { height: 44px; border: 0; cursor: pointer; background: var(--line-2); color: var(--ink); font: inherit; font-size: 13px; }
 .pill--link:hover { background: var(--line); }
 .pill--link:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (max-width: 720px) {
@@ -2380,18 +2371,16 @@ textarea { height: auto; min-height: 88px; padding: 12px 14px; line-height: 1.55
 .avatar-mini { display: block; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; }
 .avatar-mini svg { width: 100%; height: 100%; display: block; }
 .avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 12px; margin-top: 8px; }
-/* Sbalený výběr: první řada celá, z druhé jen náznak pod přechodem v barvě značky a tlačítko
-   „Zobrazit všechny“. Okraj 6 px kolem mřížky drží kroužek vybraného obrázku uvnitř ořezu. */
-.avatar-vyber { position: relative; display: grid; justify-items: center; gap: 4px; }
-.avatar-okno { --avatar-radek: 60px; position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; max-height: calc(var(--avatar-radek) * 1.45 + 12px + 12px); overflow: hidden; transition: max-height var(--motion-move) var(--ease-settle); }
+/* Sbalený výběr ukazuje jednu celou řadu bez přechodu přes obličeje. Výška se při kliknutí
+   nastaví podle skutečného obsahu; po otevření se vrátí na auto kvůli změnám šířky okna. */
+.avatar-vyber { position: relative; display: grid; justify-items: center; gap: 12px; }
+.avatar-okno { --avatar-radek: 60px; position: relative; justify-self: stretch; margin: 2px -6px 0; padding: 0 6px; height: calc(var(--avatar-radek) + 12px); overflow: hidden; transition: height var(--motion-expand) var(--ease-settle); }
 .avatar-okno > .avatar-grid { grid-template-columns: repeat(auto-fill, var(--avatar-radek)); justify-content: space-between; padding: 6px 0; margin-top: 0; }
-.avatar-vyber[data-rozbaleno] .avatar-okno { max-height: 1200px; }
-.avatar-okno::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--avatar-radek) * .95); background: linear-gradient(180deg, color-mix(in srgb, var(--card) 0%, transparent) 0%, color-mix(in srgb, var(--brand) 10%, var(--card)) 62%, var(--card) 100%); pointer-events: none; transition: opacity var(--motion-move) var(--ease); }
-.avatar-vyber[data-rozbaleno] .avatar-okno::after { opacity: 0; }
+.avatar-vyber[data-rozbaleno] .avatar-okno { height: auto; }
 .avatar-vice { position: relative; z-index: 1; gap: 6px; }
 .avatar-vice .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform var(--motion-move) var(--ease-settle); }
 .avatar-vyber[data-rozbaleno] .avatar-vice .icon { transform: rotate(180deg); }
-@media (prefers-reduced-motion: reduce) { .avatar-okno, .avatar-okno::after, .avatar-vice .icon { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .avatar-okno, .avatar-vice .icon { transition: none; } }
 .avatar-pick { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; background: var(--ink-surface); color: var(--on-ink); overflow: hidden; display: grid; place-items: center; font: 400 18px/1 var(--f-display); transition: transform var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
 .avatar-pick svg { width: 100%; height: 100%; }
 :where(html:not(.is-scrolling)) .avatar-pick:hover { transform: translateY(-2px); }
@@ -2629,6 +2618,9 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .filtry-rada + .filtry-rada { border-top: 1px solid var(--line-2); }
 .filtry-popis { font: 400 14px/1.2 var(--f-body); letter-spacing: 0; color: var(--mute); }
 .filtry-rada > .btn, .filtry-rada > .search-field { grid-column: 3; justify-self: end; margin: 0; }
+.agent-select-toggle { min-width: 152px; box-shadow: 0 3px 10px -6px rgba(22, 32, 58, .4); }
+.agent-select-toggle[aria-pressed='true'] { background: var(--stage-2); border-color: var(--stage-2); color: var(--on-ink); }
+.agent-select-toggle[aria-pressed='true']:hover { background: var(--ink-surface); border-color: var(--ink-surface); }
 .filtry-rada > .search-field input { width: 240px; }
 .chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
 .chips--rada::-webkit-scrollbar { display: none; }
@@ -2649,6 +2641,8 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .row[data-session-drag] { -webkit-user-drag: element; }
 .selbar:not(:empty) { position: sticky; bottom: 24px; z-index: 20; display: flex; justify-content: center; margin-top: 16px; pointer-events: none; }
 .selbar-inner { pointer-events: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 8px 8px 20px; border-radius: var(--r-full); background: var(--ink-surface); color: var(--on-ink); box-shadow: var(--shadow-lg); animation: pop .25s var(--ease) both; font-size: 14px; }
+.selbar-note { color: color-mix(in srgb, var(--on-ink) 72%, transparent); font-size: 12px; }
+.selbar-count { min-width: 20px; margin-left: 2px; padding: 2px 6px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink-surface) 12%, transparent); font-size: 12px; font-variant-numeric: tabular-nums; text-align: center; }
 .btn--light { background: #fff; border-color: #fff; color: var(--ink-surface); }
 /* Světlý čip leží vždy na tmavém pruhu, takže po najetí musí zůstat světlý i v noci – jinak splyne text i plocha. */
 .btn--light:hover { border-color: #EFEDF3; background: #EFEDF3; color: var(--ink-surface); }

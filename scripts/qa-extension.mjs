@@ -48,7 +48,7 @@ async function spolecne(page, kde, errors) {
   assert.equal(popisky.filter((x) => /^otevřít( v)? agenteeq|^open( in)? agenteeq/.test(x)).length, 0, `${kde}: nejasné „Otevřít Agenteeq“`);
   // Hlavička se vejde: značka, stav, obnova a služby na jednom řádku.
   assert.ok(await page.evaluate(() => [...document.querySelectorAll('.top > *')].every((x) => x.getBoundingClientRect().right <= innerWidth + 0.5 && x.getBoundingClientRect().height <= 32.5)), `${kde}: hlavička přetéká`);
-  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 10);
+  assert.equal(await page.locator('#sites input[type=checkbox]').count(), 11);
   assert.equal(await page.locator('#sites-open').isVisible(), true, `${kde}: služby a port jsou dostupné vždy`);
   // Obrys zaostření nemění tvar: kapsle zůstane kapslí, kruh kruhem.
   await page.locator('#refresh-popup').focus();
@@ -91,6 +91,7 @@ try {
               // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují, jedna nedávná.
               if (m.type === 'agenteeq:prehled') return ['paired', 'outdated', 'novejsi'].includes(state) && fixture.paired ? window.prehledFixture : null;
               if (m.type === 'agenteeq:focus-agent') { fixture.focusedAgent = m.id; return { ok: true }; }
+              if (m.type === 'agenteeq:open-app') { fixture.openApp = true; return { ok: true }; }
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
                 fixture.paired = true; return { ok: true };
@@ -140,7 +141,9 @@ try {
           assert.equal((await cta.innerText()).trim().replace(/\u00a0/g, ' '), 'Otevřít konverzaci');
           // Aplikaci otevírá značka v hlavičce s jasným jménem pro čtečku.
           assert.equal(await page.locator('#brand').getAttribute('aria-label'), 'Otevřít aplikaci Agenteeq');
-          assert.equal(await page.locator('#brand').getAttribute('href'), 'http://127.0.0.1:4620/');
+          assert.equal(await page.locator('#brand').evaluate((x) => x.tagName), 'BUTTON', 'hlavička používá akci, ne navigační odkaz');
+          assert.equal(await page.locator('#brand').isEnabled(), true, 'spárovaný popup umí vyvolat nativní aplikaci');
+          assert.equal(await page.locator('#brand').getAttribute('href'), null, 'hlavička nemá cestu na technickou stránku serveru');
           assert.doesNotMatch(await text(), /Rozhodnout|Otevřít v Claude Code/, 'akce neslibuje, co Agenteeq neumí');
           assert.equal(await page.locator('#pager').isVisible(), false, 'jedna položka nemá stránkování');
           assert.equal(await page.locator('#souhrn').textContent(), 'Potřebuje tě 1 agent · 2 pracují');
@@ -174,7 +177,7 @@ try {
           await page.locator('#sites input[type=checkbox]').first().focus();
           await page.keyboard.press('Space');
           assert.ok(await page.evaluate(() => fixture.data.disabledSites.includes('chatgpt')));
-          assert.equal(await page.locator('#sites-count').textContent(), '9 z 10');
+          assert.equal(await page.locator('#sites-count').textContent(), '10 z 11');
           if (state === 'paired') {
             await page.locator('#port').fill('80');
             await page.locator('#port-form button').click();
@@ -304,6 +307,11 @@ try {
           assert.match(await text(), /nezjištěno/);
           // Chaty v kartách rozšíření ukazuje dál.
           assert.match(await page.locator('#konverzace').innerText(), /Plán marketingu na Q4/);
+        }
+        if (state === 'paired') {
+          await page.locator('#brand').click();
+          await page.waitForFunction(() => fixture.openApp === true && fixture.zavreno === true);
+          assert.equal(page.url(), `${base}/popup.html`, 'otevření aplikace nepřesměruje Chrome na localhost');
         }
         await page.mouse.move(0, 0);
         await spolecne(page, kde, errors);

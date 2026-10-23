@@ -96,14 +96,15 @@ test('okno upozornění: dlaždice s obrysem, bez hnědé, patička vždy vidět
   assert.match(css, /html\.notif-open \.pomocnik \{ opacity: 0; pointer-events: none; \}/);
 });
 
-test('profilový obrázek: sbalený výběr ukáže první řadu, přechod a tlačítko Zobrazit všechny', async () => {
+test('profilový obrázek: jedna celá řada bez gradientu a plynulý přechod podle obsahu', async () => {
   const js = await zdroj('public/js/views/settings.js');
   assert.match(js, /<div class="avatar-vyber"\$\{v\.avatarRozbaleno \? ' data-rozbaleno' : ''\}>/);
   assert.match(js, /data-avatar-vice aria-controls="avatar-grid" aria-expanded="\$\{Boolean\(v\.avatarRozbaleno\)\}"/);
   assert.match(js, /grid\?\.addEventListener\('focusin'/, 'Tab na schovaný obrázek výběr rozbalí');
   const css = await zdroj('public/styles.css');
-  assert.match(css, /\.avatar-okno \{ --avatar-radek: 60px; position: relative;[^}]*max-height: calc\(var\(--avatar-radek\) \* 1\.45/);
+  assert.match(css, /\.avatar-okno \{ --avatar-radek: 60px; position: relative;[^}]*height: calc\(var\(--avatar-radek\) \+ 12px\)/);
   assert.doesNotMatch(js, /ResizeObserver\(nastav\)/, 'žádný pozorovatel: držel by odpojené Nastavení v paměti');
-  assert.match(css, /\.avatar-okno::after \{[^}]*color-mix\(in srgb, var\(--brand\) 10%, var\(--card\)\)/, 'přechod v barvě značky');
-  assert.match(css, /\.avatar-vyber\[data-rozbaleno\] \.avatar-okno \{ max-height: 1200px; \}/);
+  assert.doesNotMatch(css, /\.avatar-okno::after/, 'gradient nesmí zakrývat obličeje');
+  assert.match(js, /okno\.style\.height = `\$\{rozbalit \? grid\.scrollHeight : vyskaNahledu\}px`/, 'cíl animace odpovídá skutečné výšce');
+  assert.match(css, /\.avatar-vyber\[data-rozbaleno\] \.avatar-okno \{ height: auto; \}/);
 });

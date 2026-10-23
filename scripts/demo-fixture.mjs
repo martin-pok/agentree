@@ -6,6 +6,8 @@ import { readFileSync } from 'node:fs';
 
 const VERZE = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
+// Modely jsou jen ukázkové ID, která aplikace zná (ceník odhadu u Clauda), ať karty agentů nemají
+// místo modelu pomlčku.
 // Neutrální identita: prohlídku pouští i lidé, kteří ji ukazují klientům, a snímky jdou na web.
 const UKAZKOVY_HOST = { name: 'MacBook Pro', user: 'ukazka', fullName: 'Ukázkový profil' };
 
@@ -53,9 +55,9 @@ export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } =
   await client.send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: VERZE, language: jazyk });
   const now = Date.now();
   const sessions = [
-    { connector: 'claude-code', localId: 'showcase-navigation', provider: 'anthropic', app: 'Claude Code', title: u('navigace klientského portálu'), running: true, cinnost: 'Upravuje hlavičku a mobilní menu' },
-    { connector: 'codex', localId: 'showcase-api', provider: 'openai', app: 'Codex', title: u('migrace API'), cinnost: 'Připravuje novou konfiguraci', pending: { at: now, kind: 'permission', text: text('Povolit zápis nové konfigurace?') } },
-    { connector: 'cursor', localId: 'showcase-form', provider: 'cursor', app: 'Cursor', title: u('testy formuláře'), running: true, cinnost: 'Spouští testy validace' },
+    { connector: 'claude-code', localId: 'showcase-navigation', provider: 'anthropic', app: 'Claude Code', model: 'claude-opus-5-5', title: u('navigace klientského portálu'), running: true, cinnost: 'Upravuje hlavičku a mobilní menu' },
+    { connector: 'codex', localId: 'showcase-api', provider: 'openai', app: 'Codex', model: 'gpt-5-codex', title: u('migrace API'), cinnost: 'Připravuje novou konfiguraci', pending: { at: now, kind: 'permission', text: text('Povolit zápis nové konfigurace?') } },
+    { connector: 'cursor', localId: 'showcase-form', provider: 'cursor', app: 'Cursor', model: 'claude-sonnet-5-5', title: u('testy formuláře'), running: true, cinnost: 'Spouští testy validace' },
   ];
   const ids = [];
   for (const [i, { cinnost: coDela, ...fixture }] of sessions.entries()) {
@@ -77,11 +79,11 @@ export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } =
   const DEN = 86400000;
   const starsi = [
     { projekt: u('E-shop Lumen'), popis: popis('Smyšlený projekt: nový košík a platby.', 'Nový košík a platby.'), konverzace: [
-      { connector: 'claude-code', localId: 'showcase-eshop-cart', provider: 'anthropic', app: 'Claude Code', title: u('košík e-shopu'), pred: 2 * 3600000, dny: [0, 1, 2, 4, 5, 7, 9, 12] },
-      { connector: 'codex', localId: 'showcase-eshop-pay', provider: 'openai', app: 'Codex', title: u('platby a faktury'), pred: DEN, dny: [1, 3, 6, 8, 11] },
+      { connector: 'claude-code', localId: 'showcase-eshop-cart', provider: 'anthropic', app: 'Claude Code', model: 'claude-sonnet-5-5', title: u('košík e-shopu'), pred: 2 * 3600000, dny: [0, 1, 2, 4, 5, 7, 9, 12] },
+      { connector: 'codex', localId: 'showcase-eshop-pay', provider: 'openai', app: 'Codex', model: 'gpt-5-codex', title: u('platby a faktury'), pred: DEN, dny: [1, 3, 6, 8, 11] },
     ] },
     { projekt: u('Interní nástroje'), popis: popis('Smyšlený projekt: přehledy pro tým.', 'Přehledy pro tým.'), konverzace: [
-      { connector: 'cursor', localId: 'showcase-intranet', provider: 'cursor', app: 'Cursor', title: u('interní dashboard'), pred: 3 * DEN, dny: [3, 4, 6, 10, 13, 16, 20] },
+      { connector: 'cursor', localId: 'showcase-intranet', provider: 'cursor', app: 'Cursor', model: 'claude-sonnet-5-5', title: u('interní dashboard'), pred: 3 * DEN, dny: [3, 4, 6, 10, 13, 16, 20] },
     ] },
   ];
   for (const { projekt, popis, konverzace } of starsi) {
@@ -91,7 +93,7 @@ export async function pripravUkazku(env = {}, { oznacit = true, jazyk = 'cs' } =
       for (const [j, den] of k.dny.entries()) addTokens(s, now - k.pred - den * DEN, { input: 9000 + ((j * 7919) % 23) * 1500, output: 1800 + i * 600 });
       pushEntry(s, { at: now - k.pred - 60000, role: 'user', text: text('Toto jsou smyšlená data pro prohlídku. Pokračuj tam, kde jsme skončili.') });
       pushEntry(s, { at: now - k.pred, role: 'assistant', text: text('Ukázková odpověď: hotovo, změny jsou připravené ke kontrole.') });
-      Object.assign(s, { connector: k.connector, provider: k.provider, app: k.app, title: k.title, startedAt: now - k.pred - (k.dny.at(-1) + 1) * DEN, activity: cinnost('Hotovo, změny čekají na kontrolu'), turns: 4 + i });
+      Object.assign(s, { connector: k.connector, provider: k.provider, app: k.app, model: k.model, title: k.title, startedAt: now - k.pred - (k.dny.at(-1) + 1) * DEN, activity: cinnost('Hotovo, změny čekají na kontrolu'), turns: 4 + i });
       touch(s, now - k.pred);
       demo.app.store.commit(s);
       pids.push(s.id);

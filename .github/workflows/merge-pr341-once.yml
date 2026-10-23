@@ -1,0 +1,69 @@
+# One-shot, owner-authorized release-candidate merge gate for PR #341 only.
+# Never merges another PR, another head SHA, or a failing/incomplete CI run.
+name: One-time merge PR 341 for 0.46.57
+
+on:
+  workflow_run:
+    workflows: ['Testy']
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  merge-exact-candidate:
+    if: >-
+      ${{ github.event.workflow_run.event == 'pull_request'
+      && github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_sha == 'ab07e9e5623c08b0dc7c2f81ce506755479744ce'
+      && github.event.workflow_run.head_branch == 'release/0.46.57' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      EXACT_SHA: ab07e9e5623c08b0dc7c2f81ce506755479744ce
+    steps:
+      - name: Verify separate CodeQL success on exactly the PR commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          COUNT=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/codeql.yml/runs?head_sha=$EXACT_SHA&event=pull_request&per_page=30" \
+            --jq '[.workflow_runs[] | select(.head_sha == "ab07e9e5623c08b0dc7c2f81ce506755479744ce" and .status == "completed" and .conclusion == "success")] | length')
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::error::Exact PR head CodeQL has not passed; never merge."
+            exit 1
+          fi
+      - name: Verify PR 341 still points to the same reviewed head and is mergeable
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERIFIED=
+          for attempt in $(seq 1 24); do
+            STATE=$(gh api "repos/$GITHUB_REPOSITORY/pulls/341" --jq '
+              .number == 341 and .state == "open" and .draft == false
+              and .head.sha == "ab07e9e5623c08b0dc7c2f81ce506755479744ce"
+              and .head.ref == "release/0.46.57"
+              and .base.ref == "main"
+              and .mergeable == true')
+            if [ "$STATE" = true ]; then VERIFIED=1; break; fi
+            sleep 10
+          done
+          test "$VERIFIED" = 1 || {
+            echo "::error::PR changed, closed, or cannot be cleanly merged."
+            exit 1
+          }
+      - name: Merge verified PR only, authorizing existing Preview pipeline
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/pulls/341/merge" \
+            -f "sha=$EXACT_SHA" \
+            -f merge_method=squash \
+            -f 'commit_title=release: authorize verified v0.46.57 Preview once' \
+            --jq '.merged' | grep -Fx true
+          echo "### PR #341 merged after exact successful Testy and CodeQL" >> "$GITHUB_STEP_SUMMARY"
+          echo "The main push starts its own fresh CI; the separately gated Preview workflow owns the build, audit and publication." >> "$GITHUB_STEP_SUMMARY"

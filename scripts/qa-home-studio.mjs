@@ -308,7 +308,7 @@ try {
       const titulek = await page.locator('.page-title').boundingBox();
       const fab = await page.locator('.pm-fab').boundingBox();
       assert.ok(fab.y > titulek.y + titulek.height, 'tlačítko nekoliduje s nadpisem');
-      await page.locator('[data-jump="set-ucet"]').click();
+      await page.locator('[data-jump="set-pomocnik"]').click();
       await page.locator('[data-setting="pomocnikZobrazit"]').click();
       await page.waitForFunction(() => document.querySelector('.pomocnik')?.hidden === true);
       await page.locator('[data-setting="pomocnikZobrazit"]').click();

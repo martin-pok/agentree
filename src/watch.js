@@ -90,6 +90,16 @@ export function watchTree(dir, onChange, { retryMs = 5000, hlidatVznik = false, 
       return;
     }
     pokusy++;
+    // Some Node 24/Linux combinations return a live recursive FSWatcher for a
+    // directory that does not exist yet. It never reports that the root was
+    // created, so treating it as active loses the first agent transcript.
+    // Keep the same guard/retry path used when fs.watch throws ENOENT.
+    if (!fs.existsSync(dir)) {
+      driveChybelKoren = true;
+      if (hlidej() && znovu && fs.existsSync(dir)) return arm(false);
+      schedule();
+      return;
+    }
     try {
       watcher = watch(dir, { recursive: true }, (_event, name) => {
         onChange(name ? path.join(dir, name.toString()) : null);

@@ -22,6 +22,7 @@ test('objev: cesta napojení podle toho, co o nástroji Agenteeq opravdu umí', 
   assert.equal(cestaNapojeni(katalog('claude-desktop')), 'zaznamy');
   assert.equal(cestaNapojeni(katalog('cursor')), 'zaznamy');
   assert.equal(cestaNapojeni(katalog('pwa-chatgpt')), 'rozsireni');
+  assert.equal(cestaNapojeni(katalog('pwa-google-ai-studio')), 'rozsireni');
   assert.equal(cestaNapojeni(katalog('warp')), 'beh');
 });
 

@@ -250,8 +250,9 @@ html { scrollbar-gutter: stable; }
 *::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--ink) 34%, transparent); background-clip: padding-box; }
 
 /* Značková fialová (tlačítko pomocníka) pro jemnou záři u ovládacích prvků. */
-:root { --brand: #6260d8; --on-brand: #ffffff; }
+:root { --brand: #6260d8; --on-brand: #ffffff; --brand-solid: #6260d8; }
 html[data-theme='dark'] { --brand: #8c88f4; --on-brand: #16141d; }
+.btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
 
 /* Bublina zprava: vysvětlí, proč volba teď nic neukáže (prázdný archiv). Skleněná plocha s jemnou
    značkovou září, vyjíždí o 4 px. Rodičovská volba ji nesmí oříznout, proto .seg--tips. */

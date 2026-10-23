@@ -374,8 +374,12 @@ async function zkontrolujListuPriPosunu(browser, engine) {
         await p.waitForTimeout(500);
         const dolu = await stav();
         assert.equal(dolu.lista, 'skryta', `${kde}: posun dolů lištu neschoval`);
-        assert.ok(dolu.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${dolu.bottom} px)`);
-        assert.equal(dolu.inert, true, `${kde}: schovaná lišta jde do Tabu`);
+        // WebKit může při vytíženém runneru dokončit compositing déle po změně atributu.
+        // Čekej na skutečnou polohu mimo viewport, ne na pevný počet milisekund.
+        await p.waitForFunction(() => document.querySelector('.topbar').getBoundingClientRect().bottom <= 0, null, { timeout: 1500 });
+        const skryta = await stav();
+        assert.ok(skryta.bottom <= 0, `${kde}: schovaná lišta zůstala v okně (${skryta.bottom} px)`);
+        assert.equal(skryta.inert, true, `${kde}: schovaná lišta jde do Tabu`);
         for (let i = 0; i < 2; i++) { await posun(-60); await p.waitForTimeout(60); }
         await p.waitForTimeout(500);
         // On a busy CI runner WebKit can still be mid-transform after the timer.
@@ -526,6 +530,74 @@ async function zkontrolujVyskyRadku(browser, engine) {
   results.push({ engine, check: 'ovládací prvky v jednom řádku mají stejnou výšku' });
 }
 
+// Regresní kontrola: primární CTA má v Noci světlé pozadí, takže výchozí
+// automatické invertování monochromatických log vytvářelo bílou na bílé.
+// Měříme skutečné vykreslené CSS pro všechny čtyři vzhledy, monochromatická
+// loga různých poskytovatelů, běžné tlačítko i vektorový fallback.
+async function zkontrolujKontrastLogVCTA(page, engine) {
+  const result = await page.evaluate(async () => {
+    const { openButtons } = await import('/js/ui.js');
+    const root = document.documentElement;
+    const original = { theme: root.dataset.theme, look: root.dataset.look };
+    const host = document.createElement('div');
+    host.style.cssText = 'position:absolute;top:-2000px;left:0;display:flex;gap:8px';
+    document.body.append(host);
+    const issues = [];
+    const colors = (input) => {
+      const values = String(input).match(/[\d.]+/g)?.slice(0, 3).map(Number);
+      return values?.length === 3 ? values : null;
+    };
+    const luminance = (rgb) => {
+      const linear = rgb.map((n) => {
+        const c = n / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      });
+      return linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722;
+    };
+    const contrast = (a, b) => {
+      const x = luminance(a), y = luminance(b);
+      return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
+    try {
+      const mono = ['openai', 'githubcopilot', 'grok', 'cursor', 'ollama', 'lmstudio', 'windsurf', 'zed', 'goose', 'opencode', 'aistudio', 'notebooklm', 'trae', 'v0'];
+      for (const look of ['obloha', 'koncert']) for (const theme of ['light', 'dark']) {
+        root.dataset.look = look;
+        root.dataset.theme = theme;
+        for (const key of mono) for (const primary of [true, false]) {
+          const session = { id: 'qa-logo-' + key, logo: key, open: [{ id: 'app', label: 'Otevřít konverzaci' }] };
+          host.innerHTML = openButtons(session, { small: true, primary });
+          const button = host.querySelector('button');
+          const img = button?.querySelector('img.logo--mono');
+          if (!img) { issues.push(look + '/' + theme + '/' + key + ': logo missing'); continue; }
+          const filter = getComputedStyle(img).filter;
+          const expected = (primary ? theme === 'light' : theme === 'dark') ? 'invert(1)' : 'none';
+          if (filter !== expected) issues.push(look + '/' + theme + '/' + key + (primary ? '/primary' : '/secondary') + ': filter=' + filter + ', expected ' + expected);
+          if (primary) {
+            const bg = colors(getComputedStyle(button).backgroundColor);
+            if (!bg) issues.push(look + '/' + theme + '/' + key + ': no solid CTA background');
+            else {
+              const logoColor = filter === 'invert(1)' ? [255, 255, 255] : [0, 0, 0];
+              const ratio = contrast(logoColor, bg);
+              if (ratio < 4.5) issues.push(look + '/' + theme + '/' + key + ': logo contrast ' + ratio.toFixed(2) + ':1');
+            }
+          }
+        }
+        const session = { id: 'qa-fallback', provider: 'other', open: [{ id: 'app', label: 'Otevřít konverzaci' }] };
+        host.innerHTML = openButtons(session, { primary: true });
+        const fallback = host.querySelector('.btn--primary .glyph');
+        const buttonColor = getComputedStyle(host.querySelector('button')).color;
+        if (!fallback || getComputedStyle(fallback).color !== buttonColor) issues.push(look + '/' + theme + ': fallback glyph differs from CTA text');
+      }
+    } finally {
+      host.remove();
+      if (original.theme === undefined) delete root.dataset.theme; else root.dataset.theme = original.theme;
+      if (original.look === undefined) delete root.dataset.look; else root.dataset.look = original.look;
+    }
+    return issues;
+  });
+  assert.deepEqual(result, [], `${engine}: kontrast poskytovatelských log na tlačítkách\n${result.join('\n')}`);
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   let accountSnapshot = null;
@@ -591,6 +663,7 @@ for (const engine of engines) {
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
     await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);
+    await zkontrolujKontrastLogVCTA(page, engine);
     const malePismo = await page.evaluate(() => {
       const nodes = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -914,7 +987,7 @@ for (const engine of engines) {
         assert.ok(choices.length >= 25, `${engine} zachovává iniciály a kolekci avatarů`);
         assert.equal(new Set(choices.map((choice) => choice.value)).size, choices.length, `${engine} každá volba má vlastní stabilní hodnotu`);
         assert.ok(choices.every((choice) => choice.name), `${engine} každá volba má přístupný název`);
-        await page.click('.set-nav [data-jump="set-ucet"]'); // vzhled je ve skupině Účet a vzhled
+        await page.click('.set-nav [data-jump="set-vzhled"]');
         // Půlnoc = tmavá podoba Oblohy. Vzhled se překreslí hned, uložení na server ho jen potvrdí.
         // Měří se v rozhraní samotném – od klepnutí do změny atributu na <html> – ne čas
         // Playwrightu na klik a čekání, který na pomalém runneru přidá stovky ms.
@@ -967,7 +1040,7 @@ for (const engine of engines) {
         await page.screenshot({ path: `dist/qa/${engine}-dark-automatic-plans.png` });
         await page.goto(`${server.url}/#/nastaveni`);
         await page.emulateMedia({ colorScheme: 'dark' });
-        await page.click('.set-nav [data-jump="set-ucet"]');
+        await page.click('.set-nav [data-jump="set-vzhled"]');
         // Střídání podle systému: pár Úsvit/Půlnoc sleduje systém, vypnutí nechá to, co je vidět.
         await page.locator('[data-setting="appearanceSystem"]').click();
         await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark' && document.documentElement.dataset.appearance === 'system');
@@ -1122,6 +1195,38 @@ for (const engine of engines) {
       await page.evaluate(() => { sessionStorage.setItem('agenteeq.jump', 'extension'); window.dispatchEvent(new Event('agenteeq-jump')); });
       await page.waitForFunction(() => !document.querySelector('[data-region="extension"]').closest('.set-group').hidden, null, { timeout: 3000 });
     }
+    // Kontrola aktualizace se může vrátit se stejným výsledkem; fill() potom zachová
+    // původní DOM uzel. Tlačítko musí být po každém úspěchu i po chybě znovu aktivní.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${server.url}/#/nastaveni`);
+    await page.locator('.settings2').waitFor();
+    await page.locator('.set-nav [data-jump="set-aplikace"]').click();
+    // Linuxový testovací server nemá instalační balíček a kontrolu vypíná;
+    // samotné ovládání zkoušíme ve stavu, který dostane podporovaný Mac.
+    await page.evaluate(async () => {
+      const { state, emit } = await import('/js/state.js');
+      state.updates = { status: 'current', currentVersion: '0.46.58', latestVersion: '', checkedAt: Date.now() };
+      emit('updates');
+    });
+    const checkButton = page.locator('[data-action="check-updates"]');
+    await checkButton.waitFor();
+    await page.route('**/api/updates/check', (route) => route.fulfill({
+      status: 200, contentType: 'application/json',
+      body: JSON.stringify({ updates: { status: 'current', currentVersion: '0.46.58', latestVersion: '', checkedAt: Date.now() } }),
+    }));
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/updates/check')), checkButton.click()]);
+      await page.waitForFunction(() => !document.querySelector('[data-action="check-updates"]')?.disabled);
+      assert.equal(await checkButton.isEnabled(), true, `${engine}: opakovaná kontrola aktualizací zůstala zablokovaná`);
+    }
+    await page.unroute('**/api/updates/check');
+    // Vadná odpověď procvičí chybovou cestu bez 503 v globální konzoli, kterou QA
+    // právem považuje za nečekanou chybu stránky.
+    await page.route('**/api/updates/check', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
+    await Promise.all([page.waitForResponse((response) => response.url().endsWith('/api/updates/check')), checkButton.click()]);
+    await page.waitForFunction(() => !document.querySelector('[data-action="check-updates"]')?.disabled);
+    assert.equal(await checkButton.isEnabled(), true, `${engine}: chyba kontroly aktualizací zablokovala další pokus`);
+    await page.unroute('**/api/updates/check');
     // Na širokém desktopu má svislé podmenu zůstat ve výšce, kde se otevřelo.
     // Původní sticky top: 24 px ho při dlouhé skupině vytáhl až k hornímu okraji
     // okna, zatímco hlavní postranní panel stál na místě.
@@ -1370,7 +1475,7 @@ for (const engine of engines) {
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

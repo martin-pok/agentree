@@ -380,9 +380,9 @@ test('simulace: všechny podporované AI nástroje najednou', async (t) => {
       assert.equal(s.provider, p.provider);
       // Webové chaty tokeny nedávají (src/connectors/web.js nikde nevolá addTokens) – nesmí se objevit vymyšlené číslo.
       assert.deepEqual(s.tokens, { input: 0, output: 0, cacheWrite: 0, cacheRead: 0 }, `${p.site}: tokeny musí zůstat na nule, ne vymyšlené`);
-      // Text zpráv ani název konverzace se od 0.25.0 neukládá, i když ho starší rozšíření pošle.
-      assert.ok(!(s.title || '').includes('Test'), `${p.site}: název z webu se neuložil`);
-      assert.ok(!JSON.stringify(s.transcript || []).includes('Ahoj'), `${p.site}: text zprávy se neuložil`);
+      assert.equal(s.title, `Test ${p.site}`, `${p.site}: skutečný název z karty se ukáže`);
+      const detail = await a.get(`/api/sessions/${encodeURIComponent(s.id)}`);
+      assert.equal(detail.body.transcript?.[0]?.text, `Ahoj, potřebuji pomoct s ${p.site}`, `${p.site}: místní detail nese přepis`);
     }
 
     const chatgptSession = stav.sessions.find((x) => x.id === 'web:chatgpt:c-chatgpt-1');

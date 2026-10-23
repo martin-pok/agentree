@@ -54,8 +54,8 @@ test('Chrome Web Store: podklady mají přesně rozměry, které obchod přijme'
 
 test('Chrome Web Store: zásady ochrany soukromí jsou na webu v obou jazycích a popisují rozšíření pravdivě', async () => {
   for (const [soubor, pravidla] of [
-    ['site/soukromi/index.html', [/127\.0\.0\.1/, /text tvých zpráv/i, /Limited Use/, /Frankfurt/, /Smazat účet/]],
-    ['site/en/privacy/index.html', [/127\.0\.0\.1/, /text of your messages/i, /Limited Use/, /Frankfurt/, /Delete account/]],
+    ['site/soukromi/index.html', [/127\.0\.0\.1/, /viditelných zpráv/i, /nikdy je neposílá do cloudu/i, /Limited Use/, /Frankfurt/, /Smazat účet/]],
+    ['site/en/privacy/index.html', [/127\.0\.0\.1/, /visible messages/i, /never to Agenteeq cloud sync/i, /Limited Use/, /Frankfurt/, /Delete account/]],
   ]) {
     const html = await cti(soubor);
     for (const p of pravidla) assert.match(html, p, `${soubor}: ${p}`);

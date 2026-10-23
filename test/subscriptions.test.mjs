@@ -310,6 +310,50 @@ test('druhý izolovaný profil Claude je aktivní i při odhlášení výchozíh
   } finally { await t.close(); }
 });
 
+test('dva současně přihlášené profily Claude se zobrazí jako dva oddělené plány', async () => {
+  const src = await tempDir('agenteeq-src-two-claude-');
+  const alt = await tempDir('agenteeq-alt-two-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {
+    accountUuid: '11111111-1111-4111-8111-111111111111', organizationType: 'claude_pro',
+  } }));
+  await fs.writeFile(path.join(alt, '.claude.json'), JSON.stringify({ oauthAccount: {
+    accountUuid: '22222222-2222-4222-8222-222222222222', organizationType: 'claude_max',
+    userRateLimitTier: 'default_claude_max_5x',
+  } }));
+  const authDirs = [];
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src, AGENTEEQ_CLAUDE_CONFIG_DIR: alt }, {
+    napojeniRun: async (_bin, _args, options) => {
+      authDirs.push(options.env.CLAUDE_CONFIG_DIR || 'default');
+      assert.equal(options.env.HOME, src);
+      assert.ok(options.env.PATH.split(path.delimiter).includes('/usr/local/bin'));
+      return { ok: true, stdout: JSON.stringify({ loggedIn: true }), stderr: '' };
+    },
+  });
+  try {
+    await t.app.refreshSubscriptions();
+    const sp = t.app.spendPayload();
+    assert.deepEqual(sp.subscriptions.filter((p) => p.service === 'claude').map((p) => p.plan).sort(), ['max5x', 'pro']);
+    assert.equal(sp.providerAccounts.filter((x) => x.provider === 'anthropic' && x.active).length, 2);
+    assert.ok(authDirs.includes('default'));
+    assert.ok(authDirs.includes(alt));
+    assert.doesNotMatch(JSON.stringify(sp), /11111111|22222222/);
+  } finally { await t.close(); }
+});
+
+test('neúspěšný Claude CLI proces nepotvrdí přihlášení ani plán', async () => {
+  const src = await tempDir('agenteeq-failed-claude-');
+  await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {
+    accountUuid: '11111111-1111-4111-8111-111111111111', organizationType: 'claude_pro',
+  } }));
+  const t = await startTestServer({ AGENTEEQ_SOURCE_HOME: src }, {
+    napojeniRun: async () => ({ ok: false, stdout: JSON.stringify({ loggedIn: true }), stderr: 'failed' }),
+  });
+  try {
+    await t.app.refreshSubscriptions();
+    assert.equal(t.app.spendPayload().subscriptions.some((p) => p.service === 'claude'), false);
+  } finally { await t.close(); }
+});
+
 test('Claude bez ověřeného UUID se nevydává za druhou aktivní licenci', async () => {
   const src = await tempDir('agenteeq-unknown-claude-');
   await fs.writeFile(path.join(src, '.claude.json'), JSON.stringify({ oauthAccount: {

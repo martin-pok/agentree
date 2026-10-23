@@ -4,7 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.55** — Preview kandidát: rozhodování v Agenteeq dotažené – „Povolit a příště se neptat“, tlačítka přímo u agenta a karta, která zmizí, jakmile se rozhodne jinde. **Poslední veřejné Preview je [0.46.54](https://github.com/martin-pok/agentree/releases/tag/v0.46.54)**; Stable Latest zůstává `v0.46.0`. Historické tagy se nepřepisují; překonané nezveřejněné Drafty se mažou samy.
+> **0.46.60** — [veřejné Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) zveřejněné 23. 10. 2026 z přesného commitu `90229c0` po 8/8 CI a auditu všech osmi příloh. Přináší opravu jazyka při aktualizaci, skutečné názvy a místní přepisy webových konverzací. Na Macu vlastníka běží 0.46.60 a zachovalo se uložené nastavení, projekty, upozornění i párování. Fyzické UAT Windows, aktualizace rozšíření v Chromu a celé ověření nových funkcí zůstávají otevřené. [v0.46.58](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je nadále Stable Latest.
+>
+> **Starší záznamy níže popisují stav v době příslušného vydání, nikoli aktuální release.**
 >
 > **0.46.14** — **historický neměnný kandidát s tagem na `43fbc39`; release build běží.** Slučuje opravu zaseknutých aktualizací Macu a bezpečného ukončení ([#262](https://github.com/martin-pok/agentree/pull/262)), editor vzhledu na detailu agenta ([#261](https://github.com/martin-pok/agentree/pull/261)) a minimalistickou ruční obnovu ([#260](https://github.com/martin-pok/agentree/pull/260)). Nativní QA aktualizací na macOS runneru u #262 prošlo **17/17** včetně zaseknuté služby; **instalace na uživatelově Macu zatím není ověřená**. Teprve přesné zelené CI na finálním `main`, neměnný tag, Draft s nezávislým SHA-256 auditem a reálný Mac UAT umožní označit vydání za připravené k publikaci. Starší 0.46.13 je soukromý Draft a veřejné Preview je stále 0.46.12.
 >

@@ -8,8 +8,17 @@
   const znovu = document.getElementById('nacitani-znovu');
   const prubeh = document.getElementById('nacitani-progress');
   const ukoncit = document.getElementById('nacitani-ukoncit');
+  const setLanguage = (language) => {
+    const english = language === 'en';
+    document.documentElement.lang = english ? 'en' : 'cs';
+    znovu.textContent = english ? 'Try again' : 'Zkusit znovu';
+    ukoncit.textContent = english ? 'Quit Agenteeq' : 'Ukončit Agenteeq';
+    prubeh.setAttribute('aria-label', english ? 'Installing Agenteeq update' : 'Instalace aktualizace Agenteeq');
+  };
+  setLanguage(window.agenteeqLoaderLanguage);
   window.agenteeqNacitani = (stav) => {
     if (!stav || typeof stav !== 'object') return;
+    if (typeof stav.language === 'string') setLanguage(stav.language);
     if (typeof stav.text === 'string' && stav.text) text.textContent = stav.text;
     znovu.hidden = stav.znovu !== true;
     prubeh.hidden = stav.progress !== true;

@@ -386,7 +386,7 @@ function vykresliPrehled(r, data, { chybaObnovy = '' } = {}) {
       <button class="btn btn--sm" type="button" data-obnovit>${tr('Obnovit')}</button></div>
     ${zapnuto && !bezZarizeni ? pruhStari(data, now, chybaObnovy) : chybaObnovy ? `<div class="cloud-stale" role="status"><strong>${tr('Obnova se nepovedla.')}</strong> ${esc(chybaObnovy)}</div>` : ''}
     ${bezZarizeni ? `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>${tr('Zatím sem žádný počítač nic neposlal')}</h2>
-        <p>${tr('Žádný počítač se k účtu zatím nepřipojil. Důvod ukáže Agenteeq na Macu v Nastavení → Účet a vzhled.')}</p></section>`
+        <p>${tr('Žádný počítač se k účtu zatím nepřipojil. Důvod ukáže Agenteeq na Macu v Nastavení → Účet a licence.')}</p></section>`
     : zapnuto ? `<div class="cloud-grid">
         ${kartaAgentu(souhrnAgentu(data.agenti, now), now)}
         ${kartaTokenu(tokenyZaDny(data.tokeny, now))}
@@ -395,7 +395,7 @@ function vykresliPrehled(r, data, { chybaObnovy = '' } = {}) {
         ${kartaZarizeni(data.zarizeni, now)}
       </div>`
       : `<section class="card cloud-card cloud-empty" data-enter style="--i:1"><h2>${tr('Synchronizace je vypnutá')}</h2>
-        <p>${tr('Souhrny sem posílá Agenteeq na Macu, až mu to dovolíš:')} <b>${tr('Nastavení → Účet a vzhled → Synchronizovat souhrny do účtu')}</b>${tr('. Dokud je vypnutá, v účtu nic není.')}</p></section>`}
+        <p>${tr('Souhrny sem posílá Agenteeq na Macu, až mu to dovolíš:')} <b>${tr('Nastavení → Účet a licence → Synchronizovat souhrny do účtu')}</b>${tr('. Dokud je vypnutá, v účtu nic není.')}</p></section>`}
     <p class="account-privacy cloud-foot"><span>${tr('V účtu jsou jen čísla, která poslal tvůj Mac{0}. Konverzace, kód ani názvy složek ne.', zapnuto ? ` – ${data.zarizeni.length} ${plural(data.zarizeni.length, 'zařízení', 'zařízení', 'zařízení')}` : '')}</span></p>
   </main>`;
   document.querySelector('[data-odhlasit]').addEventListener('click', odhlasit);
