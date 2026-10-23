@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { run, toTs, clip, MIN } from '../util.js';
 import { touch } from '../model.js';
+import { ui } from '../texty.js';
 
 const TASK_ID = /^[A-Za-z0-9_][\w.-]{0,199}$/;
 const ACTIVE = new Set(['pending', 'queued', 'running', 'in_progress', 'processing', 'working', 'started']);
@@ -44,16 +45,16 @@ export function createCodexCloudConnector({ store, config, bin = () => null,
     if (cursor) args.push('--cursor', cursor);
     const result = await runImpl(program, args, { timeout: 10000,
       env: { ...process.env, HOME: config.sourceHome, CODEX_HOME: home() } });
-    if (!result?.ok) throw new Error('Codex Cloud není dostupný nebo není přihlášený.');
+    if (!result?.ok) throw new Error(ui('Codex Cloud není dostupný nebo není přihlášený.'));
     let data;
-    try { data = JSON.parse(result.stdout); } catch { throw new Error('Codex Cloud vrátil nečitelný seznam úloh.'); }
-    if (!Array.isArray(data?.tasks)) throw new Error('Codex Cloud nevrátil seznam úloh.');
+    try { data = JSON.parse(result.stdout); } catch { throw new Error(ui('Codex Cloud vrátil nečitelný seznam úloh.')); }
+    if (!Array.isArray(data?.tasks)) throw new Error(ui('Codex Cloud nevrátil seznam úloh.'));
     return data;
   }
 
   async function refresh() {
     const program = bin();
-    if (!program) { lastError = 'Spustitelný Codex není dostupný.'; return; }
+    if (!program) { lastError = ui('Spustitelný Codex není dostupný.'); return; }
     const now = Date.now();
     const tasks = [];
     let cursor = null;
@@ -77,16 +78,16 @@ export function createCodexCloudConnector({ store, config, bin = () => null,
       seen.add(task.id);
       s.url = task.url;
       if (task.title) s.title = task.title;
-      else if (!s.title) s.title = 'Cloudová úloha Codexu';
+      else if (!s.title) s.title = ui('Cloudová úloha Codexu');
       s.startedAt ||= Math.min(task.createdAt || task.updatedAt || now, now);
       s.lastAt = Math.max(s.lastAt, Math.min(task.updatedAt || 0, now));
       const running = ACTIVE.has(task.status);
       s.running = running;
       s.runningAt = running ? now : 0;
       s.staleMs = 45 * 1000;
-      s.activity = running ? 'Cloudová úloha běží · podle Codexu' : '';
+      s.activity = running ? ui('Cloudová úloha běží · podle Codexu') : '';
       s.failure = FAILED.has(task.status)
-        ? { at: task.updatedAt || now, text: 'Codex Cloud hlásí selhání úlohy.' } : null;
+        ? { at: task.updatedAt || now, text: ui('Codex Cloud hlásí selhání úlohy.') } : null;
       if (!running && !s.failure && task.summary) s.turns = Math.max(s.turns, 1);
       touch(s, task.updatedAt || task.createdAt || now);
       store.commit(s, now);
@@ -104,15 +105,15 @@ export function createCodexCloudConnector({ store, config, bin = () => null,
   return {
     id: 'codex-cloud', name: 'Codex Cloud', provider: 'openai', kind: 'local',
     verified: true, source: 'codex cloud list --json',
-    description: 'Vzdálené úlohy z účtu Codex včetně běhů nativní aplikace.',
+    description: ui('Vzdálené úlohy z účtu Codex včetně běhů nativní aplikace.'),
     async start() {}, scan, stop() {}, idle: () => pending || Promise.resolve(),
     status() {
       const count = seen.size;
       return {
         state: lastError ? 'error' : lastSuccessAt ? 'connected' : bin() ? 'idle' : 'missing',
         detail: lastError || (lastSuccessAt
-          ? `Sleduji ${count} cloudových úloh Codexu. Poslední úspěšné načtení ${new Date(lastSuccessAt).toLocaleTimeString('cs-CZ')}.`
-          : 'Čekám na první načtení cloudových úloh Codexu.'),
+          ? ui('Cloudové úlohy Codexu: {0}. Poslední načtení {1}.', count, new Date(lastSuccessAt).toLocaleTimeString('cs-CZ'))
+          : ui('Čekám na první načtení cloudových úloh Codexu.')),
         count, watching: Boolean(lastSuccessAt && Date.now() - lastSuccessAt < 2 * MIN),
         lastEventAt: lastSuccessAt,
       };
