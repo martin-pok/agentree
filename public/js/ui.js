@@ -34,18 +34,19 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
     return true;
   }
   const fokus = klicFokusu(el);
-  // Živé přepisy mohou měnit text karty několikrát za sekundu. Již dekódované logo
-  // ponecháme jako stejný DOM uzel, aby mezi dvěma snímky nezmizelo při novém innerHTML.
+  // Živé přepisy mohou měnit text karty několikrát za sekundu. Logo ponecháme jako stejný
+  // DOM uzel i během načítání: jinak se požadavek při každém překreslení zruší a nikdy nedoběhne.
   const obrazky = new Map();
   for (const img of el.querySelectorAll('img')) {
-    if (!img.complete || !img.naturalWidth) continue;
-    const key = img.outerHTML;
+    if (img.complete && !img.naturalWidth) continue;
+    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
     if (!obrazky.has(key)) obrazky.set(key, []);
     obrazky.get(key).push(img);
   }
   el.innerHTML = html;
   for (const img of el.querySelectorAll('img')) {
-    const old = obrazky.get(img.outerHTML)?.shift();
+    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
+    const old = obrazky.get(key)?.shift();
     if (old) img.replaceWith(old);
   }
   el._html = html;
@@ -190,12 +191,15 @@ function sloucitUzel(a, b) {
     return;
   }
   const detaily = a.tagName === 'DETAILS';
+  const logoFallback = a.tagName === 'IMG' && a.dataset.logoFallback && a.dataset.logoKey === b.dataset.logoKey;
   for (const at of b.attributes) {
     if (detaily && at.name === 'open') continue;
+    if (logoFallback && at.name === 'src') continue;
     if (a.getAttributeNS(at.namespaceURI, at.localName) !== at.value) a.setAttributeNS(at.namespaceURI, at.name, at.value);
   }
   for (const at of [...a.attributes]) {
     if (detaily && at.name === 'open') continue;
+    if (logoFallback && (at.name === 'src' || at.name === 'data-logo-fallback')) continue;
     if (!b.hasAttributeNS(at.namespaceURI, at.localName)) a.removeAttributeNS(at.namespaceURI, at.localName);
   }
   const zaostreno = a === document.activeElement;

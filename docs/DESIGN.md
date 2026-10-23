@@ -63,6 +63,10 @@ jako widgety Přehledu. Je 8 px nad kartou, zobrazí se při najetí nebo zamě�
 mezi kartami je dost místa, aby nepřekrýval sousední kartu. Na dotykovém zařízení je dostupný
 trvale. Alt + šipky mění pořadí a fokus zůstává na úchytu.
 
+**Loga služeb:** zdrojem oficiálních znaků jsou `public/logos/*.svg`. Z těchto souborů se generuje
+záložní modul `public/js/logo-fallbacks.js`; při chybě načtení obrázku se ukáže stejný znak
+z něj. Při změně SVG spusť `node scripts/generate-logo-fallbacks.mjs`.
+
 Výjimky, které jsou záměrné:
 
 - **Zaškrtávací políčko** je zaoblený čtverec (`--r-xs`). Kulaté políčko by se pletlo s přepínačem

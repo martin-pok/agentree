@@ -2,6 +2,7 @@
 
 ## 0.46.62 – 2026-10-23 · Cloudové běhy Codexu
 
+- **Loga služeb:** živé překreslení už nepřerušuje právě načítaná loga. Když se samostatné SVG přesto nepodaří načíst, zobrazí se stejný oficiální znak ze záložní kopie v balíčku; místo něj nezůstane prázdné místo.
 - **Jednotné úchyty karet:** karty v detailu agenta a projektu mají stejný odsazený úchyt jako widgety na Přehledu. Úchyt nepřekrývá okraj ani sousední kartu a pořadí jde změnit také klávesnicí.
 - **Codex v nativní aplikaci:** cloudové úlohy se zjišťují z autorizovaného seznamu Codexu. Jejich název, stav a odkaz se zobrazí mezi agenty i tehdy, když k nim na Macu neexistuje místní přepis.
 - **Viditelný výpadek zdroje:** když seznam cloudových úloh nejde načíst nebo chybí přihlášení, Nastavení ukáže chybu zdroje místo závěru, že žádný běh neexistuje. Pracovní stav se po výpadku přestane vydávat za čerstvý.

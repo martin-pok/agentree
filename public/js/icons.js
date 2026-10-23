@@ -1,5 +1,6 @@
 import { tr, tomtoPocitaci } from './i18n.js';
 import { adresaSouboru } from './verze.js';
+import { LOGO_FALLBACKS } from './logo-fallbacks.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT) a Simple Icons 16.34.0 (CC0), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
@@ -84,11 +85,27 @@ export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
   if (key) {
     const l = LOGOS[key];
-    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="${adresaSouboru(`/logos/${key}.svg`)}" alt="" width="18" height="18" decoding="sync" draggable="false" data-label="${l.label}">`;
+    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="${adresaSouboru(`/logos/${key}.svg`)}" alt="" width="18" height="18" decoding="sync" draggable="false" data-logo-key="${key}" data-label="${l.label}">`;
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
 }
+
+// WebView může po upgradu nebo krátkém výpadku vrátit chybu i pro přibalené SVG. Nenecháme
+// prázdnou značku: stejný oficiální vektor je přibalený také v JS. Delegovaný posluchač zachytí
+// i loga doplněná později do živých karet, bez inline onerror (CSP ho zakazuje).
+if (globalThis.document) document.addEventListener('error', (event) => {
+  const img = event.target;
+  if (img?.tagName !== 'IMG' || !img.dataset.logoKey) return;
+  const svg = LOGO_FALLBACKS[img.dataset.logoKey];
+  if (img.dataset.logoFallback || !svg) {
+    img.insertAdjacentHTML('afterend', glyph(null));
+    img.remove();
+    return;
+  }
+  img.dataset.logoFallback = '1';
+  img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}, true);
 
 const svg = (d) => `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true" focusable="false">${d}</svg>`;
 
