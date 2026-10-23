@@ -11,7 +11,7 @@ import { esc } from './format.js';
 // vykreslení řady (živé sloučení schovávání smaže) a sama se přepočítá při změně šířky.
 
 const MEZERA = 8;
-const sledovane = new WeakSet();
+const sledovane = new WeakMap();
 let otevrena = null;
 
 function zavri(vratitFokus = false) {
@@ -82,10 +82,12 @@ export function skladejCipy(rada) {
   for (const c of cipy) { c.hidden = false; delete c.dataset.skryto; }
   dalsi.hidden = true;
   if (!sledovane.has(rada)) {
-    sledovane.add(rada);
     let snimek = 0;
-    new ResizeObserver(() => { cancelAnimationFrame(snimek); snimek = requestAnimationFrame(() => skladejCipy(rada)); }).observe(rada);
-    dalsi.addEventListener('click', () => otevri(rada, dalsi));
+    const observer = new ResizeObserver(() => { cancelAnimationFrame(snimek); snimek = requestAnimationFrame(() => { if (rada.isConnected) skladejCipy(rada); }); });
+    observer.observe(rada);
+    const klik = () => otevri(rada, dalsi);
+    dalsi.addEventListener('click', klik);
+    sledovane.set(rada, () => { observer.disconnect(); cancelAnimationFrame(snimek); dalsi.removeEventListener('click', klik); });
   }
   const k = getComputedStyle(rada);
   const misto = rada.clientWidth - parseFloat(k.paddingLeft) - parseFloat(k.paddingRight);
@@ -111,4 +113,13 @@ export function skladejCipy(rada) {
   dalsi.setAttribute('aria-label', tr('Další ({0})', schovane.length));
   dalsi.setAttribute('aria-haspopup', 'menu');
   dalsi.setAttribute('aria-expanded', otevrena?.tlacitko === dalsi ? 'true' : 'false');
+}
+
+// Při opuštění Agentů nesmí ResizeObserver držet staré řádky a jejich podstromy.
+export function zastavSkladani(root) {
+  zavri();
+  for (const rada of root?.querySelectorAll('.chips--sklada') || []) {
+    sledovane.get(rada)?.();
+    sledovane.delete(rada);
+  }
 }

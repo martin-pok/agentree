@@ -671,15 +671,16 @@ async function zkontrolujHoverNovinek(browser, engine) {
       await page.setViewportSize({ width, height: 900 });
       await page.evaluate(async (t) => {
         (await import('/js/appearance.js')).applyAppearance(t);
-        await (await import('/js/whats-new.js')).showWhatsNew();
+        void (await import('/js/whats-new.js')).showWhatsNew();
       }, theme);
-      const button = page.locator('.wn-ack, .btn--ack').filter({ hasText: /Rozumím|Got it/ });
+      const button = page.locator('dialog[open] .btn--ack').filter({ hasText: /Rozumím|Got it/ });
       await button.hover();
-      await page.waitForFunction(() => getComputedStyle(document.querySelector('.btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('dialog[open] .btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
       const colors = () => button.evaluate(b => ({ bg: getComputedStyle(b).backgroundColor, fg: getComputedStyle(b).color }));
       assert.deepEqual(await colors(), { bg: 'rgb(98, 96, 216)', fg: 'rgb(255, 255, 255)' }, `${engine} ${theme} ${width}: fialový hover s bílým textem`);
       await page.screenshot({ path: `${out}/${engine}-novinky-${theme}-${width}.png` });
       await button.click();
+      await page.waitForSelector('dialog[open] .btn--ack', { state: 'hidden' });
     }
   } finally { await ctx.close(); await server.close(); }
 }

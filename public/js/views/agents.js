@@ -5,7 +5,7 @@ import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS, modelPopis }
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, agentListRank, compareAgentsForList } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
-import { skladejCipy } from '../chips-skladani.js';
+import { skladejCipy, zastavSkladani } from '../chips-skladani.js';
 
 // Čip „+N“ na konci řady, do které se přebytek skládá (chips-skladani.js).
 const DALSI = '<button class="chip chip--dalsi" type="button" data-dalsi hidden>+</button>';
@@ -445,6 +445,7 @@ export default {
     update();
   },
   unmount: () => {
+    zastavSkladani(v.el);
     v.el = null;
     v.limit = Infinity;
     v.ceka = false;
