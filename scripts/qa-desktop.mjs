@@ -344,7 +344,8 @@ async function zkontrolujPlynulost(browser, engine) {
       ozivit(radky[i]);
       await p.waitForFunction(([id, at]) => document.querySelector(`[data-key="${id}"] [data-ago]`)?.dataset.ago === String(at), [radky[i].id, radky[i].lastAt], { timeout: 3000 });
       // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
-      await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
+      // Nekonečné smyčky (život robotů, pracovní dílna) nikdy neskončí – čeká se jen na konečné.
+      await p.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {}))));
       await ustalit();
       const po = await pod();
       assert.equal(po?.klic, pred.klic, `${engine}: živá událost nad čtenářem posunula obsah (pod kurzorem byl ${pred.klic}, je ${po?.klic})`);
