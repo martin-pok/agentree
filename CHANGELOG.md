@@ -4,6 +4,8 @@
 
 - **Roboti jsou tělesa, ne samolepky:** hlava i trup mají objem (světlo zleva shora, stín vpravo dole) a při otočce se točí jako zaoblené těleso – obrys se plynule zúží do profilu, obličej s očima po povrchu přejede za okraj, bližší ucho přejde přes hlavu a z druhé strany se vynoří záda.
 - **Kdo čeká na zadání, fláká se:** vyhazuje míček, hraje si s jojem, nebo si hvízdá a pohupuje se do rytmu (každý agent má svou zábavu).
+- **Hezčí nohy a antény:** nohy jsou zaoblené kapsle s botou (Mochi má baculaté nožky místo beztvarých oválů), Nova má místo dvou „rohů“ jednu jemnou anténu se svítící hvězdičkou.
+- **Filtry na Agentech bez posouvání:** řádky Zdroj, Služba a Projekt se nikdy vodorovně neposouvají ani nezvyšují. Co se nevejde, je v čipu „+N“ s nabídkou (stejnou jako u výběrů); první a vybraný čip zůstávají vidět. Na telefonu je „Vybrat konverzace“ kulatá ikona.
 - **Kdo tě potřebuje, volá tě anténou:** špička antény jemně pulzuje světlem, odcházejí z ní vlnky signálu a robot přitom souvisle mává.
 - **Pracující robot se otočí zády a pracuje rukama:** když agent začne pracovat, robot se otočí (krátká otočka přes profil), skloní hlavu a pustí se do práce u stolku – buď kuje kladivem (nápřah, úder, jiskry, rozžhavené místo, zpětný ráz do těla), nebo řeže pilkou (tahy celým tělem, padající piliny). Nástroj má každý agent svůj.
 - **Obrobek roste s prací:** kus na stolku se prodlužuje podle skutečné doby od začátku úkolu (do 1, 3, 8 a 20 minut a déle); nová fáze krátce zajiskří. Bez známého začátku zůstane výchozí kus, nic se neodhaduje.

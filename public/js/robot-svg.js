@@ -82,7 +82,8 @@ function aerial(kind, top, s) {
     case 'square': return `<path d="M54 ${a}V${a - 9}"/><rect x="50" y="${a - 16}" width="8" height="8" rx="1.5" fill="currentColor" stroke="none"/>`;
     case 'bolt': return `<path d="M54 ${a}V${a - 5}"/><path d="M56 ${a - 19}l-7 9h5l-2 8 7-10h-5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>`;
     case 'planet': return `<path d="M54 ${a}V${a - 7}"/><circle cx="54" cy="${a - 12}" r="4.6" fill="currentColor" stroke="none"/><ellipse cx="54" cy="${a - 12}" rx="9" ry="2.6" fill="none" stroke-width="2" transform="rotate(-18 54 ${a - 12})"/>`;
-    case 'stars': return `<path d="M${n(54 - 6 * s)} ${n(a + 1)} ${n(54 - 12 * s)} ${n(a - 8)}M${n(54 + 6 * s)} ${n(a + 1)} ${n(54 + 12 * s)} ${n(a - 8)}"/>${hvezda(54 - 12 * s, a - 11, 4.2)}${hvezda(54 + 12 * s, a - 11, 4.2)}`;
+    // Nova: jedna jemná anténa se svítící hvězdičkou v kulaté záři (dřív dvě rozbíhavé – působily jako rohy).
+    case 'stars': return `<path d="M54 ${a}V${a - 7}"/><circle class="robot-aerial-zare" cx="54" cy="${a - 12}" r="6.2"/>${hvezda(54, a - 12, 4.6)}`;
     case 'tuft': return `<path d="M54 ${a + 1}c-1-6 3-9 7-8-3 1-4 4-3 7M54 ${a + 1}c-2-4-6-5-9-3 3 0 5 2 5 4" fill="currentColor" stroke-width="2"/>`;
     case 'sprig': return `<path d="M54 ${a}c0-4 1-6 3-8"/><circle cx="58" cy="${a - 10}" r="3.2" fill="currentColor" stroke="none"/>`;
     case 'ring': return `<path d="M54 ${a}V${a - 7}"/><circle cx="54" cy="${a - 12}" r="4.5" fill="none" stroke-width="3"/>`;
@@ -129,22 +130,28 @@ function legs(kind, t) {
   const bottom = t.top + t.h;
   const lx = 54 - t.w / 2 + Math.min(8, t.w / 4);
   const rx = 54 + t.w / 2 - Math.min(8, t.w / 4);
+  // Noha jako zaoblená kapsle (vyplněná, ne čára) a pod ní tmavší bota vytočená mírně ven – robot
+  // stojí jako hračka, ne na drátcích. Bota leží středem na zemi (ZEME), takže robot nelevituje
+  // a šatník (robot-wardrobe.js#chodidla) mu na stejné místo nasadí vlastní obuv.
+  const noha = (x, sirka, ven) => {
+    const top = bottom - 3;
+    const spodek = ZEME - 1.5;
+    return `<rect class="robot-leg" x="${n(x - sirka / 2)}" y="${n(top)}" width="${n(sirka)}" height="${n(spodek - top)}" rx="${n(sirka / 2)}"/>`
+      + `<ellipse class="robot-shoe" cx="${n(x + ven)}" cy="${n(ZEME - 1)}" rx="${n(sirka / 2 + 3.2)}" ry="2.9"/>`;
+  };
   switch (kind) {
     // Pás leží na zemi (spodní hrana na středu stínu), s trupem ho spojují dvě krátké vzpěry.
     case 'treads': {
       const ty = ZEME + 1.5 - 11;
       return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 3)}V${n(ty + 2)}M${n(rx)} ${n(bottom - 3)}V${n(ty + 2)}"/><rect class="robot-tread" x="${n(54 - t.w / 2 - 6)}" y="${n(ty)}" width="${n(t.w + 12)}" height="11" rx="5.5"/><circle class="robot-wheel" cx="${n(54 - t.w / 2)}" cy="${n(ty + 5.5)}" r="2.6"/><circle class="robot-wheel" cx="54" cy="${n(ty + 5.5)}" r="2.6"/><circle class="robot-wheel" cx="${n(54 + t.w / 2)}" cy="${n(ty + 5.5)}" r="2.6"/>`;
     }
-    case 'blocks': return `<rect class="robot-foot" x="${n(lx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/><rect class="robot-foot" x="${n(rx - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2"/>`;
-    case 'stout': return `<path class="robot-limbs robot-limbs--stout" d="M${n(lx)} ${n(bottom - 2)}V${ZEME}M${n(rx)} ${n(bottom - 2)}V${ZEME}"/>`;
-    // Bachraté nožky od trupu až na zem: horní okraj pod trupem, spodní na středu stínu.
-    case 'nubs': {
-      const top = bottom - 1;
-      const cy = (top + ZEME + 1.5) / 2;
-      const ry = (ZEME + 1.5 - top) / 2;
-      return `<ellipse class="robot-foot" cx="${n(lx + 2)}" cy="${n(cy)}" rx="6.5" ry="${n(ry)}"/><ellipse class="robot-foot" cx="${n(rx - 2)}" cy="${n(cy)}" rx="6.5" ry="${n(ry)}"/>`;
-    }
-    default: return `<path class="robot-limbs" d="M${n(lx)} ${n(bottom - 5)}V${ZEME}M${n(rx)} ${n(bottom - 5)}V${ZEME}"/>`;
+    // Pixel: hranaté kvádříky s tmavší podrážkou.
+    case 'blocks': return [lx, rx].map((x) => `<rect class="robot-foot" x="${n(x - 5)}" y="${n(bottom - 1)}" width="10" height="${n(ZEME + 1 - bottom)}" rx="2.4"/><rect class="robot-sole" x="${n(x - 5.6)}" y="${n(ZEME - 2.6)}" width="11.2" height="3.6" rx="1.4"/>`).join('');
+    case 'stout': return noha(lx, 7.5, -0.8) + noha(rx, 7.5, 0.8);
+    // Mochi: krátké baculaté nožky – širší kapsle a kulatá bota, žádné beztvaré ovály.
+    case 'nubs': return noha(lx + 2, 7.5, -0.6) + noha(rx - 2, 7.5, 0.6);
+    case 'long': return noha(lx, 4.6, -1) + noha(rx, 4.6, 1);
+    default: return noha(lx, 5, -1) + noha(rx, 5, 1);
   }
 }
 

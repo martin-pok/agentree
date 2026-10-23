@@ -2625,6 +2625,14 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
 .chips--rada::-webkit-scrollbar { display: none; }
 .chips--rada .chip { flex: none; }
+/* Řada, která se skládá do „+N“ (chips-skladani.js): žádné posouvání ani maska okraje. */
+.chips--rada.chips--sklada { overflow: hidden; -webkit-mask-image: none; mask-image: none; }
+.chips--sklada .chip[hidden] { display: none; }
+.chip--dalsi { padding: 0 14px; font-variant-numeric: tabular-nums; }
+.chip--dalsi[aria-expanded='true'] { border-color: var(--action); color: var(--ink); }
+.chips-dalsi-menu .chips-dalsi-polozka { display: flex; width: 100%; align-items: center; gap: 8px; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.chips-dalsi-menu .chips-dalsi-polozka .count { margin-left: auto; color: var(--mute); }
+.chips-dalsi-menu .chips-dalsi-polozka:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; }
 /* Řádek služeb bez jediné služby (čerstvá instalace) se nekreslí, nezůstane po něm prázdný pruh. */
 .filtry-rada:has(> .chips--rada:empty) { display: none; }
 .chip > .icon { width: 16px; height: 16px; flex: none; }
@@ -2710,6 +2718,10 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .filtry-rada { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 8px 0 16px; }
   .filtry-popis { grid-column: 1 / -1; }
   .filtry-rada > .btn { grid-column: 2; }
+  /* „Vybrat konverzace“ na telefonu jako kulatá ikona (popisek zůstává pro čtečky): čipy projektů
+     tak mají místo a řada se pořád vejde na jeden řádek bez posouvání. */
+  .filtry-rada > .agent-select-toggle { min-width: 0; width: 40px; padding: 0; justify-content: center; }
+  .filtry-rada > .agent-select-toggle [data-region='select-label'] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   /* Hledání jde na telefonu nahoru do karty, nad popisek „Zdroj“, přes celou šířku. */
   .filtry-rada > .search-field { grid-column: 1 / -1; justify-self: stretch; order: -1; margin-bottom: 16px; }
   .filtry-rada > .search-field input { width: 100%; }

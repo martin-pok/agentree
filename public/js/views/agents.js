@@ -5,6 +5,10 @@ import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS } from '../fo
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, agentListRank, compareAgentsForList } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
+import { skladejCipy } from '../chips-skladani.js';
+
+// Čip „+N“ na konci řady, do které se přebytek skládá (chips-skladani.js).
+const DALSI = '<button class="chip chip--dalsi" type="button" data-dalsi hidden>+</button>';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
 import { tr, tomtoPocitaci } from '../i18n.js';
@@ -206,16 +210,16 @@ function mount(el, _params, query) {
     <div class="filtry card" data-enter style="--i:2" data-jen-s-agenty>
       <div class="filtry-rada">
         <span class="filtry-popis" id="ag-f-zdroj">${tr('Zdroj')}</span>
-        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-zdroj" data-region="source"></div>
+        <div class="chips chips--rada chips--sklada" role="group" aria-labelledby="ag-f-zdroj" data-region="source"></div>
         <label class="search-field">${ICON.search}<span class="sr-only">${tr('Hledat agenta')}</span><input type="search" data-q placeholder="${tr('Hledat agenta…')}" title="${tr('Hledá v názvu, projektu, větvi, modelu, aplikaci i posledním zadání')}" autocomplete="off"></label>
       </div>
       <div class="filtry-rada" data-region="sluzby-rada">
         <span class="filtry-popis" id="ag-f-sluzba">${tr('Služba')}</span>
-        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-sluzba" data-region="chips"></div>
+        <div class="chips chips--rada chips--sklada" role="group" aria-labelledby="ag-f-sluzba" data-region="chips"></div>
       </div>
       <div class="filtry-rada">
         <span class="filtry-popis" id="ag-f-projekt">${tr('Projekt')}</span>
-        <div class="chips chips--rada" role="group" aria-labelledby="ag-f-projekt" data-region="projects"></div>
+        <div class="chips chips--rada chips--sklada" role="group" aria-labelledby="ag-f-projekt" data-region="projects"></div>
     <button class="btn btn--primary agent-select-toggle" type="button" data-select-toggle aria-pressed="false"><span data-region="select-icon">${ICON.check}</span><span data-region="select-label">${tr('Vybrat konverzace')}</span></button>
       </div>
     </div>
@@ -339,10 +343,12 @@ function update() {
     return `<button type="button" data-status-filter="${k}" aria-pressed="${f.status === k}"${k === 'needs_input' && count ? ' class="has-alert"' : ''}>${label}<span class="count">${count}</span></button>`;
   }).join(''));
   zivy(el, 'source', [['all', tr('Všechny zdroje'), ''], ['local', ENV.local.short, ENV.local.icon], ['web', ENV.cloud.short, ENV.cloud.icon]]
-    .map(([k, label, icon]) => `<button class="chip" type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join(''));
+    .map(([k, label, icon]) => `<button class="chip" type="button" data-source-filter="${k}" aria-pressed="${f.source === k}">${icon}${label}</button>`).join('') + DALSI);
+  skladejCipy(el.querySelector('[data-region="source"]'));
   const present = Object.keys(PROVIDERS).filter((p) => all.some((s) => pkey(s.provider) === p));
   zivy(el, 'chips', present
-    .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join(''));
+    .map((p) => `<button class="chip" type="button" data-provider-filter="${p}" aria-pressed="${f.providers.has(p)}">${glyph(p)}${esc(PROVIDERS[p].label)}</button>`).join('') + (present.length ? DALSI : ''));
+  skladejCipy(el.querySelector('[data-region="chips"]'));
 
   const projects = state.projects.items.filter((p) => !p.archived || p.id === f.project);
   const countIn = (pid) => scoped.filter((s) => s.projectId === pid).length;
@@ -353,8 +359,11 @@ function update() {
   zivy(el, 'projects', projects.length
     ? `<button class="chip" type="button" data-project-filter="all" aria-pressed="${f.project === 'all'}">${tr('Všechny')}</button>
       ${projects.map((p) => `<button class="chip" type="button" data-project-filter="${esc(p.id)}" data-project-drop="${esc(p.id)}" title="${tahni}" aria-pressed="${f.project === p.id}">${pdot(p)}${esc(p.name)}<span class="count">${countIn(p.id)}</span></button>`).join('')}
-      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" title="${tahni}" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>`
+      <button class="chip" type="button" data-project-filter="none" data-project-drop="__none" title="${tahni}" aria-pressed="${f.project === 'none'}">${tr('Bez projektu')}<span class="count">${noneCount}</span></button>
+      ${DALSI}`
     : `<a class="chip" href="#/projekty">${ICON.plus}${tr('Založit projekt')}</a>`);
+  // Projektů bývá víc, než se vejde: řada se nikdy neposouvá ani nezvyšuje, přebytek je v „+N“.
+  skladejCipy(el.querySelector('[data-region="projects"]'));
   zivy(el, 'select-label', f.selecting ? tr('Ukončit výběr') : tr('Vybrat konverzace'));
   zivy(el, 'select-icon', f.selecting ? ICON.close : ICON.check);
   const selectToggle = el.querySelector('[data-select-toggle]');

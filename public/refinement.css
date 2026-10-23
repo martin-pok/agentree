@@ -606,7 +606,7 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 .robot-ucho-pres { display: none; }
 .robot[data-otocka] .robot-ucho-pres { display: inline; }
 .robot[data-otocka] .robot-ucho-predni { display: none; }
-.robot[data-otocka] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-prace) { transform-box: view-box; transform-origin: 54px 60px; }
+.robot[data-otocka] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-prace) { transform-box: view-box; transform-origin: 54px 60px; }
 .robot[data-otocka] .robot-hlava-telo { animation: rz-otocka-hlava 600ms linear both; }
 .robot[data-otocka] .robot-trup-telo { animation: rz-otocka-trup 600ms linear both; }
 .robot[data-otocka] :is(.robot-celo, .robot-predek-trupu) { animation: rz-otocka-predek 600ms linear both; }
@@ -615,9 +615,9 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 .robot[data-otocka] .robot-ucho-zadni { animation: rz-otocka-ucho-z 600ms linear both; }
 .robot[data-otocka] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both; }
 .robot[data-otocka] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both; }
-.robot[data-otocka] :is(.robot-body > .robot-limbs:not(.robot-arm-left, .robot-arm-right), .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation: rz-otocka-stisk 600ms linear both; }
+.robot[data-otocka] :is(.robot-body > .robot-limbs:not(.robot-arm-left, .robot-arm-right), .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation: rz-otocka-stisk 600ms linear both; }
 .robot[data-otocka] .robot-body { animation: rz-otocka-poskok 600ms both; }
-.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation-direction: reverse; }
+.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation-direction: reverse; }
 @keyframes rz-otocka-hlava {
   0% { scale: 1.000 1; }
   5% { scale: 1.000 1; }
@@ -904,3 +904,10 @@ html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 @keyframes rz-zare { 0%, 100% { opacity: .55; scale: .8; } 50% { opacity: 1; scale: 1.15; } }
 @keyframes rz-vlna { 0% { opacity: .9; scale: .7; } 100% { opacity: 0; scale: 3.4; } }
 @keyframes rz-volani { 0%, 100% { transform: rotate(-52deg); } 25% { transform: rotate(-38deg); } 50% { transform: rotate(-60deg); } 75% { transform: rotate(-40deg); } }
+
+/* Nohy (robot-svg.js#legs): kapsle v barvě postavy a tmavší bota – pevný postoj hračky, ne drátky. */
+.robot-leg { fill: color-mix(in srgb, var(--persona) 82%, var(--card)); }
+.robot-shoe, .robot-sole { fill: color-mix(in srgb, var(--persona) 70%, var(--ink)); }
+html[data-theme='dark'] .robot-leg { fill: color-mix(in srgb, var(--persona) 72%, var(--card)); }
+html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill: var(--persona); }
+.robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
