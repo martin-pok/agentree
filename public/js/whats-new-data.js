@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.62',
+    date: '2026-10-23',
+    title: 'Roboti v dílně',
+    items: [
+      'Když agent pracuje, robot se otočí zády a u stolku kuje kladivem, nebo řeže pilkou.',
+      'Obrobek na stolku se prodlužuje podle toho, jak dlouho úkol skutečně běží.',
+      'Po dokončení se robot otočí k tobě a poskočí, když tě potřebuje, otočí se a zamává.',
+      'Roboti mají objem a otáčejí se jako skutečná tělesa. Kdo čeká na zadání, fláká se s míčkem, jojem nebo si hvízdá; kdo tě potřebuje, volá tě svítící anténou se signálem.',
+    ],
+    en: {
+      title: 'Robots at the workbench',
+      items: [
+        'While an agent works, its robot turns its back and hammers or saws at a small workbench.',
+        'The piece on the bench grows with how long the task has actually been running.',
+        'When done, the robot turns to face you and hops; when it needs you, it turns and waves.',
+        'Robots have volume and turn like real objects. Idle ones goof around with a ball, a yo-yo or a tune; the ones that need you call with a glowing, signalling antenna.',
+      ],
+    },
+  },
+  {
     version: '0.46.61',
     date: '2026-10-23',
     title: 'Živí roboti a nikdy naslepo',

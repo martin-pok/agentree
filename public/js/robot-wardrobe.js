@@ -610,6 +610,11 @@ export function renderWardrobe(svg, source) {
   const outfit = WARDROBE.outfit[look.outfit];
   const costume = WARDROBE.costume[look.costume];
   if (!hat && !face && !outfit && !costume) return svg;
+  // Paže s nástrojem (robot při práci) leží nad tělem až za ním; vrstvy šatníku se kotví ke konci
+  // hlavy a těla, proto se na chvíli odloží a vrátí se nakonec.
+  const nadIndex = svg.indexOf('<g class="robot-prace">');
+  const nad = nadIndex < 0 ? '' : svg.slice(nadIndex, -'</svg>'.length);
+  if (nad) svg = svg.slice(0, nadIndex) + '</svg>';
   const body = costume || outfit;
   // Vlastní pokrývku hlavy převlek ztrácí, když si uživatel vybral čepici. Pokrývka hlavy se kotví
   // k temeni, obličejová část k očím (fit v robot-svg.js), oblečení k trupu. Vrstva zadaná funkcí se
@@ -635,7 +640,7 @@ export function renderWardrobe(svg, source) {
   if (bodyFront) out = out.replace('</g></svg>', bodyFront + '</g></svg>');
   // Čepice a převlek s pokrývkou hlavy zakrývají anténu; kdyby trčela skrz ně, vypadalo by to jako chyba.
   if (hat || (costume && (costume.hood || costume.top))) out = out.replace(/class="robot( |")/, 'class="robot robot--worn$1');
-  return out;
+  return nad ? out.slice(0, -'</svg>'.length) + nad + '</svg>' : out;
 }
 
 export function robotInWardrobe(type, source) {

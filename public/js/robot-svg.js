@@ -163,25 +163,140 @@ export function paze(g) {
 // Země: chodidla končí na 102,5, kde leží střed stínu – robot stojí, nevznáší se.
 const ZEME = 102.5;
 
+// Dílna (robot při práci, otočený zády – refinement.css): pracovní stůl v pase před robotem,
+// obrobek, který se od kovadliny prodlužuje doleva, jak práce běží, a nástroj v pravé ruce –
+// kladivo, nebo pilka. Stůl a obrobek se kreslí za tělem (robot stojí mezi námi a stolem);
+// paže s nástrojem, jiskry a piliny nad ním, aby byl nápřah přes rameno vidět i u širokých hlav.
+// Všechno se počítá z geometrie postavy (rameno, trup), takže sedí u všech devíti robotů.
+function dilnaMira(g) {
+  const t = g.torso;
+  const sx = t.x + t.w - 2;
+  const sy = t.top + 5;
+  const vrch = t.top + t.h * 0.5 - 2;
+  const hx = sx + 6;
+  const hy = vrch - 6;
+  const kx = hx + 10;
+  return { t, sx, sy, lx: t.x + 2, vrch, stul: vrch + 4.5, hx, hy, kx };
+}
+function dilna(g) {
+  const { vrch, stul, kx } = dilnaMira(g);
+  const konec = kx + 4;
+  return `<g class="robot-dilna">`
+    + `<path class="dilna-nohy" d="M10 ${n(stul + 3)}V${ZEME}M98 ${n(stul + 3)}V${ZEME}"/>`
+    + `<rect class="dilna-stul" x="4" y="${n(stul)}" width="100" height="3.5" rx="1.75"/>`
+    + `<g class="obrobek" style="transform-origin:${n(konec)}px ${n(vrch + 2.25)}px"><rect class="obrobek-telo" x="${n(konec - 84)}" y="${n(vrch)}" width="84" height="4.5" rx="2.25"/><rect class="obrobek-lesk" x="${n(konec - 81)}" y="${n(vrch + 0.7)}" width="78" height="1.1" rx=".55"/></g>`
+    + `<ellipse class="zar" cx="${n(kx)}" cy="${n(vrch + 1.6)}" rx="4.4" ry="1.8"/>`
+    + `</g>`;
+}
+function praceNad(g) {
+  const { sx, sy, lx, vrch, hx, hy, kx } = dilnaMira(g);
+  const jiskry = [[-160, 3, 8.5], [-125, 3.5, 10], [-90, 4, 11.5], [-55, 3.5, 10], [-20, 3, 8.5]]
+    .map(([u, r1, r2]) => {
+      const c = Math.cos(u * Math.PI / 180);
+      const z = Math.sin(u * Math.PI / 180);
+      return `M${n(kx + c * r1)} ${n(vrch + z * r1)}L${n(kx + c * r2)} ${n(vrch + z * r2)}`;
+    }).join('');
+  const px = sx + 4;
+  const py = vrch - 9.5;
+  return `<g class="robot-prace">`
+    + `<path class="robot-limbs prace-leva" style="transform-origin:${n(lx)}px ${n(sy)}px" d="M${n(lx)} ${n(sy)}L${n(lx - 7)} ${n(vrch - 1)}"/>`
+    + `<g class="prace-kladivo" style="transform-origin:${n(sx)}px ${n(sy)}px"><path class="robot-limbs" d="M${n(sx)} ${n(sy)}L${n(hx)} ${n(hy)}"/>`
+    + `<path class="nastroj-rukojet" d="M${n(hx)} ${n(hy)}L${n(kx)} ${n(hy)}"/><rect class="nastroj-kov" x="${n(kx - 3.4)}" y="${n(vrch - 12)}" width="6.8" height="12" rx="1.8"/></g>`
+    + `<g class="prace-pila"><path class="robot-limbs" d="M${n(sx)} ${n(sy)}L${n(px)} ${n(py)}"/>`
+    + `<path class="nastroj-kov" d="M${n(px)} ${n(py - 2.5)}L${n(px + 20)} ${n(py + 6.5)}L${n(px + 20)} ${n(py + 10)}L${n(px)} ${n(py + 2.5)}Z"/>`
+    + `<path class="pila-zuby" d="M${n(px + 3)} ${n(py + 3.8)}l2.2 1.8 1-1.3 2.2 1.8 1-1.3 2.2 1.8 1-1.3 2.2 1.8 1-1.3 2.2 1.8"/>`
+    + `<rect class="nastroj-rukojet-pila" x="${n(px - 3.5)}" y="${n(py - 3)}" width="6.5" height="7" rx="2.2"/></g>`
+    + `<g class="jiskry" style="transform-origin:${n(kx)}px ${n(vrch)}px"><path d="${jiskry}"/>${[[-8, -9], [9, -7], [3, -13]].map(([dx, dy], i) => `<circle style="--dx:${dx}px;--dy:${dy}px;--i:${i}" cx="${n(kx)}" cy="${n(vrch - 1)}" r="${i === 2 ? 1.1 : 0.9}"/>`).join('')}</g>`
+    + `<g class="piliny">${[0, 1, 2].map((i) => `<circle style="--i:${i}" cx="${n(px + 16 + i * 1.6)}" cy="${n(vrch + 5)}" r="${i === 1 ? 1.3 : 1}"/>`).join('')}</g>`
+    + `</g>`;
+}
+
+// Flákání (čeká na zadání): míček nahoru a dolů, jojo, nebo si hvízdá (notičky a pohupování).
+// Kreslí se nad tělem od konce pravé paže; které hraní robot má, říká data-hra u agenta.
+function zabava(g) {
+  const { pravo: [, , rx, ry] } = paze(g);
+  const h = g.head;
+  const nx = 54 + h.w / 2 - 2;
+  const ny = h.top + h.h * 0.45;
+  const nota = (x, y, i) => `<g class="hra-nota" style="--i:${i};transform-origin:${n(x)}px ${n(y)}px"><path d="M${n(x + 1.6)} ${n(y)}V${n(y - 6.5)}l3.4 1.4"/><ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.5"/></g>`;
+  return `<g class="robot-hra">`
+    + `<circle class="hra-micek" cx="${n(rx + 1)}" cy="${n(ry - 3.2)}" r="3.2"/>`
+    + `<g class="hra-jojo"><path class="hra-provazek" style="transform-origin:${n(rx)}px ${n(ry)}px" d="M${n(rx)} ${n(ry)}V${n(ry + 23)}"/><g class="hra-kotouc"><circle cx="${n(rx)}" cy="${n(ry + 23)}" r="4.4"/><circle class="hra-kotouc-stred" cx="${n(rx)}" cy="${n(ry + 23)}" r="1.4"/></g></g>`
+    + `<g class="hra-noty">${nota(nx, ny, 0)}${nota(nx + 4, ny - 3, 1)}</g>`
+    + `</g>`;
+}
+
+// Volá tě (potřebuje tvé rozhodnutí): špička antény svítí a pulzuje a odchází z ní vlnky signálu.
+const SPICKA = { ball: [54, -13], square: [54, -12], bolt: [54, -12], planet: [54, -12], stars: [54, -12], tuft: [57, -6], sprig: [58, -10], ring: [54, -12], periscope: [49, -11.5], leaf: [57, -15] };
+function signal(g) {
+  const [x, dy] = SPICKA[g.aerial] || SPICKA.ball;
+  const y = g.head.top + dy;
+  return `<g class="robot-signal" style="transform-origin:${n(x)}px ${n(y)}px">`
+    + [0, 1, 2].map((i) => `<circle class="signal-vlna" style="--i:${i};transform-origin:${n(x)}px ${n(y)}px" cx="${n(x)}" cy="${n(y)}" r="4.5"/>`).join('')
+    + `<circle class="signal-zare" style="transform-origin:${n(x)}px ${n(y)}px" cx="${n(x)}" cy="${n(y)}" r="7"/>`
+    + `</g>`;
+}
+
+// Objem (rozhodnutí vlastníka 23. 10. 2026: „víc 3D, ne samolepka, ne čtyři ploché stěny“). Hlava
+// i trup jsou zaoblená tělesa s eliptickým průřezem (hloubka = podíl šířky). Při otočce se obrys
+// plynule mění z šířky na hloubku (refinement.css, rz-otocka-*) a všechno, co na těle leží – obličej,
+// oči, jádro, záda – po povrchu přejede, zkrátí se a za okrajem zmizí, přesně podle průmětu bodu na
+// elipse. Bližší ucho přejde přes hlavu, vzdálenější za ni zajde. Žádné přilepené boční plochy.
+const HLOUBKA_HLAVY = 0.62;
+const HLOUBKA_TRUPU = 0.7;
+// Posun prvku z čela tělesa při natočení o θ je (hloubka/2)·cos α·sin θ, kde sin α = šířka prvku /
+// šířka tělesa (prvek je na elipse, ne na plochém čele). Vrací (hloubka/2)·cos α v jednotkách SVG.
+const posunPovrchu = (sirkaTelesa, sirkaPrvku, hloubka) => (sirkaTelesa * hloubka / 2) * Math.sqrt(Math.max(0, 1 - (sirkaPrvku / sirkaTelesa) ** 2));
+
+// Zadní strana robota: místo obličeje kryt s větráním a dvěma šrouby, na trupu servisní panel.
+function zada(g) {
+  const f = g.face;
+  const s = g.s;
+  const w = 10 * s;
+  const vent = [-4, 0, 4].map((d) => `M${n(54 - w)} ${n(g.eyeY + d * g.es)}H${n(54 + w)}`).join('');
+  return `<g class="robot-zada"><rect class="zada-deska" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
+    + `<path class="zada-vetrani" d="${vent}"/>`
+    + `<circle class="zada-sroub" cx="${n(f.x + 4 * s)}" cy="${n(f.top + 4 * s)}" r="1.5"/><circle class="zada-sroub" cx="${n(f.x + f.w - 4 * s)}" cy="${n(f.top + 4 * s)}" r="1.5"/></g>`;
+}
+function zadaTrup(t) {
+  const w = t.w * 0.5;
+  const h = t.h * 0.42;
+  const y = t.top + t.h * 0.3;
+  return `<g class="robot-zada"><rect class="zada-panel" x="${n(54 - w / 2)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="2.5"/>`
+    + `<circle class="zada-sroub" cx="${n(54 - w / 2 + 3)}" cy="${n(y + h / 2)}" r="1.1"/><circle class="zada-sroub" cx="${n(54 + w / 2 - 3)}" cy="${n(y + h / 2)}" r="1.1"/></g>`;
+}
+
 export function robot(type = 'Scout') {
   const kind = POSTAVY[type] ? type : 'Scout';
   const g = geometry(kind);
   const { head: h, torso: t, s } = g;
   const { levo: [lx, shoulderY, lex, ley], pravo: [rxx, , rex, rey] } = paze(g);
   const f = g.face;
+  // Uši zvlášť: levé (bližší při otočce zády) přejde přes hlavu, pravé zajde za ni.
+  const usi = ears(g.ears, h, s).split('/>').filter(Boolean).map((u) => `${u}/>`);
   const shadow = Math.max(18, Math.min(30, Math.max(t.w, h.w * 0.55) / 1.7));
   const cheeks = g.cheeks ? `<ellipse class="robot-cheek" cx="${n(54 - 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/><ellipse class="robot-cheek" cx="${n(54 + 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/>` : '';
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
     + `<ellipse class="robot-shadow" cx="54" cy="${n(ZEME + 1.5)}" rx="${n(shadow)}" ry="4"/>`
+    + dilna(g)
     + `<g class="robot-body">${legs(g.legs, t)}`
-    + `<path class="robot-limbs robot-arm-left" style="transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
-    + `<path class="robot-limbs robot-arm-right" style="transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`
-    + `<rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
+    + `<path class="robot-limbs robot-arm-left" style="--tw:${n(t.w)}px;transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
+    + `<path class="robot-limbs robot-arm-right" style="--tw:${n(t.w)}px;transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`
+    + `<g class="robot-trup-telo"><rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
+    + `<rect class="robot-objem" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/></g>`
+    + `<g class="robot-predek-trupu" style="--fd:${n(posunPovrchu(t.w, 6, HLOUBKA_TRUPU))}px">`
     + (g.core === 'star' ? `<g class="robot-core">${hvezda(54, t.top + t.h / 2 - 1, 4.4)}</g>` : `<circle class="robot-core" cx="54" cy="${n(t.top + t.h / 2 - 1)}" r="3"/>`)
+    + '</g>'
+    + `<g class="robot-zada-trupu" style="--fd:${n(posunPovrchu(t.w, t.w * 0.5, HLOUBKA_TRUPU))}px">${zadaTrup(t)}</g>`
     + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}</g>`
-    + ears(g.ears, h, s)
-    + `<rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
+    + `<g class="robot-ucho-zadni" style="--hw:${n(h.w)}px">${usi[1] || ''}</g><g class="robot-ucho-predni" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
+    + `<g class="robot-hlava-telo"><rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
+    + `<rect class="robot-objem" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/></g>`
+    + `<g class="robot-ucho-pres" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
+    + `<g class="robot-celo" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">`
     + `<rect class="robot-face" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
     + cheeks
-    + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g></g></svg>`;
+    + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
+    + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`
+    + praceNad(g) + zabava(g) + signal(g) + '</svg>';
 }

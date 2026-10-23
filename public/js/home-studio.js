@@ -52,6 +52,21 @@ export function createHomeStudio(el) {
   return { refresh, destroy() {} };
 }
 
+// Stabilní otisk id agenta: vlastní fáze pohybu a nástroj v dílně.
+const otisk = (id) => [...String(id)].reduce((n, c) => Math.imul(n ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0;
+// Jak dlouho už úkol běží → jak dlouhý je obrobek v dílně (do 1, 3, 8, 20 min, déle). Podle
+// skutečného začátku úkolu (turnStartedAt), nic se neodhaduje; bez něj zůstane výchozí kus.
+export const postupPrace = (od, ted = Date.now()) => {
+  if (!(od > 0)) return 0;
+  const min = (ted - od) / 60000;
+  return min < 1 ? 0 : min < 3 ? 1 : min < 8 ? 2 : min < 20 ? 3 : 4;
+};
+// Atributy dílny pro prvek, který nese stav agenta: nástroj (kladivo/pilka), začátek a fáze práce.
+export function dilnaAtributy(s) {
+  const od = s.status === 'working' && s.turnStartedAt > 0 ? s.turnStartedAt : 0;
+  return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}" data-hra="${['micek', 'jojo', 'pisen'][(otisk(s.id) >>> 3) % 3]}"${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
+}
+
 export function agentRobot(s) {
   let p = {};
   p = loadPersonas()[s.id] || {};
@@ -59,6 +74,6 @@ export function agentRobot(s) {
   const color = colors.includes(p.color) ? p.color : colors[index];
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
   // Vlastní fáze dechu a rozhlížení (refinement.css): roboti vedle sebe se nehýbou v zákrytu.
-  const faze = -((([...String(s.id)].reduce((n, c) => Math.imul(n ^ c.charCodeAt(0), 16777619), 2166136261) >>> 0) % 997) / 100);
-  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}>${renderAgentRobot(type, p)}</span>`;
+  const faze = -((otisk(s.id) % 997) / 100);
+  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)}>${renderAgentRobot(type, p)}</span>`;
 }

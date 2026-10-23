@@ -1,4 +1,4 @@
-import { createHomeStudio } from '../home-studio.js';
+import { createHomeStudio, dilnaAtributy } from '../home-studio.js';
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
 import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
@@ -392,7 +392,7 @@ function update(topics = new Set(['all'])) {
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
         // Štítek i barva jako na Agentech a v detailu (statusPill). `data-done="false"` u čekání,
         // které nedoběhlo, říká robotovi, ať netvrdí „hotovo“ (robot-bubliny.js).
-        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''} href="${agentHref(s.id)}">
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)} href="${agentHref(s.id)}">
           ${statusPill(s.status, 'pb-stav')}
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b${s.fullTitle ? ` title="${esc(s.fullTitle)}"` : ''}>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>

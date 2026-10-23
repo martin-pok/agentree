@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.46.62 – 2026-10-23 · Roboti v dílně
+
+- **Roboti jsou tělesa, ne samolepky:** hlava i trup mají objem (světlo zleva shora, stín vpravo dole) a při otočce se točí jako zaoblené těleso – obrys se plynule zúží do profilu, obličej s očima po povrchu přejede za okraj, bližší ucho přejde přes hlavu a z druhé strany se vynoří záda.
+- **Kdo čeká na zadání, fláká se:** vyhazuje míček, hraje si s jojem, nebo si hvízdá a pohupuje se do rytmu (každý agent má svou zábavu).
+- **Kdo tě potřebuje, volá tě anténou:** špička antény jemně pulzuje světlem, odcházejí z ní vlnky signálu a robot přitom souvisle mává.
+- **Pracující robot se otočí zády a pracuje rukama:** když agent začne pracovat, robot se otočí (krátká otočka přes profil), skloní hlavu a pustí se do práce u stolku – buď kuje kladivem (nápřah, úder, jiskry, rozžhavené místo, zpětný ráz do těla), nebo řeže pilkou (tahy celým tělem, padající piliny). Nástroj má každý agent svůj.
+- **Obrobek roste s prací:** kus na stolku se prodlužuje podle skutečné doby od začátku úkolu (do 1, 3, 8 a 20 minut a déle); nová fáze krátce zajiskří. Bez známého začátku zůstane výchozí kus, nic se neodhaduje.
+- **Otočí se zpátky k tobě:** když práci dokončí, otočí se čelem a radostně poskočí; když tě potřebuje, otočí se a zamává. Robot u pozdravu na Přehledu zůstává čelem.
+- **Oprava:** živá aktualizace na stránce Agenti už robotům nesmaže rozběhnutý pohyb (dřív po události ztuhli).
+- Pohyb se drží pravidel: jen transform a opacity, otočka 2× 200 ms, pracovní smyčka jen u robotů na obrazovce; omezení pohybu ukáže klidovou pózu s nástrojem.
+
 ## 0.46.61 – 2026-10-23 · Živí roboti a nikdy naslepo
 
 - **Roboti jako živí:** dýchají, rozhlížejí se, anténa se pohupuje a každý má vlastní rytmus. Pracující robot se soustředí, píše a jádro mu pulzuje; robot, který tě potřebuje, zvedá ruku, naklání hlavu a netrpělivě poskočí; hotový je spokojený a občas radostně poskočí; po selhání svěsí hlavu, na limitu dřímá. Když na robota najedeš, natáhne se k tobě a pozdraví, a když agent dokončí práci, začne tě potřebovat nebo selže, robot na to sám zareaguje. Hýbou se jen roboti na obrazovce (seznam se stovkou agentů zůstává plynulý) a „Omezit pohyb“ i systémové omezení pohybu vše vypnou.
