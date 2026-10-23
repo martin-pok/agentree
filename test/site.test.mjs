@@ -386,13 +386,13 @@ test('web: tlačítka ke stažení vedou jen na přílohy, které poslední vyd�
 });
 
 
-test('web: published 0.46.12 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
-  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.12/Agenteeq-0.46.12-macOS-arm64.dmg';
+test('web: published 0.46.60 Preview is a separate CZ/EN Mac download, stable remains primary', async () => {
+  const url = 'https://github.com/martin-pok/agentree/releases/download/v0.46.60/Agenteeq-0.46.60-macOS-arm64.dmg';
   const destinations = [
-    ['site/index.html', 'index.html', /0\.46\.12 Preview pro Mac/],
-    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.12/],
-    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.12 Preview pro Mac/],
-    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.12/],
+    ['site/index.html', 'index.html', /0\.46\.60 Preview pro Mac/],
+    ['site/en/index.html', 'en/index.html', /Mac Preview 0\.46\.60/],
+    ['site/instalace/index.html', 'instalace/index.html', /Stáhnout 0\.46\.60 Preview pro Mac/],
+    ['site/en/install/index.html', 'en/install/index.html', /Download Mac Preview 0\.46\.60/],
   ];
   const output = await tempDir('web-preview-');
   await buildSite({ out: output });
@@ -413,8 +413,8 @@ test('web: current Preview documentation and published preview links agree witho
   const files = ['README.md', 'docs/ROADMAP.md', 'docs/RELEASE-READINESS.md'];
   for (const name of files) {
     const doc = await fs.readFile(path.join(ROOT, name), 'utf8');
-    assert.ok(doc.includes('v0.46.12'), name + ' must identify the currently published preview');
-    assert.ok(doc.includes('v0.46.0'), name + ' must keep the stable channel distinct');
+    assert.ok(doc.includes('v0.46.60'), name + ' must identify the currently published preview');
+    assert.ok(doc.includes('v0.46.58'), name + ' must keep the stable channel distinct');
   }
 });
 

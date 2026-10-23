@@ -133,10 +133,10 @@ test('site Preview and changelog always update atomically from one published rel
 test('all four public pages provide a real public fallback, notes and a stable primary CTA', async () => {
   for (const page of ['site/index.html', 'site/en/index.html', 'site/instalace/index.html', 'site/en/install/index.html']) {
     const html = await fs.readFile(new URL('../' + page, import.meta.url), 'utf8');
-    assert.match(html, /data-preview-mac data-preview-version="0\.46\.12"/, page);
-    assert.match(html, /data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.12"/, page);
-    assert.match(html, /data-preview-windows data-preview-version="0\.46\.12" href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/download\/v0\.46\.12\/Agenteeq-0\.46\.12-Windows-x64\.zip"/, page);
-    assert.equal(html.match(/data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.12"/g)?.length, 2, page + ': each system has its own release notes link');
+    assert.match(html, /data-preview-mac data-preview-version="0\.46\.60"/, page);
+    assert.match(html, /data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.60"/, page);
+    assert.match(html, /data-preview-windows data-preview-version="0\.46\.60" href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/download\/v0\.46\.60\/Agenteeq-0\.46\.60-Windows-x64\.zip"/, page);
+    assert.equal(html.match(/data-preview-notes href="https:\/\/github\.com\/martin-pok\/agentree\/releases\/tag\/v0\.46\.60"/g)?.length, 2, page + ': each system has its own release notes link');
     assert.match(html, /data-stahnout="mac-arm64"/, page + ' must retain distinct stable CTA');
   }
   const app = await fs.readFile(new URL('../site/lp.js', import.meta.url), 'utf8');
@@ -145,4 +145,36 @@ test('all four public pages provide a real public fallback, notes and a stable p
     .headers[0].headers.find((item) => item.key === 'Content-Security-Policy').value;
   assert.match(csp, /connect-src [^;]*https:\/\/api\.github\.com;/);
   assert.match(csp, /script-src 'self'/, 'do not weaken script CSP for the new feature');
+});
+
+test('a failed release API leaves the published Preview fallback and its notes intact', async () => {
+  const saved = globalThis.IntersectionObserver;
+  let reveal;
+  globalThis.IntersectionObserver = class {
+    constructor(callback) { reveal = callback; }
+    observe() {}
+    disconnect() {}
+  };
+  const link = {
+    href: `${REPO}/releases/download/v0.46.60/Agenteeq-0.46.60-macOS-arm64.dmg`,
+    dataset: { previewVersion: '0.46.60' },
+    closest() { return container; },
+    querySelector() { return label; },
+  };
+  const notes = { href: `${REPO}/releases/tag/v0.46.60` };
+  const label = { textContent: 'Stáhnout 0.46.60 Preview pro Mac' };
+  const container = { querySelector() { return notes; } };
+  const root = { querySelector(selector) { return selector === '[data-preview-mac]' ? link : null; } };
+  try {
+    enableLivePreview(root, async () => new Response('', { status: 500 }));
+    reveal([{ isIntersecting: true }]);
+    await new Promise(setImmediate);
+    assert.equal(link.dataset.previewVersion, '0.46.60');
+    assert.equal(link.href, `${REPO}/releases/download/v0.46.60/Agenteeq-0.46.60-macOS-arm64.dmg`);
+    assert.equal(notes.href, `${REPO}/releases/tag/v0.46.60`);
+    assert.equal(label.textContent, 'Stáhnout 0.46.60 Preview pro Mac');
+  } finally {
+    if (saved === undefined) delete globalThis.IntersectionObserver;
+    else globalThis.IntersectionObserver = saved;
+  }
 });

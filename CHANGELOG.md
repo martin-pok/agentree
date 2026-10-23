@@ -1,5 +1,9 @@
 # Changelog
 
+## Web – 2026-10-23 · Aktuální odkaz na Preview
+
+- Úvodní a instalační stránka v češtině i angličtině ukazují veřejné Preview 0.46.60 i v případě, že prohlížeč nenačte seznam vydání z GitHubu. Tlačítko stabilního vydání dál míří na Stable Latest. Tato změna webu není součástí již zveřejněné desktopové binárky 0.46.60.
+
 ## 0.46.60 – 2026-10-22 · Názvy a přepisy webových konverzací
 
 - **Google AI Studio:** běžící samostatná webová aplikace je po volbě „Sledovat“ vidět mezi sledovanými běžícími nástroji. Spárované rozšíření nyní rozpozná uložené prompty na `aistudio.google.com` a předá jejich stav aplikaci. Samotný běžící proces neprokazuje aktivní konverzaci; pro její název, zprávy a stav je nutné hlášení rozšíření.
