@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.62** — Preview kandidát: Agenteeq načítá i cloudové úlohy nativní aplikace Codex, které nemají místní přepis. Nedostupný zdroj ukáže jako chybu. Neveřejný Draft 0.46.61 vznikl bez této opravy a nebude zveřejněn; do ověření nového kandidáta je veřejné Preview 0.46.60.
+> **0.46.62** — Preview kandidát: Agenteeq načítá i cloudové úlohy nativní aplikace Codex, které nemají místní přepis. Nedostupný zdroj ukáže jako chybu. Veřejné Preview 0.46.61 vzniklo bez této opravy. Po ověření nového kandidáta bude náprava ve verzi 0.46.62.
 >
 > **0.46.60** — [veřejné Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) zveřejněné 23. 10. 2026 z přesného commitu `90229c0` po 8/8 CI a auditu všech osmi příloh. Přináší opravu jazyka při aktualizaci, skutečné názvy a místní přepisy webových konverzací. Na Macu vlastníka běží 0.46.60 a zachovalo se uložené nastavení, projekty, upozornění i párování. Fyzické UAT Windows, aktualizace rozšíření v Chromu a celé ověření nových funkcí zůstávají otevřené. [v0.46.58](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) je nadále Stable Latest.
 >
