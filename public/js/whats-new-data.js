@@ -4,7 +4,7 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.62',
+    version: '0.46.63',
     date: '2026-10-23',
     title: 'Roboti v dílně',
     items: [
@@ -20,6 +20,22 @@ export const RELEASES = [
         'The piece on the bench grows with how long the task has actually been running.',
         'When done, the robot turns to face you and hops; when it needs you, it turns and waves.',
         'Robots have volume and turn like real objects. Idle ones goof around with a ball, a yo-yo or a tune; the ones that need you call with a glowing, signalling antenna.',
+      ],
+    },
+  },
+  {
+    version: '0.46.62',
+    date: '2026-10-23',
+    title: 'Cloudové běhy Codexu',
+    items: [
+      'Cloudové úlohy z nativní aplikace Codex se zobrazí mezi agenty, i když na Macu nemají místní přepis.',
+      'Když není dostupný seznam cloudových úloh nebo přihlášení, Agenteeq ukáže chybu zdroje.',
+    ],
+    en: {
+      title: 'Codex cloud runs',
+      items: [
+        'Cloud tasks from the Codex desktop app appear among agents even without a local transcript on your Mac.',
+        'If the cloud task list or sign-in is unavailable, Agenteeq shows a source error.',
       ],
     },
   },

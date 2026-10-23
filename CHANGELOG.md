@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.46.62 – 2026-10-23 · Roboti v dílně
+## 0.46.63 – 2026-10-23 · Roboti v dílně
 
 - **Roboti jsou tělesa, ne samolepky:** hlava i trup mají objem (světlo zleva shora, stín vpravo dole) a při otočce se točí jako zaoblené těleso – obrys se plynule zúží do profilu, obličej s očima po povrchu přejede za okraj, bližší ucho přejde přes hlavu a z druhé strany se vynoří záda.
 - **Kdo čeká na zadání, fláká se:** vyhazuje míček, hraje si s jojem, nebo si hvízdá a pohupuje se do rytmu (každý agent má svou zábavu).
@@ -12,6 +12,14 @@
 - **Otočí se zpátky k tobě:** když práci dokončí, otočí se čelem a radostně poskočí; když tě potřebuje, otočí se a zamává. Robot u pozdravu na Přehledu zůstává čelem.
 - **Oprava:** živá aktualizace na stránce Agenti už robotům nesmaže rozběhnutý pohyb (dřív po události ztuhli).
 - Pohyb se drží pravidel: jen transform a opacity, otočka 2× 200 ms, pracovní smyčka jen u robotů na obrazovce; omezení pohybu ukáže klidovou pózu s nástrojem.
+
+## 0.46.62 – 2026-10-23 · Cloudové běhy Codexu
+
+- **Codex v nativní aplikaci:** cloudové úlohy se zjišťují z autorizovaného seznamu Codexu. Jejich název, stav a odkaz se zobrazí mezi agenty i tehdy, když k nim na Macu neexistuje místní přepis.
+- **Viditelný výpadek zdroje:** když seznam cloudových úloh nejde načíst nebo chybí přihlášení, Nastavení ukáže chybu zdroje místo závěru, že žádný běh neexistuje. Pracovní stav se po výpadku přestane vydávat za čerstvý.
+- **Codex.app:** Agenteeq najde také Codex CLI zabalené v nativní aplikaci.
+
+Veřejné Preview 0.46.61 vzniklo před touto opravou a cloudové běhy Codexu nedetekuje; oprava proto dostává nový tag.
 
 ## 0.46.61 – 2026-10-23 · Živí roboti a nikdy naslepo
 
