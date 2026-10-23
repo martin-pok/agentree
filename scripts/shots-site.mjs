@@ -21,18 +21,11 @@ const CIL = path.join(KOREN, 'site', 'detail');
 // Telefon má v aplikaci vlastní rozvržení, proto se každý detail fotí zvlášť i v něm – zmenšený
 // detail z Macu by na telefonu byl nečitelný.
 export const DETAILY = [
-  // Pruh stavu z Přehledu. Na Macu ve 1520 px širokém okně – tam se do řádku vejdou všichni
-  // agenti a na webu nic není uříznuté. Telefon řádek agentů posouvá do strany, takže na úzkém
-  // výřezu by poslední agent byl vždycky useknutý: tam jen horní část s počty.
-  { soubor: 'stav', trasa: 'prehled', prvek: '.pulse-bar', sirka: 1520, cssMobil: '.pb-strip { display: none !important; } .pulse-bar { padding-bottom: 22px !important; }' },
-  { soubor: 'rozhodnuti', trasa: 'prehled', prvek: '.decision' },
-  { soubor: 'limit', trasa: 'prehled', prvek: '.lwin' },
-  { soubor: 'agenti', trasa: 'agenti', prvek: '.card.table', do: '.card.table a.row:nth-of-type(4)' },
-  // Karta s aktivitou rozloženou do více dní, ať je na grafu co vidět.
-  { soubor: 'projekt-lumen', trasa: 'projekty', prvek: '.pgrid > .pcard:nth-child(2)' },
-  // Útrata jen z telefonního rozvržení: měřidlo nad částkou se vejde do dlaždice, široký pruh
-  // z Macu ne. Končí pod první částkou.
-  { soubor: 'utrata', trasa: 'utrata', prvek: '.spend-hero', vyskaMobil: 366, jenUzke: true },
+  // Web (site/index.html, site/en/index.html) používá jen tabulku agentů; úvod fotí shots-hero.
+  // Dřívější detaily (pruh stavu, rozhodnutí, limit, projekt, útrata) web nepoužívá a z rozhraní
+  // zmizely nebo se změnily, proto se už nefotí.
+  // Agenti jsou karty s roboty: na Macu první řada (tři karty), na telefonu první karta.
+  { soubor: 'agenti', trasa: 'agenti', prvek: '.card.table', do: '.card.table a.row:nth-of-type(3)', doMobil: '.card.table a.row:nth-of-type(1)' },
 ];
 const ROZVRZENI = [
   { pripona: '', sirka: 1280, vyska: 800, hustota: 3 },
@@ -70,8 +63,9 @@ async function vyfot(page, detail, mobil) {
   await prvek.scrollIntoViewIfNeeded();
   const box = await prvek.boundingBox();
   let vyska = box.height;
-  if (detail.do) {
-    const konec = await page.locator(detail.do).first().boundingBox();
+  const doKam = (mobil && detail.doMobil) || detail.do;
+  if (doKam) {
+    const konec = await page.locator(doKam).first().boundingBox();
     if (konec) vyska = Math.min(vyska, konec.y + konec.height - box.y);
   }
   if (mobil && detail.vyskaMobil) vyska = Math.min(vyska, detail.vyskaMobil);
@@ -86,7 +80,7 @@ async function vyfot(page, detail, mobil) {
 // v index.html by pak neseděly). Časové pásmo je pražské, ať časy odpovídají českému webu.
 const ted = Date.now();
 await fs.mkdir(CIL, { recursive: true });
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {});
 const prehled = [];
 try {
   // Kompozice na webu stojí na tmavé scéně v obou režimech stránky, proto jen tmavý vzhled.

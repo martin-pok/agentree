@@ -1,5 +1,12 @@
 # Changelog
 
+## Web – 2026-10-23 · Snímky aplikace z aktuální verze
+
+- Úvod webu (CZ i EN, počítač i telefon) ukazuje Přehled z aktuální verze: Vyžaduje pozornost, Stav agentů a dnešní den v pozdravu. Dřív tam byl snímek ze 13. 10.
+- Dlaždice „Vědět včas“ ukazuje karty agentů s roboty (na počítači první řada, na telefonu jedna karta) místo staré tabulky; rozměry a popis obrázku odpovídají.
+- Ukázková data mají u konverzací model (`claude-opus-5-5`, `claude-sonnet-5-5`, `gpt-5-codex`), takže karty nemají místo modelu pomlčku.
+- `shots:site` fotí jen snímky, které web používá, a prohlížeč bere z `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` stejně jako `shots:hero`. Nepoužívané staré snímky jsou odstraněné. Desktopová binárka se tím nemění.
+
 ## Web – 2026-10-23 · Aktuální odkaz na Preview
 
 - Úvodní a instalační stránka v češtině i angličtině ukazují veřejné Preview 0.46.60 i v případě, že prohlížeč nenačte seznam vydání z GitHubu. Tlačítko stabilního vydání dál míří na Stable Latest. Tato změna webu není součástí již zveřejněné desktopové binárky 0.46.60.
