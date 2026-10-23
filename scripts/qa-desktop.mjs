@@ -11,6 +11,65 @@ await fs.mkdir(out, { recursive: true });
 const results = [];
 const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
 
+// Rozhodnutí v Agenteeq (src/rozhodnuti.js): skutečná žádost Claude Code se ukáže všude, kde jde
+// rozhodnout, vždy s přesným příkazem, pravidlem pro „příště se neptat“ a odpočtem – nikdy se
+// neschvaluje naslepo podle popisu. Klepnutí v okně dojde až do odpovědi hooku. Na úzkém okně
+// karta v rohu nepřeteče přes okraj a tlačítka mají cílovou plochu aspoň 40 px.
+async function zkontrolujRozhodnuti(browser, engine, errors) {
+  const server = await startTestServer();
+  try {
+    const a = api(server.url);
+    await a.send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0', language: 'cs' });
+    const SID = 'aaaaaaaa-2222-4222-8222-000000000001';
+    const PRIKAZ = 'rm -rf node_modules && npm ci';
+    const cc = server.app.connectors['claude-code'];
+    const zad = { session_id: SID, hook_event_name: 'PermissionRequest', tool_name: 'Bash', tool_input: { command: PRIKAZ, description: 'Přeinstalovat balíčky' }, cwd: '/Users/jan/Design & Web',
+      permission_suggestions: [{ type: 'addRules', rules: [{ toolName: 'Bash', ruleContent: 'npm ci:*' }], behavior: 'allow', destination: 'localSettings' }] };
+    await cc.ingestHook({ session_id: SID, hook_event_name: 'UserPromptSubmit', prompt: 'QA rozhodnutí', cwd: zad.cwd });
+    await cc.ingestHook({ session_id: SID, hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_use_id: 'toolu_qa1', tool_input: zad.tool_input, cwd: zad.cwd });
+    await cc.ingestHook(zad);
+    assert.equal((await a.send('POST', '/api/ui/pritomnost', { videt: true })).status, 200);
+    const odpoved = server.app.rozhodnuti.zadost(zad, { toolUseId: 'toolu_qa1' });
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, reducedMotion: 'reduce', serviceWorkers: 'block' });
+    await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(`rozhodnutí: ${e.message}`));
+    await p.goto(`${server.url}/#/prehled`);
+    const karta = p.locator('.decision', { has: p.locator('.decision-rozh') });
+    await karta.waitFor();
+    assert.equal((await karta.locator('.rozh-prikaz').textContent()).trim(), PRIKAZ, `${engine}: Přehled neukazuje přesný příkaz`);
+    assert.match(await karta.locator('.rozh-pravidlo').textContent(), /Bash\(npm ci:\*\)/, `${engine}: Přehled neukazuje trvalé pravidlo`);
+    assert.match(await karta.locator('[data-rozh-cas]').textContent(), /zeptá v terminálu/);
+    await p.waitForFunction(() => document.querySelector('.rozh-oblast')?.hidden === true, null, { timeout: 3000 });
+    // Jinde v aplikaci: karta v rohu, s týmiž podrobnostmi.
+    await p.goto(`${server.url}/#/nastaveni`);
+    const roh = p.locator('.rozh-oblast .rozh-karta');
+    await roh.waitFor();
+    assert.equal((await roh.locator('.rozh-prikaz').textContent()).trim(), PRIKAZ);
+    await roh.locator('[data-rozh-akce="povolit"]').click();
+    const vysledek = await Promise.race([odpoved, new Promise((r) => setTimeout(() => r('timeout'), 5000))]);
+    assert.deepEqual(vysledek?.hookSpecificOutput?.decision, { behavior: 'allow' }, `${engine}: klepnutí na Povolit nedošlo do hooku`);
+    await p.waitForFunction(() => !document.querySelector('.rozh-oblast [data-rozh]'), null, { timeout: 3000 });
+    // Úzké okno: druhá žádost, karta v rohu se vejde a tlačítka jsou dost velká.
+    await p.setViewportSize({ width: 375, height: 812 });
+    const druha = server.app.rozhodnuti.zadost(zad, { toolUseId: 'toolu_qa1' });
+    await roh.waitFor();
+    const mira = await p.evaluate(() => {
+      const k = document.querySelector('.rozh-oblast .rozh-karta').getBoundingClientRect();
+      const tl = [...document.querySelectorAll('.rozh-oblast [data-rozh-akce]')].map((b) => b.getBoundingClientRect().height);
+      return { vlevo: k.left, vpravo: innerWidth - k.right, nejmensi: Math.min(...tl), siroke: document.documentElement.scrollWidth > innerWidth };
+    });
+    assert.ok(mira.vlevo >= 8 && mira.vpravo >= 8 && !mira.siroke, `${engine}: karta v rohu přetéká na 375 px: ${JSON.stringify(mira)}`);
+    assert.ok(mira.nejmensi >= 40, `${engine}: tlačítko rozhodnutí na 375 px má jen ${mira.nejmensi} px`);
+    await p.locator('.rozh-oblast [data-rozh-akce="zamitnout"]').click();
+    assert.equal((await druha)?.hookSpecificOutput?.decision?.behavior, 'deny');
+    await ctx.close();
+  } finally {
+    server.app.rozhodnuti.stop();
+    await server.close();
+  }
+}
+
 // Postranní panel: poslední položka nabídky (Nastavení) je celá vidět na každé výšce okna
 // 620–1200 px při šířce 881, 1180 i 1440 px, česky i anglicky. Dřív se nabídka potichu rolovala
 // a na okně 1440 × 950 Nastavení schovala celé. Měří se nejhorší obsah: dva řádky zdrojů tokenů,
@@ -1474,8 +1533,9 @@ for (const engine of engines) {
     }
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
+    await zkontrolujRozhodnuti(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'agent decision shows exact command everywhere and reaches the hook', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);

@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.61',
+    date: '2026-10-23',
+    title: 'Nikdy neschvaluješ naslepo',
+    items: [
+      'Karta ve „Vyžaduje pozornost“ ukazuje celý příkaz, složku a přesné pravidlo pro „Povolit a příště se neptat“.',
+      'V detailu agenta přibylo pravidlo a odpočet do návratu do terminálu.',
+      'Odpočet běží u každé kopie žádosti, ne jen v kartě v rohu.',
+    ],
+    en: {
+      title: 'Never approve blind',
+      items: [
+        'The “Needs attention” card shows the full command, the folder and the exact rule for “Allow and don’t ask again”.',
+        'The agent detail now shows the rule and the countdown until the terminal takes over.',
+        'The countdown runs on every copy of a request, not only in the corner card.',
+      ],
+    },
+  },
+  {
     version: '0.46.60',
     date: '2026-10-22',
     title: 'Skutečné názvy a přepisy webových chatů',
