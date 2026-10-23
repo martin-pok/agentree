@@ -204,7 +204,18 @@ jobs:
       # Prohlížeče se instalují z lokálního binárního souboru (ne `npx`): `npx` by při chybějícím
       # balíčku tiše stáhl libovolnou verzi; takhle by krok selhal.
       - run: npm install --no-save --package-lock=false playwright@1.62.1 axe-core@4.10.3
-      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
+      # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      - name: Nainstalovat prohlížeče (chromium webkit)
+        run: |
+          for pokus in 1 2 3; do
+            timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium webkit && exit 0
+            echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
+            sudo pkill -f apt-get || true; sleep 3
+            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+          done
+          exit 1
       - run: npm run qa:desktop
       - run: npm run qa:ai-studio
       - run: npm run qa:axe
@@ -240,7 +251,18 @@ jobs:
         with: { node-version: '22' }
       # axe-core: WCAG 2.2 A/AA na webu a v okně rozšíření (scripts/axe-kontrola.mjs). Jen nástroj QA.
       - run: npm install --no-save --package-lock=false playwright@1.62.1 axe-core@4.10.3
-      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
+      # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      - name: Nainstalovat prohlížeče (chromium webkit)
+        run: |
+          for pokus in 1 2 3; do
+            timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium webkit && exit 0
+            echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
+            sudo pkill -f apt-get || true; sleep 3
+            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+          done
+          exit 1
       - run: npm run qa:site
       - run: npm run qa:extension
       - run: npm run qa:contrast
@@ -268,7 +290,18 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with: { node-version: '22' }
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: ./node_modules/.bin/playwright install --with-deps chromium
+      # Instalace prohlížečů občas trvá až do vypršení úlohy: zrcadlo azure.archive.ubuntu.com
+      # posílá balíčky po jednotkách kB/s (23. 10. 2026 čtyřikrát za sebou), dřív než začne test.
+      # Každý pokus má 5 minut; další pokus přepne apt na hlavní archiv Ubuntu. Třetí selhání je skutečné.
+      - name: Nainstalovat prohlížeče (chromium)
+        run: |
+          for pokus in 1 2 3; do
+            timeout -k 10 300 ./node_modules/.bin/playwright install --with-deps chromium && exit 0
+            echo "::warning::Instalace prohlížečů selhala nebo byla příliš pomalá (pokus $pokus), zkouším hlavní archiv Ubuntu."
+            sudo pkill -f apt-get || true; sleep 3
+            sudo sed -i 's#http://azure.archive.ubuntu.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' /etc/apt/sources.list.d/ubuntu.sources
+          done
+          exit 1
 
       - name: Ověřit PWA a Apple ikony proti Dock SVG
         run: npm run qa:icons
