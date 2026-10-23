@@ -377,6 +377,7 @@ export default {
     "Agent zatím nic nevypsal.": "The agent hasn’t printed anything yet.",
     "Nabídka agentů obnovena": "Agent list refreshed",
     "Přetáhni pro změnu pořadí": "Drag to reorder",
+    "Přesunout kartu. Alt a šipky mění pořadí.": "Move card. Alt and arrow keys change its order.",
     "Pořadí karet se neuložilo:": "Card order wasn’t saved:",
     "Chaty na webu": "Web chats",
     "na {0} není.": "isn’t on {0}.",

@@ -330,6 +330,12 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
 @media (hover: hover) { .home-board:not(.is-resizing) .widget:hover > .widget-grip { opacity: 1; transform: translate(-50%, 0); } }
 .widget-grip:focus-visible, .widget.is-lifted > .widget-grip { opacity: 1; transform: translate(-50%, 0); outline: 2px solid var(--ink); outline-offset: 2px; }
 .widget.is-lifted > .widget-grip { cursor: grabbing; outline: 0; }
+/* Detail agenta a projektu používá stejnou kapsli i odsazení jako Přehled. */
+.side-card > .grip { --glow: var(--brand); touch-action: none; }
+.side-card:hover > .grip, .side-card > .grip:focus-visible, .side-card.is-lifted > .grip { opacity: 1; transform: translate(-50%, 0); }
+.side-card > .grip:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.side-card.is-lifted > .grip { cursor: grabbing; outline: 0; }
+@media (hover: none) and (pointer: coarse) { .side-card > .grip { opacity: 1; transform: translate(-50%, 0); } }
 
 /* Okraj pro změnu šířky: v mezeře vpravo od widgetu, při najetí svislá kapsle ve značkové barvě. */
 .widget-resize { position: absolute; top: 0; bottom: 0; right: -22px; z-index: 3; width: 12px; cursor: ew-resize; touch-action: none; }
@@ -351,6 +357,7 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
   .widget > section > .sec-head { cursor: auto; user-select: auto; }
   .widget-grip { opacity: 0; pointer-events: none; }
   .home-board[data-upravit] .widget-grip { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .side-card > .grip { pointer-events: auto; }
   .board-upravit { display: flex; justify-content: flex-end; margin: 16px 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .widget::after, .widget-grip, .widget-resize::before, .widget-size { transition: none; } }

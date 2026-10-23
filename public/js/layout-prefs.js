@@ -6,7 +6,7 @@ import { tr } from './i18n.js';
 // Uživatelské pořadí karet (tažením). Ukládá se na server do nastavení, takže přežije zavření
 // aplikace i přeinstalování; pořadí se drží jen pro karty, které uživatel viděl.
 
-export const GRIP = `<span class="grip" data-grip aria-hidden="true" title="${tr('Přetáhni pro změnu pořadí')}"><i></i><i></i><i></i><i></i><i></i><i></i></span>`;
+export const GRIP = `<button class="widget-grip grip" type="button" data-grip aria-label="${tr('Přesunout kartu. Alt a šipky mění pořadí.')}" title="${tr('Přetáhni pro změnu pořadí')}"><i></i><i></i><i></i><i></i><i></i><i></i></button>`;
 
 export const savedOrder = (name) => state.settings?.layout?.[name] || [];
 

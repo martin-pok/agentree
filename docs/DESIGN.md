@@ -58,6 +58,11 @@ Výslovný požadavek vlastníka: nepoužívat jednostranné barevné okraje ani
 Pravidlo jednou větou: **všechno, na co se klepe a má jeden řádek, je kapsle.** Plochy mají
 zaoblení podle hloubky vnoření a nic nemá ostré rohy.
 
+**Přesouvání karet:** úchyt detailu agenta a projektu používá stejnou kapsli se šesti tečkami
+jako widgety Přehledu. Je 8 px nad kartou, zobrazí se při najetí nebo zaměření klávesnicí;
+mezi kartami je dost místa, aby nepřekrýval sousední kartu. Na dotykovém zařízení je dostupný
+trvale. Alt + šipky mění pořadí a fokus zůstává na úchytu.
+
 Výjimky, které jsou záměrné:
 
 - **Zaškrtávací políčko** je zaoblený čtverec (`--r-xs`). Kulaté políčko by se pletlo s přepínačem

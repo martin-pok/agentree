@@ -167,7 +167,7 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     if (j > i) list[j].after(el); else list[j].before(el);
     afterMove?.();
     flip(others, before);
-    el.focus();
+    (handle ? el.querySelector(handle) : el)?.focus();
     onMoveKey?.(j + 1, list.length);
     onCommit(items().map(idOf).filter(Boolean));
   });
