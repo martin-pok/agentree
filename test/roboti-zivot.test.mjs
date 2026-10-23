@@ -90,3 +90,15 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
   assert.match(js, /id="rb-objem"/);
   assert.match(js, /id="rb-zare"/);
 });
+
+test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hlavou, oblečení s trupem', async () => {
+  const { robotInWardrobe } = await import('../public/js/robot-wardrobe.js');
+  const svg = robotInWardrobe('Scout', { hat: 'cowboy', face: 'glasses3d', outfit: 'aloha' });
+  const celo = svg.indexOf('class="robot-celo"');
+  assert.ok(celo < svg.indexOf('robot-wear--face') && svg.indexOf('robot-wear--face') < svg.indexOf('robot-zada-hlavy'), 'brýle jedou s očima');
+  assert.ok(svg.lastIndexOf('robot-head') < svg.indexOf('robot-wear--hat') && svg.indexOf('robot-wear--hat') < svg.indexOf('robot-prace'), 'klobouk zůstává v hlavě');
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--hat, \.robot-wear--hood\) \{ animation: rz-otocka-hlava/);
+  assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--mid, \.robot-wear--body\) \{ animation: rz-otocka-trup/);
+  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face\)/);
+});

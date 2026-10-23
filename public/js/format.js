@@ -60,6 +60,23 @@ export function fmtMoney(v, currency = 'CZK', { compact = false } = {}) {
 // Tvar slova podle počtu; v angličtině ze slovníku (viz i18n.js).
 export const plural = mnozne;
 
+// Model po lidsku: „claude-opus-5-5“ → „Opus 5.5“, „gpt-5-codex“ → „GPT-5 Codex“,
+// „gemini-2.5-pro“ → „Gemini 2.5 Pro“. Neznámý tvar zůstane, jak je – nic se nevymýšlí.
+export function modelPopis(model) {
+  const m = String(model || '').trim();
+  if (!m) return '';
+  const velka = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+  let x = /^claude-(opus|sonnet|haiku|fable)-(\d+)(?:[-.](\d+))?(?:-\d{8})?$/i.exec(m);
+  if (x) return `${velka(x[1].toLowerCase())} ${x[2]}${x[3] ? `.${x[3]}` : ''}`;
+  x = /^claude-(\d+)(?:[-.](\d+))?-(opus|sonnet|haiku)(?:-\d{8})?$/i.exec(m);
+  if (x) return `${velka(x[3].toLowerCase())} ${x[1]}${x[2] ? `.${x[2]}` : ''}`;
+  x = /^gpt-([\w.]+?)(?:-(codex|mini|nano|pro|turbo))?$/i.exec(m);
+  if (x) return `GPT-${x[1]}${x[2] ? ` ${velka(x[2].toLowerCase())}` : ''}`;
+  x = /^gemini-([\d.]+)-(\w+)$/i.exec(m);
+  if (x) return `Gemini ${x[1]} ${velka(x[2].toLowerCase())}`;
+  return m;
+}
+
 export function rel(ts, now = Date.now()) {
   if (!ts) return '–';
   const d = now - ts;

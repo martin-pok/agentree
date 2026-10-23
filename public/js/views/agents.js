@@ -1,7 +1,7 @@
 import { agentRobot } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS } from '../format.js';
+import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS, modelPopis } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, agentListRank, compareAgentsForList } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
@@ -159,8 +159,15 @@ function applyQuery(q) {
 // Neznámý model je v tabulce pomlčka ve vlastním sloupci. Na kartě stojí hned za aplikací a
 // osamocená pomlčka („Codex –“) tam vypadá jako useknutý text – karta ji proto skryje.
 function modelCell(s) {
-  const text = s.model || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '');
+  const text = modelPopis(s.model) || (s.proces ? tr('proces bez přepisu') : s.source === 'web' ? 'web' : '');
   return text ? `<small>${esc(text)}</small>` : '<small class="cell-empty">–</small>';
+}
+
+// Služba se pozná podle loga, ne podle slova (vlastník, 23. 10. 2026): logo aplikace/služby a vedle
+// lidský název modelu. Plný název aplikace i přesné id modelu zůstávají v popisku a pro čtečky.
+function appCell(s) {
+  const popis = [s.app, s.model].filter(Boolean).join(' · ');
+  return `<span class="cell-app" title="${esc(popis)}"><span class="cell-logo">${glyph(s)}</span><span class="sr-only">${esc(s.app)}</span>${modelCell(s)}</span>`;
 }
 
 function rowHtml(s) {
@@ -182,7 +189,7 @@ function rowHtml(s) {
   const runs = taskRunCount(s);
   const cells = `
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
-    <span class="cell-app">${esc(s.app)}${modelCell(s)}</span>
+    ${appCell(s)}
     <span class="cell-status">${statusPill(s.status)}</span>
     <span class="cell-num">${total ? `${fmtTok(total)} <span class="cell-unit">${tr('tokenů')}</span>` : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;

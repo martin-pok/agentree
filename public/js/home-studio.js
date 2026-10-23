@@ -1,4 +1,5 @@
-import { esc } from './format.js';
+import { esc, modelPopis } from './format.js';
+import { glyph } from './icons.js';
 export { robot } from './robot-svg.js';
 import { robot } from './robot-svg.js';
 import { loadPersonas, renderAgentRobot, PERSONA_COLORS, PERSONA_AVATARS } from './agent-appearance.js';
@@ -45,7 +46,11 @@ export function createHomeStudio(el) {
       if (!nick) { nick = document.createElement('span'); nick.className = 'studio-nickname'; }
       const title = li.querySelector('.pb-agent-text b');
       if (title?.nextElementSibling !== nick) title?.after(nick);
-      nick.textContent = p.name || agentsList().find(a => a.id === li.dataset.key)?.app || tr('Agent');
+      // Vlastní jméno agenta, jinak logo služby a model (ne slovo „Codex“ – služba se pozná podle loga).
+      const a = agentsList().find((x) => x.id === li.dataset.key);
+      const obsah = p.name ? esc(p.name) : a ? `<span class="cell-logo">${glyph(a)}</span><span class="sr-only">${esc(a.app)}</span><span>${esc(modelPopis(a.model) || a.app)}</span>` : esc(tr('Agent'));
+      if (nick.innerHTML !== obsah) nick.innerHTML = obsah;
+      nick.classList.toggle('studio-nickname--sluzba', !p.name && Boolean(a));
     });
   };
   refresh();

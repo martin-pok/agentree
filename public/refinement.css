@@ -615,9 +615,13 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 .robot[data-otocka] .robot-ucho-zadni { animation: rz-otocka-ucho-z 600ms linear both; }
 .robot[data-otocka] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both; }
 .robot[data-otocka] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both; }
-.robot[data-otocka] :is(.robot-body > .robot-limbs:not(.robot-arm-left, .robot-arm-right), .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation: rz-otocka-stisk 600ms linear both; }
+.robot[data-otocka] :is(.robot-body > .robot-limbs:not(.robot-arm-left, .robot-arm-right), .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear--back) { animation: rz-otocka-stisk 600ms linear both; }
+/* Oblečení drží tvar těla i v otočce: pokrývka hlavy s obrysem hlavy, oblečení a převleky s trupem.
+   Brýle a doplňky na obličeji jsou v čele (robot-wardrobe.js), takže jedou s očima. */
+.robot[data-otocka] :is(.robot-wear--hat, .robot-wear--hood) { animation: rz-otocka-hlava 600ms linear both; }
+.robot[data-otocka] :is(.robot-wear--mid, .robot-wear--body) { animation: rz-otocka-trup 600ms linear both; }
 .robot[data-otocka] .robot-body { animation: rz-otocka-poskok 600ms both; }
-.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear) { animation-direction: reverse; }
+.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-wear--hat, .robot-wear--hood, .robot-wear--mid, .robot-wear--body) { animation-direction: reverse; }
 @keyframes rz-otocka-hlava {
   0% { scale: 1.000 1; }
   5% { scale: 1.000 1; }
@@ -828,11 +832,11 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-otocka-poskok { 0%, 100% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } 45% { translate: 0 -3px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } }
 /* Co je vidět: přední prvky do 90°, zadní od 90° (v profilu mají nulovou šířku, výměna je neviditelná).
    Paže z čelního pohledu se při otočce zády ztratí, pracovní paže s nástrojem se objeví až v zádech. */
-.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right) { display: inline !important; }
-.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core),
+.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face) { display: inline !important; }
+.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face),
 .robot[data-otocka='predek'] .robot-zada { opacity: 1; animation: rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-zada,
-.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core) { animation: rz-druha-pul 600ms both; }
+.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face) { animation: rz-druha-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-druha-pul 600ms both; }

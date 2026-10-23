@@ -332,8 +332,8 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .table.table--roboti :is(.sub-live > span:last-child, .sub-alert) { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .table.table--roboti .sub-live { align-items: flex-start; }
 .table.table--roboti .sub-live .live-dot { margin-top: 6px; }
-.table.table--roboti .cell-app { display: block; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
-.table.table--roboti .cell-app small { display: inline; margin-left: 8px; }
+.table.table--roboti .cell-app { display: flex; grid-column: 1 / -1; font-size: 14px; color: var(--mute); }
+.table.table--roboti .cell-app small { display: inline; margin-left: 0; }
 .table.table--roboti .cell-app small.cell-empty { display: none; }
 .table.table--roboti .cell-num { display: block; text-align: left; font-size: 14px; }
 .cell-unit { display: none; }
@@ -1086,3 +1086,8 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .session-avatar-edit svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .session-avatar:hover .session-avatar-edit, .session-avatar:focus-visible .session-avatar-edit { background: var(--action); color: var(--on-action); }
 @media (prefers-reduced-motion: reduce) { .session-avatar, .session-avatar-edit { transition: none; } .session-avatar:hover { transform: none; } }
+/* „Právě teď“: bez vlastního jména karta ukáže logo služby a model místo slova (home-studio.js). */
+.studio-nickname.studio-nickname--sluzba { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; font: 500 14px/1.4 var(--f-body); letter-spacing: 0; color: var(--ink-2); white-space: nowrap; }
+.studio-nickname--sluzba > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.studio-nickname--sluzba .cell-logo { width: 28px; height: 28px; }
+.studio-nickname--sluzba .cell-logo :is(.logo, .glyph) { width: 18px; height: 18px; }

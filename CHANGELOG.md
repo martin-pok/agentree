@@ -3,8 +3,10 @@
 ## 0.46.63 – 2026-10-23 · Roboti v dílně
 
 - **Roboti jsou tělesa, ne samolepky:** hlava i trup mají objem (světlo zleva shora, stín vpravo dole) a při otočce se točí jako zaoblené těleso – obrys se plynule zúží do profilu, obličej s očima po povrchu přejede za okraj, bližší ucho přejde přes hlavu a z druhé strany se vynoří záda.
+- **Oblečení drží:** čepice a klobouky se otáčejí s hlavou, brýle a doplňky na obličeji jedou po hlavě s očima a zezadu se neukazují, oblečení a převleky se točí s trupem – i při práci a volání anténou.
 - **Kdo čeká na zadání, fláká se:** vyhazuje míček, hraje si s jojem, nebo si hvízdá a pohupuje se do rytmu (každý agent má svou zábavu).
 - **Hezčí nohy a antény:** nohy jsou zaoblené kapsle s botou (Mochi má baculaté nožky místo beztvarých oválů), Nova má místo dvou „rohů“ jednu jemnou anténu se svítící hvězdičkou.
+- **Služba logem, ne slovem:** karty na Agentech i „Právě teď“ ukazují logo služby (Claude, Codex, Cursor…) a model po lidsku („Opus 5.5“, „GPT-5 Codex“) místo „Claude Code · claude-opus-5-5“. Plný název zůstává v popisku a pro čtečky.
 - **Filtry na Agentech bez posouvání:** řádky Zdroj, Služba a Projekt se nikdy vodorovně neposouvají ani nezvyšují. Co se nevejde, je v čipu „+N“ s nabídkou (stejnou jako u výběrů); první a vybraný čip zůstávají vidět. Na telefonu je „Vybrat konverzace“ kulatá ikona.
 - **Kdo tě potřebuje, volá tě anténou:** špička antény jemně pulzuje světlem, odcházejí z ní vlnky signálu a robot přitom souvisle mává.
 - **Pracující robot se otočí zády a pracuje rukama:** když agent začne pracovat, robot se otočí (krátká otočka přes profil), skloní hlavu a pustí se do práce u stolku – buď kuje kladivem (nápřah, úder, jiskry, rozžhavené místo, zpětný ráz do těla), nebo řeže pilkou (tahy celým tělem, padající piliny). Nástroj má každý agent svůj.

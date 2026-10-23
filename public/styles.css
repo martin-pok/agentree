@@ -1009,6 +1009,12 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .row-progress i { display: block; height: 100%; background: var(--teal); }
 .cell-app { min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell-app small { display: block; font: 400 12px/1.5 var(--f-mono); color: var(--mute); overflow: hidden; text-overflow: ellipsis; }
+/* Služba logem (agents.js#appCell): logo 20 px v jemné kapsli, vedle lidský název modelu. */
+.cell-app { display: flex; align-items: center; gap: 10px; }
+.cell-logo { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-full); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-2); }
+.cell-logo :is(.logo, .glyph) { width: 20px; height: 20px; }
+.cell-app small { font: 500 13px/1.4 var(--f-body); color: var(--ink-2); }
+.cell-app small.cell-empty { color: var(--mute); }
 .cell-num { font: 400 14px/1 var(--f-mono); text-align: right; }
 .cell-time { font-size: 13px; color: var(--mute); text-align: right; white-space: nowrap; }
 .pill { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: var(--r-full); font-size: 13px; white-space: nowrap; background: var(--line-2); color: var(--ink-2); }

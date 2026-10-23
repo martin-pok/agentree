@@ -21,3 +21,16 @@ test('řádky filtrů na Agentech se skládají do „+N“ místo posouvání',
   const en = await zdroj('public/js/i18n/en.js');
   assert.match(en, /"Další \(\{0\}\)": "More \(\{0\}\)"/);
 });
+
+test('karty agentů ukazují službu logem a model po lidsku, ne slovem', async () => {
+  const { modelPopis } = await import('../public/js/format.js');
+  assert.equal(modelPopis('claude-opus-5-5'), 'Opus 5.5');
+  assert.equal(modelPopis('claude-3-5-sonnet-20241022'), 'Sonnet 3.5');
+  assert.equal(modelPopis('gpt-5-codex'), 'GPT-5 Codex');
+  assert.equal(modelPopis('gemini-2.5-pro'), 'Gemini 2.5 Pro');
+  assert.equal(modelPopis('llama3:8b'), 'llama3:8b', 'neznámé zůstane, nic se nevymýšlí');
+  const agents = await zdroj('public/js/views/agents.js');
+  assert.match(agents, /<span class="cell-logo">\$\{glyph\(s\)\}<\/span><span class="sr-only">\$\{esc\(s\.app\)\}<\/span>/);
+  const studio = await zdroj('public/js/home-studio.js');
+  assert.match(studio, /cell-logo">\$\{glyph\(a\)\}/);
+});

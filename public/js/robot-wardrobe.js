@@ -629,13 +629,16 @@ export function renderWardrobe(svg, source) {
   const wrap = (jmeno, obsah) => (obsah ? `<g class="robot-wear robot-wear--${jmeno}">${obsah}</g>` : '');
   const back = wrap('back', kresba(body?.back, 'body'));
   const mid = wrap('mid', kresba(body?.mid, 'body'));
+  // Obličejové doplňky leží na čele (robot-celo): při otočce po povrchu hlavy přejedou s očima
+  // a zezadu se neukazují. Pokrývka hlavy se otáčí s obrysem hlavy (refinement.css).
+  const obliceje = wrap('face', kresba(costume?.face, 'face') + kresba(face?.head, 'face'));
   const head = wrap('hood', hat ? '' : kresba(costume?.hood, 'hat'))
-    + wrap('face', kresba(costume?.face, 'face') + kresba(face?.head, 'face'))
     + wrap('hat', kresba(hat?.head, 'hat') + (!hat ? kresba(costume?.top, 'hat') : ''));
   const bodyFront = wrap('body', kresba(body?.body, 'body'));
   let out = svg;
   if (back) out = out.replace('<g class="robot-body">', back + '<g class="robot-body">');
   if (mid) out = out.replace(/<g class="robot-head"/, mid + '<g class="robot-head"');
+  if (obliceje) out = out.replace('</g><g class="robot-zada-hlavy"', obliceje + '</g><g class="robot-zada-hlavy"');
   if (head) out = out.replace('</g></g></svg>', head + '</g></g></svg>');
   if (bodyFront) out = out.replace('</g></svg>', bodyFront + '</g></svg>');
   // Čepice a převlek s pokrývkou hlavy zakrývají anténu; kdyby trčela skrz ně, vypadalo by to jako chyba.
