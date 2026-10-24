@@ -59,6 +59,11 @@ const config = loadConfig();
 // Klíč okna i pro spuštění z Terminálu (src/klic-okna.js, docs/SECURITY.md). Vlastní hodnotu dává
 // AGENTEEQ_LOCAL_KEY; „0“ ochranu vypne (jen pro vývoj a ladění, nikdy pro běžné používání).
 if (!process.env.AGENTEEQ_LOCAL_KEY) config.localKey = novyKlic();
+// Klíč je od teď jen v config.localKey. Z prostředí procesu zmizí, aby ho nezdědil žádný potomek:
+// agent spuštěný z Agenteeq, Pomocník, git ani codex. Agent zmanipulovaný obsahem repozitáře by si ho
+// jinak přečetl a ovládal Agenteeq jako okno aplikace (test/klic-okna-potomci.test.mjs).
+delete process.env.AGENTEEQ_LOCAL_KEY;
+delete process.env.AGENTREE_LOCAL_KEY;
 const openUrl = (url) => {
   if (!openBrowser) return;
   const p = openCommand(url);

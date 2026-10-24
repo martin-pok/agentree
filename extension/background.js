@@ -334,8 +334,14 @@ const SITE_HOSTS = {
   qwen: ['chat.qwen.ai'],
   'github-copilot': ['github.com'],
 };
+// Zprávy přijímá jen od sebe (jiná rozšíření nemají onMessageExternal). Okno rozšíření (popup) je
+// jediné, kdo smí párovat, číst přehled a fokusovat aplikaci; skript na stránce smí jen hlásit stav
+// své karty a převzít zadání pro web, na kterém skutečně běží (adresu karty nastavuje prohlížeč).
+const odeMne = (sender) => sender?.id === chrome.runtime.id;
+const zOkna = (sender) => odeMne(sender) && !sender.tab && sender.url === chrome.runtime.getURL('popup.html');
 function senderMatchesSite(sender, site) {
-  if (!sender?.tab) return true; // Internal popup tests and messages do not carry a tab.
+  if (!odeMne(sender)) return false;
+  if (!sender.tab) return zOkna(sender);
   try {
     const url = new URL(sender.tab.url || sender.url);
     return url.protocol === 'https:' && SITE_HOSTS[site]?.includes(url.hostname) === true
@@ -358,29 +364,33 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     return true;
   } else if (msg?.type === 'agenteeq:handoff' && typeof msg.site === 'string') {
+    if (!sender?.tab || !senderMatchesSite(sender, msg.site)) { sendResponse({ prompt: null }); return false; }
     takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
+    if (!zOkna(sender)) { sendResponse({ ok: false }); return false; }
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   } else if (msg?.type === 'agenteeq:focus-agent') {
     // Only the extension's own popup can request native window focus. Scripts
     // injected into supported AI websites are explicitly excluded.
-    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+    if (!zOkna(sender)) {
       sendResponse({ ok: false }); return false;
     }
     focusExistingAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:open-app') {
-    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+    if (!zOkna(sender)) {
       sendResponse({ ok: false }); return false;
     }
     openNativeApp().then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
+    if (!zOkna(sender)) { sendResponse(null); return false; }
     prehled().then((data) => { obnovOdznak(data).catch(() => {}); sendResponse(data); }, () => sendResponse(null));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
+    if (!zOkna(sender)) { sendResponse({ chyba: true }); return false; }
     hello({ hned: true }).then(sendResponse, () => sendResponse({ chyba: true }));
     return true;
   }

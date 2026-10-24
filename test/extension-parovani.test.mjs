@@ -38,6 +38,7 @@ function spust(sit, { ulozeno = {} } = {}) {
     chrome: {
       storage: { local: oblast(local), session: oblast(session), onChanged: { addListener: (fn) => { zmenaUloziste = fn; } } },
       runtime: {
+        id: 'abcdefghijklmnopabcdefghijklmnop',
         getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
         getURL: (name) => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/' + name,
         onInstalled: { addListener() {} },
@@ -49,7 +50,9 @@ function spust(sit, { ulozeno = {} } = {}) {
     },
   });
   vm.runInContext(zdroj, kontext);
-  const zprava = (msg, sender = {}) => new Promise((resolve) => { posluchac(msg, sender, resolve); });
+  // onMessage dostává zprávy jen od vlastního rozšíření: odesílatel má vždy jeho id. Bez karty a adresy
+  // je to okno rozšíření (popup).
+  const zprava = (msg, sender = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' }) => new Promise((resolve) => { posluchac(msg, { id: 'abcdefghijklmnopabcdefghijklmnop', ...sender }, resolve); });
   const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
   return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
 }
@@ -310,4 +313,15 @@ test('native focus: an invalid ID or missing token never causes HTTP or hidden p
     assert.equal((await joined.zprava({ type: 'agenteeq:focus-agent', id }, sender)).ok, false);
   }
   assert.equal(joined.volani.length, 0);
+});
+
+test('pozadí rozšíření: párování, přehled a stav smí jen okno rozšíření, ne skript na stránce ani cizí odesílatel', async () => {
+  const r = spust(() => ({ status: 200, body: { token: 't'.repeat(43) } }), { ulozeno: { token: 't'.repeat(43) } });
+  const stranka = { tab: { id: 4, url: 'https://claude.ai/chat/abc' } };
+  assert.equal((await r.zprava({ type: 'agenteeq:pair', code: '123456' }, stranka)).ok, false);
+  assert.equal(await r.zprava({ type: 'agenteeq:prehled' }, stranka), null);
+  assert.equal((await r.zprava({ type: 'agenteeq:hello' }, stranka)).chyba, true);
+  assert.equal((await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude' } }, { id: 'cizi-rozsireni', url: 'chrome-extension://cizi/popup.html' })).ok, false);
+  assert.equal((await r.zprava({ type: 'agenteeq:handoff', site: 'chatgpt' }, stranka)).prompt, null, 'karta na claude.ai nepřevezme zadání pro ChatGPT');
+  assert.equal((await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude' } }, { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/jina.html' })).ok, false);
 });
