@@ -138,7 +138,7 @@ export function createLauncher(root) {
     </div>
     <div class="launch-compose">
       <label class="sr-only" for="launch-prompt">${tr('Zadání pro agenta')}</label>
-      <div class="launch-pole"><textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt></textarea></div>
+      <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt></textarea>
       <div class="launch-bar">
         <div class="lpick" data-region="pick"></div>
         <div class="launch-controls" data-region="controls"></div>

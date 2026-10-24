@@ -1158,8 +1158,7 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 
 /* Generátor nápadů v prázdném poli zadání (public/js/napady.js): náhled nad polem ve stejném písmu
    a odsazení, jen ztlumeně. Výměna je plynulé zmizení nahoru a příchod zdola. */
-.launch-pole { position: relative; }
-.launch-napad { position: absolute; inset: 0; overflow: hidden; color: var(--mute); pointer-events: none; overflow-wrap: anywhere; }
+.launch-napad { position: absolute; overflow: hidden; color: var(--mute); pointer-events: none; overflow-wrap: anywhere; }
 .launch-napad-text { display: inline-block; transition: opacity 320ms var(--ease), transform 420ms var(--ease-settle, var(--ease)), filter 320ms var(--ease); }
 .launch-napad-text.je-pryc { opacity: 0; transform: translateY(-6px); filter: blur(2px); }
 .launch-napad-text.je-prichod { opacity: 0; transform: translateY(6px); filter: blur(2px); transition: none; }

@@ -44,11 +44,13 @@ export function pripojNapady(pole, { interval = INTERVAL_MS } = {}) {
   const text = vrstva.lastElementChild;
   uvod.textContent = tr('Co má agent udělat? Např.');
   text.textContent = `„${textNapadu(dalsi())}“`;
-  obal.append(vrstva);
+  pole.after(vrstva);
 
-  // Stejné odsazení a písmo jako pole, ať text sedí přesně tam, kde začne psaní.
+  // Stejné místo, odsazení a písmo jako pole, ať text sedí přesně tam, kde začne psaní. Vrstva je
+  // sourozenec pole (ne obal), aby fokus pole dál kreslil jeho rodič (:focus-within).
   const srovnej = () => {
     const cs = getComputedStyle(pole);
+    Object.assign(vrstva.style, { top: `${pole.offsetTop}px`, left: `${pole.offsetLeft}px`, width: `${pole.offsetWidth}px`, height: `${pole.offsetHeight}px` });
     for (const k of ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'fontSize', 'fontFamily', 'fontWeight', 'lineHeight', 'letterSpacing']) vrstva.style[k] = cs[k];
   };
   const viditelnost = () => { vrstva.hidden = pole.value.length > 0; };
