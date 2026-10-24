@@ -125,7 +125,9 @@ function showHandoff({ target, label, mode, handoff, prompt, autofill }) {
 }
 
 export function createLauncher(root) {
-  const prefs = { agent: '', modes: {}, cwd: {}, permission: 'plan', sandbox: 'read-only', model: '', projectId: '', brief: true, draft: '', ...load() };
+  // Kde spustit se nepamatuje: výchozí je vždy „V aplikaci“ (první z t.modes), většina lidí pracuje
+  // v aplikaci. Na pozadí nebo v Terminálu platí jen pro jedno spuštění.
+  const prefs = { agent: '', cwd: {}, permission: 'plan', sandbox: 'read-only', model: '', projectId: '', brief: true, draft: '', ...load(), modes: {} };
   let busy = false;
 
   root.innerHTML = `
@@ -205,7 +207,7 @@ export function createLauncher(root) {
     if (p?.folders.length) return p.folders.includes(saved) ? saved : p.folders[0];
     return saved || recentFolders(1)[0] || '';
   };
-  const persist = () => save({ ...prefs, draft: promptEl.value.slice(0, PROMPT_MAX) });
+  const persist = () => save({ ...prefs, modes: {}, draft: promptEl.value.slice(0, PROMPT_MAX) });
 
   function render() {
     const list = targets();
@@ -309,6 +311,8 @@ export function createLauncher(root) {
       if (t.id === 'ollama') body.model = t.models.includes(prefs.model) ? prefs.model : t.models[0];
       const r = await api.launch(body);
       promptEl.value = '';
+      delete prefs.modes[t.id]; // další zadání zase „V aplikaci“
+      render();
       persist();
       const detail = r.sessionId ? { action: { label: tr('Přepis'), href: agentHref(r.sessionId) } } : {};
       if (r.dry) toast(tr('Zkušební režim: {0} by se spustil ({1}).', r.label, state.launch.modes[mode] || mode), { tone: 'info' });
@@ -409,7 +413,8 @@ export function createLauncher(root) {
         if (launchIntent.projectId && projectById(launchIntent.projectId)) {
           prefs.projectId = launchIntent.projectId;
           const t = target();
-          if (t && t.projectModes.length && !needsFolder(t, modeOf(t))) prefs.modes[t.id] = t.projectModes[0];
+          // Projekt potřebuje složku: aplikace, která ji umí převzít (Claude), zůstává; jinak na pozadí.
+          if (t && t.projectModes.length && !allowsFolder(t, modeOf(t))) prefs.modes[t.id] = t.projectModes[0];
         }
         const focus = launchIntent.focus;
         Object.assign(launchIntent, { projectId: null, focus: false });

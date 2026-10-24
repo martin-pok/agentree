@@ -38,7 +38,8 @@ test('Claude remote: recovers missing morning agent and reported failure without
   assert.equal(s.repo, 'example/project'); assert.equal(s.cwd, ''); assert.equal(s.resume, null);
   assert.equal(s.tokens.input, 0); assert.equal(s.tokens.output, 0); assert.equal(s.observation.partial, true);
   assert.equal(s.spans.length, 1, 'one reported update, no invented whole-day working interval');
-  assert.equal(s.open.find((x) => x.id === 'app')?.label, 'Otevřít konverzaci');
+  // Relace žije v aplikaci Claude: otevře se ona, ne web (claude.ai by ji nemusel najít).
+  assert.match(s.open.find((x) => x.id === 'app')?.label || '', /^Otevřít (v Claude|konverzaci)$/);
   assert.equal(JSON.stringify(s).includes('private fixture'), false);
 });
 

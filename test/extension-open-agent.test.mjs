@@ -24,8 +24,11 @@ test('rozšíření: webový chat a cloudová relace vrátí adresu pro Chrome, 
   const w = await f.send(f.web.id);
   assert.equal(w.status, 200);
   assert.equal(w.body.url, 'https://chatgpt.com/c/abc');
+  // Relace z Claude Desktopu se otevře v aplikaci Claude (je-li), nikdy na webu, kde ji claude.ai nemusí najít.
   const c = await f.send(f.cloud.id);
-  assert.equal(c.body.url, 'https://claude.ai/code/session_01FixtureRemoteAgent123');
+  assert.equal(c.status, 200);
+  if (c.body.url) assert.equal(c.body.url, 'https://claude.ai/code/session_01FixtureRemoteAgent123');
+  else assert.equal(c.body.opened || c.body.focused, true);
   assert.equal(f.messages.length, 0, 'okno Agenteeq se nepřepnulo');
   assert.equal(f.server.app.runs.children.size, 0);
 });

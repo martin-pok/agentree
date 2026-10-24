@@ -254,8 +254,12 @@ html { scrollbar-gutter: stable; }
 /* Značková fialová (tlačítko pomocníka) pro jemnou záři u ovládacích prvků. */
 :root { --brand: #6260d8; --on-brand: #ffffff; --brand-solid: #6260d8; }
 html[data-theme='dark'] { --brand: #8c88f4; --on-brand: #16141d; }
-/* Hlavní potvrzení (Rozumím, Uložit vzhled): při najetí značková fialová s bílým textem (kontrast 4,9 : 1). */
-.btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
+/* Pravidlo designového systému (vlastník, 24. 10. 2026): každé hlavní (plné) tlačítko při najetí a
+   klávesovém fokusu zfialoví s bílým textem, v obou vzhledech (kontrast 4,9 : 1). Totéž okno rozšíření. */
+.btn--primary:not(:disabled, .btn--danger):is(:hover, :focus-visible), .btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
+.btn--primary:not(:disabled, .btn--danger):is(:hover, :focus-visible) :is(.glyph, svg) { color: #fff !important; }
+/* Počty v menu (Upozornění, Agenti): fialové kolečko s bílým číslem ve všech vzhledech a na telefonu. */
+:is(.nav, .sheet-nav) .nav-badge, :is(.nav, .sheet-nav) .nav-badge[data-tone] { background: var(--brand-solid); color: #fff; }
 
 /* Bublina zprava: vysvětlí, proč volba teď nic neukáže (prázdný archiv). Skleněná plocha s jemnou
    značkovou září, vyjíždí o 4 px. Rodičovská volba ji nesmí oříznout, proto .seg--tips. */
@@ -525,7 +529,9 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
    změna stavu: 200 ms ease-in z profilu, 200 ms ease-out do nového. Stav dál říká i štítek „Pracuje“. */
 .robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: none; }
 :is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: inline; }
-:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face) { display: none; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp) { display: none; }
+/* Šatník zezadu: přední detaily (.wp) nejsou vidět a průhled v přilbě či kukle (.wpr) je plný. */
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot .wpr { fill-rule: nonzero; }
 .robot { --kov: color-mix(in srgb, var(--ink) 62%, var(--card)); }
 .pila-zuby { fill: none; stroke: color-mix(in srgb, var(--ink) 80%, var(--card)); stroke-width: .8; stroke-linejoin: round; }
 .dilna-stul { fill: color-mix(in srgb, var(--ink) 22%, var(--card)); }
@@ -835,11 +841,11 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-otocka-poskok { 0%, 100% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } 45% { translate: 0 -3px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } }
 /* Co je vidět: přední prvky do 90°, zadní od 90° (v profilu mají nulovou šířku, výměna je neviditelná).
    Paže z čelního pohledu se při otočce zády ztratí, pracovní paže s nástrojem se objeví až v zádech. */
-.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face) { display: inline !important; }
-.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face),
+.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp) { display: inline !important; }
+.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp),
 .robot[data-otocka='predek'] .robot-zada { opacity: 1; animation: rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-zada,
-.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face) { animation: rz-druha-pul 600ms both; }
+.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp) { animation: rz-druha-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-druha-pul 600ms both; }
@@ -951,6 +957,12 @@ html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-vlna { animation: rz-vlna 1.8s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -.6s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-volani 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+/* Hotovo, čeká na další zadání: prvních 15 s po dokončení (data-hra-od, home-studio.js) volá stejně –
+   anténa svítí, vlnky signálu a mávání. Pak atribut zmizí a robot se začne flákat. */
+[data-hra-od] .robot .robot-signal { display: inline; }
+[data-hra-od] .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+[data-hra-od] .robot.is-zivy:not([data-otocka]) .signal-vlna { animation: rz-vlna 1.8s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -.6s) infinite; }
+[data-hra-od] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-volani 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
 @keyframes rz-zare { 0%, 100% { opacity: .55; scale: .8; } 50% { opacity: 1; scale: 1.15; } }
 @keyframes rz-vlna { 0% { opacity: .9; scale: .7; } 100% { opacity: 0; scale: 3.4; } }
 @keyframes rz-volani { 0%, 100% { transform: rotate(-52deg); } 25% { transform: rotate(-38deg); } 50% { transform: rotate(-60deg); } 75% { transform: rotate(-40deg); } }

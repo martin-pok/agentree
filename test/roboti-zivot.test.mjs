@@ -109,5 +109,50 @@ test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hl
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--hat, \.robot-wear--hood\) \{ animation: rz-otocka-hlava/);
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--mid, \.robot-wear--body\) \{ animation: rz-otocka-trup/);
-  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face\)/);
+  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face, \.wp\)/);
+});
+
+test('flákání až po oddechu: 15 s po dokončení úlohy je robot v klidu, pak teprve hraje', async () => {
+  const { dilnaAtributy, ODDECH_MS } = await import('../public/js/home-studio.js');
+  assert.equal(ODDECH_MS, 15000);
+  const hrac = Array.from({ length: 60 }, (_, i) => `agent-${i}`).find((id) => !dilnaAtributy({ id, status: 'waiting' }).includes('data-hra="klid"'));
+  const hra = dilnaAtributy({ id: hrac, status: 'waiting' }).match(/data-hra="(\w+)"/)[1];
+  const prave = dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 });
+  assert.match(prave, /data-hra="klid"/);
+  assert.match(prave, new RegExp(`data-hra-pak="${hra}"`));
+  assert.match(prave, /data-hra-od="\d+"/);
+  assert.match(dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 20000 }), new RegExp(`data-hra="${hra}"`));
+  const js = await zdroj('public/js/mascot-motion.js');
+  assert.match(js, /querySelectorAll\('\[data-hra-od\]'\)/);
+  // Prvních 15 s hotový agent volá anténou a mává.
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\[data-hra-od\] \.robot \.robot-signal \{ display: inline; \}/);
+  const { agentRobot } = await import('../public/js/home-studio.js');
+  assert.ok(agentRobot({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 }).includes('robot-signal'));
+});
+
+test('šatník zezadu: přední detaily a průhledy přileb se u robota otočeného zády neukazují', async () => {
+  const { robotInWardrobe } = await import('../public/js/robot-wardrobe.js');
+  const rytir = robotInWardrobe('Scout', { costume: 'knight' });
+  assert.match(rytir, /class="rf-steel ro wpr" fill-rule="evenodd"/, 'průhled přilby je označený');
+  assert.match(rytir, /<g class="wp">/, 'hledí a znak jsou jen zepředu');
+  for (const kus of [{ outfit: 'tie' }, { outfit: 'bowtie' }, { costume: 'ninja' }, { costume: 'frog' }, { costume: 'dino' }]) {
+    assert.match(robotInWardrobe('Scout', kus), /class="wp"|wpr/, JSON.stringify(kus));
+  }
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.robot-wear--face, \.wp\) \{ display: none; \}/);
+  assert.match(css, /\.robot \.wpr \{ fill-rule: nonzero; \}/);
+});
+
+test('šatník zezadu: přední detaily a průhledy přileb se u robota otočeného zády neukazují', async () => {
+  const { robotInWardrobe } = await import('../public/js/robot-wardrobe.js');
+  const rytir = robotInWardrobe('Scout', { costume: 'knight' });
+  assert.match(rytir, /class="rf-steel ro wpr" fill-rule="evenodd"/, 'průhled přilby je označený');
+  assert.match(rytir, /<g class="wp">/, 'hledí a znak jsou jen zepředu');
+  for (const kus of [{ outfit: 'tie' }, { outfit: 'bowtie' }, { costume: 'ninja' }, { costume: 'frog' }, { costume: 'dino' }]) {
+    assert.match(robotInWardrobe('Scout', kus), /class="wp"|wpr/, JSON.stringify(kus));
+  }
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.robot-wear--face, \.wp\) \{ display: none; \}/);
+  assert.match(css, /\.robot \.wpr \{ fill-rule: nonzero; \}/);
 });

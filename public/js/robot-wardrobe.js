@@ -276,65 +276,69 @@ const RUMENEC = {
 };
 
 /* ---------- Oblečení ---------- */
+// Jen zepředu (třída .wp): knoflíky, kravaty, znaky, kapsy, bříška, hledí. Robot otočený zády je
+// neukazuje (refinement.css); při otočce zmizí v polovině jako obličej. Průhled v přilbě či kukle
+// (.wpr, fill-rule evenodd) se zezadu vyplní – zezadu je přilba celá.
+const P = (svg) => `<g class="wp">${svg}</g>`;
 const TRICKO = {
   mid: '<path class="rf-main ro" d="M31 70 23 77l5 8 6-4v7a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-7l6 4 5-8-8-7c-7 4-37 4-44 0Z"/>'
     + '<path class="rs" d="M34 81v7a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-7c-12 4.500-28 4.500-40 0Z"/>'
     + '<path class="rh" d="M32 71.500 25 77.500l3 5 4-2.500Z"/>'
-    + '<path class="rk-deep" fill="none" stroke-width="2" stroke-linecap="round" d="M43.500 70.500q10.500 8.500 21 0"/>'
+    + P('<path class="rk-deep" fill="none" stroke-width="2" stroke-linecap="round" d="M43.500 70.500q10.500 8.500 21 0"/>')
     + '<path class="rk-deep" fill="none" stroke-width="1" opacity=".5" stroke-dasharray="2 2" d="M37 92.500h34M26 82l5-3M82 82l-5-3"/>'
-    + '<circle class="rf-soft ro" cx="54" cy="83" r="3.800"/>',
+    + P('<circle class="rf-soft ro" cx="54" cy="83" r="3.800"/>'),
 };
 const MIKINA = {
   mid: '<path class="rf-deep ro" d="M31 70 23 77l5 11 6-5v5a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-5l6 5 5-11-8-7c-7 4-37 4-44 0Z"/>'
     + '<path class="rh" d="M32 71.500 25 78l3 6 4-3Z"/>'
     + '<path class="rf-main ro" d="M35 70c5 12 33 12 38 0l4 4c-3 13-43 13-46 0Z"/>'
-    + '<path class="rk-white" fill="none" stroke-width="1.600" stroke-linecap="round" d="M50 77.500v7m8-7v7"/>'
+    + P('<path class="rk-white" fill="none" stroke-width="1.600" stroke-linecap="round" d="M50 77.500v7m8-7v7"/>'
     + '<circle class="rf-silver" cx="50" cy="85.500" r="1.200"/><circle class="rf-silver" cx="58" cy="85.500" r="1.200"/>'
-    + '<path class="rf-main ro" d="M41.500 87h25l-2.200 6H43.700Z"/>'
+    + '<path class="rf-main ro" d="M41.500 87h25l-2.200 6H43.700Z"/>')
     + '<path class="rk-deep" fill="none" stroke-width="1.100" opacity=".5" d="M34 91.500h6m28 0h6"/>',
 };
 const KRAVATA = {
-  mid: '<path class="rf-light ro" d="M43 69l11 10 11-10-2 9-9 3-9-3Z"/>'
+  mid: P('<path class="rf-light ro" d="M43 69l11 10 11-10-2 9-9 3-9-3Z"/>'
     + '<path class="rf-main ro" d="M51 77.500h6l-1.500 3.500h-3Z"/>'
     + '<path class="rf-main ro" d="M52.500 81h3l3.500 11-5 2.500-5-2.500Z"/>'
     + '<path class="rs" d="M54 81h1.500l3.500 11-5 2.500Z"/>'
-    + '<path class="rk-white" fill="none" stroke-width="1.100" opacity=".5" d="M51.500 85l5-1m-5.800 4 6.600-1.300"/>',
+    + '<path class="rk-white" fill="none" stroke-width="1.100" opacity=".5" d="M51.500 85l5-1m-5.800 4 6.600-1.300"/>'),
 };
 const MOTYLEK = {
-  body: '<path class="rf-main ro" d="M54 79 42 72.500v13.500Z"/><path class="rf-main ro" d="M54 79l12-6.500V86Z"/>'
+  body: P('<path class="rf-main ro" d="M54 79 42 72.500v13.500Z"/><path class="rf-main ro" d="M54 79l12-6.500V86Z"/>'
     + '<path class="rs" d="M54 79l-12 7V80Zm0 0 12 7V80Z"/>'
     + '<path class="rk-deep" fill="none" stroke-width="1" opacity=".6" d="M46 76.500v6m4-5v4m12-4v4m4-5v6"/>'
-    + '<rect class="rf-deep ro" x="51" y="75.500" width="6" height="7.500" rx="2.500"/>',
+    + '<rect class="rf-deep ro" x="51" y="75.500" width="6" height="7.500" rx="2.500"/>'),
 };
 const SALA = {
   body: '<path class="rf-main ro" d="M31 73.500c9 5.500 37 5.500 46 0l1 6c-10 6.500-38 6.500-48 0Z"/>'
     + '<path class="rf-soft" d="M31 73.500c9 5.500 37 5.500 46 0l.4 2.400c-9.500 5-37.500 5-46.800 0Z"/>'
-    + '<path class="rf-main ro" d="M61 80h8.500l1.800 17h-10.300Z"/>'
+    + P('<path class="rf-main ro" d="M61 80h8.500l1.800 17h-10.300Z"/>'
     + '<path class="rf-soft" d="M61.300 86.500h9.100l.3 3H61Zm-.5 6.500h9.900l.3 3h-10.500Z"/>'
-    + '<path class="rk-deep" fill="none" stroke-width="1" opacity=".5" stroke-linecap="round" d="M62 97v2m3-2v2m3-2v2"/>',
+    + '<path class="rk-deep" fill="none" stroke-width="1" opacity=".5" stroke-linecap="round" d="M62 97v2m3-2v2m3-2v2"/>'),
 };
 const PLASC = {
   back: '<path class="rf-deep ro" d="M34 70C26 82 19 94 14 103h80c-5-9-12-21-20-33Z"/>'
     + '<path class="rf-soft" opacity=".35" d="M54 72c-4 10-8 22-12 31h24c-4-9-8-21-12-31Z"/>'
     + '<path class="rs" d="M14 103c3-4 6-8.500 9-14l8 14Zm80 0c-3-4-6-8.500-9-14l-8 14Z"/>',
-  body: '<path class="rk-gold" fill="none" stroke-width="2" stroke-linecap="round" d="M39 74q15 7 30 0"/>'
-    + '<circle class="rf-gold rog" cx="54" cy="77.500" r="3"/><circle class="rh" cx="53" cy="76.500" r="1"/>',
+  body: P('<path class="rk-gold" fill="none" stroke-width="2" stroke-linecap="round" d="M39 74q15 7 30 0"/>'
+    + '<circle class="rf-gold rog" cx="54" cy="77.500" r="3"/><circle class="rh" cx="53" cy="76.500" r="1"/>'),
 };
 const VESTA = {
   mid: '<path class="rf-denim ro" d="M33 70l9.500 4.500L54 92 65.500 74.500 75 70v17a6 6 0 0 1-6 6H39a6 6 0 0 1-6-6Z"/>'
     + '<path class="rs" d="M54 92 65.500 74.500 75 70v17a6 6 0 0 1-6 6H55Z"/>'
-    + '<path class="rf-light ro" d="M42.500 74.500 54 92 65.500 74.500l-4-1.500L54 82l-7.500-9Z"/>'
+    + P('<path class="rf-light ro" d="M42.500 74.500 54 92 65.500 74.500l-4-1.500L54 82l-7.500-9Z"/>')
     + '<path class="rk-white" fill="none" stroke-width="1" opacity=".5" stroke-dasharray="1.800 1.800" d="M36 88v-13m36 13v-13"/>'
-    + '<circle class="rf-gold rog" cx="54" cy="86" r="1.600"/><circle class="rf-gold rog" cx="54" cy="90" r="1.600"/>',
+    + P('<circle class="rf-gold rog" cx="54" cy="86" r="1.600"/><circle class="rf-gold rog" cx="54" cy="90" r="1.600"/>'),
 };
 
 const ZASTERA = {
-  mid: '<path class="rf-light" d="M44 72.500h20v8.500l6.500 1.500 1 11.300q0 2.200-2.200 2.200H38.700q-2.200 0-2.200-2.200l1-11.300 6.500-1.500Z"/>'
-    + '<path class="rs" d="M64 81l6.500 1.500 1 11.300q0 2.200-2.200 2.200H64Z" opacity=".5"/>'
+  mid: P('<path class="rf-light" d="M44 72.500h20v8.500l6.500 1.500 1 11.300q0 2.200-2.200 2.200H38.700q-2.200 0-2.200-2.200l1-11.300 6.500-1.500Z"/>'
+    + '<path class="rs" d="M64 81l6.500 1.500 1 11.300q0 2.200-2.200 2.200H64Z" opacity=".5"/>')
     + '<path class="rf-main ro" d="M33.300 80.300h41.400v3.600H33.300Z"/>'
-    + '<rect class="rf-soft ro" x="47.500" y="86" width="13" height="6.500" rx="2"/>'
+    + P('<rect class="rf-soft ro" x="47.500" y="86" width="13" height="6.500" rx="2"/>'
     + '<path class="rf-main" d="M54 91.300c-2.400-1.500-3-3.100-1.900-3.700.7-.4 1.500 0 1.900.6.4-.6 1.200-1 1.900-.6 1.100.6.5 2.200-1.900 3.700Z"/>'
-    + '<path class="rk-shade" fill="none" stroke-width=".9" stroke-dasharray="1.500 1.500" opacity=".8" d="M38.300 94h31.400M45.500 74.500v5m17-5v5"/>',
+    + '<path class="rk-shade" fill="none" stroke-width=".9" stroke-dasharray="1.500 1.500" opacity=".8" d="M38.300 94h31.400M45.500 74.500v5m17-5v5"/>'),
 };
 const BUNDA = {
   mid: '<path class="rf-main ro" d="M31 70 23 77l5 9 6-4.500V88a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-6.500l6 4.500 5-9-8-7c-7 4-37 4-44 0Z"/>'
@@ -343,29 +347,29 @@ const BUNDA = {
     + '<path class="rf-deep ro" d="M34 88h40a9 9 0 0 1-.97 4.200H34.970A9 9 0 0 1 34 88Z"/>'
     + '<path class="rk-light" fill="none" stroke-width="1" d="M34.500 90.100h39"/>'
     + '<path class="rf-deep ro" d="M41.500 70.500q12.500 10 25 0l2 1.800q-14.500 12-29 0Z"/>'
-    + '<path class="rk-deep" fill="none" stroke-width="1.200" d="M54 79v9"/>'
+    + P('<path class="rk-deep" fill="none" stroke-width="1.200" d="M54 79v9"/>'
     + '<circle class="rf-light" cx="54" cy="81" r="1.100"/><circle class="rf-light" cx="54" cy="85.500" r="1.100"/>'
     + '<circle class="rf-light ro" cx="44" cy="83.500" r="4.200"/>'
-    + `<path class="rf-main" d="${hvezda5(44, 83.800, 3, 1.300)}"/>`
+    + `<path class="rf-main" d="${hvezda5(44, 83.800, 3, 1.300)}"/>`)
     + '<path class="rh" d="M32 71.500 25 77.500l3 5 3.500-2.200Z"/>',
 };
 const LACLACE = {
   mid: '<path class="rf-denim ro" d="M42 74.500h24V84h9v5a8 8 0 0 1-8 8H41a8 8 0 0 1-8-8v-5h9Z"/>'
     + '<path class="rs" d="M66 84h9v5a8 8 0 0 1-8 8h-6.500Z" opacity=".6"/>'
     + '<path class="rf-denim ro" d="M42.500 77 36 72l3-2.500 6 5.500ZM65.500 77 72 72l-3-2.500-6 5.500Z"/>'
-    + '<circle class="rf-gold rog" cx="44" cy="77" r="1.600"/><circle class="rf-gold rog" cx="64" cy="77" r="1.600"/>'
-    + '<path class="rs" d="M48 79h12v4a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2Z"/>'
+    + P('<circle class="rf-gold rog" cx="44" cy="77" r="1.600"/><circle class="rf-gold rog" cx="64" cy="77" r="1.600"/>'
+    + '<path class="rs" d="M48 79h12v4a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2Z"/>')
     + '<path class="rk-gold" fill="none" stroke-width=".9" stroke-dasharray="1.300 1.300" opacity=".8" d="M48.800 80h10.400M35 89q5 0 6-4.500M73 89q-5 0-6-4.500M43 76.500v6.500m22-6.500v6.500"/>'
-    + '<path class="rs" d="M53.300 90.500h1.400V97h-1.400Z"/>',
+    + P('<path class="rs" d="M53.300 90.500h1.400V97h-1.400Z"/>'),
 };
 const HAVAJ = {
   mid: '<path class="rf-main ro" d="M31 70 23 77l5 8 6-4v7a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-7l6 4 5-8-8-7c-7 4-37 4-44 0Z"/>'
     + '<path class="rs" d="M34 84v4a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-4c-12 4.500-28 4.500-40 0Z"/>'
     + listek(31, 79.500, 3.200, 1.500, -40, 'rf-soft') + listek(66.500, 92, 3.200, 1.500, 25, 'rf-soft') + listek(71.500, 78.500, 3, 1.400, 50, 'rf-soft')
     + kvet(39.500, 87.500, 3.600, 'rf-light') + kvet(68.500, 84, 3.200, 'rf-pink') + kvet(26.500, 79, 2.400, 'rf-pink') + kvet(81.500, 79, 2.400, 'rf-light') + kvet(57, 93.200, 2.400, 'rf-pink')
-    + '<path class="rf-deep" d="M46.500 73 54 82l7.500-9Z"/>'
+    + P('<path class="rf-deep" d="M46.500 73 54 82l7.500-9Z"/>'
     + '<path class="rf-soft ro" d="M43.500 71.500 54 84l-11.500-6-2-4.500ZM64.500 71.500 54 84l11.500-6 2-4.500Z"/>'
-    + '<circle class="rf-light" cx="54" cy="88" r="1.100"/><circle class="rf-light" cx="54" cy="92.500" r="1.100"/>',
+    + '<circle class="rf-light" cx="54" cy="88" r="1.100"/><circle class="rf-light" cx="54" cy="92.500" r="1.100"/>'),
 };
 
 /* ---------- Převleky na celé tělo ----------
@@ -374,8 +378,8 @@ const HAVAJ = {
 const KOSMONAUT = {
   back: '<rect class="rf-soft ro" x="27" y="66" width="54" height="30" rx="9"/>',
   mid: (g, nasad) => trup(g, 'rf-light ro')
-    + nasad('body', '<rect class="rf-main ro" x="43.500" y="76" width="21" height="10" rx="3.500"/>'
-      + '<circle class="rf-light" cx="49" cy="81" r="1.800"/><circle class="rf-light" cx="54" cy="81" r="1.800"/><circle class="rf-gold" cx="59" cy="81" r="1.800"/>'
+    + nasad('body', P('<rect class="rf-main ro" x="43.500" y="76" width="21" height="10" rx="3.500"/>'
+      + '<circle class="rf-light" cx="49" cy="81" r="1.800"/><circle class="rf-light" cx="54" cy="81" r="1.800"/><circle class="rf-gold" cx="59" cy="81" r="1.800"/>')
       + '<ellipse class="rf-soft ro" cx="54" cy="72.500" rx="21" ry="5"/>')
     + ruce(g).map(([x, y]) => `<circle class="rf-light ro" cx="${c(x)}" cy="${c(y)}" r="5"/>`).join('')
     // Pásy (Rover) a nožky (Mochi) boty nedostanou – bota by visela ve vzduchu přes kola.
@@ -399,8 +403,8 @@ const KOSMONAUT = {
 const DINO = {
   back: '<path class="rf-deep ro" d="M76 88c16 2 24-6 22-20-2 9-8 13-22 12Z"/>',
   mid: (g, nasad) => trup(g, 'rf-main ro')
-    + nasad('body', '<ellipse class="rf-soft" cx="54" cy="83" rx="13" ry="9"/>'
-      + '<path class="rk-main" fill="none" stroke-width="1.500" opacity=".4" d="M44 80h20m-19 4h18m-16 4h14"/>'
+    + nasad('body', P('<ellipse class="rf-soft" cx="54" cy="83" rx="13" ry="9"/>'
+      + '<path class="rk-main" fill="none" stroke-width="1.500" opacity=".4" d="M44 80h20m-19 4h18m-16 4h14"/>')
       + '<path class="rf-deep ro" d="M29 82l-6 2 3 5 5-2Zm50 0 6 2-3 5-5-2Z"/>'),
   hood: '<path class="rf-deep ro" d="M33 27 37 12l6 14 5-16 6 15 6-15 5 16 6-14 4 15Z"/>'
     + '<path class="rh" d="M37 14.500 41 24l-3 1.500Zm11-4 4 11-2.500.5Z"/>',
@@ -422,7 +426,7 @@ const cipy = (g, y, svg) => {
 };
 const NINJA = {
   mid: (g, nasad) => trup(g, 'rf-night rok') + pasTrupu(g, 0.5, 0.71, 'rf-main')
-    + nasad('body', '<rect class="rf-gold rog" x="50" y="80" width="8" height="7" rx="1.500"/>'),
+    + nasad('body', P('<rect class="rf-gold rog" x="50" y="80" width="8" height="7" rx="1.500"/>')),
   hood: (g) => {
     const o = rozsir(g.head, 1.5);
     const f = g.face;
@@ -430,7 +434,7 @@ const NINJA = {
     const prurez = { x: f.x - g.s, top: g.eyeY - 10 * e, w: f.w + 2 * g.s, h: 20 * e, r: Math.min(8 * e, f.r + 1) };
     const y1 = g.head.top + 6 * g.s;
     const y2 = g.head.top + 12.5 * g.s;
-    return `<path class="rf-night rok" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
+    return `<path class="rf-night rok wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
       + pas(o, y1, y2, 'rf-main ro')
       + `<path class="rh" d="M${c(54 - pulSirka(o, y1 + 1.5) + 3)} ${c(y1 + 1.5)}h${c(18 * g.s)}v1.400h${c(-18 * g.s)}Z"/>`
       + cipy(g, y1 + 2, '<path class="rf-main ro" d="M-.5 0l10 3-1 7-8-3Z"/><path class="rf-deep ro" d="M-.5 5l9 6-3 6-7-6Z"/>');
@@ -438,7 +442,7 @@ const NINJA = {
 };
 const KUCHAR = {
   mid: '<path class="rf-light ro" d="M40 70h28l4 8v15H36V78Z"/>'
-    + '<rect class="rf-soft ro" x="45" y="84" width="18" height="6" rx="2"/>'
+    + P('<rect class="rf-soft ro" x="45" y="84" width="18" height="6" rx="2"/>')
     + '<path class="rk-main" fill="none" stroke-width="2" stroke-linecap="round" d="M41 71l-4-3m30 3 4-3"/>',
   hood: KUCHAR_KLOBOUK,
 };
@@ -456,7 +460,7 @@ const PIRAT = {
 const HRDINA = {
   back: PLASC.back,
   mid: (g, nasad) => trup(g, 'rf-main ro')
-    + nasad('body', '<circle class="rf-gold rog" cx="54" cy="80" r="6.500"/><path class="rf-deep" d="M55.500 75l-5 6h3.200l-1.500 5 6-6.500h-3.400Z"/>')
+    + nasad('body', P('<circle class="rf-gold rog" cx="54" cy="80" r="6.500"/><path class="rf-deep" d="M55.500 75l-5 6h3.200l-1.500 5 6-6.500h-3.400Z"/>'))
     + pasTrupu(g, 0.79, 0.92, 'rf-gold rog'),
   face: '<rect class="rf-main ro" x="23" y="38" width="62" height="20" rx="10"/>'
     + '<rect class="rf-light" x="33.500" y="43" width="15" height="9" rx="4.500"/><rect class="rf-light" x="59.500" y="43" width="15" height="9" rx="4.500"/>'
@@ -467,7 +471,7 @@ const HRDINA = {
 const KOCKA = {
   back: '<path class="rk-deep" fill="none" stroke-width="8" stroke-linecap="round" d="M72 94c18 2 22-12 14-24"/>'
     + '<path class="rk-main" fill="none" stroke-width="5.500" stroke-linecap="round" d="M72 94c18 2 22-12 14-24"/>',
-  mid: '<ellipse class="rf-soft" cx="54" cy="84" rx="12" ry="7.500" opacity=".85"/>',
+  mid: P('<ellipse class="rf-soft" cx="54" cy="84" rx="12" ry="7.500" opacity=".85"/>'),
   hood: '<path class="rf-main ro" d="M24 30 27 8l16 14ZM84 30 81 8 65 22Z"/>'
     + '<path class="rf-pink" d="M28.500 24 30 13.500l8.500 8Zm51 0L78 13.500l-8.500 8Z"/>',
   face: '<path class="rk-white" fill="none" stroke-width="1.600" stroke-linecap="round" opacity=".85" d="M20 51l12 3m-12 6 12-3m56-6-12 3m12 3-12-3"/>'
@@ -481,7 +485,7 @@ const RYTIR = {
       + `<path class="rk-silverd" fill="none" stroke-width="1" opacity=".55" d="M${c(x - 4.500)} ${c(t.top + 9.500)}q4.500 2.500 9 0"/>`).join('');
     return trup(g, 'rf-steel ro')
       + nasad('body', '<path class="rf-main ro" d="M43 69h22v19.500q0 3-3 4L54 95l-8-2.500q-3-1-3-4Z"/>'
-        + '<path class="rf-gold rog" d="M52.500 74.500h3v4.500h4.500v3h-4.500v5.500h-3V82H48v-3h4.500Z"/>'
+        + P('<path class="rf-gold rog" d="M52.500 74.500h3v4.500h4.500v3h-4.500v5.500h-3V82H48v-3h4.500Z"/>')
         + '<path class="rh" d="M45 71h2v15h-2Z"/>')
       + pasTrupu(g, 0.82, 0.93, 'rf-brown2 rob')
       + ramena;
@@ -494,11 +498,11 @@ const RYTIR = {
     const prurez = { x: f.x + 2 * s, top: g.eyeY - 6.5 * e, w: f.w - 4 * s, h: 13 * e, r: 3 * e };
     const pod = prurez.top + prurez.h;
     const otvory = [5, 9].flatMap((dy) => [-12, -7.5, 7.5, 12].map((dx) => `<circle class="rf-night" cx="${c(54 + dx * s)}" cy="${c(pod + dy * e)}" r="${c(1.1 * s)}"/>`)).join('');
-    return `<path class="rf-steel ro" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
-      + `<path class="rk-silverd" fill="none" stroke-width="1.100" opacity=".6" d="M${c(prurez.x)} ${c(prurez.top - 2 * e)}H${c(prurez.x + prurez.w)}M${c(prurez.x)} ${c(pod + 2 * e)}H${c(prurez.x + prurez.w)}"/>`
+    return `<path class="rf-steel ro wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
+      + P(`<path class="rk-silverd" fill="none" stroke-width="1.100" opacity=".6" d="M${c(prurez.x)} ${c(prurez.top - 2 * e)}H${c(prurez.x + prurez.w)}M${c(prurez.x)} ${c(pod + 2 * e)}H${c(prurez.x + prurez.w)}"/>`)
       + `<path class="rf-goldd" d="M${c(54 - 1.6 * s)} ${c(o.top + 1.2)}h${c(3.2 * s)}V${c(prurez.top - 3 * e)}h${c(-3.2 * s)}Z"/>`
       + `<rect class="rh" x="${c(o.x + 4 * s)}" y="${c(o.top + Math.min(o.r, 10 * s) * 0.7 + 2)}" width="${c(2.4 * s)}" height="${c(Math.max(4, prurez.top - 3 * e - (o.top + Math.min(o.r, 10 * s) * 0.7 + 2)))}" rx="${c(1.2 * s)}"/>`
-      + otvory
+      + P(otvory)
       + nasad('hat', '<rect class="rf-goldd rog" x="51" y="16.500" width="6" height="6" rx="1.500"/>'
         + '<path class="rf-deep ro" d="M54 17.500C52 11 55 5 62 3.500c5-1 8.500 1.500 8.500 5-4.500-2-9-.5-11.500 3-2 2.800-3 4.500-5 6Z"/>'
         + '<path class="rf-main ro" d="M54 17.500C50 10.500 51.500 3.500 58 1c5-2 9.500 0 10 3.500-5-1.500-9.500.5-11.500 4.500-1.500 3-2 5.500-2.500 8.500Z"/>'
@@ -510,7 +514,7 @@ const ZABA = {
   mid: (g) => {
     const t = g.torso;
     return trup(g, 'rf-frog ro')
-      + `<ellipse class="rf-froglight" cx="54" cy="${c(t.top + t.h * 0.62)}" rx="${c(t.w * 0.3)}" ry="${c(t.h * 0.3)}"/>`
+      + P(`<ellipse class="rf-froglight" cx="54" cy="${c(t.top + t.h * 0.62)}" rx="${c(t.w * 0.3)}" ry="${c(t.h * 0.3)}"/>`)
       + `<circle class="rf-frogd" cx="${c(t.x + t.w * 0.15)}" cy="${c(t.top + t.h * 0.5)}" r="1.700"/><circle class="rf-frogd" cx="${c(t.x + t.w * 0.86)}" cy="${c(t.top + t.h * 0.7)}" r="1.400"/>`;
   },
   hood: (g) => {
@@ -524,7 +528,7 @@ const ZABA = {
       return `<circle class="rf-frog ro" cx="${c(x)}" cy="${c(y)}" r="${c(8.5 * s)}"/><circle class="rf-light" cx="${c(x)}" cy="${c(y - 0.6 * s)}" r="${c(5.4 * s)}"/>`
         + `<circle class="rf-night" cx="${c(x + k * 0.8 * s)}" cy="${c(y - 0.2 * s)}" r="${c(2.8 * s)}"/><circle class="rf-white" cx="${c(x + k * 0.8 * s - 1 * s)}" cy="${c(y - 1.3 * s)}" r="${c(0.9 * s)}"/>`;
     }).join('');
-    return `<path class="rf-frog ro" fill-rule="evenodd" d="${obrys(o)}${obrys(f)}"/>`
+    return `<path class="rf-frog ro wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(f)}"/>`
       + oci;
   },
 };

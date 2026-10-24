@@ -19,8 +19,8 @@ export const MA_PREPIS = new Set([
 
 // Nástroje, jejichž konverzace Agenteeq zatím nečte. Tvrdí se jen to, co platí jistě – o tom, jak
 // si který nástroj ukládá data, tu nic nestojí, dokud to někdo neověří na skutečném stroji.
-const NECTE_ZATIM = tr('Konverzace tohoto nástroje se nečtou. Sleduje se, že běží a jak dlouho.');
-const WEB_OKNO = tr('Samostatné okno webové aplikace. Sleduje se, že je otevřené a jak dlouho.');
+const NECTE_ZATIM = tr('Agenteeq vidí, že běží a jak dlouho. Co v něm píšeš, zatím nečte.');
+const WEB_OKNO = tr('Webová služba otevřená jako samostatné okno. Agenteeq vidí, že je otevřené a jak dlouho.');
 const MOJE_RADA = tr('V Mých nástrojích uvidíš, kdy běží.');
 const MOJE_ODKAZ = { href: '#/nastaveni', karta: 'moje', text: tr('Moje nástroje') };
 const ROZSIRENI_ODKAZ = { href: '#/nastaveni', karta: 'extension', text: tr('Nastavit rozšíření') };
@@ -55,19 +55,19 @@ export const BEZ_PREPISU = {
     odkaz: ROZSIRENI_ODKAZ,
   },
   warp: {
-    duvod: tr('Dotazy na agenta ve Warpu se nečtou. Sleduje se, že běží a jak dlouho.'),
+    duvod: tr('Agenteeq vidí, že Warp běží a jak dlouho. Dotazy na agenta ve Warpu zatím nečte.'),
     rada: MOJE_RADA,
     odkaz: MOJE_ODKAZ,
   },
   ...Object.fromEntries(['cursor-agent', 'windsurf', 'antigravity', 'kiro', 'trae', 'zed', 'aider', 'goose', 'opencode', 'amp', 'crush', 'droid', 'auggie']
     .map((id) => [id, { duvod: NECTE_ZATIM, rada: MOJE_RADA, odkaz: MOJE_ODKAZ }])),
   ...Object.fromEntries(['comet', 'chatgpt-atlas', 'dia']
-    .map((id) => [id, { duvod: tr('Konverzace v tomto prohlížeči se nečtou. Sleduje se, že běží a jak dlouho.'), rada: MOJE_RADA, odkaz: MOJE_ODKAZ }])),
+    .map((id) => [id, { duvod: tr('Agenteeq vidí, že prohlížeč běží a jak dlouho. Konverzace v něm zatím nečte.'), rada: MOJE_RADA, odkaz: MOJE_ODKAZ }])),
   // Webové aplikace spuštěné jako samostatné okno prohlížeče. Rozšíření Agenteeq pracuje v běžných
   // záložkách Chromu, ne v těchto oknech – proto u služeb, které rozšíření umí, radíme záložku.
   ...Object.fromEntries(['pwa-chatgpt', 'pwa-claude', 'pwa-gemini', 'pwa-perplexity', 'pwa-grok', 'pwa-copilot']
-    .map((id) => [id, { duvod: WEB_OKNO, rada: tr('V běžné záložce Chromu službu sleduje rozšíření Agenteeq.'), odkaz: ROZSIRENI_ODKAZ }])),
-  'pwa-google-ai-studio': { duvod: WEB_OKNO, rada: tr('Konverzaci Google AI Studia přečte spárované rozšíření Agenteeq; samotný běžící proces potvrzuje jen otevřené okno.'), odkaz: ROZSIRENI_ODKAZ },
+    .map((id) => [id, { duvod: WEB_OKNO, rada: tr('Konverzace uvidíš, když službu otevřeš v běžné kartě Chromu. Tam je čte rozšíření Agenteeq.'), odkaz: ROZSIRENI_ODKAZ }])),
+  'pwa-google-ai-studio': { duvod: WEB_OKNO, rada: tr('Co v něm píšeš, čte rozšíření Agenteeq. Bez rozšíření je vidět jen to, že je okno otevřené.'), odkaz: ROZSIRENI_ODKAZ },
   ...Object.fromEntries(['pwa-notebooklm', 'pwa-stitch', 'pwa-deepseek', 'pwa-replit', 'pwa-lovable', 'pwa-v0', 'pwa-bolt']
     .map((id) => [id, { duvod: WEB_OKNO, rada: MOJE_RADA, odkaz: MOJE_ODKAZ }])),
 };

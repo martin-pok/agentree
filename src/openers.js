@@ -93,6 +93,10 @@ function appPlan(s, apps) {
     case 'vscode-copilot':
       return apps.vscode && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.vscode.name, s.cwd], label: 'VS Code', title: ui('Otevřít ve VS Code') } : null;
     case 'claude-desktop-code': {
+      // Relace z Claude Desktopu žije v aplikaci Claude: na webu claude.ai nemusí být dostupná
+      // (prohlížeč pak ukáže „session couldn't be found“). Je-li aplikace nainstalovaná, otevře se
+      // ona; odkaz na web jen tam, kde aplikace Claude není.
+      if (apps.claude) return { kind: 'open', args: ['-a', APPS.claude.name], label: 'Claude', title: ui('Otevřít v Claude') };
       if (!/^session_[A-Za-z0-9]{8,80}$/.test(id)) return null;
       return { kind: 'open', args: [`https://claude.ai/code/${id}`], label: 'Claude', title: ui('Otevřít konverzaci') };
     }

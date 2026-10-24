@@ -3,6 +3,7 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Otevřít v Claude": "Open in Claude",
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",
   "Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.": "Could not read the Claude Code sign-in (not signed in, or Keychain access was not allowed) – cloud agent status cannot be read from the account.",
   "Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.": "The Claude Code sign-in has expired. Just start Claude Code and it will renew it.",
