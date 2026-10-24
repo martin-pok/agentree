@@ -235,6 +235,57 @@ async function focusExistingAgent(id) {
   }
 }
 
+// Klik na agenta v okně: rovnou do konverzace. Aplikace vrátí buď adresu (webový chat, cloudová
+// relace na claude.ai), kterou rozšíření otevře v Chromu – přepne na kartu, kde už je otevřená,
+// jinak založí novou – nebo konverzaci sama otevře na Macu (Codex, Terminál…). Adresa musí být
+// https na webu, kam rozšíření smí (host_permissions); jinou neotevře.
+const SMI_OTEVRIT = () => (chrome.runtime.getManifest().host_permissions || [])
+  .map((p) => /^https:\/\/([^/*]+)\//.exec(p)?.[1]).filter(Boolean);
+function adresaKOtevreni(raw) {
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'https:' && !u.username && !u.password && SMI_OTEVRIT().includes(u.hostname) ? u : null;
+  } catch { return null; }
+}
+async function otevriVChromu(u) {
+  const bezHashe = (x) => { try { const a = new URL(x); a.hash = ''; return a.href; } catch { return ''; } };
+  const karty = await chrome.tabs.query({}).catch(() => []);
+  const karta = karty.find((t) => t.url && bezHashe(t.url) === bezHashe(u.href));
+  if (karta) {
+    await chrome.tabs.update(karta.id, { active: true });
+    if (karta.windowId !== undefined) await chrome.windows?.update(karta.windowId, { focused: true });
+  } else await chrome.tabs.create({ url: u.href });
+}
+async function openAgent(id) {
+  await pairingReset;
+  if (typeof id !== 'string' || !id || id.length > 200) return { ok: false };
+  const t = token || (await chrome.storage.local.get(['token'])).token;
+  if (!t) return { ok: false, unpaired: true };
+  let res, body;
+  try {
+    res = await fetch(`${await zaklad()}/api/extension/open-agent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': t },
+      body: JSON.stringify({ id }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 401) await forgetToken();
+    body = await res.json().catch(() => ({}));
+  } catch {
+    return { ok: false, offline: true };
+  }
+  // Starší Agenteeq nový požadavek nezná: aspoň ukáže agenta v aplikaci jako dřív.
+  if (res.status === 404 && body?.error === 'Neznámá adresa API.') return focusExistingAgent(id);
+  if (!res.ok || !body?.ok) return { ok: false, unpaired: res.status === 401, unsupported: res.status === 409, error: typeof body?.error === 'string' ? body.error.slice(0, 240) : '' };
+  if (body.url) {
+    const u = adresaKOtevreni(body.url);
+    if (!u) return { ok: false, error: '' };
+    await otevriVChromu(u);
+    return { ok: true, kde: 'chrome' };
+  }
+  return { ok: true, kde: body.focused ? 'agenteeq' : 'aplikace', label: typeof body.label === 'string' ? body.label.slice(0, 60) : '' };
+}
+
 // The popup brand returns to the native app overview. It must never open the
 // unauthenticated localhost root (which intentionally shows only a server page).
 async function openNativeApp() {
@@ -334,8 +385,14 @@ const SITE_HOSTS = {
   qwen: ['chat.qwen.ai'],
   'github-copilot': ['github.com'],
 };
+// Zprávy přijímá jen od sebe (jiná rozšíření nemají onMessageExternal). Okno rozšíření (popup) je
+// jediné, kdo smí párovat, číst přehled a fokusovat aplikaci; skript na stránce smí jen hlásit stav
+// své karty a převzít zadání pro web, na kterém skutečně běží (adresu karty nastavuje prohlížeč).
+const odeMne = (sender) => sender?.id === chrome.runtime.id;
+const zOkna = (sender) => odeMne(sender) && !sender.tab && sender.url === chrome.runtime.getURL('popup.html');
 function senderMatchesSite(sender, site) {
-  if (!sender?.tab) return true; // Internal popup tests and messages do not carry a tab.
+  if (!odeMne(sender)) return false;
+  if (!sender.tab) return zOkna(sender);
   try {
     const url = new URL(sender.tab.url || sender.url);
     return url.protocol === 'https:' && SITE_HOSTS[site]?.includes(url.hostname) === true
@@ -358,29 +415,37 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     });
     return true;
   } else if (msg?.type === 'agenteeq:handoff' && typeof msg.site === 'string') {
+    if (!sender?.tab || !senderMatchesSite(sender, msg.site)) { sendResponse({ prompt: null }); return false; }
     takeHandoff(msg.site).then(sendResponse, () => sendResponse({ prompt: null }));
     return true;
   } else if (msg?.type === 'agenteeq:pair' && typeof msg.code === 'string') {
+    if (!zOkna(sender)) { sendResponse({ ok: false }); return false; }
     pair(msg.code.trim()).then(() => hello()).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true;
   } else if (msg?.type === 'agenteeq:focus-agent') {
     // Only the extension's own popup can request native window focus. Scripts
     // injected into supported AI websites are explicitly excluded.
-    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+    if (!zOkna(sender)) {
       sendResponse({ ok: false }); return false;
     }
     focusExistingAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
     return true;
+  } else if (msg?.type === 'agenteeq:open-agent') {
+    if (!zOkna(sender)) { sendResponse({ ok: false }); return false; }
+    openAgent(msg.id).then(sendResponse, () => sendResponse({ ok: false }));
+    return true;
   } else if (msg?.type === 'agenteeq:open-app') {
-    if (sender?.tab || sender?.url !== chrome.runtime.getURL('popup.html')) {
+    if (!zOkna(sender)) {
       sendResponse({ ok: false }); return false;
     }
     openNativeApp().then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
+    if (!zOkna(sender)) { sendResponse(null); return false; }
     prehled().then((data) => { obnovOdznak(data).catch(() => {}); sendResponse(data); }, () => sendResponse(null));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
+    if (!zOkna(sender)) { sendResponse({ chyba: true }); return false; }
     hello({ hned: true }).then(sendResponse, () => sendResponse({ chyba: true }));
     return true;
   }

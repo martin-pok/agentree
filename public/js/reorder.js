@@ -23,15 +23,19 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
       const dx = a.left - b.left;
       const dy = a.top - b.top;
       if (!dx && !dy) continue;
-      el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      el.animate([{ translate: `${dx}px ${dy}px` }, { translate: '0 0' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
     }
   };
 
+  // Karta jede za ukazatelem po subpixelech (bez zaokrouhlení, které škube) vlastností translate;
+  // zvětšení při zvednutí je zvlášť (scale) a najíždí plynule, ne skokem.
+  const ZVEDNUTI = 'scale 200ms cubic-bezier(.2,.8,.2,1)';
   const follow = () => {
     const { el, gx, gy, px, py } = st;
-    el.style.transform = 'none';
-    const r = el.getBoundingClientRect();
-    el.style.transform = `translate(${Math.round(px - gx - r.left)}px, ${Math.round(py - gy - r.top)}px) scale(${box.dataset.liftScale || 1.03})`;
+    const r = layoutRect(el);
+    st.tx = px - gx - r.left;
+    st.ty = py - gy - r.top;
+    el.style.translate = `${st.tx}px ${st.ty}px`;
   };
 
   // Poloha karty podle rozvržení, ne podle toho, kde je zrovna uprostřed animace. Kdyby se hledal
@@ -57,10 +61,12 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
   const begin = () => {
     dragging = true;
     const { el } = st;
-    const r = el.getBoundingClientRect();
+    const r = layoutRect(el);
     st.gx = st.px - r.left;
     st.gy = st.py - r.top;
+    if (!reduce()) el.style.transition = ZVEDNUTI;
     el.classList.add('is-lifted');
+    el.style.scale = box.dataset.liftScale || '1.03';
     box.classList.add('is-reordering');
     document.body.classList.add('is-dragging-card');
     follow();
@@ -96,14 +102,14 @@ export function enableReorder(box, { itemSelector, idOf, onCommit, onMoveKey, ha
     if (!dragging) return;
     dragging = false;
     const { el } = s;
-    // Karta doletí z aktuální polohy na své místo v mřížce.
-    const from = el.getBoundingClientRect();
-    el.style.transform = 'none';
-    const to = el.getBoundingClientRect();
+    // Karta doletí z aktuální polohy na své místo v mřížce a zároveň plynule dosedne (scale).
+    el.style.translate = '';
+    el.style.scale = '';
     el.classList.remove('is-lifted');
     box.classList.remove('is-reordering');
     document.body.classList.remove('is-dragging-card');
-    if (!reduce()) el.animate([{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(1.03)` }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    if (!reduce()) el.animate([{ translate: `${s.tx || 0}px ${s.ty || 0}px` }, { translate: '0 0' }], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    setTimeout(() => { if (!el.classList.contains('is-lifted')) el.style.transition = ''; }, 280);
     // Klik po puštění tahu nesmí kartu otevřít.
     const swallow = (e) => { e.preventDefault(); e.stopPropagation(); };
     box.addEventListener('click', swallow, { capture: true, once: true });

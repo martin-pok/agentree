@@ -255,7 +255,11 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .home-live .pb-agents .pb-dalsi { grid-column: 1 / -1; justify-self: start; }
 .home-live .pb-agent-text b { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; white-space: normal; font-size: 20px; line-height: 1.25; color: var(--ink); font-weight: 400; margin: 0; }
 .home-live .pb-agent-text small { order: 2; }
-.studio-nickname { order: 1; font-size: 13px; line-height: 1.35; color: var(--mute); font-weight: 400; }
+.studio-model { order: 1; }
+.studio-model[hidden] { display: none !important; }
+/* Vlastní jméno robota: drobný šedý popisek pod štítkem stavu, vpravo v prázdném místě vedle robota.
+   Je mimo tok textu, takže název a model stojí na všech kartách na stejném místě. */
+.studio-jmeno { position: absolute; top: 46px; right: 14px; max-width: calc(100% - 140px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12px/16px var(--f-body); color: var(--mute); text-align: right; pointer-events: none; }
 .studio-avatar, .home-live .pb-agent-logo.studio-avatar { display: grid; place-items: center; width: 58px; height: 58px; border-radius: var(--r-lg); background: color-mix(in srgb, var(--persona) 12%, var(--card)); color: var(--persona); font-size: 32px; box-shadow: none; }
 .home-history { margin: 0; }
 .studio-dialog { width: min(480px, calc(100vw - 32px)); padding: 28px; border: 1px solid var(--line); border-radius: var(--r-xl); background: var(--card); color: var(--ink); }
@@ -1087,7 +1091,31 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .session-avatar:hover .session-avatar-edit, .session-avatar:focus-visible .session-avatar-edit { background: var(--action); color: var(--on-action); }
 @media (prefers-reduced-motion: reduce) { .session-avatar, .session-avatar-edit { transition: none; } .session-avatar:hover { transform: none; } }
 /* „Právě teď“: bez vlastního jména karta ukáže logo služby a model místo slova (home-studio.js). */
-.studio-nickname.studio-nickname--sluzba { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; font: 500 14px/1.4 var(--f-body); letter-spacing: 0; color: var(--ink-2); white-space: nowrap; }
-.studio-nickname--sluzba > span:last-child { overflow: hidden; text-overflow: ellipsis; }
-.studio-nickname--sluzba .cell-logo { width: 28px; height: 28px; }
-.studio-nickname--sluzba .cell-logo :is(.logo, .glyph) { width: 18px; height: 18px; }
+.studio-model { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; font: 500 14px/1.4 var(--f-body); letter-spacing: 0; color: var(--ink-2); white-space: nowrap; }
+.studio-model > span:last-child { overflow: hidden; text-overflow: ellipsis; }
+.studio-model .cell-logo { width: 28px; height: 28px; }
+.studio-model .cell-logo :is(.logo, .glyph) { width: 18px; height: 18px; }
+
+/* Barva: první v řadě, kulaté tlačítko 1 : 1 stejně vysoké jako záložky (32/40/44 px). Kolo je
+   rozdělené na čtyři čtvrtiny z palety robotů (malinová, medová, mátová, indigo) – na první pohled
+   „mění barvu“; střed ukazuje barvu, kterou robot právě má, obtočenou plochou okna. Ostatní záložky
+   se roztáhnou do zbytku řady se stejnými mezerami. Při najetí se kolo pootočí o čtvrtinu. */
+.look-tabs .look-tab--barva { flex: none; aspect-ratio: 1; width: auto; padding: 0; display: grid; place-items: center; border-color: transparent; background: none; }
+.look-barva-kolo {
+  position: relative; width: calc(100% - 4px); aspect-ratio: 1; border-radius: 50%;
+  /* Čtvrtiny oddělené tenkou mezerou v barvě plochy: paleta, ne logo. */
+  background: conic-gradient(from 0deg, #e06aa0 0 23.5%, var(--card) 0 25%, #d9a53a 0 48.5%, var(--card) 0 50%, #4fbf9f 0 73.5%, var(--card) 0 75%, #6260d8 0 98.5%, var(--card) 0);
+  transition: transform 300ms cubic-bezier(.2, .8, .2, 1);
+}
+.look-barva-kolo::after {
+  content: ''; position: absolute; inset: 27%; border-radius: 50%; background: var(--persona);
+  box-shadow: 0 0 0 3px var(--card);
+  transition: background-color 200ms ease;
+}
+@media (hover: hover) { .look-tab--barva:hover .look-barva-kolo { transform: rotate(90deg); } }
+.look-tabs .look-tab--barva:hover { border-color: transparent; }
+.look-tabs .look-tab--barva[aria-selected='true'] { border-color: var(--action); background: none; }
+.look-tabs .look-tab--barva[aria-selected='true'] .look-barva-kolo { width: calc(100% - 8px); }
+@media (prefers-reduced-motion: reduce) { .look-barva-kolo, .look-barva-kolo::after { transition: none; } .look-tab--barva:hover .look-barva-kolo { transform: none; } }
+/* Text záložek dělí zbytek řady rovným dílem (na telefonu se řada posouvá, šířka podle textu). */
+@media (min-width: 721px) { .look-tabs .look-tab:not(.look-tab--barva) { flex: 1 1 0; min-width: max-content; } }

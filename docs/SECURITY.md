@@ -72,11 +72,57 @@ Audit (čtení kódu + živé zkoušky proti dočasnému serveru) našel 18 nál
 | 8 | nízká | ingest token je v argumentech `curl` v hooku | **opraveno 10. 10. 2026** (hlavičky ze souboru 0600 přes `curl -H @soubor`, token není ani v `settings.json`; `test/hooky-token-soubor.test.mjs`). Zůstává: propojení zapsané dřívější verzí nese token dál, dokud ho uživatel v Nastavení neobnoví |
 | 9 | nízká | `git` se spouští v cizích složkách s konfigurací repozitáře (`core.fsmonitor`) | **opraveno v 0.18.1** (přebití voleb na příkazové řádce, test předvádí útok) |
 | 10, 11 | nízká | vydávací workflow: práva zápisu pro všechny úlohy, akce připnuté značkou ne SHA, značka vložená přímo do skriptu, bez kontrolních součtů a atestace; CI nemá import certifikátu | **práva, připnutí cizích akcí a značka ve skriptu opraveny 10. 10. 2026** (viz „Workflowy GitHub Actions“, `test/workflow-opravneni.test.mjs`). Zůstává: kontrolní součty a atestace příloh a import certifikátu v CI – řeší se spolu se získáním Developer ID |
-| 12–14, 16–17 | nízká / info | minimální prostředí potomka, čištění souborů se zadáním, SSRF sonda na privátní adresy, CSP `unsafe-inline` (styly), kontrola odesílatele zpráv v rozšíření | otevřené |
+| 12 | nízká→**střední** | minimální prostředí potomka – při auditu 24. 10. 2026 zjištěno, že potomci dědili i klíč okna | **klíč okna opraven 24. 10. 2026** (viz níž); ostatní proměnné uživatele potomci dědí záměrně (agent potřebuje PATH, přihlášení, proxy) |
+| 17 | nízká | kontrola odesílatele zpráv v rozšíření | **opraveno 24. 10. 2026** (viz níž) |
+| 13, 14, 16 | nízká / info | čištění souborů se zadáním (24 h, 0600), SSRF sonda jen na lokální/privátní adresy a jen GET bez přesměrování, CSP `unsafe-inline` jen pro styly (skripty `'self'`) | vědomě ponecháno, odůvodnění v auditu 24. 10. 2026 |
 | 18 | info | hlavičky webu | **opraveno 5. 10. 2026** (`vercel.json`, viz „Hlavičky webu“) |
 | 15 | info | PIN má 5 pokusů celkem | ponecháno, dostatečné |
 
 Ověřeně v pořádku (audit je zkoušel): ochrana proti DNS rebindingu a CSRF, kontrola `Origin`/`Host`, tokenové cesty s `timingSafeEqual`, limity těla a SSE, procházení statických souborů, XSS (75 zkušebních řetězců v 8 vstupech: všude jen text), oprávnění datových souborů, WKWebView jen na 127.0.0.1, převzetí portu jen po ověření podpisu skriptu.
+
+## Audit 24. 10. 2026 (aplikace, rozšíření, web, účty)
+
+Rozsah: lokální server a jeho API, spouštění procesů, nový zdroj cloudových agentů Claude Code,
+rozšíření (MV3), web (`site/`, `vercel.json`), databáze účtů (Supabase) a cesty aktualizace.
+Metoda: čtení kódu proti tabulce hrozeb výš, testy, které útok předvádějí, a kontrola, že každé
+tvrzení v tomto dokumentu odpovídá kódu.
+
+**Opraveno:**
+
+| Závažnost | Nález | Oprava |
+|---|---|---|
+| střední | Klíč okna (`AGENTEEQ_LOCAL_KEY`, tajemství lokálního API) zůstával v prostředí serveru a dědil ho každý potomek – agent spuštěný z Agenteeq, Pomocník, git, codex. Agent zmanipulovaný obsahem repozitáře (prompt injection) by si ho mohl přečíst a ovládat Agenteeq jako okno aplikace. | Server klíč po načtení konfigurace z prostředí smaže dřív, než cokoli spustí (`bin/agenteeq.mjs`, `test/klic-okna-potomci.test.mjs`). |
+| nízká (hloubková obrana) | Rozšíření: párování, přehled a stav přijímalo i od skriptu na stránce; zpráva bez karty prošla kontrolou webu. | Každý typ zprávy jen od toho, komu patří: párování, přehled, stav a fokus jen z okna rozšíření; skript na stránce jen stav své karty a zadání pro web, na kterém skutečně běží; jen zprávy s id vlastního rozšíření (`extension/background.js`, `test/extension-parovani.test.mjs`). |
+
+**Nový zdroj – stav cloudových agentů z účtu Claude (0.46.65):** přihlášení Claude Code se jen čte
+(Klíčenka přes `/usr/bin/security`, jinde soubor 0600 Claude Code), drží se v paměti do vypršení a
+**nikdy se neobnovuje ani neukládá**. Jde výhradně na `https://api.anthropic.com` s `redirect: 'error'`
+(přesměrování nesmí hlavičku Authorization odnést jinam), odpověď nad 4 MB se nečte, chyby token
+nevypisují. Id relace z odpovědi musí odpovídat `session_[A-Za-z0-9]{8,80}`, než se dosadí do adresy
+detailu; název nástroje čekající akce jen `[\w.:-]{1,80}`. Po chybě přihlášení 10 minut bez čtení
+Klíčenky, 429/503 respektuje `Retry-After`. Testy: `test/claude-cloud-ucet.test.mjs`.
+
+**Ověřeně v pořádku:**
+- **Žádné závislosti** (`dependencies` i `devDependencies` prázdné) – útok přes podvrženou knihovnu z npm nemá kudy.
+- **Aktualizace:** aplikace i `install.sh` přijmou jen přílohu s přesnou adresou repozitáře/tagu/souboru, ověří SHA-256 z GitHubu a velikost; `install.sh` jen přes HTTPS (`--proto '=https'`) a s `codesign --verify --deep --strict`. Vydání: `SHA256SUMS.txt` a nezávislý audit Draftu před zveřejněním.
+- **Databáze účtů:** RLS na všech 7 tabulkách, politiky jen na vlastní řádky (`auth.uid()`), cizí `device_id` se nedá podstrčit, `security definer` funkce s `search_path = ''`, `anon` smí jen `select 1`; testy `supabase/tests/rls.sql`.
+- **Web:** CSP `script-src 'self'`, HSTS 2 roky, `X-Frame-Options: DENY`, COOP, `Permissions-Policy`, `nosniff`, `no-referrer`; z GitHub API se nebere žádný libovolný odkaz.
+- **Pomocník:** Claude Code bez nástrojů (`--tools ''`), bez hooků, bez paměti, v prázdné dočasné složce – obsah konverzací ho nemůže donutit nic spustit ani číst.
+- **Procesy:** vše přes `execFile`/`spawn` bez shellu; žádné `exec`, `shell: true`.
+
+**Vědomě ponecháno (s důvodem):** CSP `unsafe-inline` jen pro styly – aplikace nastavuje barvy
+a polohy přes `style`, každý dynamický text jde přes `esc()` a skripty jsou jen `'self'`; sonda
+vlastních lokálních služeb smí jen na lokální/privátní adresy, jen GET, bez přesměrování a bez
+cloudových metadat (169.254.0.0/16); zadání pro Terminál leží nejvýš 24 h v souboru 0600.
+
+**Co zbývá a je na vlastníkovi (podmínka prodeje):**
+1. **Podpis Developer ID a notarizace aplikace pro Mac** (vyžaduje placený Apple Developer účet).
+   Dnešní buildy jsou ad-hoc podepsané; macOS je při prvním otevření blokuje a uživatel nemá jak
+   ověřit, že aplikace je od tebe. Sestavení podpis i notarizaci umí (`scripts/build-macos.mjs`,
+   `scripts/build-dmg.mjs`); s certifikátem se doplní jeho import do CI a tajemství
+   `AGENTEEQ_SIGN_IDENTITY` a `AGENTEEQ_NOTARY_PROFILE`.
+2. **Podpis aplikace pro Windows** (Authenticode) – bez něj SmartScreen varuje.
+3. **Nezávislý penetrační test** před placeným vydáním (tento audit je interní).
 
 ## Klíč okna (desktop na Macu i ve Windows, spuštění z Terminálu)
 

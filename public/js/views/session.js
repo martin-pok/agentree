@@ -190,7 +190,8 @@ function mount(el, [id]) {
     if (v.follow) jump.hidden = true;
   }, { passive: true });
   const sideEl = el.querySelector('[data-region="side"]');
-  sideEl.dataset.liftScale = '1.02';
+  sideEl.dataset.liftScale = '1.01';
+  sideEl.classList.add('side-razeni');
   v.sideDrag = enableReorder(sideEl, {
     itemSelector: '.side-card[data-card]',
     idOf: (n) => n.dataset.card,

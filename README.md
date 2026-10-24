@@ -4,7 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.64** — Preview kandidát: ikona Chrome rozšíření ukazuje tečkou stav agentů (potřebuje tě, selhalo, limit, pracuje; šedá = nezjištěno), popisek ikony říká stav větou.
+> **0.46.65** — Preview kandidát: živý stav cloudových agentů Claude Code přímo z účtu (Beta), pestřejší flákání robotů (část čekajících je v klidu, osm různých zábav) a přesouvání karet v detailu stejně plynulé jako na Přehledu.
+>
+> **0.46.64** — veřejné Preview: ikona Chrome rozšíření ukazuje tečkou stav agentů (potřebuje tě, selhalo, limit, pracuje; šedá = nezjištěno), popisek ikony říká stav větou.
 >
 > **0.46.63** — veřejné Preview: roboti v dílně (pracující robot je zády u stolku s kladivem nebo pilkou, obrobek roste se skutečnou délkou úkolu), otočka jako zaoblené těleso, flákání čekajících, volání anténou, nové nohy a filtry Agentů bez vodorovného posouvání. Obsahuje i nezveřejněnou 0.46.62.
 >

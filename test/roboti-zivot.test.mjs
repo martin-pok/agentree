@@ -79,10 +79,19 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
   const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
   for (const typ of ROBOT_TYPES) {
     const svg = robot(typ);
-    for (const cast of ['robot-hra', 'hra-micek', 'hra-jojo', 'hra-noty', 'robot-signal', 'signal-vlna', 'signal-zare']) assert.ok(svg.includes(cast), `${typ}: ${cast}`);
+    for (const cast of ['robot-hra', 'hra-micek', 'hra-jojo', 'hra-noty', 'hra-kava', 'hra-kniha', 'hra-bublina', 'hra-mobil', 'robot-signal', 'signal-vlna', 'signal-zare']) assert.ok(svg.includes(cast), `${typ}: ${cast}`);
   }
   const { dilnaAtributy } = await import('../public/js/home-studio.js');
-  assert.match(dilnaAtributy({ id: 'a', status: 'waiting' }), /data-hra="(micek|jojo|pisen)"/);
+  assert.match(dilnaAtributy({ id: 'a', status: 'waiting' }), /data-hra="(klid|micek|jojo|pisen|kava|kniha|bublina|mobil|protazeni)"/);
+  // Ne všichni si hrají a ne všichni stejně: část čekajících je v klidu, hry se střídají.
+  const hry = Array.from({ length: 200 }, (_, i) => dilnaAtributy({ id: `agent-${i}`, status: 'waiting' }).match(/data-hra="(\w+)"/)[1]);
+  const pocty = hry.reduce((m, h) => ({ ...m, [h]: (m[h] || 0) + 1 }), {});
+  assert.ok(pocty.klid > 50 && pocty.klid < 110, `klid ${pocty.klid}`);
+  assert.equal(Object.keys(pocty).length, 9);
+  assert.ok(Math.max(...Object.entries(pocty).filter(([h]) => h !== 'klid').map(([, n]) => n)) < 35);
+  const { agentRobot } = await import('../public/js/home-studio.js');
+  const klidny = Array.from({ length: 50 }, (_, i) => ({ id: `agent-${i}`, status: 'waiting' })).find((s) => dilnaAtributy(s).includes('data-hra="klid"'));
+  assert.ok(!agentRobot(klidny).includes('robot-hra'), 'robot v klidu nemá hračky');
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\[data-status='needs_input'\][^{]*\.robot \.robot-signal \{ display: inline; \}/);
   assert.match(css, /@keyframes rz-vlna \{ 0% \{ opacity: \.9; scale: \.7; \} 100% \{ opacity: 0; scale: 3\.4; \} \}/);

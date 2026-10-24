@@ -467,3 +467,34 @@ export function slozkaSDotazySystemu(cwd, home, system = SYSTEM) {
   if (CHRANENE_KORENY.some((d) => c === p.join(h, d))) return true;
   return CHRANENE_CELE.some((d) => c === p.join(h, d) || c.startsWith(`${p.join(h, d)}/`));
 }
+
+/**
+ * Přihlášení Claude Code (OAuth k účtu claude.ai), kterým Claude Code sám čte seznam cloudových
+ * relací (`claude --teleport`). Agenteeq ho jen přečte pro tentýž dotaz; nikdy ho neobnovuje
+ * (obnova by vyměnila refresh token a odhlásila Claude Code) a nikam neukládá.
+ *
+ *   macOS    Klíčenka, položka „Claude Code-credentials“ (účet = uživatel), tak ji zapisuje Claude
+ *            Code; s CLAUDE_CONFIG_DIR má přívěsek prvních 8 znaků sha256 té složky. Čte se
+ *            /usr/bin/security jako u Claude Code samotného, jen když je klíčenka povolená
+ *            (`keychain`, v testech vypnutá).
+ *   jinde    <domov Claude>/.credentials.json
+ *
+ * Vrací { accessToken, expiresAt } nebo null (nepřihlášeno / nečitelné) – nikdy vymyšlenou hodnotu.
+ */
+export async function prihlaseniClaudeCode({ sourceHome, claudeConfigDir = '', keychain = false, uzivatel = process.env.USER || '' } = {}, { runImpl = run, cti = fs.promises, jeMac = JE_MAC } = {}) {
+  const vyber = (text) => {
+    try {
+      const o = JSON.parse(text)?.claudeAiOauth;
+      if (!o || typeof o.accessToken !== 'string' || !o.accessToken) return null;
+      return { accessToken: o.accessToken, expiresAt: Number(o.expiresAt) || 0 };
+    } catch { return null; }
+  };
+  if (jeMac) {
+    if (!keychain || !/^[a-zA-Z0-9._-]+$/.test(uzivatel)) return null;
+    const pripona = claudeConfigDir ? `-${crypto.createHash('sha256').update(claudeConfigDir.normalize('NFC')).digest('hex').slice(0, 8)}` : '';
+    const r = await runImpl('/usr/bin/security', ['find-generic-password', '-a', uzivatel, '-w', '-s', `Claude Code-credentials${pripona}`], { timeout: 5000 });
+    return r?.ok ? vyber(r.stdout.trim()) : null;
+  }
+  const slozka = claudeConfigDir || path.join(sourceHome, '.claude');
+  try { return vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8')); } catch { return null; }
+}
