@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.66 – 2026-10-24 · Výchozí „V aplikaci“
+
+- **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).
+- **Stabilita:** pozorovatel šířky řádků filtrů na Agentech se odpojí, i když řádek vymění živá aktualizace.
+- Obsahuje vše z 0.46.65 (ta nebyla zveřejněna).
+
 ## 0.46.65 – 2026-10-24 · Cloudoví agenti živě, pestřejší flákání a plynulé přesouvání
 
 - **Cloudový agent Claude Code už nevisí na „?“:** stav vzdálených relací (claude.ai/code, i ty spuštěné z aplikace Claude) se každých 15 s čte přímo z účtu Claude – stejným dotazem, jakým je čte Claude Code (`claude --teleport`), pod jeho přihlášením. Dřív se čekalo, až Claude Desktop seznam relací uloží do své cache, a mezitím byl běžící agent „nezjištěný“. 🧪 Beta: interní API. Přihlášení se jen čte (na Macu z Klíčenky, položka Claude Code), drží se v paměti a jde jen na api.anthropic.com; nikdy se neobnovuje. Když chybí nebo vypršelo, Nastavení to řekne větou a stav zůstává „nezjištěno“, nikdy „nic neběží“.

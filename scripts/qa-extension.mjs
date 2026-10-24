@@ -216,7 +216,9 @@ try {
           assert.equal(await page.locator('#konverzace li').count(), 6);
           // Nové rozhodnutí: okno nepřeskočí, jen označí šipku a počet; ←/→ na reflektoru listuje.
           await page.evaluate(() => {
+            // Nová data jdou i do odpovědi aplikace, jinak by je pravidelná obnova okna (2 s) přepsala.
             prehled = { ...prehled, zdravi: { ...prehled.zdravi, cekaNaTebe: 2 }, rozhodnuti: [{ id: 'codex:new', title: 'Úklid závislostí', app: 'Codex', reason: 'Ptá se: smazat složku legacy/?', status: 'needs_input', at: Date.now() }, ...prehled.rozhodnuti] };
+            window.prehledFixture = prehled;
             vykresli();
           });
           assert.equal(await page.locator('#pager').isVisible(), true);

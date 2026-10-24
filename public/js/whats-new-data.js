@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.66',
+    date: '2026-10-24',
+    title: 'Výchozí „V aplikaci“',
+    items: [
+      'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
+    ],
+    en: {
+      title: 'Default “In app”',
+      items: [
+        'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
+      ],
+    },
+  },
+  {
     version: '0.46.65',
     date: '2026-10-24',
     title: 'Cloudoví agenti živě, pestřejší flákání',
