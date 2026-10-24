@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
 import { korenyClaudeCode, korenZPrepisu } from '../src/connectors/claude-code.js';
 import { domovyCodexu } from '../src/connectors/codex.js';
@@ -215,7 +216,7 @@ test('pojistka: proces bez přepisu se ukáže, s přepisem zmizí, po skončen�
   pojistka.upravit([proces]);
   const v = store.summary('claude-code:proces-4242');
   assert.equal(v.status, 'observed');
-  assert.equal(v.title, 'Claude Code · detekovaný proces');
+  assert.equal(v.title, 'Claude Code ve složce Design & Web');
   assert.match(v.reason, /Claude Code běží v Design & Web/);
   assert.match(v.reason, /Přepis zatím není/);
   assert.deepEqual(v.proces, { pid: 4242, od });
@@ -339,7 +340,7 @@ test('živý proces claude se zaregistruje, spáruje s přepisem a po skončení
     const najdi = async () => (await klient.get('/api/state')).body.sessions.find((s) => s.proces?.pid === agent.pid);
     const v = await waitFor(najdi, 8000);
     assert.equal(v.status, 'observed');
-    assert.equal(v.title, 'Claude Code · detekovaný proces');
+    assert.equal(v.title, 'Claude Code ve složce Design & Web');
     assert.equal(v.cwd, slozka);
     assert.match(v.reason, /Claude Code běží v Design & Web/);
     // Kořen z prostředí procesu se přidal – první zadání se najde a spáruje.
@@ -668,4 +669,22 @@ test('kořeny přepisů mají strop – podvržené cesty z hooků nevyčerpají
   assert.equal(k.pridej('/c/projects'), true);
   assert.equal(k.pridej('/d/projects'), false, 'nad strop se nepřidá');
   assert.equal(k.seznam().length, 3);
+});
+
+// Vlastník 24. 10. 2026: detekovaný proces musí říct, podle čeho se v něm vyznáš – složka a větev.
+test('detekovaný proces: větev ze složky (repozitář i pracovní kopie), jinak nic', async () => {
+  const { vetevSlozky } = await import('../src/bezici-agenti.js');
+  const koren = await fs.mkdtemp(path.join(os.tmpdir(), 'agq-vetev-'));
+  await fs.mkdir(path.join(koren, 'repo', '.git'), { recursive: true });
+  await fs.writeFile(path.join(koren, 'repo', '.git', 'HEAD'), 'ref: refs/heads/claude/vychozi-aplikace\n');
+  assert.equal(vetevSlozky(path.join(koren, 'repo')), 'claude/vychozi-aplikace');
+  await fs.mkdir(path.join(koren, 'gd'), { recursive: true });
+  await fs.writeFile(path.join(koren, 'gd', 'HEAD'), 'ref: refs/heads/main\n');
+  await fs.mkdir(path.join(koren, 'wt'));
+  await fs.writeFile(path.join(koren, 'wt', '.git'), `gitdir: ${path.join(koren, 'gd')}\n`);
+  assert.equal(vetevSlozky(path.join(koren, 'wt')), 'main');
+  await fs.mkdir(path.join(koren, 'nic'));
+  assert.equal(vetevSlozky(path.join(koren, 'nic')), '');
+  assert.equal(vetevSlozky('relativni/cesta'), '');
+  await fs.rm(koren, { recursive: true, force: true });
 });

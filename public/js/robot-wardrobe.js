@@ -278,8 +278,10 @@ const RUMENEC = {
 /* ---------- Oblečení ---------- */
 // Jen zepředu (třída .wp): knoflíky, kravaty, znaky, kapsy, bříška, hledí. Robot otočený zády je
 // neukazuje (refinement.css); při otočce zmizí v polovině jako obličej. Průhled v přilbě či kukle
-// (.wpr, fill-rule evenodd) se zezadu vyplní – zezadu je přilba celá.
+// (.wpr) má zezadu plné dvojče bez otvoru (.wpz) – zezadu je přilba celá.
 const P = (svg) => `<g class="wp">${svg}</g>`;
+// Přilba či kukla s průhledem: zepředu s otvorem (.wpr), zezadu plná bez obrysu otvoru (.wpz).
+const pruhled = (trida, vnejsi, otvor) => `<path class="${trida} wpz" d="${vnejsi}"/><path class="${trida} wpr" fill-rule="evenodd" d="${vnejsi}${otvor}"/>`;
 const TRICKO = {
   mid: '<path class="rf-main ro" d="M31 70 23 77l5 8 6-4v7a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-7l6 4 5-8-8-7c-7 4-37 4-44 0Z"/>'
     + '<path class="rs" d="M34 81v7a9 9 0 0 0 9 9h22a9 9 0 0 0 9-9v-7c-12 4.500-28 4.500-40 0Z"/>'
@@ -434,7 +436,7 @@ const NINJA = {
     const prurez = { x: f.x - g.s, top: g.eyeY - 10 * e, w: f.w + 2 * g.s, h: 20 * e, r: Math.min(8 * e, f.r + 1) };
     const y1 = g.head.top + 6 * g.s;
     const y2 = g.head.top + 12.5 * g.s;
-    return `<path class="rf-night rok wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
+    return pruhled('rf-night rok', obrys(o), obrys(prurez))
       + pas(o, y1, y2, 'rf-main ro')
       + `<path class="rh" d="M${c(54 - pulSirka(o, y1 + 1.5) + 3)} ${c(y1 + 1.5)}h${c(18 * g.s)}v1.400h${c(-18 * g.s)}Z"/>`
       + cipy(g, y1 + 2, '<path class="rf-main ro" d="M-.5 0l10 3-1 7-8-3Z"/><path class="rf-deep ro" d="M-.5 5l9 6-3 6-7-6Z"/>');
@@ -498,7 +500,7 @@ const RYTIR = {
     const prurez = { x: f.x + 2 * s, top: g.eyeY - 6.5 * e, w: f.w - 4 * s, h: 13 * e, r: 3 * e };
     const pod = prurez.top + prurez.h;
     const otvory = [5, 9].flatMap((dy) => [-12, -7.5, 7.5, 12].map((dx) => `<circle class="rf-night" cx="${c(54 + dx * s)}" cy="${c(pod + dy * e)}" r="${c(1.1 * s)}"/>`)).join('');
-    return `<path class="rf-steel ro wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(prurez)}"/>`
+    return pruhled('rf-steel ro', obrys(o), obrys(prurez))
       + P(`<path class="rk-silverd" fill="none" stroke-width="1.100" opacity=".6" d="M${c(prurez.x)} ${c(prurez.top - 2 * e)}H${c(prurez.x + prurez.w)}M${c(prurez.x)} ${c(pod + 2 * e)}H${c(prurez.x + prurez.w)}"/>`)
       + `<path class="rf-goldd" d="M${c(54 - 1.6 * s)} ${c(o.top + 1.2)}h${c(3.2 * s)}V${c(prurez.top - 3 * e)}h${c(-3.2 * s)}Z"/>`
       + `<rect class="rh" x="${c(o.x + 4 * s)}" y="${c(o.top + Math.min(o.r, 10 * s) * 0.7 + 2)}" width="${c(2.4 * s)}" height="${c(Math.max(4, prurez.top - 3 * e - (o.top + Math.min(o.r, 10 * s) * 0.7 + 2)))}" rx="${c(1.2 * s)}"/>`
@@ -525,10 +527,12 @@ const ZABA = {
       const dx = k * (g.head.w / 2 - 13 * s);
       const x = 54 + dx;
       const y = temeno(o, dx) + 1.5 * s;
-      return `<circle class="rf-frog ro" cx="${c(x)}" cy="${c(y)}" r="${c(8.5 * s)}"/><circle class="rf-light" cx="${c(x)}" cy="${c(y - 0.6 * s)}" r="${c(5.4 * s)}"/>`
-        + `<circle class="rf-night" cx="${c(x + k * 0.8 * s)}" cy="${c(y - 0.2 * s)}" r="${c(2.8 * s)}"/><circle class="rf-white" cx="${c(x + k * 0.8 * s - 1 * s)}" cy="${c(y - 1.3 * s)}" r="${c(0.9 * s)}"/>`;
+      // Zezadu jsou z očí vidět jen zelené boule; bělmo a zornice hledí dopředu.
+      return `<circle class="rf-frog ro" cx="${c(x)}" cy="${c(y)}" r="${c(8.5 * s)}"/>`
+        + P(`<circle class="rf-light" cx="${c(x)}" cy="${c(y - 0.6 * s)}" r="${c(5.4 * s)}"/>`
+        + `<circle class="rf-night" cx="${c(x + k * 0.8 * s)}" cy="${c(y - 0.2 * s)}" r="${c(2.8 * s)}"/><circle class="rf-white" cx="${c(x + k * 0.8 * s - 1 * s)}" cy="${c(y - 1.3 * s)}" r="${c(0.9 * s)}"/>`);
     }).join('');
-    return `<path class="rf-frog ro wpr" fill-rule="evenodd" d="${obrys(o)}${obrys(f)}"/>`
+    return pruhled('rf-frog ro', obrys(o), obrys(f))
       + oci;
   },
 };

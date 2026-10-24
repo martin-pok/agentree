@@ -102,6 +102,7 @@ export default {
   "Spuštění selhalo: {0}": "Start failed: {0}",
   "Konverzace nenalezena.": "Conversation not found.",
   "{0} · detekovaný proces": "{0} · detected process",
+  "{0} ve složce {1}": "{0} in {1}",
   "{0} běží v {1} od {2}. Přepis zatím není dostupný.": "{0} has been running in {1} since {2}. A transcript is not available yet.",
   "{0} běží od {1}. Přepis zatím není dostupný.": "{0} has been running since {1}. A transcript is not available yet.",
   "Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.": "The detected process is no longer in the overview. If it created a transcript, you can find it among the agents.",
