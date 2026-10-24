@@ -1,0 +1,134 @@
+# One-time audited Preview publication for v0.46.63.
+# Intentionally isolated from main; only the exact commit below may be published.
+name: One-time audited Preview v0.46.63
+on:
+  push:
+    branches: [release/preview-v0.46.63-once]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: audited-preview-v0.46.63
+  cancel-in-progress: false
+
+jobs:
+  queue-and-publish:
+    if: ${{ github.event.head_commit.message == 'chore(release): trigger audited v0.46.63 preview once' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SOURCE_SHA: a22c84ac83fc667e00bc226561c01210be17f9fa
+      TAG: v0.46.63
+    steps:
+      - name: Verify main is the exact approved source and await green main CI
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = "refs/heads/release/preview-v0.46.63-once"
+          for attempt in $(seq 1 180); do
+            ACTUAL=$(gh api "repos/$REPO/commits/main" --jq .sha)
+            test "$ACTUAL" = "$SOURCE_SHA" || { echo "::error::main changed from approved $SOURCE_SHA to $ACTUAL"; exit 1; }
+            RUNS=$(gh api "repos/$REPO/actions/workflows/test.yml/runs?head_sha=$SOURCE_SHA&event=push&per_page=30")
+            if RUNS_JSON="$RUNS" node -e '
+              const r=JSON.parse(process.env.RUNS_JSON).workflow_runs||[];
+              process.exit(r.some(x=>x.head_sha===process.env.SOURCE_SHA && x.event==="push" && x.status==="completed" && x.conclusion==="success")?0:1);
+            '; then
+              echo "Exact main commit passed complete Testy CI: $SOURCE_SHA"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::Complete main CI did not succeed within window."
+          exit 1
+
+      - name: Dispatch existing audited release build
+        id: release_dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$REPO/commits/main" --jq .sha)" = "$SOURCE_SHA"
+          BEFORE=$(gh api "repos/$REPO/actions/workflows/release.yml/runs?per_page=1" --jq '.workflow_runs[0].id // 0')
+          echo "before=$BEFORE" >> "$GITHUB_OUTPUT"
+          gh api --method POST "repos/$REPO/actions/workflows/release.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=$TAG" -f "inputs[expected_sha]=$SOURCE_SHA"
+          echo "Dispatched release.yml for exact tested $SOURCE_SHA"
+
+      - name: Require successful release build and independent asset audit
+        shell: bash
+        env:
+          BEFORE: ${{ steps.release_dispatch.outputs.before }}
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for attempt in $(seq 1 190); do
+            test "$(gh api "repos/$REPO/commits/main" --jq .sha)" = "$SOURCE_SHA" || { echo "::error::main moved during release build"; exit 1; }
+            if [ -z "$RUN_ID" ]; then
+              RUN_ID=$(gh api "repos/$REPO/actions/workflows/release.yml/runs?per_page=30" \
+                --jq ".workflow_runs | map(select(.id > $BEFORE and .head_sha == \"$SOURCE_SHA\" and .event == \"workflow_dispatch\")) | sort_by(.id) | first | .id // empty")
+            fi
+            if [ -n "$RUN_ID" ]; then
+              STATUS=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.status')
+              CONCLUSION=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.conclusion // ""')
+              echo "Release build $RUN_ID: $STATUS / $CONCLUSION"
+              if [ "$STATUS" = completed ]; then
+                test "$CONCLUSION" = success || { echo "::error::Draft build/audit failed"; exit 1; }
+                exit 0
+              fi
+            fi
+            sleep 15
+          done
+          echo "::error::Release build/audit did not finish successfully."
+          exit 1
+
+      - name: Publish the audited draft as Preview, never Stable
+        id: publish_dispatch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$REPO/commits/main" --jq .sha)" = "$SOURCE_SHA"
+          BEFORE=$(gh api "repos/$REPO/actions/workflows/publish.yml/runs?per_page=1" --jq '.workflow_runs[0].id // 0')
+          echo "before=$BEFORE" >> "$GITHUB_OUTPUT"
+          gh api --method POST "repos/$REPO/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=$TAG" -f "inputs[channel]=preview"
+          echo "Dispatched publish.yml with channel=preview"
+
+      - name: Verify public Preview and unchanged Stable Latest
+        shell: bash
+        env:
+          BEFORE: ${{ steps.publish_dispatch.outputs.before }}
+        run: |
+          set -euo pipefail
+          RUN_ID=""
+          for attempt in $(seq 1 60); do
+            if [ -z "$RUN_ID" ]; then
+              RUN_ID=$(gh api "repos/$REPO/actions/workflows/publish.yml/runs?per_page=30" \
+                --jq ".workflow_runs | map(select(.id > $BEFORE and .head_sha == \"$SOURCE_SHA\" and .event == \"workflow_dispatch\")) | sort_by(.id) | first | .id // empty")
+            fi
+            if [ -n "$RUN_ID" ]; then
+              STATUS=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.status')
+              CONCLUSION=$(gh api "repos/$REPO/actions/runs/$RUN_ID" --jq '.conclusion // ""')
+              echo "Publication $RUN_ID: $STATUS / $CONCLUSION"
+              if [ "$STATUS" = completed ]; then
+                test "$CONCLUSION" = success || { echo "::error::Preview publication failed"; exit 1; }
+                break
+              fi
+            fi
+            sleep 15
+          done
+          test -n "$RUN_ID" && test "$STATUS" = completed && test "$CONCLUSION" = success
+          RELEASE=$(gh api "repos/$REPO/releases/tags/$TAG")
+          RELEASE_JSON="$RELEASE" node -e '
+            const r=JSON.parse(process.env.RELEASE_JSON);
+            if (r.tag_name!==process.env.TAG || r.draft || r.prerelease!==true ||
+                !Array.isArray(r.assets) || r.assets.length!==8)
+              process.exit(1);
+            console.log("Public Preview verified: "+r.html_url);
+          '
+          STABLE=$(gh api "repos/$REPO/releases/latest" --jq .tag_name)
+          test "$STABLE" = v0.46.58 || { echo "::error::Stable Latest unexpectedly changed to $STABLE"; exit 1; }
+          echo "Stable Latest remains $STABLE"
+          echo "Preview ready: https://github.com/$REPO/releases/tag/$TAG"
