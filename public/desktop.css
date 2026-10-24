@@ -14,12 +14,18 @@
 .lselect:has(.picker-trigger[aria-expanded='true']) { box-shadow: inset 0 0 0 1px var(--line); }
 .lselect .picker-trigger[aria-expanded='true'] { border-color: transparent; box-shadow: none; }
 .picker-menu { position: fixed; inset: auto; margin: 0; padding: 6px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); color: var(--ink); box-shadow: var(--shadow-lg); z-index: 10000; font: 400 14px/1.45 var(--f-body); animation: pop .16s var(--ease); }
-.picker-option { position: relative; padding: 10px 34px 10px 12px; border-radius: var(--r-full); cursor: pointer; overflow-wrap: anywhere; }
-.picker-option:hover, .picker-option.is-highlighted { background: var(--paper); }
-.picker-option[aria-selected='true'] { color: var(--teal-ink); }
-/* Fajfka je jen pro oko: výběr hlásí aria-selected. Bez prázdného alternativního textu by čtečka
-   obrazovky přečetla „ChatGPT ✓“. Starší prohlížeč druhý zápis zahodí a fajfku ukáže dál. */
-.picker-option[aria-selected='true']::after { content: '✓'; content: '✓' / ''; position: absolute; right: 12px; top: 10px; }
+/* Položka nabídky: jeden řádek 40 px, kapsle. Vybraná je tiše podbarvená inkoustem s fajfkou
+   v barvě textu – barevný (zelený) text vypadal jako stav, ne jako výběr. Projekty nesou svou
+   barevnou tečku (data-barva u <option>), „Bez projektu“ prázdný kroužek. */
+.picker-option { position: relative; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 8px 40px 8px 14px; border-radius: var(--r-full); color: var(--ink-2); cursor: pointer; overflow-wrap: anywhere; transition: background-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
+.picker-option + .picker-option { margin-top: 2px; }
+.picker-option:hover, .picker-option.is-highlighted { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); }
+.picker-option[aria-selected='true'] { background: color-mix(in srgb, var(--ink) 9%, transparent); color: var(--ink); font-weight: 500; }
+.picker-option-text { min-width: 0; }
+.picker-option .pdot { width: 8px; height: 8px; box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 22%, transparent); }
+.picker-option .pdot--zadny { background: transparent; box-shadow: inset 0 0 0 1.5px var(--mute); }
+/* Fajfka je jen pro oko (kreslená rámečkem): výběr hlásí aria-selected, čtečka ji nečte. */
+.picker-option[aria-selected='true']::after { content: ''; position: absolute; right: 18px; top: 50%; width: 10px; height: 5px; border-left: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-70%) rotate(-45deg); }
 .picker-option[aria-disabled='true'] { opacity: .4; cursor: not-allowed; }
 .check input, .check-inline input, input[type='checkbox']:not([role='switch']) { appearance: none; flex: none; width: 18px; height: 18px; border: 1px solid var(--line); border-radius: var(--r-xs); background: var(--card); display: inline-grid; place-content: center; vertical-align: middle; }
 input[type='checkbox']:not([role='switch']):checked { background: var(--action); border-color: var(--action); }

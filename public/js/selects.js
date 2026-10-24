@@ -45,7 +45,18 @@ function open(select, button) {
     item.setAttribute('role', 'option');
     item.setAttribute('aria-selected', String(i === select.selectedIndex));
     if (option.disabled) item.setAttribute('aria-disabled', 'true');
-    item.textContent = option.textContent;
+    // Barva projektu (data-barva) jako tečka před názvem; jen #hex nebo inkoust, nic jiného do stylu nejde.
+    if (option.dataset.barva !== undefined) {
+      const tecka = document.createElement('i');
+      tecka.setAttribute('aria-hidden', 'true');
+      tecka.className = /^(#[0-9a-f]{3,8}|var\(--ink\))$/i.test(option.dataset.barva) ? 'pdot' : 'pdot pdot--zadny';
+      if (tecka.className === 'pdot') tecka.style.setProperty('--pc', option.dataset.barva);
+      item.append(tecka);
+    }
+    const text = document.createElement('span');
+    text.className = 'picker-option-text';
+    text.textContent = option.textContent;
+    item.append(text);
     item.addEventListener('pointerdown', (e) => e.preventDefault());
     item.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); choose(i); });
     panel.append(item);
@@ -56,7 +67,9 @@ function open(select, button) {
   (button.closest('[aria-modal="true"]') || document.body).append(panel);
   panel.showPopover?.();
   const rect = button.getBoundingClientRect();
-  const width = Math.min(Math.max(rect.width, 200), innerWidth - 24);
+  // Šířka podle nejdelší položky (do 360 px), aspoň jako spouštěč – „POKORNY DESIGN“ se nelámal.
+  panel.style.width = 'max-content';
+  const width = Math.min(Math.max(rect.width, 240, Math.ceil(panel.getBoundingClientRect().width)), 360, innerWidth - 24);
   panel.style.width = `${width}px`;
   panel.style.left = `${Math.max(12, Math.min(rect.left, innerWidth - width - 12))}px`;
   const below = innerHeight - rect.bottom - 16;

@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.68',
+    date: '2026-10-24',
+    title: 'Čistší nabídky',
+    items: [
+      'Rozbalovací nabídky: vybraná položka je tiše podbarvená, projekty mají svou barevnou tečku.',
+    ],
+    en: {
+      title: 'Cleaner menus',
+      items: [
+        'Dropdown menus: the selected item is subtly highlighted and projects show their colour dot.',
+      ],
+    },
+  },
+  {
     version: '0.46.67',
     date: '2026-10-24',
     title: 'Výchozí „V aplikaci“',

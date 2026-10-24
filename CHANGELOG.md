@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.68 – 2026-10-24 · Čistší rozbalovací nabídky
+
+- **Rozbalovací nabídky (výběr projektu a všechny ostatní):** vybraná položka už nemá zelený text, je tiše podbarvená s fajfkou v barvě textu; řádky mají jednotnou výšku 40 px a jemné najetí. Projekty v nabídce nesou svou barevnou tečku, „Bez projektu“ prázdný kroužek. Nabídka je široká podle nejdelší položky (do 360 px), takže se názvy jako „POKORNY DESIGN“ nelámou.
+
 ## 0.46.67 – 2026-10-24 · Výchozí „V aplikaci“, oddech robotů, srozumitelné texty
 
 - **Detail cloudového běhu hned a čerstvý:** přepis vzdáleného agenta Claude Code se čte přímo z účtu Claude – při otevření detailu hned (nanejvýš 2,5 s) a dál každých 8 s, dokud agent běží nebo je detail otevřený. Dřív přepis čekal, až Claude Desktop uloží svou cache, takže byl „zatím prázdný“ a tokeny „—“. 🧪 Beta (docs/CONNECTORS.md).
