@@ -42,15 +42,23 @@ export function createHomeStudio(el) {
       const variant = type + ':' + JSON.stringify(normalizeLook(p));
       if (logo.dataset.robot !== variant || !logo.querySelector('.robot')) { logo.innerHTML = renderAgentRobot(type, p); logo.dataset.robot = variant; }
       logo.style.setProperty('--robot-delay', `${i * -1.3}s`);
-      let nick = li.querySelector('.studio-nickname');
-      if (!nick) { nick = document.createElement('span'); nick.className = 'studio-nickname'; }
-      const title = li.querySelector('.pb-agent-text b');
-      if (title?.nextElementSibling !== nick) title?.after(nick);
-      // Vlastní jméno agenta, jinak logo služby a model (ne slovo „Codex“ – služba se pozná podle loga).
+      // Pod názvem je u každé karty vždy logo služby a model – podle nich se v aplikaci orientuje.
+      // Vlastní jméno robota je jen drobný popisek vedle robota, mimo tok textu, takže karty se
+      // jménem i bez něj zůstávají zarovnané stejně.
       const a = agentsList().find((x) => x.id === li.dataset.key);
-      const obsah = p.name ? esc(p.name) : a ? `<span class="cell-logo">${glyph(a)}</span><span class="sr-only">${esc(a.app)}</span><span>${esc(modelPopis(a.model) || a.app)}</span>` : esc(tr('Agent'));
-      if (nick.innerHTML !== obsah) nick.innerHTML = obsah;
-      nick.classList.toggle('studio-nickname--sluzba', !p.name && Boolean(a));
+      const title = li.querySelector('.pb-agent-text b');
+      let model = li.querySelector('.studio-model');
+      if (!model) { model = document.createElement('span'); model.className = 'studio-model'; }
+      if (title?.nextElementSibling !== model) title?.after(model);
+      const obsahModelu = a ? `<span class="cell-logo">${glyph(a)}</span><span class="sr-only">${esc(a.app)} · </span><span>${esc(modelPopis(a.model) || a.app)}</span>` : '';
+      if (model.innerHTML !== obsahModelu) model.innerHTML = obsahModelu;
+      model.hidden = !a;
+      let jmeno = li.querySelector('.studio-jmeno');
+      if (p.name) {
+        if (!jmeno) { jmeno = document.createElement('span'); jmeno.className = 'studio-jmeno'; logo.after(jmeno); }
+        if (jmeno.textContent !== p.name) jmeno.textContent = p.name;
+      } else jmeno?.remove();
+      li.querySelector('.studio-nickname')?.remove();
     });
   };
   refresh();

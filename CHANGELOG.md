@@ -8,6 +8,7 @@
 - **Rozšíření vede rovnou do konverzace:** klik na agenta v okně rozšíření otevře přímo jeho chat – webový chat a cloudovou relaci v Chromu (přepne na kartu, kde už je otevřená, jinak otevře novou), konverzaci z Codexu v aplikaci Codex, z Terminálu Terminál. Do Agenteeq vede jen agent, jehož konverzace nemá kam vést. Stav v okně rozšíření se obnovuje po 2 s.
 - **Barva ve Vzhledu agenta:** první v řadě je kulaté tlačítko s barevným kolem ze čtyř čtvrtin a se středem v barvě, kterou robot právě má; ostatní záložky dělí zbytek řady rovným dílem.
 - **Tablet na výšku a iPhone:** popisky ve spodní liště na tabletu už nejsou useknuté; dlouhé názvy v „Vyžaduje pozornost“ na telefonu končí „…“ a nevytékají za kartu.
+- **Model u každé karty „Právě teď“:** pod názvem konverzace je vždy logo služby a model (např. Opus 5.5) na stejném místě. Vlastní jméno robota už model nenahrazuje – je to drobný šedý popisek vpravo pod stavem.
 - **Uložit vzhled:** tlačítko v dialogu Vzhled agenta při najetí a fokusu zfialoví s bílým textem, stejně jako Rozumím.
 - **Ne všichni si hrají:** zhruba dva z pěti čekajících robotů jen v klidu stojí, dýchají a rozhlížejí se. Ostatní mají každý svou zábavu z osmi – míček, jojo, hvízdání, hrnek kafe (usrkává, stoupá pára), kniha (otáčí listy), bublina ze žvýkačky, mobil, nebo protahování. Vedle sebe tak už nevyhazují všichni míček.
 - **Přesouvání karet jako na Přehledu:** karty v pravém panelu agenta a projektu mají stejný úchyt i fialový lem jako widgety Přehledu (kapsle nad kartou, ne na její hraně).
