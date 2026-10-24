@@ -109,5 +109,53 @@ test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hl
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--hat, \.robot-wear--hood\) \{ animation: rz-otocka-hlava/);
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--mid, \.robot-wear--body\) \{ animation: rz-otocka-trup/);
-  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face\)/);
+  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face, \.wp, \.wpr\)/);
+});
+
+test('flákání až po oddechu: 15 s po dokončení úlohy je robot v klidu, pak teprve hraje', async () => {
+  const { dilnaAtributy, ODDECH_MS } = await import('../public/js/home-studio.js');
+  assert.equal(ODDECH_MS, 15000);
+  const hrac = Array.from({ length: 60 }, (_, i) => `agent-${i}`).find((id) => !dilnaAtributy({ id, status: 'waiting' }).includes('data-hra="klid"'));
+  const hra = dilnaAtributy({ id: hrac, status: 'waiting' }).match(/data-hra="(\w+)"/)[1];
+  const prave = dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 });
+  assert.match(prave, /data-hra="klid"/);
+  assert.match(prave, new RegExp(`data-hra-pak="${hra}"`));
+  assert.match(prave, /data-hra-od="\d+"/);
+  assert.match(dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 20000 }), new RegExp(`data-hra="${hra}"`));
+  const js = await zdroj('public/js/mascot-motion.js');
+  assert.match(js, /querySelectorAll\('\[data-hra-od\]'\)/);
+  // Prvních 15 s hotový agent volá anténou a mává.
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\[data-hra-od\] \.robot \.robot-signal \{ display: inline; \}/);
+  const { agentRobot } = await import('../public/js/home-studio.js');
+  assert.ok(agentRobot({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 }).includes('robot-signal'));
+});
+
+test('šatník zezadu: přední detaily a průhledy přileb se u robota otočeného zády neukazují', async () => {
+  const { robotInWardrobe } = await import('../public/js/robot-wardrobe.js');
+  const rytir = robotInWardrobe('Scout', { costume: 'knight' });
+  assert.match(rytir, /class="rf-steel ro wpz"/, 'zezadu je přilba plná');
+  assert.match(rytir, /class="rf-steel ro wpr" fill-rule="evenodd"/, 'průhled přilby je jen zepředu');
+  assert.match(rytir, /<g class="wp">/, 'hledí a znak jsou jen zepředu');
+  for (const kus of [{ outfit: 'tie' }, { outfit: 'bowtie' }, { costume: 'ninja' }, { costume: 'frog' }, { costume: 'dino' }]) {
+    assert.match(robotInWardrobe('Scout', kus), /class="wp"|wpr/, JSON.stringify(kus));
+  }
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\.robot-wear--face, \.wp, \.wpr\) \{ display: none; \}/);
+  assert.match(css, /\.robot \.wpz \{ display: inline; \}/, 'zezadu plná přilba bez obrysu otvoru');
+});
+
+// Vlastník 24. 10. 2026: „ujisti se, že se bug, kdy se agent otočí a oblečení ne, už neopakuje“.
+// Každý kus šatníku na každém typu robota: průhled (evenodd) mimo obličejovou vrstvu se zezadu
+// musí vyplnit (.wpr), jinak robot otočený zády ukazuje přední stranu přilby či kukly.
+test('šatník zezadu: žádný kus na žádném robotovi nemá neoznačený průhled', async () => {
+  const { WARDROBE, robotInWardrobe } = await import('../public/js/robot-wardrobe.js');
+  const { ROBOT_TYPES } = await import('../public/js/robot-svg.js');
+  const chyby = new Set();
+  for (const slot of ['hat', 'outfit', 'costume']) for (const id of Object.keys(WARDROBE[slot])) for (const typ of ROBOT_TYPES) {
+    const svg = robotInWardrobe(typ, { [slot]: id });
+    const bezObliceje = svg.replace(/<g class="robot-wear robot-wear--face">[\s\S]*?<\/g><g class="robot-zada-hlavy"/, '');
+    for (const m of bezObliceje.matchAll(/<path[^>]*fill-rule="evenodd"[^>]*>/g)) if (!/\bwpr\b/.test(m[0])) chyby.add(`${typ} ${slot}:${id}`);
+  }
+  assert.deepEqual([...chyby], []);
 });

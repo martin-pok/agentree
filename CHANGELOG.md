@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.46.67 – 2026-10-24 · Výchozí „V aplikaci“, oddech robotů, srozumitelné texty
+
+- **Detail cloudového běhu hned a čerstvý:** přepis vzdáleného agenta Claude Code se čte přímo z účtu Claude – při otevření detailu hned (nanejvýš 2,5 s) a dál každých 8 s, dokud agent běží nebo je detail otevřený. Dřív přepis čekal, až Claude Desktop uloží svou cache, takže byl „zatím prázdný“ a tokeny „—“. 🧪 Beta (docs/CONNECTORS.md).
+- **Doba trvání nemate:** u konverzace otevřené přes několik dní detail místo „20 d 2 h“ ukáže poslední aktivitu; rozpětí od založení není doba práce.
+- **Zadávací lišta na Přehledu se nerozpadá:** při zúženém okně se ovládání už nelámalo „jako noty“ mezi agenta a Spustit. Nahoře je agent a Spustit, pod nimi jeden pás s režimem (tři stejně široké volby), projektem a složkou; do jednoho řádku se vše složí, jen když se vejde. Řídí se šířkou karty, ne okna.
+- **Rozšíření má vlastní motiv:** v nastavení rozšíření (ikona posuvníků) zvolíš Systém, Světlý nebo Tmavý – nezávisle na motivu aplikace.
+- **Dialog Upravit projekt:** obrázek karty a logo klienta stojí pod sebou přes celou šířku; název, „i“, rozměry a tlačítka Změnit/Odebrat se už nepřekrývají. Na telefonu jdou tlačítka pod text.
+- **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).
+- **Oprava: „Otevřít konverzaci“ u vzdáleného Code z Claude Desktopu** otevírala claude.ai v prohlížeči, kde relace běžící v aplikaci Claude nemusí existovat („session couldn't be found“). Teď se otevře aplikace Claude, kde relace opravdu běží; web jen na počítači bez aplikace Claude. Platí i pro klik v rozšíření.
+- **Detekovaný proces říká, kde běží:** místo „Claude Code · detekovaný proces“ a „Detekovaný proces bez přepisu“ karta ukáže „Claude Code ve složce mm“ a „Běží 14 min · větev main · zatím bez přepisu“. Větev se čte z `.git/HEAD` složky (i u pracovní kopie); co agent dělá, se dál netvrdí.
+- **Oblečení zezadu bez zbytků:** kukla nindži a přilby mají zezadu plnou plochu bez obrysu průzoru, žabák zezadu ukazuje jen zelené boule bez zornic. Test hlídá každý kus šatníku na každém robotovi.
+- **Oblečení zezadu:** robot otočený zády (při práci) už neukazuje přední detaily – rytířská přilba je zezadu plná (bez hledí), kukla nindži a kapuce žabáka taky; znaky, knoflíky, kravaty, motýlek, kapsy a bříška jsou jen zepředu a při otočce zmizí v polovině jako obličej.
+- **Hotový agent tě zavolá:** prvních 15 s po dokončení úlohy robot volá svítící anténou se signálem a mává – ať si všimneš, že čeká na další zadání. Teprve potom se začne flákat.
+- **Fialová hlavní tlačítka:** každé bílé (hlavní) tlačítko v aplikaci i v okně rozšíření při najetí a fokusu zfialoví s bílým textem – pravidlo designového systému (docs/DESIGN.md), už ne tlačítko po tlačítku.
+- **Počty v menu:** Upozornění a Agenti mají počet ve fialovém kolečku s bílým číslem.
+- **Srozumitelnější texty u aplikací bez přepisu:** např. u Google AI Studia „Webová služba otevřená jako samostatné okno. Agenteeq vidí, že je otevřené a jak dlouho.“ a „Co v něm píšeš, čte rozšíření Agenteeq.“; místo „běží 11 min · 1 proces · 1 sledovaná konverzace v této službě“ je „otevřeno 11 min · 1 konverzace v této službě“.
+
 ## 0.46.66 – 2026-10-24 · Pravdivá detekce agentů
 
 - Google AI Studio: sledování běhu také v režimu tvorby aplikací, podle skutečného signálu stránky.

@@ -4,6 +4,30 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.67',
+    date: '2026-10-24',
+    title: 'Výchozí „V aplikaci“',
+    items: [
+      'Přepis cloudového agenta Claude naběhne hned po otevření detailu a drží se čerstvý.',
+      'Rozšíření má vlastní motiv: Systém, Světlý nebo Tmavý.',
+      'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
+      'Hotový agent tě 15 s volá anténou a mává, teprve pak se začne flákat.',
+      'Hlavní tlačítka při najetí zfialoví a počty v menu jsou ve fialovém kolečku.',
+      'Konverzace z Claude Desktopu se otevírá v aplikaci Claude, ne v prohlížeči; oblečení zezadu nemá přední detaily.',
+    ],
+    en: {
+      title: 'Default “In app”',
+      items: [
+        'A cloud Claude agent’s transcript loads as soon as you open its detail and stays fresh.',
+        'The extension has its own theme: System, Light or Dark.',
+        'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
+        'A finished agent calls you with its antenna and waves for 15 s before it starts goofing around.',
+        'Main buttons turn purple on hover, and menu counts sit in a purple circle.',
+        'Claude Desktop conversations open in the Claude app, not the browser; outfits seen from behind have no front details.',
+      ],
+    },
+  },
+  {
     version: '0.46.66', date: '2026-10-24', title: 'Pravdivá detekce agentů',
     items: ['Google AI Studio se sleduje také při tvorbě aplikací.', 'Starý stav vzdáleného agenta se ukáže jako neověřený.'],
     en: { title: 'Accurate agent detection', items: ['Google AI Studio is tracked in app building mode too.', 'Stale remote agent states are shown as unverified.'] },

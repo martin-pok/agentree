@@ -268,6 +268,41 @@ export async function nactiCloudovouRelaci(id, { prihlaseni, fetchImpl, now = Da
   const s = relaceZApi(raw);
   return s && s.id === id ? { ...s, _observedAt: now } : null;
 }
+// Přepis z účtu (🧪, docs/CONNECTORS.md): nejnovější události relace, tytéž zprávy SDK, které
+// Claude Desktop ukládá do cache (`type`, `uuid`, `created_at`, `parent_tool_use_id`). Cache drží jen
+// to, co Desktop naposledy zobrazil, takže bez tohoto dotazu byl přepis běžícího agenta prázdný nebo
+// starý. Čte se obojí: plochá zpráva i obálka `{ created_at, user|assistant|result: { … } }`.
+const DRUHY_ZPRAV = ['user', 'assistant', 'result'];
+export function zpravaZUdalosti(e) {
+  if (!e || typeof e !== 'object') return null;
+  if (DRUHY_ZPRAV.includes(e.type)) return e;
+  for (const druh of DRUHY_ZPRAV) {
+    const v = e[druh];
+    if (!v || typeof v !== 'object') continue;
+    const vnitrek = v.internal_anthropic_catchall && typeof v.internal_anthropic_catchall === 'object' ? v.internal_anthropic_catchall : v;
+    return { ...vnitrek, type: druh, uuid: v.uuid ?? vnitrek.uuid, created_at: e.created_at ?? vnitrek.created_at ?? vnitrek.timestamp };
+  }
+  return null;
+}
+export async function nactiUdalostiRelace(id, { prihlaseni, fetchImpl, now = Date.now() }) {
+  if (!remoteId(id)) return null;
+  const data = await dotaz(`${CLOUD_API}/${id}/events?limit=100`, { prihlaseni, fetchImpl, now });
+  if (!Array.isArray(data?.data)) return null;
+  return { messages: data.data.map(zpravaZUdalosti).filter(Boolean), at: now };
+}
+// Cache Desktopu a události z účtu se sjednotí podle `uuid`; každá zpráva jen jednou.
+export function slucPrepis(cache, zUctu) {
+  if (!zUctu?.messages.length) return cache;
+  const zCache = cache?.tree?.kind === 'code_session' && Array.isArray(cache.tree.messages) ? cache.tree.messages : [];
+  const videne = new Set(), messages = [];
+  for (const m of [...zCache, ...zUctu.messages]) {
+    const id = m?.uuid || m?.event_uuid;
+    if (id && videne.has(id)) continue;
+    if (id) videne.add(id);
+    messages.push(m);
+  }
+  return { ...cache, tree: { kind: 'code_session', messages } };
+}
 // Z cache Claude Desktopu a ze seznamu z účtu platí u každé relace pozdější pozorování (kdy zdroj
 // stav od serveru dostal), při shodě novější `updated_at`. Účet a cache nemusejí plnit `updated_at`
 // stejným polem, takže by starší pozorování s „novějším“ časem jinak přebilo čerstvý stav.
@@ -297,6 +332,8 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   const known = new Set(), fingerprints = new Map();
   // Poslední přečtená cache Desktopu a poslední seznam z účtu; každý zdroj se obnovuje sám.
   let zCache = null, prepisy = new Map();
+  // Přepisy z účtu: relace, které běží, čekají, nebo je má uživatel právě otevřené (zajem).
+  const prepisyZUctu = new Map(), zajem = new Map();
   // Seznam z účtu (🧪): zapnutý se síťovými funkcemi (config.cloudFetch, v testech vypnuté).
   const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
   // Přihlášení se čte jednou a drží v paměti do vypršení (Klíčenka se nečte každých 15 s). Po chybě
@@ -337,12 +374,14 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     }
   }
   function zpracuj() {
-    const cache = prepisy;
+    const cache = new Map(prepisy);
+    for (const [id, z] of prepisyZUctu) cache.set(id, slucPrepis(cache.get(id), z));
     for (const metadata of slucRelace(zCache, api.data)) {
       if (Date.now() - Date.parse(metadata.updated_at) > config.windowDays * DAY) continue;
       const id = `claude-desktop-code:${metadata.id}`;
       const { _observedAt, ...facts } = metadata;
-      const fingerprint = JSON.stringify([facts, cache.get(metadata.id)?.writtenAt]);
+      const zpravy = cache.get(metadata.id)?.tree?.messages;
+      const fingerprint = JSON.stringify([facts, cache.get(metadata.id)?.writtenAt, zpravy?.length, zpravy?.at(-1)?.uuid]);
       known.add(id);
       if (fingerprints.get(id) === fingerprint) {
         const existing = store.get(id);
@@ -400,6 +439,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         api.at = data.observedAt;
         api.error = '';
         api.pauzaMs = 0;
+        await nactiPrepisy(data, opts);
         zpracuj();
       } catch (e) {
         api.error = e.message;
@@ -408,6 +448,35 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       }
     })().finally(() => { api.bezi = null; });
     return api.bezi;
+  }
+  // Přepis z účtu pro relace, které běží nebo čekají, a pro otevřený detail (posledních 10 minut),
+  // nanejvýš 4 na jedno kolo. Selhání přepisu stav relací nezpochybní – zůstane přepis z cache.
+  async function nactiPrepisy(data, opts) {
+    const ted = Date.now();
+    for (const [id, at] of zajem) if (ted - at > 10 * MIN) zajem.delete(id);
+    const aktivni = data.sessions.filter((x) => AKTIVNI.has(x.session_status)).map((x) => x.id);
+    const ids = [...new Set([...zajem.keys(), ...aktivni])].slice(0, 4);
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const z = await nactiUdalostiRelace(id, opts);
+        if (z) prepisyZUctu.set(id, z);
+      } catch { /* přepis z účtu je doplněk; stav relace už je načtený */ }
+    }));
+    for (const id of prepisyZUctu.keys()) if (!ids.includes(id) && !zajem.has(id)) prepisyZUctu.delete(id);
+  }
+  // Otevřený detail: přepis z účtu se načte hned (nanejvýš 2,5 s čekání) a dál se drží čerstvý.
+  async function sledujDetail(localId) {
+    if (!api.zapnuto || stopped || !remoteId(localId)) return;
+    const prvni = !zajem.has(localId);
+    zajem.set(localId, Date.now());
+    if (!prvni) return;
+    const nacti = (async () => {
+      try {
+        const z = await nactiUdalostiRelace(localId, { prihlaseni, fetchImpl: claudeCloud.fetchImpl });
+        if (z) { prepisyZUctu.set(localId, z); zpracuj(); }
+      } catch { /* zůstává přepis z cache */ }
+    })();
+    await Promise.race([nacti, new Promise((r) => setTimeout(r, 2500).unref?.())]);
   }
   const popis = () => {
     const casti = [];
@@ -427,6 +496,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     },
     // Pravidelný průchod aplikace seznam z účtu nežádá častěji než jednou za 10 s; ruční obnova (force) hned.
     scan: async (force = false) => { await queue.run(dir); if (force) tok.chybaAt = 0; if (force || (Date.now() - api.pokusAt >= 8000 && !api.pauzaMs)) await nactiZUctu(); },
+    sledujDetail,
     stop() { stopped = true; watcher?.close(); queue.clear(); clearTimeout(api.timer); }, idle: async () => { await queue.idle(); await api.bezi; },
     status: () => {
       const ziveOk = api.zapnuto && !api.error && api.at > 0;

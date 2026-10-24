@@ -20,6 +20,16 @@ function vlozPrechody() {
 }
 
 export function initMascotMotion() {
+  // Flákání začne až po oddechu (home-studio.js#dilnaAtributy: data-hra-od). Kontrola stačí jednou
+  // za sekundu a sahá jen na prvky, které na svou zábavu ještě čekají.
+  setInterval(() => {
+    const ted = Date.now();
+    for (const el of document.querySelectorAll('[data-hra-od]')) {
+      if (Number(el.dataset.hraOd) > ted) continue;
+      el.dataset.hra = el.dataset.hraPak || 'klid';
+      delete el.dataset.hraOd; delete el.dataset.hraPak;
+    }
+  }, 1000);
  vlozPrechody();
  const media = matchMedia('(prefers-reduced-motion: reduce)');
  let paused = false;

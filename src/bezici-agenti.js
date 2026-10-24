@@ -9,6 +9,7 @@
 // kterému se žádná konverzace nenašla, se ukáže jako detekovaný proces bez přepisu. Zmizí,
 // jakmile se přepis najde nebo proces skončí. Z procesu se bere jen to, co o něm víme jistě:
 // že běží, od kdy a v jaké složce. Co právě dělá, neví nikdo – a tak se to ani netvrdí.
+import fs from 'node:fs';
 import path from 'node:path';
 import { touch } from './model.js';
 import { lastSegment } from './util.js';
@@ -70,6 +71,28 @@ export function nesparovane(procesy, sessions) {
   return zbyva;
 }
 
+// Větev gitu ve složce procesu – podle čeho se v agentech orientuješ, když přepis ještě není.
+// Čte se jen .git/HEAD (u pracovní kopie přes `gitdir:`); nic se nespouští. Výsledek se drží 30 s.
+const VETVE = new Map();
+export function vetevSlozky(cwd, now = Date.now()) {
+  if (!cwd || !path.isAbsolute(cwd)) return '';
+  const drive = VETVE.get(cwd);
+  if (drive && now - drive.at < 30e3) return drive.vetev;
+  let vetev = '';
+  try {
+    let git = path.join(cwd, '.git');
+    if (fs.statSync(git).isFile()) {
+      const m = /^gitdir:\s*(.+)$/m.exec(fs.readFileSync(git, 'utf8'));
+      git = m ? path.resolve(cwd, m[1].trim()) : '';
+    }
+    const head = git ? fs.readFileSync(path.join(git, 'HEAD'), 'utf8') : '';
+    vetev = (/^ref:\s*refs\/heads\/(.{1,100})$/m.exec(head)?.[1] || '').trim();
+  } catch { /* není repozitář */ }
+  if (VETVE.size > 200) VETVE.clear();
+  VETVE.set(cwd, { vetev, at: now });
+  return vetev;
+}
+
 export function popisProcesu(p, a) {
   const od = new Date(p.od).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' });
   return p.cwd
@@ -95,9 +118,13 @@ export function createBeziciAgenti({ store }) {
       chtene.add(id);
       const s = store.ensure({ connector: a.connector, localId, provider: a.provider, app: a.app, source: 'proces' });
       s.proces = { pid: p.pid, od: p.od, popis: popisProcesu(p, a) };
-      // Název složky není název konverzace. Dokud nemáme přepis, nesmí se za něj vydávat.
-      s.title = ui('{0} · detekovaný proces', a.app);
+      // Název složky není název konverzace, ale podle složky (a větve) se v agentech orientuješ.
+      // Titulek proto říká, kde agent běží – nikdy nepředstírá zadání, které neznáme.
+      const nazevSlozky = p.cwd ? lastSegment(p.cwd) : '';
+      s.title = nazevSlozky ? ui('{0} ve složce {1}', a.app, nazevSlozky) : ui('{0} · detekovaný proces', a.app);
       if (p.cwd && !s.cwd) s.cwd = p.cwd;
+      const vetev = vetevSlozky(p.cwd);
+      if (vetev) s.branch = vetev;
       touch(s, p.od);
       drzene.add(id);
       store.commit(s);

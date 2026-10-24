@@ -184,6 +184,18 @@ try {
             await page.locator('#port-form button').click();
             assert.equal(await page.locator('#port-msg').textContent(), 'Port je číslo od 1024 do 65535.');
             assert.equal(await page.locator('#port').getAttribute('aria-invalid'), 'true');
+            // Motiv okna je vlastní volba rozšíření: výchozí Systém sleduje systém, opačná volba ho přebije.
+            const motivOkna = () => page.evaluate(() => document.documentElement.dataset.theme);
+            assert.equal(await motivOkna(), theme, 'výchozí motiv okna sleduje systém');
+            assert.equal(await page.locator('input[name=motiv][value=system]').isChecked(), true);
+            const opacny = theme === 'dark' ? 'light' : 'dark';
+            await page.locator(`input[name=motiv][value=${opacny}]`).click();
+            assert.equal(await motivOkna(), opacny, 'volba motivu přebije systém');
+            assert.equal(await page.evaluate(() => fixture.data.motiv), opacny, 'volba se uloží v rozšíření');
+            await page.locator('#vzhled').scrollIntoViewIfNeeded();
+            await page.screenshot({ path: `dist/qa-extension/${engine}-${theme}-motiv-${opacny}.png` });
+            await page.locator('input[name=motiv][value=system]').click();
+            assert.equal(await motivOkna(), theme);
           }
           await page.keyboard.press('Escape');
           assert.equal(await page.locator('#view-sluzby').isVisible(), false, 'Esc zavře list');

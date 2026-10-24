@@ -1496,15 +1496,20 @@ html.is-cloud body { background: var(--paper); }
   .modal--project .swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 32px)); gap: 8px; justify-content: space-between; }
   .modal--project .swatch-opt { width: auto; height: auto; aspect-ratio: 1; }
 }
-/* Cover and customer logo read as two equal peers instead of vertically stacked cards.
-   At phone sizes the original single-column media controls remain intact. */
-@media (min-width: 680px) {
-  .modal--project .media-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  /* Náhled, text na jeden řádek a „Nahrát“ vedle sebe: karta má výšku náhledu, ne tří řádků. */
-  .modal--project .media-pick { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
-  .modal--project .media-thumb--cover { width: 64px; height: 32px; }
-  .modal--project .media-thumb--logo { width: 44px; height: 44px; }
-  .modal--project .media-text small { white-space: nowrap; }
+/* Obrázek karty a logo klienta: dva řádky pod sebou na celou šířku dialogu, stejné sloupce
+   (náhled 64 px, název s „i“ a rozměry, tlačítka vpravo). Vedle sebe se do poloviny dialogu nevešel
+   název ani dvě tlačítka (Změnit + Odebrat) a tlačítka ho překrývala. */
+.modal--project .media-pick { grid-template-columns: 64px minmax(0, 1fr) auto; gap: 14px; align-items: center; min-height: 64px; padding: 10px 12px; }
+.modal--project .media-thumb--cover { width: 64px; height: 32px; }
+.modal--project .media-thumb--logo { width: 44px; height: 44px; }
+.modal--project .media-text b { min-width: 0; }
+.modal--project .media-text small { overflow: hidden; text-overflow: ellipsis; }
+.modal--project .media-actions { flex-wrap: nowrap; }
+@media (max-width: 560px) {
+  .modal--project .media-pick { grid-template-columns: 48px minmax(0, 1fr); }
+  .modal--project .media-thumb--cover { width: 48px; height: 24px; }
+  .modal--project .media-thumb--logo { width: 36px; height: 36px; }
+  .modal--project .media-actions { grid-column: 1 / -1; justify-content: flex-end; }
 }
 
 /* ---------- Dovednosti ---------- */

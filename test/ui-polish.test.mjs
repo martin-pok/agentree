@@ -824,7 +824,9 @@ test('nahrání obrázku a loga: jeden řádek s tlačítkem vedle, podrobnosti 
   assert.match(pu, /\$\{infoTip\(TARGETS\[kind\]\.hint\)\}<\/b><small>\$\{esc\(TARGETS\[kind\]\.kratce\)\}<\/small>/);
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.modal--project \.media-pick \{ grid-template-columns: 64px minmax\(0, 1fr\) auto;/);
-  assert.doesNotMatch(css, /\.modal--project \.media-actions \{ grid-column: 1 \/ -1;/, 'tlačítko už nepadá pod text');
+  // Na počítači tlačítka stojí vedle textu; pod text jdou jen na úzkém displeji (do 560 px).
+  const mimoMobil = css.replace(/@media \(max-width: 560px\) \{[^@]*?\.modal--project \.media-actions \{ grid-column: 1 \/ -1;[^}]*\}\s*\}/, '');
+  assert.doesNotMatch(mimoMobil, /\.modal--project \.media-actions \{ grid-column: 1 \/ -1;/, 'tlačítko už nepadá pod text');
   const { infoTip } = await import('../public/js/ui.js');
   assert.match(infoTip('do 4 MB'), /4\u00a0MB/, 'číslo a jednotka se nerozdělí');
 });

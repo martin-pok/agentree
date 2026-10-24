@@ -72,7 +72,19 @@ test('rozšíření: okno používá tokeny aplikace a nekreslí těžší písm
   const vahy = [...popup.matchAll(/font-weight:\s*(\d{3})/g)].map((m) => Number(m[1]));
   assert.equal(vahy.some((v) => v > 500), false, `příliš těžké písmo: ${vahy.filter((v) => v > 500).join(', ')}`);
   assert.match(popup, /prefers-reduced-motion/, 'omezení pohybu se respektuje');
-  assert.match(popup, /prefers-color-scheme: dark/, 'tmavý režim je součástí okna');
+  assert.match(popup, /:root\[data-theme='dark'\]/, 'tmavý režim je součástí okna');
+  assert.doesNotMatch(popup, /@media \(prefers-color-scheme/, 'tmavý režim řídí jen data-theme, jinak by volba Světlý v tmavém systému nefungovala');
+});
+
+// Vlastník 24. 10. 2026: motiv rozšíření se volí v rozšíření (Systém / Světlý / Tmavý) a s motivem
+// aplikace se nepropojuje.
+test('okno rozšíření: vlastní volba motivu nezávislá na aplikaci', async () => {
+  const popup = await fs.readFile(path.join(ROOT, 'extension/popup.html'), 'utf8');
+  const js = await fs.readFile(path.join(ROOT, 'extension/popup.js'), 'utf8');
+  for (const hodnota of ['system', 'light', 'dark']) assert.match(popup, new RegExp(`name="motiv" value="${hodnota}"`), `chybí volba ${hodnota}`);
+  assert.match(js, /chrome\.storage\.local\.set\(\{ motiv \}\)/, 'volba se ukládá v rozšíření');
+  assert.match(js, /prefers-color-scheme: dark/, 'Systém sleduje motiv systému');
+  assert.doesNotMatch(js, /api\/[a-z/-]*(theme|motiv)/i, 'motiv se nebere z aplikace');
 });
 
 // Balíček se skládá vlastní rutinou (žádné závislosti), takže musí být doloženo, že vzniklý ZIP

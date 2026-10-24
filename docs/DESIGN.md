@@ -164,7 +164,8 @@ značka“. Závazná podoba `extension/popup.html`:
   okně přes tokenově omezený požadavek; nikdy neotevírá holou adresu lokálního serveru ani nepředává
   klíč okna Chromu. Bez spárování zůstane jen značka bez navigace. Jde o jediné místo s touto akcí,
   vedle ní je kapsle stavu spojení, kruhová obnova
-  a kruh Sledované služby a port. **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
+  a kruh Nastavení rozšíření (sledované služby, motiv okna Systém / Světlý / Tmavý nezávislý na
+  motivu aplikace, port). **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
   vedle „Otevřít v Agenteeq“ bylo matoucí. Ověření stránky je kapsle u řádku aktuální karty. Dvě
   viditelná ovládání nikdy nenesou stejný nebo podobný popisek (hlídá qa-extension). Okno má
   380 × 600 px; obsah na spodním okraji se rozplyne maskou.
@@ -296,4 +297,4 @@ výsledkům filtrů a upozorní, pokud část výběru leží mimo ně. Detekova
 nejsou hromadně zařaditelné. Dialog potvrzení zopakuje počet vybraných konverzací v nadpisu i na
 tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukončí.
 
-Tlačítko „Rozumím“ v Co je nového při hoveru a klávesovém fokusu používá `--brand-solid` a bílý text v obou vzhledech (požadavek vlastníka 24. 10. 2026).
+**Hlavní tlačítko při najetí a fokusu:** každé `.btn--primary` (v aplikaci i v okně rozšíření) při hoveru a klávesovém fokusu zfialoví – `--brand-solid` (#6260d8) a bílý text, v obou vzhledech, kontrast 4,9 : 1. Výjimky: zakázané a nebezpečné (`.btn--danger`). Počty v menu (`.nav-badge`, Upozornění a Agenti) jsou fialové kolečko s bílým číslem. Rozhodnutí vlastníka 24. 10. 2026; pravidlo platí pro každé nové tlačítko, nikdo ho nenastavuje ručně.

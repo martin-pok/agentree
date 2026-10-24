@@ -3,6 +3,7 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Otevřít v Claude": "Open in Claude",
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",
   "Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.": "Could not read the Claude Code sign-in (not signed in, or Keychain access was not allowed) – cloud agent status cannot be read from the account.",
   "Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.": "The Claude Code sign-in has expired. Just start Claude Code and it will renew it.",
@@ -101,6 +102,7 @@ export default {
   "Spuštění selhalo: {0}": "Start failed: {0}",
   "Konverzace nenalezena.": "Conversation not found.",
   "{0} · detekovaný proces": "{0} · detected process",
+  "{0} ve složce {1}": "{0} in {1}",
   "{0} běží v {1} od {2}. Přepis zatím není dostupný.": "{0} has been running in {1} since {2}. A transcript is not available yet.",
   "{0} běží od {1}. Přepis zatím není dostupný.": "{0} has been running since {1}. A transcript is not available yet.",
   "Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.": "The detected process is no longer in the overview. If it created a transcript, you can find it among the agents.",

@@ -83,3 +83,11 @@ test('plán bez zadané schopnosti počítá s plnou podporou — o systému roz
   const s = { id: `codex:${CODEX_ID}`, connector: 'codex', source: 'local', cwd: '/Users/x/web' };
   assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app', 'terminal', 'folder']);
 });
+
+test('vzdálený Code z Claude Desktopu: otevře se aplikace Claude, kde relace běží – web jen bez aplikace', () => {
+  const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache', url: 'https://claude.ai/code/session_01FixtureRemoteAgent123' };
+  const vApp = planOpen(s, 'app', { claude: true });
+  assert.deepEqual(vApp.args, ['-a', 'Claude']);
+  assert.ok(!vApp.args.some((a) => /^https:/.test(a)), 'nikdy web, když běží v aplikaci (claude.ai: session couldn\'t be found)');
+  assert.deepEqual(planOpen(s, 'app', {}).args, ['https://claude.ai/code/session_01FixtureRemoteAgent123']);
+});

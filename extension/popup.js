@@ -24,7 +24,7 @@ const LOGO_APLIKACE = [[/antigravity/i, 'antigravity'], [/claude/i, 'claude'], [
   [/warp/i, 'warp'], [/windsurf/i, 'windsurf'], [/kiro/i, 'kiro'], [/\bzed\b/i, 'zed'], [/goose/i, 'goose'], [/opencode/i, 'opencode']];
 // Webové aplikace, jak je pojmenovává aplikace (src/connectors/web.js): jejich konverzace jsou „chaty“.
 const WEBOVE_APLIKACE = new Set(['ChatGPT', 'Codex · web', 'Claude.ai', 'Gemini', 'Google AI Studio', 'Microsoft Copilot', 'Perplexity', 'Grok', 'Qwen Chat', 'GitHub Copilot']);
-// Adresa aplikace: výchozí port 4620, jiný se nastaví v listu Sledované služby a port.
+// Adresa aplikace: výchozí port 4620, jiný se nastaví v listu Nastavení rozšíření.
 // Port mimo výchozí potřebuje volitelné oprávnění pro 127.0.0.1 (manifest, optional_host_permissions).
 const VYCHOZI_PORT = 4620;
 const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
@@ -48,6 +48,28 @@ const el = (tag, trida, text) => {
   if (text !== undefined) e.textContent = text;
   return e;
 };
+// ── Motiv okna ──────────────────────────────────────────────────────────────
+// Rozšíření má vlastní volbu Systém / Světlý / Tmavý (chrome.storage.local.motiv), nezávislou na
+// motivu aplikace. Kopie v localStorage je jen proto, aby okno při otevření neblesklo jiným motivem,
+// než chrome.storage odpoví.
+const MOTIVY = ['system', 'light', 'dark'];
+const tmavySystem = window.matchMedia?.('(prefers-color-scheme: dark)');
+let motiv = 'system';
+function pouzijMotiv(m) {
+  motiv = MOTIVY.includes(m) ? m : 'system';
+  const tmavy = motiv === 'dark' || (motiv === 'system' && Boolean(tmavySystem?.matches));
+  document.documentElement.dataset.theme = tmavy ? 'dark' : 'light';
+  for (const r of document.querySelectorAll('input[name="motiv"]')) r.checked = r.value === motiv;
+}
+try { pouzijMotiv(localStorage.getItem('agenteeq.motiv')); } catch { pouzijMotiv('system'); }
+tmavySystem?.addEventListener?.('change', () => pouzijMotiv(motiv));
+chrome.storage.local.get(['motiv']).then(({ motiv: ulozeny }) => pouzijMotiv(ulozeny)).catch(() => {});
+document.addEventListener('change', (e) => {
+  if (e.target?.name !== 'motiv') return;
+  pouzijMotiv(e.target.value);
+  try { localStorage.setItem('agenteeq.motiv', motiv); } catch { /* jen kopie */ }
+  chrome.storage.local.set({ motiv }).catch(() => {});
+});
 const omezitPohyb = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
 // Zastaralé, chybějící nebo časově nesmyslné události nepředstírají živý stav.

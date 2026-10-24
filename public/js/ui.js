@@ -1,5 +1,5 @@
 import { rozhodnutiPro, tlacitkaRozhodnuti, podrobnostiRozhodnuti } from './rozhodnuti-data.js';
-import { displayStatus, esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
+import { displayStatus, esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural, dur } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
@@ -479,7 +479,13 @@ export const statusPill = (value, cls = '') => {
 // platí jeho věta – jinak by agent, který možná čeká na tebe, vypadal, že jen pracuje.
 export function vetaStavu(s) {
   if (s.status === 'working') return s.reason && s.reason !== s.activity ? s.reason : s.activity || tr('Pracuje');
-  if (s.status === 'observed') return tr('Detekovaný proces bez přepisu');
+  // Proces bez přepisu: jak dlouho běží a na jaké větvi – to, podle čeho ho poznáš. Co dělá, nevíme.
+  if (s.status === 'observed') {
+    const casti = [s.proces?.od ? tr('Běží {0}', dur(Math.max(0, Date.now() - s.proces.od))) : tr('Běží')];
+    if (s.branch) casti.push(tr('větev {0}', s.branch));
+    casti.push(tr('zatím bez přepisu'));
+    return casti.join(' · ');
+  }
   return s.reason || STATUS[s.status]?.label || '';
 }
 
