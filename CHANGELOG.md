@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.65 – 2026-10-24 · Pestřejší flákání a plynulé přesouvání
+
+- **Ne všichni si hrají:** zhruba dva z pěti čekajících robotů jen v klidu stojí, dýchají a rozhlížejí se. Ostatní mají každý svou zábavu z osmi – míček, jojo, hvízdání, hrnek kafe (usrkává, stoupá pára), kniha (otáčí listy), bublina ze žvýkačky, mobil, nebo protahování. Vedle sebe tak už nevyhazují všichni míček.
+- **Přesouvání karet jako na Přehledu:** karty v pravém panelu agenta a projektu mají stejný úchyt i fialový lem jako widgety Přehledu (kapsle nad kartou, ne na její hraně).
+- **Plynulejší tah všude:** karta se zvedne plynule, jede za ukazatelem bez škubání (subpixelově) a po puštění měkce dosedne; ostatní karty uhýbají delší, měkčí animací.
+
 ## 0.46.64 – 2026-10-24 · Tečka stavu na ikoně rozšíření
 
 - **Stav agentů přímo na liště prohlížeče:** v pravém horním rohu ikony rozšíření svítí tečka v barvě stavu – růžová, když tě agent potřebuje, červená po selhání, zlatá na limitu, zelená, když agenti pracují. Když nic neběží, tečka zmizí. Přednost má to, co tě potřebuje.

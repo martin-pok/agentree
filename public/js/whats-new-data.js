@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.65',
+    date: '2026-10-24',
+    title: 'Pestřejší flákání a plynulé přesouvání',
+    items: [
+      'Ne všichni čekající roboti si hrají: část jen v klidu stojí, ostatní mají každý svou zábavu.',
+      'Nové zábavy: hrnek kafe, kniha, bublina ze žvýkačky, mobil a protahování – k míčku, joju a hvízdání.',
+      'Karty v detailu agenta a projektu se přesouvají stejně jako na Přehledu a tah je plynulejší.',
+    ],
+    en: {
+      title: 'More ways to idle, smoother dragging',
+      items: [
+        'Not every waiting robot plays: some just stand calmly, the rest each have their own pastime.',
+        'New pastimes: a cup of coffee, a book, bubble gum, a phone and a stretch – alongside the ball, yo-yo and whistling.',
+        'Cards in agent and project details move just like on Overview, and dragging is smoother.',
+      ],
+    },
+  },
+  {
     version: '0.46.64',
     date: '2026-10-24',
     title: 'Tečka stavu na ikoně rozšíření',

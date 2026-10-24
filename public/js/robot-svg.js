@@ -218,19 +218,36 @@ function praceNad(g) {
     + `</g>`;
 }
 
-// Flákání (čeká na zadání): míček nahoru a dolů, jojo, nebo si hvízdá (notičky a pohupování).
-// Kreslí se nad tělem od konce pravé paže; které hraní robot má, říká data-hra u agenta.
+// Flákání (čeká na zadání): míček, jojo, hvízdání, hrnek kafe, kniha, bublina ze žvýkačky,
+// mobil, nebo protahování. Kreslí se nad tělem; které hraní robot má, říká data-hra u agenta
+// (část čekajících si nehraje vůbec – home-studio.js).
 function zabava(g, druh = true) {
-  const { pravo: [, , rx, ry] } = paze(g);
+  const { pravo: [sx, sy, rx, ry] } = paze(g);
   const h = g.head;
+  const t = g.torso;
   const nx = 54 + h.w / 2 - 2;
   const ny = h.top + h.h * 0.45;
   const nota = (x, y, i) => `<g class="hra-nota" style="--i:${i};transform-origin:${n(x)}px ${n(y)}px"><path d="M${n(x + 1.6)} ${n(y)}V${n(y - 6.5)}l3.4 1.4"/><ellipse cx="${n(x)}" cy="${n(y)}" rx="2" ry="1.5"/></g>`;
-  const vse = druh === true;
+  const ma = (d) => druh === true || druh === d;
+  // Ruka otočená před hruď (mobil, o 115°): kde pak je její konec – tam je telefon.
+  const u = 115 * Math.PI / 180;
+  const [vx, vy] = [rx - sx, ry - sy];
+  const mx = sx + vx * Math.cos(u) - vy * Math.sin(u);
+  const my = sy + vx * Math.sin(u) + vy * Math.cos(u);
+  const ky = t.top + 4;
+  const pusa = g.eyeY + 8 * g.es;
   return `<g class="robot-hra">`
-    + (vse || druh === 'micek' ? `<circle class="hra-micek" cx="${n(rx + 1)}" cy="${n(ry - 3.2)}" r="3.2"/>` : '')
-    + (vse || druh === 'jojo' ? `<g class="hra-jojo"><path class="hra-provazek" style="transform-origin:${n(rx)}px ${n(ry)}px" d="M${n(rx)} ${n(ry)}V${n(ry + 23)}"/><g class="hra-kotouc"><circle cx="${n(rx)}" cy="${n(ry + 23)}" r="4.4"/><circle class="hra-kotouc-stred" cx="${n(rx)}" cy="${n(ry + 23)}" r="1.4"/></g></g>` : '')
-    + (vse || druh === 'pisen' ? `<g class="hra-noty">${nota(nx, ny, 0)}${nota(nx + 4, ny - 3, 1)}</g>` : '')
+    + (ma('micek') ? `<circle class="hra-micek" cx="${n(rx + 1)}" cy="${n(ry - 3.2)}" r="3.2"/>` : '')
+    + (ma('jojo') ? `<g class="hra-jojo"><path class="hra-provazek" style="transform-origin:${n(rx)}px ${n(ry)}px" d="M${n(rx)} ${n(ry)}V${n(ry + 23)}"/><g class="hra-kotouc"><circle cx="${n(rx)}" cy="${n(ry + 23)}" r="4.4"/><circle class="hra-kotouc-stred" cx="${n(rx)}" cy="${n(ry + 23)}" r="1.4"/></g></g>` : '')
+    + (ma('pisen') ? `<g class="hra-noty">${nota(nx, ny, 0)}${nota(nx + 4, ny - 3, 1)}</g>` : '')
+    + (ma('kava') ? `<g class="hra-kava" style="transform-origin:${n(sx)}px ${n(sy)}px"><path class="hra-ucho-hrnku" d="M${n(rx + 4.6)} ${n(ry - 4.6)}h1.4a3 3 0 0 1 0 6h-1.4"/><rect class="hra-hrnek" x="${n(rx - 4.6)}" y="${n(ry - 7.4)}" width="9.2" height="10.8" rx="2.2"/>`
+      + [0, 1].map((i) => `<path class="hra-para" style="--i:${i}" d="M${n(rx - 1.8 + i * 3.6)} ${n(ry - 9.4)}q-1.6 -2.2 0 -4.4t0 -4.4"/>`).join('') + `</g>` : '')
+    + (ma('kniha') ? `<g class="hra-kniha"><path class="hra-desky" d="M${n(54 - 14)} ${n(ky)}L54 ${n(ky + 2)}L${n(54 + 14)} ${n(ky)}V${n(ky + 13)}L54 ${n(ky + 15)}L${n(54 - 14)} ${n(ky + 13)}Z"/>`
+      + `<path class="hra-strana" d="M${n(54 - 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 - 12.5)} ${n(ky + 11.8)}Z"/><path class="hra-strana" d="M${n(54 + 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 + 12.5)} ${n(ky + 11.8)}Z"/>`
+      + `<path class="hra-strana hra-list" style="transform-origin:54px ${n(ky + 8)}px" d="M${n(54 + 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 + 12.5)} ${n(ky + 11.8)}Z"/>`
+      + `<path class="hra-radky" d="M${n(54 - 10)} ${n(ky + 4.5)}l7 1.2M${n(54 - 10)} ${n(ky + 7.5)}l7 1.2M${n(54 + 3)} ${n(ky + 5.7)}l7 -1.2M${n(54 + 3)} ${n(ky + 8.7)}l7 -1.2"/></g>` : '')
+    + (ma('bublina') ? `<circle class="hra-bublina" style="transform-origin:${n(56)}px ${n(pusa + 1)}px" cx="${n(59.5)}" cy="${n(pusa + 1)}" r="6"/>` : '')
+    + (ma('mobil') ? `<g class="hra-mobil"><rect class="hra-mobil-telo" x="${n(mx - 4.5)}" y="${n(my - 10)}" width="9" height="14" rx="2.2"/><rect class="hra-mobil-displej" x="${n(mx - 3.2)}" y="${n(my - 8.6)}" width="6.4" height="10.8" rx="1"/></g>` : '')
     + `</g>`;
 }
 

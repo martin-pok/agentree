@@ -74,9 +74,14 @@ export function dilnaAtributy(s) {
 
 // Jen to, co stav agenta opravdu ukáže (refinement.css): dílna při práci, hračky při čekání,
 // signál, když tě potřebuje. Při změně stavu živé sloučení chybějící části doplní.
-const HRY = ['micek', 'jojo', 'pisen'];
-const hraAgenta = (id) => HRY[(otisk(id) >>> 3) % 3];
-const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: s.status === 'waiting' || s.status === 'idle' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
+// Zhruba dva z pěti čekajících si nehrají vůbec (jen dýchají a rozhlížejí se), ostatní mají každý
+// svou zábavu z osmi – vedle sebe tak nevyhazují všichni míček.
+const HRY = ['micek', 'jojo', 'pisen', 'kava', 'kniha', 'bublina', 'mobil', 'protazeni'];
+const hraAgenta = (id) => {
+  const h = otisk(id) >>> 3;
+  return h % 5 < 2 ? 'klid' : HRY[(h >>> 3) % HRY.length];
+};
+const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: (s.status === 'waiting' || s.status === 'idle') && hraAgenta(s.id) !== 'klid' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
 
 export function agentRobot(s) {
   let p = {};
