@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   queue-and-publish:
-    if: ${{ github.event.head_commit.message == 'chore(release): trigger audited v0.46.63 preview once' }}
+    if: "${{ github.event.head_commit.message == 'chore(release): trigger audited v0.46.63 preview once' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
