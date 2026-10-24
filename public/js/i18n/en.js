@@ -5,11 +5,12 @@
 import server from './en-server.js';
 
 export default {
+  server,
+  texty: {
   "Stav neověřen": "Status unverified",
   "U části agentů chybí aktuální stav": "Some agents have no current status",
   "Poslední známý stav není potvrzení, že agent přestal pracovat.": "The last known status does not confirm that the agent stopped working.",
-  server,
-  texty: {
+
     "jen v této konverzaci": "only in this conversation",
     "v tomto projektu, jen u tebe": "in this project, just for you",
     "v tomto projektu pro všechny": "in this project for everyone",
