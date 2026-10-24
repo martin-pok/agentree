@@ -12,7 +12,7 @@ Tento dokument je **poctivý zdroj pravdy** o tom, co Agenteeq umí u které slu
 | Služba | Zdroj | Registrace spuštění | Živý přepis | Průběh úlohy | Potřebuje rozhodnutí | Limity | Útrata |
 |---|---|---|---|---|---|---|---|
 | **Claude Code** (CLI i místní Claude Desktop → Code) | přepisy + hooky | ✅ do 2 s, s hooky okamžitě | ✅ | ✅ kroky a čas tahu; plán úkolů 🧪 (TodoWrite) | ✅ otázka, schválení plánu; ✅ povolení nástroje jen s hooky | ✅ vyčerpané okno s přesnou obnovou z odmítnutí 429 (`quotaLimits`, i v Claude Desktopu → Code); ✅ % a obnova ze stavového řádku; 🧪 čerstvá historie Claude Desktopu (≤ 30 min, obnova neznámá) | cena předplatného nedostupná |
-| **Claude Desktop → vzdálený Code** | místní IndexedDB cache 🧪 | do 2 s od změny cache, ne od události v cloudu | dostupná část | uložené nástroje | poslední hlášený stav | jen uložená hláška, jinak důvod neznámý | neúplné tokeny, žádný odhad |
+| **Claude Desktop → vzdálený Code** | seznam relací z účtu Claude (jako `claude --teleport`) 🧪 + místní IndexedDB cache 🧪 | z účtu do 15 s; z cache do 2 s od její změny | dostupná část | uložené nástroje | poslední hlášený stav | jen uložená hláška, jinak důvod neznámý | neúplné tokeny, žádný odhad |
 | **Codex** (ChatGPT app, CLI, VS Code) | `~/.codex/sessions` | ✅ | ✅ | ✅ kroky a čas tahu; plán 🧪 (`update_plan`) | ❌ Codex žádosti o schválení do souborů nezapisuje | ✅ % limitu 5 h / týden, čas obnovy, ✅ zůstatek kreditů | cena předplatného nedostupná |
 | **ChatGPT** (web) | rozšíření | 🧪 | 🧪 | ⚠️ generuje / hotovo | ❌ | 🧪 hláška limitu na stránce | cena předplatného nedostupná |
 | **Claude Code · web** (claude.ai/code) 🧪 | rozšíření; spojuje se s relací z cache Claude Desktopu | 🧪 karta okamžitě | ❌ (jen počty) | ⚠️ pracuje / nepracuje podle karty | ❌ z karty; z cache poslední hlášený stav | 🧪 | selektory na claude.ai/code neověřené |
@@ -218,6 +218,25 @@ ve složce, o které Agenteeq neví. Proto:
 
 ### Claude Desktop – vzdálený Code – `src/connectors/claude-desktop-code.js` 🧪
 
+- **Stav přímo z účtu Claude (od 0.46.65) 🧪 Beta:** cache Claude Desktopu ukládá seznam relací jen
+  občas, takže běžící cloudový agent dostával „?“ (pracoval, čerstvý stav chybí). Zdroj se proto
+  každých 15 s ptá účtu stejně jako Claude Code u `claude --teleport`: `GET https://api.anthropic.com/v1/code/sessions`
+  s hlavičkami `Authorization: Bearer <přihlášení Claude Code>` a `anthropic-version: 2023-06-01`
+  (adresa a hlavičky přečtené z balíčku Claude Code, ne z veřejné dokumentace – interní API).
+  Odpověď `data[]` nese `id` (`session_…`/`cse_…`), `title`, `status` (archivace), `worker_status`
+  (`running`/`idle`/`requires_action`), `created_at`, `last_event_at` a `config.{sources,model}`;
+  převádí se do tvaru seznamu v cache (`type: 'session'`, `session_status`) jako v Claude Code a
+  stav čte tatáž `hlasenyStav`. Z cache a z účtu platí u relace záznam s novějším `updated_at`,
+  při shodě pozdější načtení (`slucRelace`). Přepis a tokeny dál jen z cache Desktopu.
+  **Přihlášení:** na macOS položka Klíčenky „Claude Code-credentials“ (účet = uživatel, s
+  `CLAUDE_CONFIG_DIR` přívěsek z sha256 složky), čtená `/usr/bin/security` jako v Claude Code;
+  jinde `~/.claude/.credentials.json` (`src/platform.js#prihlaseniClaudeCode`). Token se drží jen
+  v paměti do vypršení, nikam se neukládá a jde jen na `api.anthropic.com`. **Nikdy se neobnovuje**
+  (obnova by vyměnila refresh token a odhlásila Claude Code): vypršelé přihlášení je chyba zdroje
+  s větou „Stačí spustit Claude Code“. Po chybě přihlášení se Klíčenka 10 minut nečte znovu.
+  Chyby (bez přihlášení, 401/403, síť, jiný tvar) jsou chybou zdroje v Nastavení, nikdy „nic neběží“.
+  Zapnuté se síťovými funkcemi (`AGENTEEQ_CLOUD`), v testech vypnuté. Na skutečném účtu ověřeno
+  zatím jen to, že tento tvar Claude Code sám čte; odpověď z Macu vlastníka ověřená není.
 - **Ověřená příčina a zdroj (2026-09-26):** vzdálený Code agent pro tento repozitář byl
   uložený v Claude Desktopu, ale nevytvořil místní JSONL v `~/.claude/projects`. Na macOS čteme
   `~/Library/Application Support/Claude/IndexedDB/https_claude.ai_0.indexeddb.leveldb`

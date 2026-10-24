@@ -3,6 +3,21 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.": "Could not read the Claude Code sign-in (not signed in, or Keychain access was not allowed) – cloud agent status cannot be read from the account.",
+  "Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.": "The Claude Code sign-in has expired. Just start Claude Code and it will renew it.",
+  "Účet Claude neodpověděl (síť). Zkusí se to znovu.": "The Claude account did not respond (network). Will retry.",
+  "Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.": "The Claude account rejected the Claude Code sign-in. Start Claude Code and sign in again.",
+  "Účet Claude vrátil chybu {0}. Zkusí se to znovu.": "The Claude account returned error {0}. Will retry.",
+  "Účet Claude vrátil nečitelný seznam relací.": "The Claude account returned an unreadable session list.",
+  "Účet Claude nevrátil seznam relací.": "The Claude account did not return a session list.",
+  "Stav z účtu Claude: {0}": "Status from the Claude account: {0}",
+  "Stav cloudových agentů čtu přímo z účtu Claude (naposledy {0}).": "Reading cloud agent status directly from the Claude account (last {0}).",
+  "Cache Claude Desktopu uložila seznam relací {0}.": "The Claude Desktop cache saved the session list {0}.",
+  "Čtu i místní cache Claude Desktopu.": "Also reading the local Claude Desktop cache.",
+  "Účet Claude (seznam relací jako Claude Code) a Claude/IndexedDB (místní cache)": "Claude account (session list, as in Claude Code) and Claude/IndexedDB (local cache)",
+  "Vzdálení agenti Claude Code: stav přímo z účtu Claude, dostupná část přepisu z cache Claude Desktopu. Interní formáty; tokeny mohou být neúplné.": "Remote Claude Code agents: status directly from the Claude account, the available part of the transcript from the Claude Desktop cache. Internal formats; tokens may be incomplete.",
+  "Sleduji {0} vzdálených relací.": "Tracking {0} remote sessions.",
+  "Zatím bez vzdálených agentů.": "No remote agents yet.",
   "Codex Cloud není dostupný nebo není přihlášený.": "Codex Cloud is unavailable or not signed in.",
   "Codex Cloud vrátil nečitelný seznam úloh.": "Codex Cloud returned an unreadable task list.",
   "Codex Cloud nevrátil seznam úloh.": "Codex Cloud did not return a task list.",
@@ -210,11 +225,6 @@ export default {
   "Vzdálený agent potřebuje rozhodnutí. Otevři Claude.": "The remote agent needs a decision. Open Claude.",
   "Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.": "The cache has no list of remote agents. Open the Code tab in Claude.",
   "Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.": "The Claude cache is being written or has an unknown format. The latest records are kept; loading will be retried.",
-  "Claude/IndexedDB (místní cache vzdálených relací)": "Claude/IndexedDB (local cache of remote sessions)",
-  "Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.": "Remote agents, their last reported status and the available part of the transcript. Internal Claude Desktop format; tokens may be incomplete.",
-  "Sleduji {0} vzdálených relací z místní cache Claude Desktopu.": "Tracking {0} remote sessions from the local Claude Desktop cache.",
-  "Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.": "Tracking {0} remote sessions from the local Claude Desktop cache. The session list was last saved {1}.",
-  "Zatím bez místní cache vzdálených agentů.": "No local cache of remote agents yet.",
 
   // src/connectors/claude-desktop-usage.js
   "Soubor s historií limitů Claude Desktop se nepodařilo přečíst.": "Couldn’t read the Claude Desktop limit history file.",

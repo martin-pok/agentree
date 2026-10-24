@@ -6,15 +6,17 @@ export const RELEASES = [
   {
     version: '0.46.65',
     date: '2026-10-24',
-    title: 'Pestřejší flákání a plynulé přesouvání',
+    title: 'Cloudoví agenti živě, pestřejší flákání',
     items: [
+      'Cloudoví agenti Claude Code (i z aplikace Claude) mají živý stav přímo z účtu, už žádné „?“ v liště.',
       'Ne všichni čekající roboti si hrají: část jen v klidu stojí, ostatní mají každý svou zábavu.',
       'Nové zábavy: hrnek kafe, kniha, bublina ze žvýkačky, mobil a protahování – k míčku, joju a hvízdání.',
       'Karty v detailu agenta a projektu se přesouvají stejně jako na Přehledu a tah je plynulejší.',
     ],
     en: {
-      title: 'More ways to idle, smoother dragging',
+      title: 'Live cloud agents, more ways to idle',
       items: [
+        'Claude Code cloud agents (including those from the Claude app) get live status straight from your account – no more “?” in the menu bar.',
         'Not every waiting robot plays: some just stand calmly, the rest each have their own pastime.',
         'New pastimes: a cup of coffee, a book, bubble gum, a phone and a stretch – alongside the ball, yo-yo and whistling.',
         'Cards in agent and project details move just like on Overview, and dragging is smoother.',
