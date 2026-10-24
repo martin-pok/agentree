@@ -1,5 +1,5 @@
 import { rozhodnutiPro, tlacitkaRozhodnuti, podrobnostiRozhodnuti } from './rozhodnuti-data.js';
-import { esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
+import { displayStatus, esc, rel, fmtTok, fmtMoney, STATUS, DAY, resetsLabel, timeHM, plural } from './format.js';
 import { ICON, glyph } from './icons.js';
 import { gauge } from './charts.js';
 import { sessionTotal } from './data.js';
@@ -467,7 +467,10 @@ export async function copy(text, message = tr('Zkopírováno do schránky')) {
 
 // Štítek stavu: jméno ze STATUS (format.js) a barva z `.pill[data-status]` – jeden zdroj pro Agenty,
 // detail, projekt i karty Přehledu. Třída navíc mění jen umístění a velikost, nikdy jméno ani barvu.
-export const statusPill = (status, cls = '') => `<span class="pill${cls ? ` ${esc(cls)}` : ''}" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
+export const statusPill = (value, cls = '') => {
+  const status = typeof value === 'object' ? displayStatus(value) : value;
+  return `<span class="pill${cls ? ` ${esc(cls)}` : ''}" data-status="${esc(status)}"><i></i>${esc(STATUS[status]?.label || status)}</span>`;
+};
 
 // Věta o stavu agenta pod jeho názvem: karty „Právě teď“, řádek na Agentech i pruh v detailu.
 // Je to důvod z modelu (src/model.js#deriveStatus), takže „Hotovo…“ zazní jen u agenta, který
