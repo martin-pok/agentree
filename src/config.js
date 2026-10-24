@@ -75,6 +75,8 @@ export function loadConfig(env = process.env) {
     // AGENTEEQ_UCET_URL=0 účty vypne (testy); jiná adresa míří na jiný projekt nebo atrapu serveru.
     ucet: env.AGENTEEQ_UCET_URL === '0' ? null : { url: (env.AGENTEEQ_UCET_URL || UCET_VYCHOZI.url).replace(/\/+$/, ''), klic: env.AGENTEEQ_UCET_KEY || UCET_VYCHOZI.klic },
     processes: env.AGENTEEQ_PROCESSES !== '0',
+    // Aplikace ChatGPT pro Mac přes Zpřístupnění (src/connectors/chatgpt-app.js) – jen macOS.
+    chatgptApp: env.AGENTEEQ_CHATGPT_APP !== '0' && process.platform === 'darwin',
     ...otevirani(env),
     ollamaUrl: env.AGENTEEQ_OLLAMA_URL || 'http://127.0.0.1:11434',
     scanIntervalMs: Number(env.AGENTEEQ_SCAN_MS) || 10000,

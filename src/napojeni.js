@@ -6,7 +6,7 @@
 // z rozšíření. Terminál se nikdy neotvírá. Hesla ani tokeny dodavatelů Agenteeq nevidí, nečte
 // a neukládá.
 import { prostrediPro } from './prihlaseni.js';
-import { POCITAC } from './platform.js';
+import { POCITAC, NASTAVENI_ZPRISTUPNENI } from './platform.js';
 import { ui } from './texty.js';
 
 const INTERVAL_MS = 2000;
@@ -68,6 +68,12 @@ export const WEBY = {
   'github-copilot': { label: 'GitHub Copilot', provider: 'github', logo: 'copilot', url: 'https://github.com/copilot' },
 };
 
+// Aplikace, které se napojují povolením Zpřístupnění macOS (čte se jejich okno, ne soubory):
+// chaty z aplikace ChatGPT pro Mac. „Napojit“ otevře Nastavení systému a čeká, až čtení projde.
+export const APLIKACE = {
+  chatgpt: { label: 'ChatGPT · aplikace', provider: 'openai', logo: 'openai' },
+};
+
 // Kód z prohlížeče (ruční cesta Claude Code) je jeden řádek tisknutelných znaků. Nic jiného se
 // procesu na vstup nepošle.
 const KOD = /^[\x21-\x7e]{8,512}$/;
@@ -76,7 +82,7 @@ const KOD = /^[\x21-\x7e]{8,512}$/;
 // (nainstalovano: null), nikdy „není“. `posledni(id)` = kdy agent na tomhle Macu naposledy
 // pracoval (0 = za sledované období nic); podle toho člověk pozná, proč jsou tokeny nulové.
 // `prihlas(bin, args, { naKonec })` spustí přihlášení na pozadí (src/prihlaseni.js).
-export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan = async () => '', onVerified = async () => 0, extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
+export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, aplikace = () => ({}), zapniAplikaci = async () => {}, plan = async () => '', onVerified = async () => 0, extension = () => ({ state: 'missing' }), posledni = () => 0, oknoDni = null, now = Date.now, intervalMs = INTERVAL_MS, limitMs = LIMIT_MS, odkazMs = 3000 }) {
   const ceka = new Map(); // id → { od, casovac?, proces? }
 
   async function zjisti(id) {
@@ -110,7 +116,14 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
         ceka: ceka.has(`web:${id}`),
       };
     });
-    return [...agenti, ...weby];
+    // Stav čtení okna: 'ok' napojeno, 'povoleni' chybí povolení, 'nebezi' aplikace je zavřená
+    // (povolení nevíme), jinak nevíme. Bez podpory (jiný systém) se řádek neukazuje.
+    const stavy = aplikace();
+    const appky = Object.entries(APLIKACE).filter(([id]) => stavy[id] && stavy[id] !== 'vypnuto' && stavy[id] !== 'nepodporovano').map(([id, a]) => ({
+      id: `app:${id}`, druh: 'aplikace', label: a.label, provider: a.provider, logo: a.logo, stav: stavy[id],
+      nainstalovano: true, napojeno: stavy[id] === 'ok' ? true : stavy[id] === 'povoleni' || stavy[id] === 'nezapnuto' ? false : null, ceka: ceka.has(`app:${id}`),
+    }));
+    return [...agenti, ...appky, ...weby];
   }
 
   function ukonci(id) {
@@ -229,6 +242,28 @@ export function createNapojeni({ bins, run, prihlas, open, emit = () => {}, plan
       ukonci(id);
       const r = await spust(id, bin, a.prihlaseni);
       if (!r.ok) return { status: 422, error: r.error || ui('Přihlášení {0} se nepodařilo spustit.', a.label) };
+      return { ok: true, ceka: true, dry: Boolean(r.dry) };
+    }
+    const app = id.startsWith('app:') ? APLIKACE[id.slice(4)] : null;
+    if (app) {
+      if (!NASTAVENI_ZPRISTUPNENI) return { status: 422, error: ui('Čtení aplikace funguje jen na macOS.') };
+      // Zapnout čtení a hned zkusit: s povolením z dřívějška je napojeno bez Nastavení systému.
+      await zapniAplikaci(id.slice(4));
+      if (aplikace()[id.slice(4)] === 'ok') return { ok: true, uz: true };
+      ukonci(id);
+      const attempt = { od: now() };
+      ceka.set(id, attempt);
+      const krok = () => {
+        if (ceka.get(id) !== attempt) return;
+        if (aplikace()[id.slice(4)] === 'ok') return hotovo(id, app.label, { overeni: 'zpristupneni' });
+        if (now() - attempt.od > limitMs) { ukonci(id); emit({ id, label: app.label, udalost: 'vyprselo' }); return; }
+        attempt.casovac = setTimeout(krok, intervalMs);
+        attempt.casovac.unref?.();
+      };
+      let r;
+      try { r = await open(NASTAVENI_ZPRISTUPNENI); } catch { r = { ok: false }; }
+      if (!r.ok) { ukonci(id); return { status: 422, error: ui('Nastavení systému se nepodařilo otevřít. Otevři Soukromí a zabezpečení → Zpřístupnění a zapni Agenteeq.') }; }
+      krok();
       return { ok: true, ceka: true, dry: Boolean(r.dry) };
     }
     const web = id.startsWith('web:') ? WEBY[id.slice(4)] : null;

@@ -188,6 +188,8 @@ function normalizeDataInner(raw) {
     // Od kdy je zapnuté propojení s Claude Code (src/app.js#claudeHooks). `presne: false` = zapnuté
     // ručně nebo starší verzí Agenteeq; `od` je pak chvíle, kdy ho Agenteeq poprvé viděl.
     claudeHooks: Number(d.claudeHooks?.od) > 0 ? { od: Number(d.claudeHooks.od), presne: d.claudeHooks.presne === true } : null,
+    // Čtení okna aplikace ChatGPT (src/connectors/chatgpt-app.js) zapnuté tlačítkem Napojit.
+    chatgptApp: { zapnuto: d.chatgptApp?.zapnuto === true },
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

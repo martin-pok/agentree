@@ -72,6 +72,7 @@ export async function startTestServer(env = {}, appOptions = {}) {
     AGENTEEQ_SOURCE_HOME: sourceHome,
     AGENTEEQ_HOME: dataHome,
     AGENTEEQ_PROCESSES: '0',
+    AGENTEEQ_CHATGPT_APP: '0',
     AGENTEEQ_NATIVE_NOTIFY: '0',
     AGENTEEQ_KEYCHAIN: '0',
     AGENTEEQ_CLOUD: '0',
