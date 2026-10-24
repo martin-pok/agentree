@@ -1,4 +1,4 @@
-import { esc, modelPopis } from './format.js';
+import { displayStatus, esc, modelPopis } from './format.js';
 import { glyph } from './icons.js';
 export { robot } from './robot-svg.js';
 import { robot } from './robot-svg.js';
@@ -76,7 +76,7 @@ export function dilnaAtributy(s) {
 // signál, když tě potřebuje. Při změně stavu živé sloučení chybějící části doplní.
 const HRY = ['micek', 'jojo', 'pisen'];
 const hraAgenta = (id) => HRY[(otisk(id) >>> 3) % 3];
-const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: s.status === 'waiting' || s.status === 'idle' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
+const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
 
 export function agentRobot(s) {
   let p = {};
@@ -86,5 +86,5 @@ export function agentRobot(s) {
   const type = avatars.includes(p.avatar) ? p.avatar : avatars[index];
   // Vlastní fáze dechu a rozhlížení (refinement.css): roboti vedle sebe se nehýbou v zákrytu.
   const faze = -((otisk(s.id) % 997) / 100);
-  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)}>${renderAgentRobot(type, p, kusyPodleStavu(s))}</span>`;
+  return `<span class="agent-portrait" style="--persona:${color};--robot-delay:${faze}s" data-state="${esc(displayStatus(s))}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)}>${renderAgentRobot(type, p, kusyPodleStavu(s))}</span>`;
 }

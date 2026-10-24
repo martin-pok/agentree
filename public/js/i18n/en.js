@@ -5,6 +5,9 @@
 import server from './en-server.js';
 
 export default {
+  "Stav neověřen": "Status unverified",
+  "U části agentů chybí aktuální stav": "Some agents have no current status",
+  "Poslední známý stav není potvrzení, že agent přestal pracovat.": "The last known status does not confirm that the agent stopped working.",
   server,
   texty: {
     "jen v této konverzaci": "only in this conversation",

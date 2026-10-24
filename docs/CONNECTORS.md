@@ -539,3 +539,19 @@ Co není ověřené na skutečných datech, je **Beta**.
 Agenteeq používá pouze oficiální, podporovaná rozhraní a lokální stav nástroje, který si uživatel sám připojil. Soukromé webové endpointy, cookies ani simulované přihlášení se pro zjišťování předplatného nepoužívají.
 
 Ověřené zdroje auditu: [OpenAI Admin API](https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage), [oddělená fakturace ChatGPT a API](https://help.openai.com/en/articles/9039756-managing-billing-for-chatgpt-and-the-api-platform), [Anthropic Usage & Cost Admin API](https://docs.anthropic.com/en/api/usage-cost-api), [oddělené předplatné Claude a API/Console](https://support.claude.com/en/articles/9876003-i-have-a-paid-claude-subscription-pro-max-team-or-enterprise-plans-why-do-i-have-to-pay-separately-to-use-the-claude-api-and-console), [GitHub Copilot REST](https://docs.github.com/en/rest/copilot/copilot-user-management), [Gemini API billing](https://ai.google.dev/gemini-api/docs/billing/).
+
+## Incident: aktivní vzdálený Code proti nečerstvé cache (24. 10. 2026)
+
+Ve vydání 0.46.64 konektor `claude-desktop-code` čte místní cache Claude Desktopu,
+ne živý stav cloudového pracovníka. Na skutečném Macu byla pozorována platná položka
+`react-query-cache` s prázdným `clientState.queries`; dříve načtená relace proto zůstala
+v paměti bez nového pozorování. Překročení dvou minut nesmí být prezentováno jako
+potvrzené čekání na zadání, flákání robota ani zelené tvrzení „nikdo nepracuje“.
+Zobrazení používá `unknown` („Stav neověřen“), API nadále nese původní `status` + `stale`.
+Otazník v macOS liště znamená chybějící čerstvý stav, nikoli nově zjištěnou práci.
+
+Samostatný kandidát přímého načítání účtu v PR #356 musí být ověřen na skutečném
+přihlášení: `claude auth status` může hlásit přihlášený účet i při vypršelém access tokenu.
+Při přímém read-only ověření API byl pozorován HTTP 401 `authentication_error`.
+Přihlášení Claude Desktopu nenahrazuje přihlášení Claude Code. Dokud přímý zdroj
+nevrátí čerstvý stav, nelze tvrdit, že je detekce této vzdálené relace opravena.
