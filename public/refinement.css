@@ -254,8 +254,12 @@ html { scrollbar-gutter: stable; }
 /* Značková fialová (tlačítko pomocníka) pro jemnou záři u ovládacích prvků. */
 :root { --brand: #6260d8; --on-brand: #ffffff; --brand-solid: #6260d8; }
 html[data-theme='dark'] { --brand: #8c88f4; --on-brand: #16141d; }
-/* Hlavní potvrzení (Rozumím, Uložit vzhled): při najetí značková fialová s bílým textem (kontrast 4,9 : 1). */
-.btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
+/* Pravidlo designového systému (vlastník, 24. 10. 2026): každé hlavní (plné) tlačítko při najetí a
+   klávesovém fokusu zfialoví s bílým textem, v obou vzhledech (kontrast 4,9 : 1). Totéž okno rozšíření. */
+.btn--primary:not(:disabled, .btn--danger):is(:hover, :focus-visible), .btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
+.btn--primary:not(:disabled, .btn--danger):is(:hover, :focus-visible) :is(.glyph, svg) { color: #fff !important; }
+/* Počty v menu (Upozornění, Agenti): fialové kolečko s bílým číslem ve všech vzhledech a na telefonu. */
+:is(.nav, .sheet-nav) .nav-badge, :is(.nav, .sheet-nav) .nav-badge[data-tone] { background: var(--brand-solid); color: #fff; }
 
 /* Bublina zprava: vysvětlí, proč volba teď nic neukáže (prázdný archiv). Skleněná plocha s jemnou
    značkovou září, vyjíždí o 4 px. Rodičovská volba ji nesmí oříznout, proto .seg--tips. */
@@ -951,6 +955,12 @@ html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-vlna { animation: rz-vlna 1.8s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -.6s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-volani 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+/* Hotovo, čeká na další zadání: prvních 15 s po dokončení (data-hra-od, home-studio.js) volá stejně –
+   anténa svítí, vlnky signálu a mávání. Pak atribut zmizí a robot se začne flákat. */
+[data-hra-od] .robot .robot-signal { display: inline; }
+[data-hra-od] .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+[data-hra-od] .robot.is-zivy:not([data-otocka]) .signal-vlna { animation: rz-vlna 1.8s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -.6s) infinite; }
+[data-hra-od] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-volani 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
 @keyframes rz-zare { 0%, 100% { opacity: .55; scale: .8; } 50% { opacity: 1; scale: 1.15; } }
 @keyframes rz-vlna { 0% { opacity: .9; scale: .7; } 100% { opacity: 0; scale: 3.4; } }
 @keyframes rz-volani { 0%, 100% { transform: rotate(-52deg); } 25% { transform: rotate(-38deg); } 50% { transform: rotate(-60deg); } 75% { transform: rotate(-40deg); } }

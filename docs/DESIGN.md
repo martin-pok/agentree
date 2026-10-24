@@ -296,4 +296,4 @@ výsledkům filtrů a upozorní, pokud část výběru leží mimo ně. Detekova
 nejsou hromadně zařaditelné. Dialog potvrzení zopakuje počet vybraných konverzací v nadpisu i na
 tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukončí.
 
-Tlačítko „Rozumím“ v Co je nového při hoveru a klávesovém fokusu používá `--brand-solid` a bílý text v obou vzhledech (požadavek vlastníka 24. 10. 2026).
+**Hlavní tlačítko při najetí a fokusu:** každé `.btn--primary` (v aplikaci i v okně rozšíření) při hoveru a klávesovém fokusu zfialoví – `--brand-solid` (#6260d8) a bílý text, v obou vzhledech, kontrast 4,9 : 1. Výjimky: zakázané a nebezpečné (`.btn--danger`). Počty v menu (`.nav-badge`, Upozornění a Agenti) jsou fialové kolečko s bílým číslem. Rozhodnutí vlastníka 24. 10. 2026; pravidlo platí pro každé nové tlačítko, nikdo ho nenastavuje ručně.

@@ -77,10 +77,10 @@ export const postupPrace = (od, ted = Date.now()) => {
 // Atributy dílny pro prvek, který nese stav agenta: nástroj (kladivo/pilka), začátek a fáze práce.
 export function dilnaAtributy(s) {
   const od = s.status === 'working' && s.turnStartedAt > 0 ? s.turnStartedAt : 0;
-  // Po dokončení úlohy si robot 15 s oddechne, teprve pak se začne flákat (mascot-motion.js přepne
-  // data-hra z „klid“ na jeho zábavu, až čas uplyne).
+  // Prvních 15 s po dokončení úlohy robot volá anténou a mává (refinement.css, [data-hra-od]), teprve
+  // pak se začne flákat (mascot-motion.js přepne data-hra z „klid“ na jeho zábavu, až čas uplyne).
   const hra = hraAgenta(s.id);
-  const hraOd = (s.status === 'waiting' || s.status === 'idle') && hra !== 'klid' && s.lastAt > 0 ? s.lastAt + ODDECH_MS : 0;
+  const hraOd = (s.status === 'waiting' || s.status === 'idle') && s.lastAt > 0 ? s.lastAt + ODDECH_MS : 0;
   const hraAttr = hraOd > Date.now() ? ` data-hra="klid" data-hra-pak="${hra}" data-hra-od="${hraOd}"` : ` data-hra="${hra}"`;
   return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}"${hraAttr}${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
 }
@@ -95,7 +95,9 @@ const hraAgenta = (id) => {
   const h = otisk(id) >>> 3;
   return h % 5 < 2 ? 'klid' : HRY[(h >>> 3) % HRY.length];
 };
-const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') && hraAgenta(s.id) !== 'klid' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' });
+// Hotový agent čeká na další zadání: prvních 15 s volá anténou a mává (ať si toho všimneš), pak se fláká.
+const pravDokoncil = (s) => displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') && s.lastAt > 0 && Date.now() - s.lastAt < ODDECH_MS;
+const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') && hraAgenta(s.id) !== 'klid' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' || pravDokoncil(s) });
 
 export function agentRobot(s) {
   let p = {};

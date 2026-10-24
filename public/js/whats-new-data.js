@@ -9,13 +9,15 @@ export const RELEASES = [
     title: 'Výchozí „V aplikaci“',
     items: [
       'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
-      'Robot si po dokončené úloze 15 s oddechne, teprve pak se začne flákat.',
+      'Hotový agent tě 15 s volá anténou a mává, teprve pak se začne flákat.',
+      'Hlavní tlačítka při najetí zfialoví a počty v menu jsou ve fialovém kolečku.',
     ],
     en: {
       title: 'Default “In app”',
       items: [
         'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
-        'After finishing a task, a robot rests for 15 s before it starts goofing around.',
+        'A finished agent calls you with its antenna and waves for 15 s before it starts goofing around.',
+        'Main buttons turn purple on hover, and menu counts sit in a purple circle.',
       ],
     },
   },

@@ -124,4 +124,9 @@ test('flákání až po oddechu: 15 s po dokončení úlohy je robot v klidu, pa
   assert.match(dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 20000 }), new RegExp(`data-hra="${hra}"`));
   const js = await zdroj('public/js/mascot-motion.js');
   assert.match(js, /querySelectorAll\('\[data-hra-od\]'\)/);
+  // Prvních 15 s hotový agent volá anténou a mává.
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /\[data-hra-od\] \.robot \.robot-signal \{ display: inline; \}/);
+  const { agentRobot } = await import('../public/js/home-studio.js');
+  assert.ok(agentRobot({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 }).includes('robot-signal'));
 });
