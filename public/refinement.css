@@ -252,6 +252,7 @@ html { scrollbar-gutter: stable; }
 /* Značková fialová (tlačítko pomocníka) pro jemnou záři u ovládacích prvků. */
 :root { --brand: #6260d8; --on-brand: #ffffff; --brand-solid: #6260d8; }
 html[data-theme='dark'] { --brand: #8c88f4; --on-brand: #16141d; }
+/* Hlavní potvrzení (Rozumím, Uložit vzhled): při najetí značková fialová s bílým textem (kontrast 4,9 : 1). */
 .btn--ack:is(:hover, :focus-visible) { background: var(--brand-solid); border-color: var(--brand-solid); color: #fff; }
 
 /* Bublina zprava: vysvětlí, proč volba teď nic neukáže (prázdný archiv). Skleněná plocha s jemnou

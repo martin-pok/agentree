@@ -82,7 +82,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     '</div><div class="look-grid" id="look-grid" role="tabpanel"></div></div></div></div>' +
     '<footer><button type="button" class="btn btn--sm look-reset" data-reset>' + tr('Obnovit výchozí') + '</button>' +
     '<span class="muted small" data-error role="status"></span>' +
-    '<button class="btn btn--primary" type="submit">' + tr('Uložit vzhled') + '</button></footer></form>';
+    '<button class="btn btn--primary btn--ack" type="submit">' + tr('Uložit vzhled') + '</button></footer></form>';
   document.body.append(dialog);
 
   const form = dialog.querySelector('form');
