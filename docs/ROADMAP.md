@@ -19,6 +19,8 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+**v0.46.65 Preview:** dokončit živou detekci vzdáleného Claude Code z účtu, zelené CI, nezávislý SHA-256 audit balíčků a fyzické UAT upgradu (PR #357).
+
 **Release vlak 23. 10. 2026:** **Připravuje se v0.46.64 Preview** (tečka stavu na ikoně rozšíření). **v0.46.63 Preview je zveřejněné** (roboti v dílně; obsahuje i detekci cloudových běhů Codexu z v0.46.62). **v0.46.61 Preview je zveřejněné, ale cloudové běhy Codexu nezachytí.** **v0.46.60 Preview bylo zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
 
 **Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
