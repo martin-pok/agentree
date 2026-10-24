@@ -6,7 +6,8 @@
 
 ## Zdroj pravdy
 
-- **v0.46.69: připravovaný Preview kandidát.** Chaty z aplikace ChatGPT pro Mac přes Zpřístupnění (Beta, ověřit na Macu: Napojit → povolení → chat odpovídá).
+- **v0.46.70: připravovaný Preview kandidát.** Generátor nápadů v poli zadání, vyrovnaný layout, detail projektu v mřížce, posuvník záložek Nastavení.
+- **v0.46.69: veřejné Preview (24. 10. 2026).** Chaty z aplikace ChatGPT pro Mac přes Zpřístupnění (Beta, ověřit na Macu: Napojit → povolení → chat odpovídá).
 - **v0.46.68: veřejné Preview (24. 10. 2026).** Přepis cloudového běhu z účtu, pravidelná mřížka, čistší nabídky.
 - **v0.46.67: veřejné Preview (24. 10. 2026).** Výchozí „V aplikaci“, oblečení zezadu, přepis cloudového běhu z účtu, vlastní motiv rozšíření.
 - **v0.46.66: veřejné Preview od 24. 10. 2026.** Pestřejší flákání robotů a přesouvání karet v detailu jako na Přehledu. Zveřejnění až po přesném `main` CI, Draftu a auditu příloh.
@@ -111,7 +112,7 @@
 
 ## Jaký je další postup
 
-Připravit `v0.46.69` jako Preview stejným postupem (`v0.46.68` je veřejné Preview). Pro předchozí: stejným postupem a ověřit flákání robotů a přesouvání karet v detailu; `v0.46.64` je veřejné Preview (v Chromu ověřit tečku na ikoně rozšíření). Pro `v0.46.63` platilo: po zeleném PR a přesném postmerge `main` CI nechat „Připravit vydání“ sestavit nový neveřejný Draft, nezávisle ověřit všech 8 příloh a pak ručně spustit `publish.yml` pro **`v0.46.63` jako Preview**; na Macu ověřit aktualizaci z `0.46.60` uvnitř aplikace. `v0.46.61` jako Preview je veřejné, ale cloudové běhy Codexu nevidí; na Macu vlastníka běží `v0.46.60`. Další postup: aktualizovat spárované rozšíření v Chromu na stejnou verzi, ověřit živé názvy a přepisy webových chatů, skutečné dva profily Claude, QR párování a Windows beta na fyzickém zařízení. Vlastník rozhodl ponechat vydání v Preview do UAT Windows/Chrome; současné Stable zůstává `v0.46.58`. Při nalezené chybě vytvořit nový tag, nepřepisovat přílohy 0.46.60.
+Připravit `v0.46.70` jako Preview stejným postupem (`v0.46.69` je veřejné Preview). Pro předchozí: stejným postupem a ověřit flákání robotů a přesouvání karet v detailu; `v0.46.64` je veřejné Preview (v Chromu ověřit tečku na ikoně rozšíření). Pro `v0.46.63` platilo: po zeleném PR a přesném postmerge `main` CI nechat „Připravit vydání“ sestavit nový neveřejný Draft, nezávisle ověřit všech 8 příloh a pak ručně spustit `publish.yml` pro **`v0.46.63` jako Preview**; na Macu ověřit aktualizaci z `0.46.60` uvnitř aplikace. `v0.46.61` jako Preview je veřejné, ale cloudové běhy Codexu nevidí; na Macu vlastníka běží `v0.46.60`. Další postup: aktualizovat spárované rozšíření v Chromu na stejnou verzi, ověřit živé názvy a přepisy webových chatů, skutečné dva profily Claude, QR párování a Windows beta na fyzickém zařízení. Vlastník rozhodl ponechat vydání v Preview do UAT Windows/Chrome; současné Stable zůstává `v0.46.58`. Při nalezené chybě vytvořit nový tag, nepřepisovat přílohy 0.46.60.
 
 **Audit release draft** se automaticky spouští po úspěšném sestavení nového Draftu a jednorázově po zavedení tohoto workflow pro již hotovou 0.46.9. Volitelně lze stejný audit spustit ručně z GitHub Actions s přesným tagem, např. `v0.46.9`. Workflow provádí pouze čtecí operace, ale auditovací úloha potřebuje omezené oprávnění `contents: write` jen k zobrazení neveřejných GitHub Draftů; žádný příkaz nic neupravuje. Stáhne všechny skutečné přílohy, porovná jejich SHA-256 s GitHub API i `SHA256SUMS.txt` a uloží malý `release-draft-audit` report. Úspěšný audit **nenahrazuje** instalaci, Google OAuth, vizuální kontrolu ikony ani další reálné UAT. Nespouští publikaci.
 

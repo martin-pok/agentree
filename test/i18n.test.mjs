@@ -102,7 +102,7 @@ test('i18n: v klientu nezůstala česká slova mimo tr() ani bez diakritiky', as
   const nalezy = [];
   for (const f of await soubory(path.join(ROOT, 'public/js'))) {
     // Novinky nesou češtinu i angličtinu vedle sebe (hlídá test/whats-new.test.mjs).
-    if (f.includes(`${path.sep}i18n${path.sep}`) || f.endsWith('whats-new-data.js')) continue;
+    if (f.includes(`${path.sep}i18n${path.sep}`) || f.endsWith('whats-new-data.js') || f.endsWith('napady-data.js')) continue; // dvojice cs/en jako Co je nového
     const s = await fs.readFile(f, 'utf8');
     for (const l of literaly(s)) {
       const pred = s.slice(Math.max(0, l.od - 40), l.od);
@@ -306,4 +306,20 @@ test('i18n: chybové hlášky, stavy a popisky ze serveru jsou označené ui()',
     }
   }
   assert.deepEqual(nalezy, []);
+});
+
+// Generátor nápadů nese vlastní dvojice cs/en: každý nápad musí mít obě jazykové verze.
+test('nápady v poli zadání: aspoň 100, každý česky i anglicky, bez opakování', async () => {
+  const { NAPADY } = await import('../public/js/napady-data.js');
+  assert.ok(NAPADY.length >= 100, `jen ${NAPADY.length} nápadů`);
+  for (const [cs, en] of NAPADY) {
+    assert.ok(cs && en && cs !== en, `chybí překlad: ${cs}`);
+    assert.ok(cs.length <= 100, `dlouhý nápad: ${cs}`);
+  }
+  assert.equal(new Set(NAPADY.map((n) => n[0])).size, NAPADY.length);
+  const { proudNapadu } = await import('../public/js/napady.js');
+  const dalsi = proudNapadu(() => 0.5);
+  const kolo = Array.from({ length: NAPADY.length }, dalsi);
+  assert.equal(new Set(kolo).size, NAPADY.length, 'v jednom kole se nic neopakuje');
+  assert.notEqual(dalsi(), kolo.at(-1), 'nové kolo nezačne tím, čím staré skončilo');
 });

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.46.70 – 2026-10-24 · Generátor nápadů a vyrovnaný layout
+
+- **Generátor nápadů v poli zadání:** prázdné pole každých 7 s plynule ukáže jiný nápad – 122 tipů na projekty, nástroje, pluginy, automatizace a usnadnění rutiny, česky i anglicky. Pořadí se míchá, v jednom kole se nic neopakuje. Při psaní zmizí; bez pohybu (omezení animací) se text jen vymění.
+- **Robot s knihou má ruce:** při čtení drží knihu viditelnýma rukama za dolní rohy; dřív zajely za knihu a robot vypadal jako bez rukou.
+- **Detail projektu v mřížce:** konverzace přes celou šířku a karty projektu (podklady, složky, tokeny, cena) pod nimi v pravidelné mřížce místo dlouhého sloupce vpravo a prázdna vlevo. Karty se přetahují po celé mřížce.
+- **Bez schodu nad kartami:** v detailu agenta i projektu karty v klidu lícují s obsahem vedle; úchyt pro přetažení se ukáže až při najetí, na horní hraně karty.
+- **Přehled:** widgety v jedné řadě jsou stejně vysoké; odkaz „Detail“ v hlavičce widgetu při najetí nepřesahuje okraj.
+- **Agenti:** karta sledovaných webových aplikací má od karet pod ní vzdušnou mezeru.
+- **Nastavení na úzkém okně a telefonu:** pod záložkami je tenký posuvník s fialovým jezdcem, který jde chytit a táhnout (i klepnout do dráhy).
+- **Stav agentů bez disclaimeru:** místo „U části agentů chybí aktuální stav“ s vysvětlující větou je jen fakt s počtem („1 agent bez čerstvého stavu“); kterého agenta se to týká, ukazuje jeho karta.
+
 ## 0.46.69 – 2026-10-24 · Chaty z aplikace ChatGPT pro Mac
 
 - **Agenteeq vidí běžné chaty z aplikace ChatGPT pro Mac** 🧪 Beta. Aplikace si je ukládá zašifrované, takže je dosud vidělo jen rozšíření v Chromu (chatgpt.com) a z aplikace jen Codex. Teď se čte okno aplikace přes Zpřístupnění macOS: název chatu (podle řádku se spinnerem v postranním panelu nebo názvu okna) a to, jestli ChatGPT právě odpovídá (ukazatel průběhu, tlačítko Stop). Když odpověď skončí, je chat „Hotovo“. Text konverzace se nečte. Codex z téže aplikace zůstává zvlášť.

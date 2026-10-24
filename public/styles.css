@@ -154,7 +154,7 @@ html {
    :where nemá váhu, takže pořadí pravidel zůstává. Klik a ukazatel se nevypínají nikdy: WebKit
    při kliknutí posune prvek do okna, a vypnutý ukazatel by klik spolkl. */
 /* Vodorovné pásy (dlaždice agentů, záložky nastavení) mají na iOS setrvačné rolování a nepřetahují stránku. */
-.launch-chips, .pb-agents, .set-nav, .seg { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.launch-chips, .pb-agents, .set-nav-rada, .seg { -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
 /* Pozadí je „stůl“ pod aplikací. Dřív bylo na těle s `background-attachment: fixed`, což nutí
    prohlížeč překreslit obě velké přechodové plochy v každém snímku rolování – při 120 Hz
    stodvacetkrát za vteřinu. Teď leží na vlastní pevné vrstvě, kterou kompozitor nakreslí jednou
@@ -184,7 +184,7 @@ code { font-family: var(--f-code); font-size: max(12px, .9em); }
 /* Vodorovně rolovatelný řádek ořízne všechno, co přesahuje jeho okraj – tedy i obrys zaostření,
    který je 5 px za tlačítkem. Vypadalo to jako tmavý useknutý stín pod tlačítkem, a jen když
    na něm bylo klávesnicové zaostření. Uvnitř takových řádků proto obrys leží uvnitř tlačítka. */
-.launch-chips :focus-visible, .seg :focus-visible, .pb-agents :focus-visible, .set-nav :focus-visible { outline-offset: -3px; }
+.launch-chips :focus-visible, .seg :focus-visible, .pb-agents :focus-visible, .set-nav-rada :focus-visible { outline-offset: -3px; }
 .skip-link { position: absolute; left: 16px; top: -64px; z-index: 100; display: inline-flex; align-items: center; height: 40px; padding: 0 20px; background: var(--ink-surface); color: var(--on-ink); border-radius: var(--r-full); font-weight: 500; text-decoration: none; }
 .skip-link:focus { top: 16px; }
 
@@ -1416,7 +1416,7 @@ html.is-cloud body { background: var(--paper); }
 
 
 .steps--compact { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
-.runtime-note { margin-top: 16px; }
+.runtime-note { margin-block: 16px 24px; }
 /* Jeden řádek: ikona, nadpis s „i“ (proč a co chybí) a akce. Dřív tři věty říkaly totéž. */
 .runtime-web { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 16px; }
 @media (max-width: 560px) { .runtime-web { grid-template-columns: auto minmax(0, 1fr); } .runtime-web > .btn { grid-column: 1 / -1; justify-self: start; } }
@@ -1724,7 +1724,8 @@ html.is-cloud body { background: var(--paper); }
 /* ---------- Nastavení ---------- */
 .settings2 { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 48px; align-items: start; }
 /* Nadpis a menu drží stejný rozestup při posouvání celé stránky: lišta 40 px + její spodní okraj 30 px. */
-.set-nav { position: sticky; top: calc(var(--main-top) + 70px); display: grid; gap: 2px; }
+.set-nav { position: sticky; top: calc(var(--main-top) + 70px); }
+.set-nav-rada { display: grid; gap: 2px; }
 .set-nav button { height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--mute); font-size: 14px; font-weight: 500; text-align: left; white-space: nowrap; transition: background-color var(--motion-response) var(--ease), color var(--motion-response) var(--ease); }
 .set-nav button:hover { color: var(--ink); background: var(--line-2); }
 /* Popisek je Onest 500 ve všech stavech – vybraná skupina se pozná podle plochy, ne podle řezu,
@@ -2000,9 +2001,17 @@ html[data-theme='dark'] .theme-pick[aria-checked='true']::after { background-ima
   /* Vodorovná lišta záložek se lepí těsně pod vysunutou horní lištu; když se horní lišta schová,
      vyjede k horní hraně okna. Stín v barvě papíru pod ní obsah plynule ztlumí. Pořadí nad
      gradientem horní lišty, aby záložky nebyly zašedlé. */
-  .set-nav { top: env(safe-area-inset-top, 0px); z-index: 31; transition: top var(--motion-move) var(--ease-settle); box-shadow: 0 12px 14px -8px var(--paper); display: flex; gap: 6px; margin: 0 -24px; padding: 10px 24px; overflow-x: auto; background: var(--paper); scrollbar-width: none; }
+  .set-nav { top: env(safe-area-inset-top, 0px); z-index: 31; transition: top var(--motion-move) var(--ease-settle); box-shadow: 0 12px 14px -8px var(--paper); margin: 0 -24px; padding: 10px 24px; background: var(--paper); }
+  .set-nav-rada { display: flex; gap: 6px; margin: 0 -24px; padding: 0 24px; scroll-padding-inline: 24px; overflow-x: auto; scrollbar-width: none; }
   html[data-lista='vysunuta'] .set-nav { top: calc(var(--main-top) + var(--lista-h, 44px)); }
-  .set-nav::-webkit-scrollbar { display: none; }
+  .set-nav-rada::-webkit-scrollbar { display: none; }
+  /* Posuvník záložek: tenká dráha a fialový jezdec ve tvaru kapsle. Viditelná plocha je 4 px,
+     uchopit jde celých 20 px (pseudoprvek), aby se trefil i prst. */
+  .set-nav-posuvnik { position: relative; height: 4px; margin-top: 10px; border-radius: var(--r-full); background: var(--line-2); cursor: pointer; touch-action: none; }
+  .set-nav-posuvnik::before { content: ''; position: absolute; inset: -8px 0; }
+  .set-nav-jezdec { position: absolute; top: 0; left: 0; height: 100%; border-radius: var(--r-full); background: var(--brand-solid); cursor: grab; transition: height var(--motion-response) var(--ease), top var(--motion-response) var(--ease); will-change: transform; }
+  .set-nav-posuvnik:hover .set-nav-jezdec, .set-nav-posuvnik.je-tazen .set-nav-jezdec { top: -1px; height: 6px; }
+  .set-nav-posuvnik.je-tazen .set-nav-jezdec { cursor: grabbing; }
   .set-nav button { flex: none; height: 40px; border-radius: var(--r-full); box-shadow: inset 0 0 0 1px var(--line); }
   .set-nav button[aria-current] { background: var(--action); color: var(--on-action); box-shadow: none; }
   .set-group { scroll-margin-top: 72px; }
@@ -2518,7 +2527,11 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .project-desc { margin: 0; color: var(--ink-2); max-width: 72ch; }
 .kpis--project { margin: 32px 0; }
 .kpi-logos { display: flex; margin-top: 12px; min-height: 30px; }
-.project-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; }
+.project-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: start; }
+/* Detail projektu: konverzace přes celou šířku a karty projektu pod nimi v pravidelné mřížce (dřív
+   dlouhý sloupec vpravo a prázdno vlevo). Karty se přetahují po celé mřížce. */
+.project .session-side { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-items: stretch; }
+.project .session-side > .side-card { min-width: 0; }
 .project-list { overflow: hidden; }
 .project-list-bar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 16px 14px 24px; border-bottom: 1px solid var(--line-2); }
 .project-list-bar h2 { margin: 0; font: 500 16px/1.3 var(--f-body); }
@@ -2683,7 +2696,6 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 
 @media (max-width: 1360px) {
   .onboard-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .project-grid { grid-template-columns: minmax(0, 1fr) 300px; }
 }
 @media (max-width: 1180px) {
   .project-grid { grid-template-columns: minmax(0, 1fr); }
@@ -2942,15 +2954,17 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
    s vyšším horním pásem a v něm vyjede kapsle se šesti tečkami – 8 px pod lemem a 8 px nad kartou,
    nikde se nedotýká. Mezera mezi kartami (48 px) pás pojme. Třídu .side-razeni dává panelu
    enableReorder (views/session.js, views/project.js) – bez :has(), který zdržuje přepočet stylů. Na dotykové obrazovce je úchyt vidět. */
-.side-razeni { gap: 48px; padding-top: 36px; }
+/* Vlastník 24. 10. 2026: v klidu žádný vyhrazený pás nad kartami („schod“) – karty lícují s obsahem
+   vedle. Úchyt se ukáže až při najetí a sedí na horní hraně karty, v mezeře mezi kartami. */
+.side-razeni { gap: 24px; }
 .side-card { --glow: var(--brand); position: relative; }
-.side-razeni > .side-card::after { content: ''; position: absolute; inset: -36px -12px -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
+.side-razeni > .side-card::after { content: ''; position: absolute; inset: -6px; border-radius: calc(var(--r-lg) + 6px); pointer-events: none; opacity: 0;
   background: linear-gradient(45deg, color-mix(in srgb, var(--glow) 6%, transparent), transparent 55%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 26%, transparent), 0 0 0 1px color-mix(in srgb, var(--glow) 6%, transparent), 0 18px 48px -30px color-mix(in srgb, var(--glow) 70%, transparent);
   transition: opacity var(--motion-response) var(--ease); }
 @media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover::after { opacity: 1; } }
 .side-card.is-lifted::after { opacity: 1; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 40%, transparent), 0 30px 70px -30px color-mix(in srgb, var(--glow) 80%, transparent); }
-.grip { --glow: var(--brand); position: absolute; top: -28px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+.grip { --glow: var(--brand); position: absolute; top: -10px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
 .grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
 .grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
 @media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover .grip { opacity: 1; transform: translate(-50%, 0); } }

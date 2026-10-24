@@ -337,7 +337,8 @@ function mount(el) {
   el.innerHTML = `
     <div class="settings2">
       <nav class="set-nav" aria-label="${tr('Sekce nastavení')}">
-        ${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}
+        <div class="set-nav-rada">${GROUPS.map(([id, label]) => `<button type="button" data-jump="${id}" aria-controls="${id}"${id === v.tab ? ' aria-current="true"' : ''}>${label}</button>`).join('')}</div>
+        <div class="set-nav-posuvnik" aria-hidden="true" hidden><span class="set-nav-jezdec"></span></div>
       </nav>
       <div class="set-main">
         ${GROUPS.map(([id, label, regions]) => `<section class="set-group" id="${id}" aria-labelledby="${id}-h"${id === v.tab ? '' : ' hidden'} data-enter style="--i:1">
@@ -356,19 +357,59 @@ function mount(el) {
   }, true);
 
   const nav = el.querySelector('.set-nav');
+  const rada = nav.querySelector('.set-nav-rada');
   const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Posuvník pod vodorovnou lištou (mobil, úzké okno): ukazuje, že záložek je víc, a jezdec jde
+  // chytit a táhnout. Je jen doplněk – záložky jsou dál ovladatelné klávesnicí i přejetím prstem.
+  const posuvnik = nav.querySelector('.set-nav-posuvnik');
+  const jezdec = posuvnik.querySelector('.set-nav-jezdec');
+  const prekresliPosuvnik = () => {
+    const navic = rada.scrollWidth - rada.clientWidth;
+    posuvnik.hidden = navic <= 1;
+    if (posuvnik.hidden) return;
+    const sirka = Math.max(32, posuvnik.clientWidth * (rada.clientWidth / rada.scrollWidth));
+    jezdec.style.width = `${sirka}px`;
+    jezdec.style.transform = `translateX(${(posuvnik.clientWidth - sirka) * (rada.scrollLeft / navic)}px)`;
+  };
+  let snimek = 0;
+  rada.addEventListener('scroll', () => { cancelAnimationFrame(snimek); snimek = requestAnimationFrame(prekresliPosuvnik); }, { passive: true });
+  const pozorovatel = new ResizeObserver(() => { if (!el.isConnected) { pozorovatel.disconnect(); return; } prekresliPosuvnik(); });
+  pozorovatel.observe(rada);
+  // Táhnutí jezdcem i klepnutí do dráhy posune lištu na odpovídající místo.
+  posuvnik.addEventListener('pointerdown', (e) => {
+    const navic = rada.scrollWidth - rada.clientWidth;
+    if (navic <= 1) return;
+    e.preventDefault();
+    const sirka = jezdec.offsetWidth;
+    const draha = posuvnik.getBoundingClientRect();
+    const naJezdci = e.target === jezdec;
+    const odsazeni = naJezdci ? e.clientX - jezdec.getBoundingClientRect().left : sirka / 2;
+    const posun = (x) => {
+      const pomer = Math.min(1, Math.max(0, (x - draha.left - odsazeni) / Math.max(1, draha.width - sirka)));
+      rada.scrollLeft = pomer * navic;
+    };
+    posun(e.clientX);
+    posuvnik.setPointerCapture(e.pointerId);
+    posuvnik.classList.add('je-tazen');
+    const pohyb = (ev) => posun(ev.clientX);
+    const konec = () => { posuvnik.classList.remove('je-tazen'); posuvnik.removeEventListener('pointermove', pohyb); };
+    posuvnik.addEventListener('pointermove', pohyb);
+    posuvnik.addEventListener('pointerup', konec, { once: true });
+    posuvnik.addEventListener('pointercancel', konec, { once: true });
+  });
 
   // Vodorovná lišta záložek (mobil) se posouvá přímo přes scrollLeft na `nav` samotné –
   // nikdy přes scrollIntoView na tlačítku, to by rozhýbalo i stránku.
   const scrollNavTo = (btn) => {
-    if (nav.scrollWidth <= nav.clientWidth) return; // desktop: svislá lišta se neposouvá
+    if (rada.scrollWidth <= rada.clientWidth) return; // desktop: svislá lišta se neposouvá
     const left = btn.offsetLeft;
     const right = left + btn.offsetWidth;
-    const viewLeft = nav.scrollLeft;
-    const viewRight = viewLeft + nav.clientWidth;
-    const target = left < viewLeft ? left : right > viewRight ? right - nav.clientWidth : null;
+    const viewLeft = rada.scrollLeft;
+    const viewRight = viewLeft + rada.clientWidth;
+    const target = left < viewLeft ? left : right > viewRight ? right - rada.clientWidth : null;
     if (target === null) return;
-    nav.scrollTo({ left: target, behavior: reduceMotion() ? 'auto' : 'smooth' });
+    rada.scrollTo({ left: target, behavior: reduceMotion() ? 'auto' : 'smooth' });
   };
 
   // Menu přepíná skupiny jako Nastavení v macOS: klik ukáže vybranou skupinu a stránka ani

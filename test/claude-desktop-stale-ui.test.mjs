@@ -14,7 +14,8 @@ test('stará vzdálená relace není čekající agent ani potvrzený klid', () 
  const state = stavAgentu({nejiste:1});
  assert.equal(state.stav,'nevim');
  assert.doesNotMatch(state.veta,/nikdo nepracuje|v pořádku/);
- assert.match(state.poznamka,/není potvrzení/);
+ assert.match(state.veta,/1 agent bez čerstvého stavu/);
+ assert.equal(state.poznamka,'', 'žádný vysvětlující disclaimer');
  const robot=agentRobot(s);
  assert.match(robot,/data-state="unknown"/);
  assert.doesNotMatch(robot,/robot-hracka/);
