@@ -70,6 +70,11 @@ test('Google AI Studio has its own adapter and exact browser permissions', async
   assert.equal(studio.title({ title: 'Oprav API – Google AI Studio' }), 'Oprav API');
   assert.equal(studio.title({ title: 'Google AI Studio' }), '');
   assert.equal(detect(loc('https://aistudio.google.com/library')), null);
+  assert.equal(detect(loc('https://aistudio.google.com/apps/build-123')).id, studio.id);
+  assert.equal(studio.conversationId(loc('https://aistudio.google.com/apps/build-123')), 'build-123');
+  assert.equal(detect(loc('https://aistudio.google.com/appsfoo/build-123')), null);
+  assert.equal(studio.generating({ querySelector: (s) => s === 'button.send-button.running' ? {} : null }), true);
+  assert.equal(studio.generating({ querySelector: () => null }), false);
 
   const manifest = JSON.parse(await fs.readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
   assert.ok(manifest.content_scripts[0].matches.includes('https://aistudio.google.com/*'));

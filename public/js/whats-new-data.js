@@ -4,7 +4,7 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.66',
+    version: '0.46.67',
     date: '2026-10-24',
     title: 'Výchozí „V aplikaci“',
     items: [
@@ -18,6 +18,11 @@ export const RELEASES = [
         'After finishing a task, a robot rests for 15 s before it starts goofing around.',
       ],
     },
+  },
+  {
+    version: '0.46.66', date: '2026-10-24', title: 'Pravdivá detekce agentů',
+    items: ['Google AI Studio se sleduje také při tvorbě aplikací.', 'Starý stav vzdáleného agenta se ukáže jako neověřený.'],
+    en: { title: 'Accurate agent detection', items: ['Google AI Studio is tracked in app building mode too.', 'Stale remote agent states are shown as unverified.'] },
   },
   {
     version: '0.46.65',

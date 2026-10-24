@@ -602,6 +602,8 @@ test('Web provider ingest accepts only its own HTTPS origin and excludes URL sec
   assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/'), null,
     'AI Studio must not accept unrelated pages');
   assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/app/prompts/new_chat'), 'https://aistudio.google.com/app/prompts/new_chat');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/apps/build-123?private=query'), 'https://aistudio.google.com/apps/build-123');
+  assert.equal(normalizedWebUrl('google-ai-studio', 'https://aistudio.google.com/appsfoo/build-123'), null);
   const studio = validateWebPayload({ site: 'google-ai-studio', conversationId: 'prompt-abc', url: 'https://aistudio.google.com/prompts/prompt-abc', title: '', messages: [], generating: true });
   assert.equal(studio.ok, true, 'AI Studio sends even before visible messages are readable');
   const studioSession = createSession({ connector: 'web', localId: 'google-ai-studio:prompt-abc', provider: 'google', app: 'Google AI Studio', source: 'web' });

@@ -289,13 +289,15 @@
     {
       id: 'google-ai-studio',
       hosts: ['aistudio.google.com'],
-      path: /^\/(?:app\/)?prompts(?:\/|$)/,
+      path: /^\/(?:(?:app\/)?prompts|apps)(?:\/|$)/,
       conversationId: (loc) => {
-        const id = idFrom(loc, /^\/(?:app\/)?prompts\/([\w-]+)/);
+        const id = idFrom(loc, /^\/(?:(?:app\/)?prompts|apps)\/([\w-]+)/);
         return id && id !== 'new_chat' ? id : tabId();
       },
       title: (doc, loc) => conversationTitle(doc, loc, [/\s*[-–|]\s*Google AI Studio$/i]),
-      composerSelector: 'textarea[aria-label*="prompt" i], [contenteditable="true"][role="textbox"]',
+      // Build mode exposes Send + .running instead of a labelled Stop button (live DOM, 24 Oct).
+      generating: (doc) => Boolean(doc.querySelector('button.send-button.running')) || Boolean(stopButton(doc)),
+      composerSelector: 'textarea:not(.inputarea), [contenteditable="true"][role="textbox"]',
     },
     { id: 'mscopilot', hosts: ['copilot.microsoft.com'], conversationId: (loc) => idFrom(loc, /\/chats\/([\w-]+)/) || tabId() },
     { id: 'perplexity', hosts: ['www.perplexity.ai', 'perplexity.ai'], conversationId: (loc) => idFrom(loc, /\/search\/([\w.-]+)/) || tabId(), composerSelector: '#ask-input, textarea' },

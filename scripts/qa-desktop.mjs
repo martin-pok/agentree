@@ -384,6 +384,9 @@ async function zkontrolujPlynulost(browser, engine) {
         // Počkej na dávky řádků (700 ms) i dokončení gest (1600 ms);
         // měření během přechodu počítalo dočasné SVG jako únik.
         await p.waitForTimeout(2000);
+        // The real entrance lasts 2200 ms. Measure settled screens, not live odometer SVGs.
+        await p.waitForFunction(() => !document.querySelector('#view.is-entering'));
+        await p.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         await cdp.send('HeapProfiler.collectGarbage');
         const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
         return { posluchacu: m.JSEventListeners, uzlu: m.Nodes };

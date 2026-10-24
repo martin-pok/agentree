@@ -75,6 +75,7 @@ const vyber = (pole, posledni) => {
 
 export function stavRobota(el) {
   const stav = el.closest('[data-status]')?.dataset.status || el.closest('[data-state]')?.dataset.state || 'idle';
+  if (stav === 'unknown') return 'ticho';
   if (stav === 'alert') return 'needs_input';
   if (stav === 'waiting' && el.closest('[data-done="false"]')) return 'ticho';
   return STAV[stav] ? stav : 'idle';
