@@ -344,7 +344,8 @@ async function zkontrolujPlynulost(browser, engine) {
       ozivit(radky[i]);
       await p.waitForFunction(([id, at]) => document.querySelector(`[data-key="${id}"] [data-ago]`)?.dataset.ago === String(at), [radky[i].id, radky[i].lastAt], { timeout: 3000 });
       // Přesun řádků (dojezd) musí doběhnout: jeho doznívající transform by se jinak četl jako skok.
-      await p.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => {}))));
+      // Nekonečné smyčky (život robotů, pracovní dílna) nikdy neskončí – čeká se jen na konečné.
+      await p.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {}))));
       await ustalit();
       const po = await pod();
       assert.equal(po?.klic, pred.klic, `${engine}: živá událost nad čtenářem posunula obsah (pod kurzorem byl ${pred.klic}, je ${po?.klic})`);
@@ -380,6 +381,9 @@ async function zkontrolujPlynulost(browser, engine) {
       const cdp = await ctx.newCDPSession(p);
       await cdp.send('Performance.enable');
       const stav = async () => {
+        // Počkej na dávky řádků (700 ms) i dokončení gest (1600 ms);
+        // měření během přechodu počítalo dočasné SVG jako únik.
+        await p.waitForTimeout(2000);
         await cdp.send('HeapProfiler.collectGarbage');
         const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
         return { posluchacu: m.JSEventListeners, uzlu: m.Nodes };
@@ -658,6 +662,32 @@ async function zkontrolujKontrastLogVCTA(page, engine) {
   assert.deepEqual(result, [], `${engine}: kontrast poskytovatelských log na tlačítkách\n${result.join('\n')}`);
 }
 
+async function zkontrolujHoverNovinek(browser, engine) {
+  const server = await startTestServer();
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  try {
+    await api(server.url).send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0', language: 'cs' });
+    const page = await ctx.newPage();
+    await page.goto(server.url);
+    await page.waitForSelector('[data-whats-new]');
+    for (const width of [1440, 375]) for (const theme of ['light', 'dark']) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(async (t) => {
+        (await import('/js/appearance.js')).applyAppearance(t);
+        void (await import('/js/whats-new.js')).showWhatsNew();
+      }, theme);
+      const button = page.locator('.modal-scrim:not(.is-leaving) .btn--ack').filter({ hasText: /Rozumím|Got it/ });
+      await button.hover();
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.modal-scrim:not(.is-leaving) .btn--ack')).backgroundColor === 'rgb(98, 96, 216)');
+      const colors = () => button.evaluate(b => ({ bg: getComputedStyle(b).backgroundColor, fg: getComputedStyle(b).color }));
+      assert.deepEqual(await colors(), { bg: 'rgb(98, 96, 216)', fg: 'rgb(255, 255, 255)' }, `${engine} ${theme} ${width}: fialový hover s bílým textem`);
+      await page.screenshot({ path: `${out}/${engine}-novinky-${theme}-${width}.png` });
+      await button.click();
+      await page.waitForSelector('.modal-scrim:not(.is-leaving) .btn--ack', { state: 'hidden' });
+    }
+  } finally { await ctx.close(); await server.close(); }
+}
+
 for (const engine of engines) {
   console.log(`QA ${engine}`);
   let accountSnapshot = null;
@@ -680,6 +710,7 @@ for (const engine of engines) {
   await zkontrolujListuPriPosunu(browser, engine);
   await zkontrolujObdobi(browser, engine);
   await zkontrolujVyskyRadku(browser, engine);
+  await zkontrolujHoverNovinek(browser, engine);
   await zkontrolujPlynulost(browser, engine);
   }
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce', serviceWorkers: 'block' });

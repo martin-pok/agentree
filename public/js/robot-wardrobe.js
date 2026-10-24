@@ -610,6 +610,11 @@ export function renderWardrobe(svg, source) {
   const outfit = WARDROBE.outfit[look.outfit];
   const costume = WARDROBE.costume[look.costume];
   if (!hat && !face && !outfit && !costume) return svg;
+  // Paže s nástrojem (robot při práci) leží nad tělem až za ním; vrstvy šatníku se kotví ke konci
+  // hlavy a těla, proto se na chvíli odloží a vrátí se nakonec.
+  const nadIndex = Math.min(...['<g class="robot-prace">', '<g class="robot-hra">', '<g class="robot-signal"'].map((z) => svg.indexOf(z)).filter((i) => i >= 0), Infinity);
+  const nad = nadIndex === Infinity ? '' : svg.slice(nadIndex, -'</svg>'.length);
+  if (nad) svg = svg.slice(0, nadIndex) + '</svg>';
   const body = costume || outfit;
   // Vlastní pokrývku hlavy převlek ztrácí, když si uživatel vybral čepici. Pokrývka hlavy se kotví
   // k temeni, obličejová část k očím (fit v robot-svg.js), oblečení k trupu. Vrstva zadaná funkcí se
@@ -624,18 +629,21 @@ export function renderWardrobe(svg, source) {
   const wrap = (jmeno, obsah) => (obsah ? `<g class="robot-wear robot-wear--${jmeno}">${obsah}</g>` : '');
   const back = wrap('back', kresba(body?.back, 'body'));
   const mid = wrap('mid', kresba(body?.mid, 'body'));
+  // Obličejové doplňky leží na čele (robot-celo): při otočce po povrchu hlavy přejedou s očima
+  // a zezadu se neukazují. Pokrývka hlavy se otáčí s obrysem hlavy (refinement.css).
+  const obliceje = wrap('face', kresba(costume?.face, 'face') + kresba(face?.head, 'face'));
   const head = wrap('hood', hat ? '' : kresba(costume?.hood, 'hat'))
-    + wrap('face', kresba(costume?.face, 'face') + kresba(face?.head, 'face'))
     + wrap('hat', kresba(hat?.head, 'hat') + (!hat ? kresba(costume?.top, 'hat') : ''));
   const bodyFront = wrap('body', kresba(body?.body, 'body'));
   let out = svg;
   if (back) out = out.replace('<g class="robot-body">', back + '<g class="robot-body">');
   if (mid) out = out.replace(/<g class="robot-head"/, mid + '<g class="robot-head"');
+  if (obliceje) out = out.replace('</g><g class="robot-zada-hlavy"', obliceje + '</g><g class="robot-zada-hlavy"');
   if (head) out = out.replace('</g></g></svg>', head + '</g></g></svg>');
   if (bodyFront) out = out.replace('</g></svg>', bodyFront + '</g></svg>');
   // Čepice a převlek s pokrývkou hlavy zakrývají anténu; kdyby trčela skrz ně, vypadalo by to jako chyba.
   if (hat || (costume && (costume.hood || costume.top))) out = out.replace(/class="robot( |")/, 'class="robot robot--worn$1');
-  return out;
+  return nad ? out.slice(0, -'</svg>'.length) + nad + '</svg>' : out;
 }
 
 export function robotInWardrobe(type, source) {

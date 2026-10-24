@@ -295,3 +295,5 @@ bezpečně zavře. Spodní lišta ukazuje celkový počet, přesný rozsah „Vy
 výsledkům filtrů a upozorní, pokud část výběru leží mimo ně. Detekované procesy bez konverzace
 nejsou hromadně zařaditelné. Dialog potvrzení zopakuje počet vybraných konverzací v nadpisu i na
 tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukončí.
+
+Tlačítko „Rozumím“ v Co je nového při hoveru a klávesovém fokusu používá `--brand-solid` a bílý text v obou vzhledech (požadavek vlastníka 24. 10. 2026).

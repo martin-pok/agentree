@@ -184,18 +184,26 @@ function sloucitDeti(a, b) {
   }
 }
 
+// Běhové stavy robota (mascot-motion.js) v HTML šablony nejsou: „v okně“ (is-zivy), rozběhnuté
+// gesto, otočka, mrknutí, pohled (style) a záblesk nového kusu. Sloučení je nesmí smazat – robot
+// by po živé události na Agentech ztuhl uprostřed pohybu a už se nerozhýbal.
+const BEHOVE_ROBOTA = new Set(['data-gesto', 'data-otocka', 'data-emote', 'data-novy-kus', 'style']);
+
 function sloucitUzel(a, b) {
   if (a.nodeType !== 1) {
     if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue;
     return;
   }
   const detaily = a.tagName === 'DETAILS';
+  const robot = a.classList.contains('robot');
   for (const at of b.attributes) {
     if (detaily && at.name === 'open') continue;
-    if (a.getAttributeNS(at.namespaceURI, at.localName) !== at.value) a.setAttributeNS(at.namespaceURI, at.name, at.value);
+    const hodnota = robot && at.name === 'class' && a.classList.contains('is-zivy') ? `${at.value} is-zivy` : at.value;
+    if (a.getAttributeNS(at.namespaceURI, at.localName) !== hodnota) a.setAttributeNS(at.namespaceURI, at.name, hodnota);
   }
   for (const at of [...a.attributes]) {
     if (detaily && at.name === 'open') continue;
+    if (robot && BEHOVE_ROBOTA.has(at.name)) continue;
     if (!b.hasAttributeNS(at.namespaceURI, at.localName)) a.removeAttributeNS(at.namespaceURI, at.localName);
   }
   const zaostreno = a === document.activeElement;

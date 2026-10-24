@@ -1,10 +1,26 @@
 import { tr } from './i18n.js';
 import { stavRobota } from './robot-bubliny.js';
+import { postupPrace } from './home-studio.js';
 
 // Pohyb robotů: oči sledují kurzor a občas mrknou; stavové pohyby (pracuje, čeká na tebe, hotovo,
 // selhalo) kreslí CSS podle data-state (public/workbench.css). Systémové omezení pohybu má přednost,
 // ruční vypnutí se pamatuje jen v tomto prohlížeči. Poloha kurzoru se nikam neukládá.
+// Přechody pro objem robotů (světlo/stín přes hlavu a trup) a záři antény. Jednou do dokumentu;
+// robot-svg.js na ně odkazuje přes url(#…) s náhradou „none“, takže bez nich se jen nic nekreslí.
+function vlozPrechody() {
+ if (document.getElementById('rb-objem')) return;
+ const ns = 'http://www.w3.org/2000/svg';
+ const svg = document.createElementNS(ns, 'svg');
+ svg.setAttribute('aria-hidden', 'true');
+ svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+ svg.style.position = 'absolute';
+ svg.innerHTML = '<defs><linearGradient id="rb-objem" x1="0" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".42" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".13"/></linearGradient>'
+  + '<radialGradient id="rb-zare"><stop offset="0" stop-color="#ff7aa8" stop-opacity=".95"/><stop offset=".45" stop-color="#e0457b" stop-opacity=".45"/><stop offset="1" stop-color="#e0457b" stop-opacity="0"/></radialGradient></defs>';
+ document.body.prepend(svg);
+}
+
 export function initMascotMotion() {
+ vlozPrechody();
  const media = matchMedia('(prefers-reduced-motion: reduce)');
  let paused = false;
  try { paused = localStorage.getItem('agenteeq:mascot-motion') === 'off'; } catch { /* optional */ }
@@ -18,17 +34,31 @@ export function initMascotMotion() {
  // aspoň zčásti vidět. Mimo okno se nic nepřekresluje.
  const io = typeof IntersectionObserver === 'function' ? new IntersectionObserver((zaznamy) => {
   for (const z of zaznamy) {
+   // IO může doručit starý záznam až po výměně obrazovky. Odpojené SVG nesmí zůstat v Setu.
+   if (!z.target.isConnected) { uvolniRobota(z.target); continue; }
    z.target.classList.toggle('is-zivy', z.isIntersecting);
    if (z.isIntersecting && z.intersectionRatio >= 0.99) vOkne.add(z.target); else vOkne.delete(z.target);
   }
  }, { threshold: [0, 1] }) : null;
  const roboti = (uzel) => (uzel.nodeType !== 1 ? [] : [...(uzel.matches('.robot') ? [uzel] : []), ...uzel.querySelectorAll('.robot')]);
+ // Uvolni animace a silné reference ještě při odpojení SVG. Nekonečné CSS animace
+ // by jinak mohly v paměti držet již odstraněné potomky mezi přepnutími obrazovek.
+ const uvolniRobota = (r) => {
+  io?.unobserve(r);
+  vOkne.delete(r);
+  gaze.delete(r);
+  if (active === r) { clearTimeout(timer); active = null; }
+  r.classList.remove('is-zivy');
+  r.style.removeProperty('--gaze-x');
+  r.style.removeProperty('--gaze-y');
+  for (const a of r.getAnimations({ subtree: true })) a.cancel();
+ };
  if (io) {
   for (const r of roboti(document.body)) io.observe(r);
   new MutationObserver((zmeny) => {
    for (const z of zmeny) {
     for (const n of z.addedNodes) for (const r of roboti(n)) io.observe(r);
-    for (const n of z.removedNodes) for (const r of roboti(n)) { io.unobserve(r); vOkne.delete(r); }
+    for (const n of z.removedNodes) for (const r of roboti(n)) uvolniRobota(r);
    }
   }).observe(document.body, { childList: true, subtree: true });
  }
@@ -121,18 +151,40 @@ export function initMascotMotion() {
  const predtim = new Map();
  const klic = (r) => r.closest('[data-key]')?.dataset.key || (r.matches('.home-robot') ? 'pozdrav' : r.closest('a[href]')?.getAttribute('href') || location.hash);
  let klid = Date.now() + 2500, ceka = 0;
+ // Otočka: do práce se robot otočí zády (refinement.css „Robot při práci“), z práce zpátky čelem.
+ // Gesto (zamávání, poskok) přijde až po otočce, ať robot nemává zády k tobě.
+ const OTOCKA = 600;
+ const otoc = (svg, kam) => {
+  if (!allowed()) return 0;
+  svg.dataset.otocka = kam;
+  setTimeout(() => { if (svg.dataset.otocka === kam) delete svg.dataset.otocka; }, OTOCKA);
+  return OTOCKA;
+ };
  function zmenyStavu() {
   ceka = 0;
+  postupy();
   for (const obal of document.querySelectorAll(ROBOT)) {
    const svg = obal.querySelector('.robot'); if (!svg) continue;
    const id = klic(obal), stav = stavRobota(obal), byl = predtim.get(id);
    predtim.set(id, stav);
-   if (Date.now() < klid || !byl || byl === stav || !REAKCE[stav] || !svg.classList.contains('is-zivy')) continue;
+   if (Date.now() < klid || !byl || byl === stav || !svg.classList.contains('is-zivy')) continue;
+   const pauza = obal.matches('.home-robot') || (stav !== 'working' && byl !== 'working') ? 0 : otoc(svg, stav === 'working' ? 'zada' : 'predek');
    // Poskok jen za skutečně dokončenou práci, ne za přechod z klidu do čekání.
-   if (stav === 'waiting' && byl !== 'working') continue;
-   gesto(svg, REAKCE[stav]);
+   if (!REAKCE[stav] || (stav === 'waiting' && byl !== 'working')) continue;
+   setTimeout(() => gesto(svg, REAKCE[stav]), pauza);
   }
  }
+ // Obrobek v dílně roste s délkou práce (home-studio.js#postupPrace). Nová fáze krátce zajiskří.
+ function postupy() {
+  for (const el of document.querySelectorAll('[data-od]')) {
+   const faze = String(postupPrace(Number(el.dataset.od)));
+   if (el.dataset.postup === faze) continue;
+   el.dataset.postup = faze;
+   const svg = el.querySelector('.robot');
+   if (svg && allowed()) { svg.dataset.novyKus = ''; setTimeout(() => delete svg.dataset.novyKus, 600); }
+  }
+ }
+ setInterval(() => { if (!document.hidden) postupy(); }, 10000);
  new MutationObserver(() => { if (!ceka) ceka = requestAnimationFrame(zmenyStavu); })
   .observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-state', 'data-status', 'data-done'] });
  window.addEventListener('hashchange', () => { predtim.clear(); klid = Date.now() + 2500; });

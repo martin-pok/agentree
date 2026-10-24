@@ -1009,6 +1009,12 @@ html[data-theme='dark'] .pulse-bar { --pb-mute: var(--mute); --pb-wait: var(--br
 .row-progress i { display: block; height: 100%; background: var(--teal); }
 .cell-app { min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell-app small { display: block; font: 400 12px/1.5 var(--f-mono); color: var(--mute); overflow: hidden; text-overflow: ellipsis; }
+/* Služba logem (agents.js#appCell): logo 20 px v jemné kapsli, vedle lidský název modelu. */
+.cell-app { display: flex; align-items: center; gap: 10px; }
+.cell-logo { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--r-full); background: var(--paper); box-shadow: inset 0 0 0 1px var(--line-2); }
+.cell-logo :is(.logo, .glyph) { width: 20px; height: 20px; }
+.cell-app small { font: 500 13px/1.4 var(--f-body); color: var(--ink-2); }
+.cell-app small.cell-empty { color: var(--mute); }
 .cell-num { font: 400 14px/1 var(--f-mono); text-align: right; }
 .cell-time { font-size: 13px; color: var(--mute); text-align: right; white-space: nowrap; }
 .pill { display: inline-flex; align-items: center; gap: 8px; height: 28px; padding: 0 12px; border-radius: var(--r-full); font-size: 13px; white-space: nowrap; background: var(--line-2); color: var(--ink-2); }
@@ -2625,6 +2631,14 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .chips--rada { flex-wrap: nowrap; align-items: center; min-width: 0; padding: 8px 2px; margin: 0 -2px; overflow-x: auto; scrollbar-width: none; }
 .chips--rada::-webkit-scrollbar { display: none; }
 .chips--rada .chip { flex: none; }
+/* Řada, která se skládá do „+N“ (chips-skladani.js): žádné posouvání ani maska okraje. */
+.chips--rada.chips--sklada { overflow: hidden; -webkit-mask-image: none; mask-image: none; }
+.chips--sklada .chip[hidden] { display: none; }
+.chip--dalsi { padding: 0 14px; font-variant-numeric: tabular-nums; }
+.chip--dalsi[aria-expanded='true'] { border-color: var(--action); color: var(--ink); }
+.chips-dalsi-menu .chips-dalsi-polozka { display: flex; width: 100%; align-items: center; gap: 8px; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.chips-dalsi-menu .chips-dalsi-polozka .count { margin-left: auto; color: var(--mute); }
+.chips-dalsi-menu .chips-dalsi-polozka:focus-visible { outline: 2px solid var(--action); outline-offset: -2px; }
 /* Řádek služeb bez jediné služby (čerstvá instalace) se nekreslí, nezůstane po něm prázdný pruh. */
 .filtry-rada:has(> .chips--rada:empty) { display: none; }
 .chip > .icon { width: 16px; height: 16px; flex: none; }
@@ -2710,6 +2724,10 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
   .filtry-rada { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 8px 0 16px; }
   .filtry-popis { grid-column: 1 / -1; }
   .filtry-rada > .btn { grid-column: 2; }
+  /* „Vybrat konverzace“ na telefonu jako kulatá ikona (popisek zůstává pro čtečky): čipy projektů
+     tak mají místo a řada se pořád vejde na jeden řádek bez posouvání. */
+  .filtry-rada > .agent-select-toggle { min-width: 0; width: 40px; padding: 0; justify-content: center; }
+  .filtry-rada > .agent-select-toggle [data-region='select-label'] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   /* Hledání jde na telefonu nahoru do karty, nad popisek „Zdroj“, přes celou šířku. */
   .filtry-rada > .search-field { grid-column: 1 / -1; justify-self: stretch; order: -1; margin-bottom: 16px; }
   .filtry-rada > .search-field input { width: 100%; }

@@ -356,6 +356,7 @@ export default {
     "Kde spustit": "Where to run",
     "Projekt": "Project",
     "Bez projektu": "No project",
+    "Další ({0})": "More ({0})",
     "Vybrat složku": "Choose folder",
     "Vybrat složku…": "Choose folder…",
     "Složka (nepovinné)": "Folder (optional)",

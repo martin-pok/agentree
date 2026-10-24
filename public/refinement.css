@@ -440,9 +440,9 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
    - Hýbe se jen robot v okně (.is-zivy z mascot-motion.js) – 140 karet agentů nepřekresluje nic
      mimo obrazovku. Každý agent má vlastní fázi (--robot-delay), roboti nedýchají v zákrytu.
    - Omezení pohybu (systém nebo „Omezit pohyb“) vše vypne pravidly výše (.mascot-motion-off, reduce). */
-.robot.is-zivy:not([data-gesto]) .robot-body { transform-box: view-box; transform-origin: 54px 103px; animation: rz-dech 4.6s ease-in-out var(--robot-delay, 0s) infinite; }
-.robot.is-zivy:not([data-gesto]) .robot-head { transform-box: view-box; animation: rz-rozhled 11s ease-in-out var(--robot-delay, 0s) infinite; }
-.robot.is-zivy:not([data-gesto]) .robot-aerial { animation: rz-antena 3.4s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { transform-box: view-box; transform-origin: 54px 103px; animation: rz-dech 4.6s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { transform-box: view-box; animation: rz-rozhled 11s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto], [data-otocka]) .robot-aerial { animation: rz-antena 3.4s ease-in-out var(--robot-delay, 0s) infinite; }
 @keyframes rz-dech { 0%, 100% { scale: 1 1; } 45% { scale: 1.012 1.03; } }
 @keyframes rz-rozhled {
   0%, 100% { rotate: 0deg; translate: 0 0; }
@@ -457,8 +457,8 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 
 /* Pracuje: rychlejší, soustředěný dech, hlava skloněná k práci s drobným přikyvováním, jádro na
    hrudi pulzuje jako kontrolka. Paže píšou a anténa vysílá (pravidla výše). */
-:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-name: rz-dech-prace; animation-duration: 1.7s; }
-:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-soustredeni 2.6s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation-name: rz-dech-prace; animation-duration: 1.7s; }
+:is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-soustredeni 2.6s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='working'], [data-state='working']:not([data-status])) .robot.is-zivy .robot-core { transform-box: fill-box; transform-origin: center; animation: rz-jadro 1.3s ease-in-out infinite; }
 @keyframes rz-dech-prace { 0%, 100% { scale: 1 1; } 50% { scale: 1.01 1.035; } }
 @keyframes rz-soustredeni { 0%, 100% { rotate: 1.5deg; translate: 0 .4px; } 30% { rotate: 2.8deg; translate: 0 1px; } 60% { rotate: .6deg; translate: 0 .2px; } }
@@ -466,8 +466,8 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 
 /* Potřebuje tebe: zvednutá ruka (pravidla výše), hlava nakloněná k tobě a každé tři vteřiny dva
    netrpělivé poskoky na špičkách. Anténa bliká rychleji. */
-:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation: rz-netrpelivost 3.2s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
-:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-otazka 3.2s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation: rz-netrpelivost 3.2s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-otazka 3.2s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy .robot-aerial { animation: robot-signal .8s ease-in-out infinite, rz-antena 1.6s ease-in-out infinite; }
 @keyframes rz-netrpelivost {
   0%, 62%, 100% { translate: 0 0; scale: 1 1; }
@@ -480,7 +480,7 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 @keyframes rz-otazka { 0%, 100% { rotate: -7deg; } 50% { rotate: -9.5deg; } 74%, 86% { rotate: -5deg; } }
 
 /* Hotovo (doběhl): spokojený, pomalejší dech a jednou za čas malý radostný poskok. */
-:is([data-status='waiting'], [data-state='waiting']:not([data-status])):not([data-done='false']) .robot.is-zivy:not([data-gesto]) .robot-body { animation: rz-spokojenost 9s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
+:is([data-status='waiting'], [data-state='waiting']:not([data-status])):not([data-done='false']) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation: rz-spokojenost 9s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
 @keyframes rz-spokojenost {
   0%, 100% { translate: 0 0; scale: 1 1; }
   40% { translate: 0 0; scale: 1.012 1.03; }
@@ -493,20 +493,425 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 
 /* Selhalo: svěšená hlava, pomalý těžký dech. Limit: dřímá – hlava pomalu klesá a trhne sebou,
    oči napůl zavřené. */
-:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6.5s; }
-:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-smutek 6.5s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation-duration: 6.5s; }
+:is([data-status='failed'], [data-state='failed']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-smutek 6.5s ease-in-out var(--robot-delay, 0s) infinite; }
 @keyframes rz-smutek { 0%, 100% { rotate: 6deg; translate: 0 2px; } 50% { rotate: 8deg; translate: 0 2.6px; } }
-:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6s; }
-:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-head { animation: rz-drimota 7s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation-duration: 6s; }
+:is([data-status='limited'], [data-state='limited']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-drimota 7s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='limited'], [data-state='limited']:not([data-status])) .robot .robot-eyes { scale: 1 .4; }
 @keyframes rz-drimota { 0%, 100% { rotate: 0deg; translate: 0 0; } 70% { rotate: 7deg; translate: 0 2px; } 76% { rotate: -1.5deg; translate: 0 -.4px; } 84% { rotate: 0deg; translate: 0 0; } }
 
 /* V klidu (bez práce, archiv): jen pomalý dech a občasné rozhlédnutí. */
-:is([data-status='idle'], [data-status='archived'], [data-state='idle']:not([data-status]), [data-state='archived']:not([data-status])) .robot.is-zivy:not([data-gesto]) .robot-body { animation-duration: 6.4s; }
+:is([data-status='idle'], [data-status='archived'], [data-state='idle']:not([data-status]), [data-state='archived']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation-duration: 6.4s; }
 
 /* Robot si všimne, že na něj míříš: pružně se natáhne (měřítko celého SVG, takže se skládá
    s dechem i gesty), po odjetí se zase usadí. */
-.robot { transition: scale .45s cubic-bezier(.34, 1.56, .64, 1); }
+/* Bez pružného překmitu (VectorLab motion: žádný bounce na ovládání) – 200 ms ease-out tam, 150 ms ease-in zpět. */
+.robot { transition: scale 150ms cubic-bezier(.7, 0, .84, 0); }
+:is(.home-robot, .pb-agent, .table--roboti .row, .session-kicker):hover .robot.is-zivy { transition: scale 200ms cubic-bezier(.16, 1, .3, 1); }
 :is(.home-robot, .pb-agent, .table--roboti .row, .session-kicker):hover .robot.is-zivy { scale: 1.06; }
 .mascot-motion-off .robot { transition: none; scale: 1; }
 @media (prefers-reduced-motion: reduce) { .robot { transition: none; scale: none !important; } }
+
+/* Robot při práci (rozhodnutí vlastníka 23. 10. 2026): otočí se k nám zády, skloní hlavu a pracuje
+   rukama u stolku – kuje kladivem (jiskry, rozžhavené místo, zpětný ráz do těla), nebo řeže pilkou
+   (tahy celým tělem, padající piliny). Obrobek na stolku se s délkou práce prodlužuje (data-postup,
+   mascot-motion.js podle skutečného začátku úkolu). Když práci dokončí nebo potřebuje tebe, otočí se
+   zpátky čelem (data-otocka). Robot u pozdravu zůstává čelem – je to hostitel, ne pracující agent.
+   Pracovní smyčka je „živá aktivita“ (VectorLab motion: funkční smyčky jsou povolené); otočka je
+   změna stavu: 200 ms ease-in z profilu, 200 ms ease-out do nového. Stav dál říká i štítek „Pracuje“. */
+.robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: none; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: inline; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face) { display: none; }
+.robot { --kov: color-mix(in srgb, var(--ink) 62%, var(--card)); }
+.pila-zuby { fill: none; stroke: color-mix(in srgb, var(--ink) 80%, var(--card)); stroke-width: .8; stroke-linejoin: round; }
+.dilna-stul { fill: color-mix(in srgb, var(--ink) 22%, var(--card)); }
+.dilna-nohy { stroke: color-mix(in srgb, var(--ink) 22%, var(--card)); stroke-width: 3; stroke-linecap: round; fill: none; }
+.obrobek { transform-box: view-box; scale: var(--obrobek, .62) 1; transition: scale 300ms cubic-bezier(.16, 1, .3, 1); }
+.obrobek-telo { fill: color-mix(in srgb, var(--persona) 22%, #8b93a3); }
+[data-nastroj='pila'] .obrobek-telo { fill: #c8a074; }
+.obrobek-lesk { fill: #fff; opacity: .35; }
+.zar { fill: #ff8a3d; opacity: 0; }
+.jiskry { opacity: 0; transform-box: view-box; }
+.jiskry path { fill: none; stroke: #f59a23; stroke-width: 1.7; stroke-linecap: round; }
+.jiskry circle { fill: #ffb547; transform-box: view-box; }
+.piliny { fill: color-mix(in srgb, #c9a477 80%, var(--card)); }
+.piliny circle { opacity: 0; }
+.nastroj-rukojet { stroke: #a0724f; stroke-width: 2.6; stroke-linecap: round; fill: none; }
+.nastroj-kov { fill: var(--kov); }
+.nastroj-rukojet-pila { fill: #a0724f; }
+.prace-kladivo, .prace-leva { transform-box: view-box; }
+.robot-prace .robot-limbs { stroke: var(--persona); }
+.zada-deska, .zada-panel { fill: color-mix(in srgb, var(--persona) 36%, var(--card)); }
+.zada-vetrani { stroke: color-mix(in srgb, var(--persona) 62%, var(--card)); stroke-width: 2.2; stroke-linecap: round; fill: none; }
+.zada-sroub { fill: color-mix(in srgb, var(--persona) 58%, var(--card)); }
+html[data-theme='dark'] .zada-deska, html[data-theme='dark'] .zada-panel { fill: color-mix(in srgb, var(--persona) 54%, var(--card)); }
+html[data-theme='dark'] .zada-vetrani { stroke: color-mix(in srgb, var(--persona) 40%, #fff); }
+html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35%, #fff); }
+/* Nástroj podle agenta: kladivo (výchozí), nebo pilka. */
+.robot :is(.prace-pila, .piliny) { display: none; }
+[data-nastroj='pila'] .robot :is(.prace-pila, .piliny) { display: inline; }
+[data-nastroj='pila'] .robot :is(.prace-kladivo, .jiskry, .zar) { display: none; }
+/* Klidová póza práce (i při omezeném pohybu): kladivo nahoře, hlava skloněná k práci. */
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot .prace-kladivo { rotate: -62deg; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot .robot-head { translate: 0 2.4px; }
+/* Kování: nápřah s nádechem, rychlý úder, odraz, zpět. Jiskry, žár, ráz do těla i kývnutí hlavy
+   sdílejí jeden takt 1,1 s a fázi agenta, takže úder a jiskry vždy sedí. */
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .prace-kladivo { animation: rz-uder 1.1s var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .jiskry { animation: rz-jiskry 1.1s var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .jiskry circle { animation: rz-letici 1.1s cubic-bezier(.16, 1, .3, 1) var(--robot-delay, 0s) infinite; }
+@keyframes rz-letici { 0%, 60% { translate: 0 0; } 90%, 100% { translate: var(--dx) var(--dy); } }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .zar { animation: rz-zar 1.1s var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .prace-leva { animation: rz-pridrz 1.1s var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot):not([data-nastroj='pila']) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation: rz-raz 1.1s var(--robot-delay, 0s) infinite; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot):not([data-nastroj='pila']) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-kyv 1.1s var(--robot-delay, 0s) infinite; }
+@keyframes rz-uder {
+  0% { rotate: -62deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  50% { rotate: -82deg; animation-timing-function: cubic-bezier(.6, 0, .9, .35); }
+  60% { rotate: 1deg; animation-timing-function: cubic-bezier(.16, 1, .3, 1); }
+  68% { rotate: -9deg; }
+  75% { rotate: -4deg; animation-timing-function: cubic-bezier(.45, 0, .55, 1); }
+  100% { rotate: -62deg; }
+}
+@keyframes rz-jiskry { 0%, 59% { opacity: 0; scale: .35; } 61% { opacity: 1; scale: .6; } 74% { opacity: .85; scale: 1.15; } 84%, 100% { opacity: 0; scale: 1.3; } }
+@keyframes rz-zar { 0%, 58% { opacity: .25; } 61% { opacity: 1; } 100% { opacity: .25; } }
+@keyframes rz-pridrz { 0%, 59%, 100% { rotate: 0deg; } 63% { rotate: 6deg; } 72% { rotate: -1deg; } }
+@keyframes rz-raz { 0%, 58%, 100% { scale: 1 1; } 63% { scale: 1.02 .975; } 72% { scale: .995 1.005; } }
+@keyframes rz-kyv { 0%, 58%, 100% { translate: 0 2.4px; rotate: 0deg; } 50% { translate: 0 1.8px; rotate: -1deg; } 64% { translate: 0 3.4px; rotate: 1.2deg; } }
+/* Řezání: tahy pilkou tam a zpět, tělo se do nich opírá, piliny padají ze stolku. */
+[data-nastroj='pila']:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .prace-pila { animation: rz-tah .7s ease-in-out var(--robot-delay, 0s) infinite alternate; }
+[data-nastroj='pila']:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { transform-box: view-box; transform-origin: 54px 103px; animation: rz-opreni .7s ease-in-out var(--robot-delay, 0s) infinite alternate; }
+[data-nastroj='pila']:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-tah-hlava .7s ease-in-out var(--robot-delay, 0s) infinite alternate; }
+[data-nastroj='pila']:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot.is-zivy:not([data-gesto], [data-otocka]) .piliny circle { animation: rz-piliny 1.4s ease-in calc(var(--robot-delay, 0s) + var(--i) * -.47s) infinite; }
+@keyframes rz-tah { from { translate: -2.6px -1.2px; } to { translate: 2.6px 1.2px; } }
+@keyframes rz-opreni { from { rotate: -.8deg; } to { rotate: 1deg; } }
+@keyframes rz-tah-hlava { from { translate: -.4px 2.2px; } to { translate: .5px 2.9px; } }
+@keyframes rz-piliny { 0% { opacity: 0; translate: 0 0; } 15% { opacity: .9; } 100% { opacity: 0; translate: -2px 11px; } }
+/* Obrobek roste s délkou práce (do 1, 3, 8, 20 min a déle); nová fáze krátce zajiskří. */
+[data-postup='1'] .robot { --obrobek: .71; }
+[data-postup='2'] .robot { --obrobek: .81; }
+[data-postup='3'] .robot { --obrobek: .9; }
+[data-postup='4'] .robot { --obrobek: 1; }
+.robot[data-novy-kus] .obrobek-lesk { animation: rz-novy-kus 600ms ease-out both; }
+@keyframes rz-novy-kus { 0% { opacity: .35; } 30% { opacity: 1; } 100% { opacity: .35; } }
+@keyframes rz-prvni-pul { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes rz-druha-pul { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+
+/* Otočka jako zaoblené těleso (data-otocka z mascot-motion.js; vlastník: „3D, ne samolepka, ne
+   ploché stěny“). Úhel θ jde 0 → 180° s náběhem a dojezdem (smoothstep, 21 spočtených vzorků, mezi
+   nimi lineárně). Hlava a trup mají eliptický průřez: obrys má šířku √(cos²θ + k²·sin²θ) (k = hloubka
+   / šířka, robot-svg.js). Obličej, oči a jádro leží na povrchu: zkrátí se na |cos θ| a posunou se
+   o (hloubka/2)·cos α·sin θ (--fd), takže u okraje zhoustnou a zajdou za něj; záda přijdou z druhé
+   strany stejně. Bližší ucho a paže přejdou přes tělo, vzdálenější za něj. 600 ms (2 × 300 ms). */
+.robot-ucho-pres { display: none; }
+.robot[data-otocka] .robot-ucho-pres { display: inline; }
+.robot[data-otocka] .robot-ucho-predni { display: none; }
+.robot[data-otocka] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-prace) { transform-box: view-box; transform-origin: 54px 60px; }
+.robot[data-otocka] .robot-hlava-telo { animation: rz-otocka-hlava 600ms linear both; }
+.robot[data-otocka] .robot-trup-telo { animation: rz-otocka-trup 600ms linear both; }
+.robot[data-otocka] :is(.robot-celo, .robot-predek-trupu) { animation: rz-otocka-predek 600ms linear both; }
+.robot[data-otocka] :is(.robot-zada-hlavy, .robot-zada-trupu) { animation: rz-otocka-zada 600ms linear both; }
+.robot[data-otocka] .robot-ucho-pres { animation: rz-otocka-ucho 600ms linear both; }
+.robot[data-otocka] .robot-ucho-zadni { animation: rz-otocka-ucho-z 600ms linear both; }
+.robot[data-otocka] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both; }
+.robot[data-otocka] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both; }
+.robot[data-otocka] :is(.robot-body > .robot-limbs:not(.robot-arm-left, .robot-arm-right), .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear--back) { animation: rz-otocka-stisk 600ms linear both; }
+/* Oblečení drží tvar těla i v otočce: pokrývka hlavy s obrysem hlavy, oblečení a převleky s trupem.
+   Brýle a doplňky na obličeji jsou v čele (robot-wardrobe.js), takže jedou s očima. */
+.robot[data-otocka] :is(.robot-wear--hat, .robot-wear--hood) { animation: rz-otocka-hlava 600ms linear both; }
+.robot[data-otocka] :is(.robot-wear--mid, .robot-wear--body) { animation: rz-otocka-trup 600ms linear both; }
+.robot[data-otocka] .robot-body { animation: rz-otocka-poskok 600ms both; }
+.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-wear--hat, .robot-wear--hood, .robot-wear--mid, .robot-wear--body) { animation-direction: reverse; }
+@keyframes rz-otocka-hlava {
+  0% { scale: 1.000 1; }
+  5% { scale: 1.000 1; }
+  10% { scale: 0.998 1; }
+  15% { scale: 0.989 1; }
+  20% { scale: 0.968 1; }
+  25% { scale: 0.929 1; }
+  30% { scale: 0.870 1; }
+  35% { scale: 0.794 1; }
+  40% { scale: 0.713 1; }
+  45% { scale: 0.646 1; }
+  50% { scale: 0.620 1; }
+  55% { scale: 0.646 1; }
+  60% { scale: 0.713 1; }
+  65% { scale: 0.794 1; }
+  70% { scale: 0.870 1; }
+  75% { scale: 0.929 1; }
+  80% { scale: 0.968 1; }
+  85% { scale: 0.989 1; }
+  90% { scale: 0.998 1; }
+  95% { scale: 1.000 1; }
+  100% { scale: 1.000 1; }
+}
+@keyframes rz-otocka-trup {
+  0% { scale: 1.000 1; }
+  5% { scale: 1.000 1; }
+  10% { scale: 0.998 1; }
+  15% { scale: 0.991 1; }
+  20% { scale: 0.973 1; }
+  25% { scale: 0.942 1; }
+  30% { scale: 0.894 1; }
+  35% { scale: 0.833 1; }
+  40% { scale: 0.770 1; }
+  45% { scale: 0.719 1; }
+  50% { scale: 0.700 1; }
+  55% { scale: 0.719 1; }
+  60% { scale: 0.770 1; }
+  65% { scale: 0.833 1; }
+  70% { scale: 0.894 1; }
+  75% { scale: 0.942 1; }
+  80% { scale: 0.973 1; }
+  85% { scale: 0.991 1; }
+  90% { scale: 0.998 1; }
+  95% { scale: 1.000 1; }
+  100% { scale: 1.000 1; }
+}
+@keyframes rz-otocka-predek {
+  0% { scale: 1.000 1; translate: calc(var(--fd) * 0.000) 0; }
+  5% { scale: 1.000 1; translate: calc(var(--fd) * 0.023) 0; }
+  10% { scale: 0.996 1; translate: calc(var(--fd) * 0.088) 0; }
+  15% { scale: 0.982 1; translate: calc(var(--fd) * 0.190) 0; }
+  20% { scale: 0.947 1; translate: calc(var(--fd) * 0.321) 0; }
+  25% { scale: 0.882 1; translate: calc(var(--fd) * 0.471) 0; }
+  30% { scale: 0.778 1; translate: calc(var(--fd) * 0.628) 0; }
+  35% { scale: 0.633 1; translate: calc(var(--fd) * 0.774) 0; }
+  40% { scale: 0.448 1; translate: calc(var(--fd) * 0.894) 0; }
+  45% { scale: 0.233 1; translate: calc(var(--fd) * 0.973) 0; }
+  50% { scale: 0.002 1; translate: calc(var(--fd) * 1.000) 0; }
+  55% { scale: 0.233 1; translate: calc(var(--fd) * 0.973) 0; }
+  60% { scale: 0.448 1; translate: calc(var(--fd) * 0.894) 0; }
+  65% { scale: 0.633 1; translate: calc(var(--fd) * 0.774) 0; }
+  70% { scale: 0.778 1; translate: calc(var(--fd) * 0.628) 0; }
+  75% { scale: 0.882 1; translate: calc(var(--fd) * 0.471) 0; }
+  80% { scale: 0.947 1; translate: calc(var(--fd) * 0.321) 0; }
+  85% { scale: 0.982 1; translate: calc(var(--fd) * 0.190) 0; }
+  90% { scale: 0.996 1; translate: calc(var(--fd) * 0.088) 0; }
+  95% { scale: 1.000 1; translate: calc(var(--fd) * 0.023) 0; }
+  100% { scale: 1.000 1; translate: calc(var(--fd) * 0.000) 0; }
+}
+@keyframes rz-otocka-zada {
+  0% { scale: 1.000 1; translate: calc(var(--fd) * -0.000) 0; }
+  5% { scale: 1.000 1; translate: calc(var(--fd) * -0.023) 0; }
+  10% { scale: 0.996 1; translate: calc(var(--fd) * -0.088) 0; }
+  15% { scale: 0.982 1; translate: calc(var(--fd) * -0.190) 0; }
+  20% { scale: 0.947 1; translate: calc(var(--fd) * -0.321) 0; }
+  25% { scale: 0.882 1; translate: calc(var(--fd) * -0.471) 0; }
+  30% { scale: 0.778 1; translate: calc(var(--fd) * -0.628) 0; }
+  35% { scale: 0.633 1; translate: calc(var(--fd) * -0.774) 0; }
+  40% { scale: 0.448 1; translate: calc(var(--fd) * -0.894) 0; }
+  45% { scale: 0.233 1; translate: calc(var(--fd) * -0.973) 0; }
+  50% { scale: 0.002 1; translate: calc(var(--fd) * -1.000) 0; }
+  55% { scale: 0.233 1; translate: calc(var(--fd) * -0.973) 0; }
+  60% { scale: 0.448 1; translate: calc(var(--fd) * -0.894) 0; }
+  65% { scale: 0.633 1; translate: calc(var(--fd) * -0.774) 0; }
+  70% { scale: 0.778 1; translate: calc(var(--fd) * -0.628) 0; }
+  75% { scale: 0.882 1; translate: calc(var(--fd) * -0.471) 0; }
+  80% { scale: 0.947 1; translate: calc(var(--fd) * -0.321) 0; }
+  85% { scale: 0.982 1; translate: calc(var(--fd) * -0.190) 0; }
+  90% { scale: 0.996 1; translate: calc(var(--fd) * -0.088) 0; }
+  95% { scale: 1.000 1; translate: calc(var(--fd) * -0.023) 0; }
+  100% { scale: 1.000 1; translate: calc(var(--fd) * -0.000) 0; }
+}
+@keyframes rz-otocka-ucho {
+  0% { translate: calc(var(--hw) * 0.000) 0; }
+  5% { translate: calc(var(--hw) * 0.000) 0; }
+  10% { translate: calc(var(--hw) * 0.002) 0; }
+  15% { translate: calc(var(--hw) * 0.009) 0; }
+  20% { translate: calc(var(--hw) * 0.026) 0; }
+  25% { translate: calc(var(--hw) * 0.059) 0; }
+  30% { translate: calc(var(--hw) * 0.111) 0; }
+  35% { translate: calc(var(--hw) * 0.183) 0; }
+  40% { translate: calc(var(--hw) * 0.276) 0; }
+  45% { translate: calc(var(--hw) * 0.384) 0; }
+  50% { translate: calc(var(--hw) * 0.500) 0; }
+  55% { translate: calc(var(--hw) * 0.616) 0; }
+  60% { translate: calc(var(--hw) * 0.724) 0; }
+  65% { translate: calc(var(--hw) * 0.817) 0; }
+  70% { translate: calc(var(--hw) * 0.889) 0; }
+  75% { translate: calc(var(--hw) * 0.941) 0; }
+  80% { translate: calc(var(--hw) * 0.974) 0; }
+  85% { translate: calc(var(--hw) * 0.991) 0; }
+  90% { translate: calc(var(--hw) * 0.998) 0; }
+  95% { translate: calc(var(--hw) * 1.000) 0; }
+  100% { translate: calc(var(--hw) * 1.000) 0; }
+}
+@keyframes rz-otocka-ucho-z {
+  0% { translate: calc(var(--hw) * -0.000) 0; }
+  5% { translate: calc(var(--hw) * -0.000) 0; }
+  10% { translate: calc(var(--hw) * -0.002) 0; }
+  15% { translate: calc(var(--hw) * -0.009) 0; }
+  20% { translate: calc(var(--hw) * -0.026) 0; }
+  25% { translate: calc(var(--hw) * -0.059) 0; }
+  30% { translate: calc(var(--hw) * -0.111) 0; }
+  35% { translate: calc(var(--hw) * -0.183) 0; }
+  40% { translate: calc(var(--hw) * -0.276) 0; }
+  45% { translate: calc(var(--hw) * -0.384) 0; }
+  50% { translate: calc(var(--hw) * -0.500) 0; }
+  55% { translate: calc(var(--hw) * -0.616) 0; }
+  60% { translate: calc(var(--hw) * -0.724) 0; }
+  65% { translate: calc(var(--hw) * -0.817) 0; }
+  70% { translate: calc(var(--hw) * -0.889) 0; }
+  75% { translate: calc(var(--hw) * -0.941) 0; }
+  80% { translate: calc(var(--hw) * -0.974) 0; }
+  85% { translate: calc(var(--hw) * -0.991) 0; }
+  90% { translate: calc(var(--hw) * -0.998) 0; }
+  95% { translate: calc(var(--hw) * -1.000) 0; }
+  100% { translate: calc(var(--hw) * -1.000) 0; }
+}
+@keyframes rz-otocka-paze-l {
+  0% { translate: calc(var(--tw) * 0.000) 0; }
+  5% { translate: calc(var(--tw) * 0.000) 0; }
+  10% { translate: calc(var(--tw) * 0.002) 0; }
+  15% { translate: calc(var(--tw) * 0.009) 0; }
+  20% { translate: calc(var(--tw) * 0.026) 0; }
+  25% { translate: calc(var(--tw) * 0.059) 0; }
+  30% { translate: calc(var(--tw) * 0.111) 0; }
+  35% { translate: calc(var(--tw) * 0.183) 0; }
+  40% { translate: calc(var(--tw) * 0.276) 0; }
+  45% { translate: calc(var(--tw) * 0.384) 0; }
+  50% { translate: calc(var(--tw) * 0.500) 0; }
+  55% { translate: calc(var(--tw) * 0.616) 0; }
+  60% { translate: calc(var(--tw) * 0.724) 0; }
+  65% { translate: calc(var(--tw) * 0.817) 0; }
+  70% { translate: calc(var(--tw) * 0.889) 0; }
+  75% { translate: calc(var(--tw) * 0.941) 0; }
+  80% { translate: calc(var(--tw) * 0.974) 0; }
+  85% { translate: calc(var(--tw) * 0.991) 0; }
+  90% { translate: calc(var(--tw) * 0.998) 0; }
+  95% { translate: calc(var(--tw) * 1.000) 0; }
+  100% { translate: calc(var(--tw) * 1.000) 0; }
+}
+@keyframes rz-otocka-paze-p {
+  0% { translate: calc(var(--tw) * -0.000) 0; }
+  5% { translate: calc(var(--tw) * -0.000) 0; }
+  10% { translate: calc(var(--tw) * -0.002) 0; }
+  15% { translate: calc(var(--tw) * -0.009) 0; }
+  20% { translate: calc(var(--tw) * -0.026) 0; }
+  25% { translate: calc(var(--tw) * -0.059) 0; }
+  30% { translate: calc(var(--tw) * -0.111) 0; }
+  35% { translate: calc(var(--tw) * -0.183) 0; }
+  40% { translate: calc(var(--tw) * -0.276) 0; }
+  45% { translate: calc(var(--tw) * -0.384) 0; }
+  50% { translate: calc(var(--tw) * -0.500) 0; }
+  55% { translate: calc(var(--tw) * -0.616) 0; }
+  60% { translate: calc(var(--tw) * -0.724) 0; }
+  65% { translate: calc(var(--tw) * -0.817) 0; }
+  70% { translate: calc(var(--tw) * -0.889) 0; }
+  75% { translate: calc(var(--tw) * -0.941) 0; }
+  80% { translate: calc(var(--tw) * -0.974) 0; }
+  85% { translate: calc(var(--tw) * -0.991) 0; }
+  90% { translate: calc(var(--tw) * -0.998) 0; }
+  95% { translate: calc(var(--tw) * -1.000) 0; }
+  100% { translate: calc(var(--tw) * -1.000) 0; }
+}
+@keyframes rz-otocka-stisk {
+  0% { scale: 1.000 1; }
+  5% { scale: 1.000 1; }
+  10% { scale: 0.996 1; }
+  15% { scale: 0.982 1; }
+  20% { scale: 0.947 1; }
+  25% { scale: 0.882 1; }
+  30% { scale: 0.778 1; }
+  35% { scale: 0.633 1; }
+  40% { scale: 0.448 1; }
+  45% { scale: 0.300 1; }
+  50% { scale: 0.300 1; }
+  55% { scale: 0.300 1; }
+  60% { scale: 0.448 1; }
+  65% { scale: 0.633 1; }
+  70% { scale: 0.778 1; }
+  75% { scale: 0.882 1; }
+  80% { scale: 0.947 1; }
+  85% { scale: 0.982 1; }
+  90% { scale: 0.996 1; }
+  95% { scale: 1.000 1; }
+  100% { scale: 1.000 1; }
+}
+@keyframes rz-otocka-poskok { 0%, 100% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } 45% { translate: 0 -3px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } }
+/* Co je vidět: přední prvky do 90°, zadní od 90° (v profilu mají nulovou šířku, výměna je neviditelná).
+   Paže z čelního pohledu se při otočce zády ztratí, pracovní paže s nástrojem se objeví až v zádech. */
+.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face) { display: inline !important; }
+.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face),
+.robot[data-otocka='predek'] .robot-zada { opacity: 1; animation: rz-prvni-pul 600ms both; }
+.robot[data-otocka='zada'] .robot-zada,
+.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face) { animation: rz-druha-pul 600ms both; }
+.robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul 600ms both; }
+.robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-prvni-pul 600ms both; }
+.robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-druha-pul 600ms both; }
+.robot[data-otocka='predek'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear reverse both, rz-druha-pul 600ms both; }
+.robot[data-otocka='zada'] .robot-prace { animation: rz-otocka-stisk 600ms linear both, rz-druha-pul 600ms both; }
+.robot[data-otocka='predek'] .robot-prace { animation: rz-otocka-stisk 600ms linear reverse both, rz-prvni-pul 600ms both; }
+.robot[data-otocka='zada'] .robot-dilna { animation: rz-dilna-sem 600ms both; }
+.robot[data-otocka='predek'] .robot-dilna { animation: rz-dilna-pryc 600ms both; }
+@keyframes rz-prvni-pul { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes rz-druha-pul { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
+@keyframes rz-dilna-sem { 0%, 50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes rz-dilna-pryc { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* Objem v klidu: jemné světlo zleva shora a stín vpravo dole přes hlavu i trup (přechod rb-objem
+   vkládá mascot-motion.js jednou do dokumentu; kde není, nekreslí se nic). */
+.robot-objem { fill: url(#rb-objem) none; pointer-events: none; }
+html[data-theme='dark'] .robot-objem { opacity: .6; }
+
+/* Čeká na zadání: flákání. Každý agent má svou zábavu (data-hra): vyhazuje míček, hraje si s jojem,
+   nebo si hvízdá a pohupuje se. Funkce stejná jako u práce: jen u robota na obrazovce, jen
+   transform a opacity, omezení pohybu nechá robota v klidu bez hraček. */
+.robot :is(.robot-hra, .hra-micek, .hra-jojo, .hra-noty, .robot-signal) { display: none; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-hra { display: inline; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status])):not([data-hra]) .robot.is-zivy .hra-micek,
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='micek'] .robot.is-zivy .hra-micek,
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='jojo'] .robot.is-zivy .hra-jojo,
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='pisen'] .robot.is-zivy .hra-noty { display: inline; }
+.hra-micek { fill: #f08a3c; transform-box: view-box; }
+.hra-provazek { stroke: color-mix(in srgb, var(--ink) 45%, var(--card)); stroke-width: .9; fill: none; transform-box: view-box; }
+.hra-kotouc circle { fill: #e0457b; }
+.hra-kotouc .hra-kotouc-stred { fill: #fff; opacity: .8; }
+.hra-kotouc { transform-box: view-box; }
+.hra-nota { fill: color-mix(in srgb, var(--persona) 70%, var(--ink)); stroke: color-mix(in srgb, var(--persona) 70%, var(--ink)); stroke-width: 1.2; stroke-linecap: round; transform-box: view-box; opacity: 0; }
+.hra-nota path { fill: none; }
+/* Míček: přikrčení ruky, švih, míček vyletí (ease-out), na vrcholu se zastaví a padá zpět (ease-in). */
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status])):is(:not([data-hra]), [data-hra='micek']) .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-micek { animation: rz-micek 1.6s var(--robot-delay, 0s) infinite; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status])):is(:not([data-hra]), [data-hra='micek']) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-micek-ruka 1.6s var(--robot-delay, 0s) infinite; }
+@keyframes rz-micek {
+  0%, 12% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); }
+  6% { translate: 0 1.5px; }
+  46% { translate: -3px -40px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); }
+  80% { translate: 0 0; }
+  86% { translate: 0 1.5px; }
+  100% { translate: 0 0; }
+}
+@keyframes rz-micek-ruka { 0%, 100% { rotate: 0deg; } 6% { rotate: 9deg; } 14% { rotate: -16deg; } 28% { rotate: 0deg; } 80% { rotate: 0deg; } 86% { rotate: 8deg; } }
+/* Jojo: kotouč sjede po provázku a vrátí se do ruky, ruka ho cuknutím pošle zpět. */
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='jojo'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-provazek { animation: rz-jojo-provaz 1.3s var(--robot-delay, 0s) infinite; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='jojo'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-kotouc { animation: rz-jojo 1.3s var(--robot-delay, 0s) infinite; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='jojo'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-jojo-ruka 1.3s var(--robot-delay, 0s) infinite; }
+@keyframes rz-jojo-provaz { 0%, 100% { scale: 1 .1; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } 50% { scale: 1 1; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } }
+@keyframes rz-jojo { 0%, 100% { translate: 0 -21px; rotate: 0deg; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } 50% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } }
+@keyframes rz-jojo-ruka { 0%, 40%, 100% { rotate: 0deg; } 52% { rotate: 10deg; } 62% { rotate: -6deg; } }
+/* Hvízdání: notičky vylétají od hlavy a mizí, hlava se pohupuje do rytmu. */
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='pisen'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-nota { animation: rz-nota 2.4s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -1.2s) infinite; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='pisen'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-houpani 1.2s ease-in-out var(--robot-delay, 0s) infinite alternate; }
+@keyframes rz-nota { 0% { opacity: 0; translate: 0 0; rotate: 0deg; } 15% { opacity: 1; } 70% { opacity: .9; } 100% { opacity: 0; translate: 7px -13px; rotate: 14deg; } }
+@keyframes rz-houpani { from { rotate: -4deg; } to { rotate: 4deg; } }
+
+/* Potřebuje tebe: volá tě anténou. Špička jemně dýchá světlem (přechod rb-zare), odcházejí z ní tři
+   vlnky signálu po sobě a robot přitom souvisle mává. */
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot .robot-signal { display: inline; }
+.signal-zare { fill: url(#rb-zare) none; transform-box: view-box; }
+.signal-vlna { fill: none; stroke: var(--signal, #e0457b); stroke-width: 1.4; opacity: 0; transform-box: view-box; }
+html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-vlna { animation: rz-vlna 1.8s cubic-bezier(.16, 1, .3, 1) calc(var(--robot-delay, 0s) + var(--i) * -.6s) infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { animation: rz-volani 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
+@keyframes rz-zare { 0%, 100% { opacity: .55; scale: .8; } 50% { opacity: 1; scale: 1.15; } }
+@keyframes rz-vlna { 0% { opacity: .9; scale: .7; } 100% { opacity: 0; scale: 3.4; } }
+@keyframes rz-volani { 0%, 100% { transform: rotate(-52deg); } 25% { transform: rotate(-38deg); } 50% { transform: rotate(-60deg); } 75% { transform: rotate(-40deg); } }
+
+/* Nohy (robot-svg.js#legs): kapsle v barvě postavy a tmavší bota – pevný postoj hračky, ne drátky. */
+.robot-leg { fill: color-mix(in srgb, var(--persona) 82%, var(--card)); }
+.robot-shoe, .robot-sole { fill: color-mix(in srgb, var(--persona) 70%, var(--ink)); }
+html[data-theme='dark'] .robot-leg { fill: color-mix(in srgb, var(--persona) 72%, var(--card)); }
+html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill: var(--persona); }
+.robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
