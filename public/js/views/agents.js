@@ -109,7 +109,7 @@ function bezPrepisuHtml(sessions, sledovane = false) {
         <span class="icon-tile">${glyph({ runtime: r.id, provider: r.provider })}<i class="status-dot status-working"></i></span>
         <div class="runtime-main">
           <b>${esc(r.name)}</b>
-          <span class="muted small">${tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` ${r.id.startsWith('pwa-') ? tr('· {0} {1} v této službě', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací')) : tr('· {0} {1} od téhož poskytovatele', konverzaci, plural(konverzaci, 'sledovaná konverzace', 'sledované konverzace', 'sledovaných konverzací'))}` : ''}</span>
+          <span class="muted small">${r.id.startsWith('pwa-') ? tr('otevřeno') : tr('běží')} ${doba(r.od ? (Date.now() - r.od) / 1000 : 0)}${r.processes > 1 ? ` · ${r.processes} ${plural(r.processes, 'proces', 'procesy', 'procesů')}` : ''}${konverzaci ? ` · ${r.id.startsWith('pwa-') ? tr('{0} {1} v této službě', konverzaci, plural(konverzaci, 'konverzace', 'konverzace', 'konverzací')) : tr('{0} {1} od stejného poskytovatele', konverzaci, plural(konverzaci, 'konverzace', 'konverzace', 'konverzací'))}` : ''}</span>
           <p class="small">${esc(i.duvod)}</p>
           <p class="small muted">${esc(i.rada)}</p>
         </div>

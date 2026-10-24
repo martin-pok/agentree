@@ -77,7 +77,12 @@ export const postupPrace = (od, ted = Date.now()) => {
 // Atributy dílny pro prvek, který nese stav agenta: nástroj (kladivo/pilka), začátek a fáze práce.
 export function dilnaAtributy(s) {
   const od = s.status === 'working' && s.turnStartedAt > 0 ? s.turnStartedAt : 0;
-  return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}" data-hra="${hraAgenta(s.id)}"${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
+  // Po dokončení úlohy si robot 15 s oddechne, teprve pak se začne flákat (mascot-motion.js přepne
+  // data-hra z „klid“ na jeho zábavu, až čas uplyne).
+  const hra = hraAgenta(s.id);
+  const hraOd = (s.status === 'waiting' || s.status === 'idle') && hra !== 'klid' && s.lastAt > 0 ? s.lastAt + ODDECH_MS : 0;
+  const hraAttr = hraOd > Date.now() ? ` data-hra="klid" data-hra-pak="${hra}" data-hra-od="${hraOd}"` : ` data-hra="${hra}"`;
+  return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}"${hraAttr}${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;
 }
 
 // Jen to, co stav agenta opravdu ukáže (refinement.css): dílna při práci, hračky při čekání,
@@ -85,6 +90,7 @@ export function dilnaAtributy(s) {
 // Zhruba dva z pěti čekajících si nehrají vůbec (jen dýchají a rozhlížejí se), ostatní mají každý
 // svou zábavu z osmi – vedle sebe tak nevyhazují všichni míček.
 const HRY = ['micek', 'jojo', 'pisen', 'kava', 'kniha', 'bublina', 'mobil', 'protazeni'];
+export const ODDECH_MS = 15000;
 const hraAgenta = (id) => {
   const h = otisk(id) >>> 3;
   return h % 5 < 2 ? 'klid' : HRY[(h >>> 3) % HRY.length];

@@ -111,3 +111,17 @@ test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hl
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--mid, \.robot-wear--body\) \{ animation: rz-otocka-trup/);
   assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face\)/);
 });
+
+test('flákání až po oddechu: 15 s po dokončení úlohy je robot v klidu, pak teprve hraje', async () => {
+  const { dilnaAtributy, ODDECH_MS } = await import('../public/js/home-studio.js');
+  assert.equal(ODDECH_MS, 15000);
+  const hrac = Array.from({ length: 60 }, (_, i) => `agent-${i}`).find((id) => !dilnaAtributy({ id, status: 'waiting' }).includes('data-hra="klid"'));
+  const hra = dilnaAtributy({ id: hrac, status: 'waiting' }).match(/data-hra="(\w+)"/)[1];
+  const prave = dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 2000 });
+  assert.match(prave, /data-hra="klid"/);
+  assert.match(prave, new RegExp(`data-hra-pak="${hra}"`));
+  assert.match(prave, /data-hra-od="\d+"/);
+  assert.match(dilnaAtributy({ id: hrac, status: 'waiting', lastAt: Date.now() - 20000 }), new RegExp(`data-hra="${hra}"`));
+  const js = await zdroj('public/js/mascot-motion.js');
+  assert.match(js, /querySelectorAll\('\[data-hra-od\]'\)/);
+});

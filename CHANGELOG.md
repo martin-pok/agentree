@@ -3,6 +3,8 @@
 ## 0.46.66 – 2026-10-24 · Výchozí „V aplikaci“
 
 - **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).
+- **Robot si po úloze oddechne:** po dokončení úlohy zůstane 15 s v klidu, teprve pak se začne flákat.
+- **Srozumitelnější texty u aplikací bez přepisu:** např. u Google AI Studia „Webová služba otevřená jako samostatné okno. Agenteeq vidí, že je otevřené a jak dlouho.“ a „Co v něm píšeš, čte rozšíření Agenteeq.“; místo „běží 11 min · 1 proces · 1 sledovaná konverzace v této službě“ je „otevřeno 11 min · 1 konverzace v této službě“.
 - **Stabilita:** pozorovatel šířky řádků filtrů na Agentech se odpojí, i když řádek vymění živá aktualizace.
 - Obsahuje vše z 0.46.65 (ta nebyla zveřejněna).
 

@@ -9,11 +9,13 @@ export const RELEASES = [
     title: 'Výchozí „V aplikaci“',
     items: [
       'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
+      'Robot si po dokončené úloze 15 s oddechne, teprve pak se začne flákat.',
     ],
     en: {
       title: 'Default “In app”',
       items: [
         'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
+        'After finishing a task, a robot rests for 15 s before it starts goofing around.',
       ],
     },
   },
