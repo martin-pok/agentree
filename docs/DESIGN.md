@@ -164,7 +164,8 @@ značka“. Závazná podoba `extension/popup.html`:
   okně přes tokenově omezený požadavek; nikdy neotevírá holou adresu lokálního serveru ani nepředává
   klíč okna Chromu. Bez spárování zůstane jen značka bez navigace. Jde o jediné místo s touto akcí,
   vedle ní je kapsle stavu spojení, kruhová obnova
-  a kruh Sledované služby a port. **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
+  a kruh Nastavení rozšíření (sledované služby, motiv okna Systém / Světlý / Tmavý nezávislý na
+  motivu aplikace, port). **Pata není** – vlastník 14. 10. 2026: druhé „Otevřít Agenteeq“
   vedle „Otevřít v Agenteeq“ bylo matoucí. Ověření stránky je kapsle u řádku aktuální karty. Dvě
   viditelná ovládání nikdy nenesou stejný nebo podobný popisek (hlídá qa-extension). Okno má
   380 × 600 px; obsah na spodním okraji se rozplyne maskou.

@@ -8,6 +8,8 @@ export const RELEASES = [
     date: '2026-10-24',
     title: 'Výchozí „V aplikaci“',
     items: [
+      'Přepis cloudového agenta Claude naběhne hned po otevření detailu a drží se čerstvý.',
+      'Rozšíření má vlastní motiv: Systém, Světlý nebo Tmavý.',
       'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
       'Hotový agent tě 15 s volá anténou a mává, teprve pak se začne flákat.',
       'Hlavní tlačítka při najetí zfialoví a počty v menu jsou ve fialovém kolečku.',
@@ -16,6 +18,8 @@ export const RELEASES = [
     en: {
       title: 'Default “In app”',
       items: [
+        'A cloud Claude agent’s transcript loads as soon as you open its detail and stays fresh.',
+        'The extension has its own theme: System, Light or Dark.',
         'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
         'A finished agent calls you with its antenna and waves for 15 s before it starts goofing around.',
         'Main buttons turn purple on hover, and menu counts sit in a purple circle.',

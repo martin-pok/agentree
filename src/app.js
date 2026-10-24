@@ -1067,6 +1067,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       home: os.homedir(),
     };
   }
+  // Otevřený detail cloudového agenta: konektor načte přepis z účtu hned a pak ho drží čerstvý.
+  async function sledujDetail(id) {
+    const s = store.sessions.get(id);
+    if (s?.connector === 'claude-desktop-code') await connectors['claude-desktop-code']?.sledujDetail?.(s.localId);
+  }
   function muzeOdpovedet(id) {
     return lzeOdpovedet(store.sessions.get(id), kontextOdpovedi());
   }
@@ -1813,7 +1818,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, push, pomocnik, pomocnikOdpoved, jePomocnikSession: (id) => pomocnikSessions.has(String(id || '')), odpovedet, muzeOdpovedet, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, push, pomocnik, pomocnikOdpoved, jePomocnikSession: (id) => pomocnikSessions.has(String(id || '')), odpovedet, muzeOdpovedet, sledujDetail, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

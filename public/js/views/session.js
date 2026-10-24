@@ -511,7 +511,10 @@ function update() {
           ${s.pr ? `<div><dt>${tr('Pull request')}</dt><dd>${s.pr.url ? `<a href="${esc(s.pr.url)}" target="_blank" rel="noopener noreferrer">#${s.pr.number}</a>` : `#${s.pr.number}`}${s.pr.state ? ` · ${esc(s.pr.state)}` : ''}</dd></div>` : ''}
           ${s.costUsd !== null && s.costUsd !== undefined ? `<div><dt>${tr('Cena podle ceníku API')} <span class="badge">${tr('odhad')}</span></dt><dd>${s.costUsd.toLocaleString(LOCALE, { style: 'currency', currency: 'USD' })}</dd></div>` : ''}
           <div><dt>${tr('Zahájeno')}</dt><dd>${dateTime(s.startedAt)}</dd></div>
-          <div><dt>${tr('Doba trvání')}</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>
+          ${s.startedAt && s.lastAt - s.startedAt >= 24 * H
+    // Konverzace otevřená přes několik dní: rozpětí od založení není doba práce („20 d 2 h“ mátlo).
+    ? `<div><dt>${tr('Poslední aktivita')}</dt><dd>${dateTime(s.lastAt)}</dd></div>`
+    : `<div><dt>${tr('Doba trvání')}</dt><dd>${s.startedAt ? dur(s.lastAt - s.startedAt) : '–'}</dd></div>`}
           <div><dt>${tr('Zadání')}</dt><dd>${s.turns ?? '–'}</dd></div>
           <div><dt>${tr('Tokeny')}</dt><dd>${hasTokens ? fmtTok(sessionTotal(s)) : '–'}</dd></div>
           ${reviews.length ? `<div><dt>${tr('Automatické kontroly')}</dt><dd>${reviews.length} · ${fmtTok(reviews.reduce((a, x) => a + sessionTotal(x), 0))}</dd></div>` : ''}

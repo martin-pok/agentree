@@ -17,8 +17,10 @@ test('Notion: project editor isolates scroll and keeps its action row visible', 
   assert.ok(project.includes("size: 'project',"));
   assert.match(css, /\.modal--project \.modal-body \{[^}]*overflow-y: auto;/);
   assert.match(css, /\.modal--project \.modal-foot \{[^}]*border-top:/);
-  assert.match(css, /\.modal--project \.media-picks \{ grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /@media \(min-width: 680px\)/);
+  // Vlastník 24. 10. 2026: obrázek karty a logo stojí pod sebou přes celou šířku – ve dvou sloupcích
+  // se název překrýval s tlačítky.
+  assert.doesNotMatch(css, /\.modal--project \.media-picks \{ grid-template-columns: repeat\(2/);
+  assert.match(css, /\.modal--project \.media-text b \{ min-width: 0; \}/);
   assert.ok(project.includes('data-media-crop'), 'image cropping remains functional');
   assert.ok(project.includes('data-media-file'), 'file upload remains available');
 });

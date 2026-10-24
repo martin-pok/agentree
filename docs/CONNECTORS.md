@@ -227,7 +227,15 @@ ve složce, o které Agenteeq neví. Proto:
   (`running`/`idle`/`requires_action`), `created_at`, `last_event_at` a `config.{sources,model}`;
   převádí se do tvaru seznamu v cache (`type: 'session'`, `session_status`) jako v Claude Code a
   stav čte tatáž `hlasenyStav`. Z cache a z účtu platí u relace záznam s novějším `updated_at`,
-  při shodě pozdější načtení (`slucRelace`). Přepis a tokeny dál jen z cache Desktopu.
+  při shodě pozdější načtení (`slucRelace`).
+  **Přepis z účtu (od 0.46.67) 🧪 Beta:** pro relace, které běží nebo čekají, a pro otevřený detail
+  (10 minut od otevření, nanejvýš 4 relace na kolo) se čte `GET …/v1/code/sessions/{id}/events?limit=100`.
+  Události jsou tytéž zprávy SDK, jaké Desktop ukládá do cache (`type`, `uuid`, `created_at`,
+  `parent_tool_use_id`, `message`); čte se plochý tvar i obálka `{ created_at, user|assistant|result }`
+  (`zpravaZUdalosti`) a s cache se slučují podle `uuid` (`slucPrepis`). Obálku i časy událostí
+  ověřilo 24. 10. 2026 čtení událostí vlastní relace Claude Code; parametr `limit` a pořadí stránky
+  na `api.anthropic.com` z Macu vlastníka ověřené nejsou. Selhání přepisu nemění stav relace –
+  zůstává přepis z cache. Tokeny jsou dál jen součet dostupné části přepisu.
   **Přihlášení:** na macOS položka Klíčenky „Claude Code-credentials“ (účet = uživatel, s
   `CLAUDE_CONFIG_DIR` přívěsek z sha256 složky), čtená `/usr/bin/security` jako v Claude Code;
   jinde `~/.claude/.credentials.json` (`src/platform.js#prihlaseniClaudeCode`). Token se drží jen

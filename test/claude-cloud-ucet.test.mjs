@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { relaceZApi, nactiCloudoveRelace, nactiCloudovouRelaci, slucRelace, CLOUD_API } from '../src/connectors/claude-desktop-code.js';
+import { relaceZApi, nactiCloudoveRelace, nactiCloudovouRelaci, slucRelace, CLOUD_API, zpravaZUdalosti, slucPrepis } from '../src/connectors/claude-desktop-code.js';
 import { prihlaseniClaudeCode } from '../src/platform.js';
 import { tempDir, startTestServer, waitFor } from './helpers.mjs';
 
@@ -158,4 +158,45 @@ test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nez�
     assert.ok(dotazy.includes(`${CLOUD_API}/session_019pjCMAW6NZjG9fzTfPLyCe`));
     await waitFor(() => server.app.store.summary(id)?.status !== 'working', 3000);
   } finally { await server.close(); }
+});
+
+// Vlastník 24. 10. 2026: přepis a detail běhu musí naběhnout hned a čerstvý, ne až když Claude
+// Desktop zapíše cache. Události relace se berou z účtu; obálka i plochá zpráva SDK.
+test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cache Claude Desktopu', async () => {
+  const sid = 'session_019pjCMAW6NZjG9fzTfPLyCe';
+  const kdy = (ms) => new Date(Date.now() - ms).toISOString();
+  const udalosti = () => ({ data: [
+    { created_at: kdy(20e3), user: { uuid: 'u1', internal_anthropic_catchall: { message: { role: 'user', content: 'Oprav dialog projektu' }, parent_tool_use_id: null } } },
+    { type: 'assistant', uuid: 'a1', created_at: kdy(10e3), parent_tool_use_id: null, message: { role: 'assistant', content: [{ type: 'text', text: 'Opravuji rozložení.' }], usage: { input_tokens: 120, output_tokens: 30 } } },
+  ] });
+  const dotazy = [];
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60e3,
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async (u) => {
+      dotazy.push(u);
+      if (u === `${CLOUD_API}/${sid}/events?limit=100`) return odpoved(200, udalosti());
+      return odpoved(200, { data: [surova({ worker_status: 'idle', last_event_at: kdy(5e3), created_at: kdy(600e3) })] });
+    } } });
+  try {
+    const id = `claude-desktop-code:${sid}`;
+    await waitFor(() => server.app.store.summary(id), 3000);
+    const r = await fetch(`${server.url}/api/sessions/${encodeURIComponent(id)}`, { headers: server.headers });
+    const detail = await r.json();
+    const texty = JSON.stringify(detail.transcript);
+    assert.match(texty, /Oprav dialog projektu/, 'zadání z účtu je v přepisu hned při prvním otevření');
+    assert.match(texty, /Opravuji rozložení/);
+    assert.ok(dotazy.includes(`${CLOUD_API}/${sid}/events?limit=100`));
+  } finally { await server.close(); }
+});
+
+test('události relace: obálka i plochá zpráva, sloučení s cache bez dvojic', () => {
+  assert.equal(zpravaZUdalosti({ created_at: iso(0), nic: {} }), null);
+  const z = zpravaZUdalosti({ created_at: iso(-1e3), assistant: { uuid: 'a1', internal_anthropic_catchall: { message: { content: [] } } } });
+  assert.equal(z.type, 'assistant');
+  assert.equal(z.uuid, 'a1');
+  assert.equal(z.created_at, iso(-1e3));
+  const cache = { writtenAt: 5, tree: { kind: 'code_session', messages: [{ type: 'user', uuid: 'u1', created_at: iso(-3e3) }] } };
+  const spolu = slucPrepis(cache, { at: ted, messages: [{ type: 'user', uuid: 'u1', created_at: iso(-3e3) }, z] });
+  assert.deepEqual(spolu.tree.messages.map((m) => m.uuid), ['u1', 'a1']);
+  assert.equal(slucPrepis(cache, null), cache);
 });

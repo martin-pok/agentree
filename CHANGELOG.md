@@ -2,6 +2,10 @@
 
 ## 0.46.67 – 2026-10-24 · Výchozí „V aplikaci“, oddech robotů, srozumitelné texty
 
+- **Detail cloudového běhu hned a čerstvý:** přepis vzdáleného agenta Claude Code se čte přímo z účtu Claude – při otevření detailu hned (nanejvýš 2,5 s) a dál každých 8 s, dokud agent běží nebo je detail otevřený. Dřív přepis čekal, až Claude Desktop uloží svou cache, takže byl „zatím prázdný“ a tokeny „—“. 🧪 Beta (docs/CONNECTORS.md).
+- **Doba trvání nemate:** u konverzace otevřené přes několik dní detail místo „20 d 2 h“ ukáže poslední aktivitu; rozpětí od založení není doba práce.
+- **Rozšíření má vlastní motiv:** v nastavení rozšíření (ikona posuvníků) zvolíš Systém, Světlý nebo Tmavý – nezávisle na motivu aplikace.
+- **Dialog Upravit projekt:** obrázek karty a logo klienta stojí pod sebou přes celou šířku; název, „i“, rozměry a tlačítka Změnit/Odebrat se už nepřekrývají. Na telefonu jdou tlačítka pod text.
 - **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).
 - **Oprava: „Otevřít konverzaci“ u vzdáleného Code z Claude Desktopu** otevírala claude.ai v prohlížeči, kde relace běžící v aplikaci Claude nemusí existovat („session couldn't be found“). Teď se otevře aplikace Claude, kde relace opravdu běží; web jen na počítači bez aplikace Claude. Platí i pro klik v rozšíření.
 - **Oblečení zezadu:** robot otočený zády (při práci) už neukazuje přední detaily – rytířská přilba je zezadu plná (bez hledí), kukla nindži a kapuce žabáka taky; znaky, knoflíky, kravaty, motýlek, kapsy a bříška jsou jen zepředu a při otočce zmizí v polovině jako obličej.

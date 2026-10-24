@@ -508,8 +508,9 @@ export function createHttpServer(app, existingServer = null) {
       ...(zTohotoMacu(req) ? { keyed: Boolean(config.localKey), keyUsed, runsActive: app.runsPayload().filter((r) => ['running', 'stopping'].includes(r.status)).length, install: instalace(), } : {}),
     })],
     ['GET', /^\/api\/state$/, (req) => app.state({ local: zTohotoMacu(req) })],
-    ['GET', /^\/api\/sessions\/([^/]+)$/, (req, m) => {
+    ['GET', /^\/api\/sessions\/([^/]+)$/, async (req, m) => {
       const id = decodeURIComponent(m[1]);
+      if (zTohotoMacu(req)) await app.sledujDetail?.(id);
       const session = store.summary(id);
       if (!session) throw new HttpError(jeProcesovyId(id) ? 410 : 404, jeProcesovyId(id) ? ui('Detekovaný proces už v přehledu není. Pokud vytvořil přepis, najdeš ho mezi agenty.') : ui('Konverzace nenalezena.'));
       // Spárovaný telefon dostane jen souhrn – celý přepis zůstává na hostiteli (src/remote-scope.js).
