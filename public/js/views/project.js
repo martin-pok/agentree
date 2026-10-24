@@ -138,6 +138,7 @@ function mount(el, [id]) {
   const pside = el.querySelector('[data-region="pside"]');
   applyOrder(pside, '.side-card[data-card]', 'projectSide');
   pside.dataset.liftScale = '1.01';
+  pside.classList.add('side-razeni');
   v.reorder = enableReorder(pside, {
     itemSelector: '.side-card[data-card]',
     idOf: (n) => n.dataset.card,

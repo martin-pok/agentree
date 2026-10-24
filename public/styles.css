@@ -2935,24 +2935,25 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 /* Přesouvání karet v pravém panelu (detail agenta a projektu): přesně jako widgety Přehledu
    (refinement.css, .widget::after a .widget-grip). Při najetí se kolem karty rozsvítí fialový lem
    s vyšším horním pásem a v něm vyjede kapsle se šesti tečkami – 8 px pod lemem a 8 px nad kartou,
-   nikde se nedotýká. Mezera mezi kartami (48 px) pás pojme. Na dotykové obrazovce je úchyt vidět. */
-.session-side:has(> .side-card > .grip) { gap: 48px; padding-top: 36px; }
+   nikde se nedotýká. Mezera mezi kartami (48 px) pás pojme. Třídu .side-razeni dává panelu
+   enableReorder (views/session.js, views/project.js) – bez :has(), který zdržuje přepočet stylů. Na dotykové obrazovce je úchyt vidět. */
+.side-razeni { gap: 48px; padding-top: 36px; }
 .side-card { --glow: var(--brand); position: relative; }
-.side-card:has(> .grip)::after { content: ''; position: absolute; inset: -36px -12px -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
+.side-razeni > .side-card::after { content: ''; position: absolute; inset: -36px -12px -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
   background: linear-gradient(45deg, color-mix(in srgb, var(--glow) 6%, transparent), transparent 55%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 26%, transparent), 0 0 0 1px color-mix(in srgb, var(--glow) 6%, transparent), 0 18px 48px -30px color-mix(in srgb, var(--glow) 70%, transparent);
   transition: opacity var(--motion-response) var(--ease); }
-@media (hover: hover) { .session-side:not(.is-reordering) .side-card:hover::after { opacity: 1; } }
+@media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover::after { opacity: 1; } }
 .side-card.is-lifted::after { opacity: 1; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 40%, transparent), 0 30px 70px -30px color-mix(in srgb, var(--glow) 80%, transparent); }
 .grip { --glow: var(--brand); position: absolute; top: -28px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
 .grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
 .grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
-@media (hover: hover) { .session-side:not(.is-reordering) .side-card:hover .grip { opacity: 1; transform: translate(-50%, 0); } }
+@media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover .grip { opacity: 1; transform: translate(-50%, 0); } }
 .side-card.is-lifted .grip { opacity: 1; transform: translate(-50%, 0); }
 @media (hover: none) { .grip { opacity: 1; transform: translate(-50%, 0); } }
 .side-card.is-lifted { z-index: 30; cursor: grabbing; will-change: translate, scale; }
 .side-card.is-lifted .grip { cursor: grabbing; }
-.session-side.is-reordering .side-card:not(.is-lifted) { transition: none; }
+.side-razeni.is-reordering > .side-card:not(.is-lifted) { transition: none; }
 @media (prefers-reduced-motion: reduce) { .grip, .side-card::after { transition: none; } }
 .set-row-inline { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-2); }
 .set-row-inline span { display: grid; gap: 2px; min-width: 0; flex: 1 1 260px; }
