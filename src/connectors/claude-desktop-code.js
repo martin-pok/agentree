@@ -221,7 +221,8 @@ export function relaceZApi(raw) {
   const id = remoteId(typeof raw.id === 'string' ? raw.id.replace(/^cse_/, 'session_') : '');
   const updated = [raw.last_event_at, raw.updated_at, raw.created_at].find((t) => typeof t === 'string' && Number.isFinite(Date.parse(t)));
   if (!id || !updated) return null;
-  const stav = raw.status === 'archived' ? 'archived' : raw.status === 'failed' ? 'failed' : typeof raw.worker_status === 'string' ? raw.worker_status : 'idle';
+  const stav = raw.status === 'archived' ? 'archived' : raw.status === 'failed' ? 'failed' : typeof raw.worker_status === 'string' ? raw.worker_status : '';
+  if (![...STAV_PRACUJE, ...STAV_CEKA, ...STAV_SELHAL, 'idle', 'stopped', 'completed', 'archived'].includes(stav)) return null;
   // Čekání na schválení nese `external_metadata.pending_action.tool_name` (jako v Claude Code); jiný
   // text o čekání API neposílá, takže se nic nedomýšlí.
   const nastroj = stav === 'requires_action' ? raw.external_metadata?.pending_action?.tool_name : undefined;
@@ -257,6 +258,7 @@ async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
 export async function nactiCloudoveRelace({ prihlaseni, fetchImpl, now = Date.now() }) {
   const data = await dotaz(CLOUD_API, { prihlaseni, fetchImpl, now });
   if (!Array.isArray(data?.data)) throw new Error(ui('Účet Claude nevrátil seznam relací.'));
+  if (data.data.some((x) => remoteId(typeof x?.id === 'string' ? x.id.replace(/^cse_/, 'session_') : '') && !relaceZApi(x))) throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.'));
   return { sessions: data.data.map(relaceZApi).filter(Boolean), observedAt: now };
 }
 // Detail jedné relace (`{ session }`, starší tvar `{ response_shape }`) – pro relaci, kterou známe

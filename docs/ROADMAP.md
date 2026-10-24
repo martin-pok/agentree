@@ -1,5 +1,8 @@
 # Roadmapa Agenteeq
 
+**Aktuální práce: 0.46.65 Preview** — cílená oprava živé detekce vzdáleného Claude Code (PR #357). API i izolovaný server bez cache už potvrdily skutečný běh; následuje CI, audit balíčků, publikace a fyzické UAT upgradu. Dialogy s ochranou neuložených změn jsou další schválený úkol po této kritické opravě.
+
+
 **Stav 24. 10. 2026:** připravuje se Preview `v0.46.64` (tečka stavu na ikoně rozšíření); `v0.46.63` (roboti v dílně a detekce cloudových běhů Codexu z v0.46.62) je veřejné Preview. Veřejné Preview `v0.46.61` tuto kritickou opravu neobsahuje. [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
 **P0 Codex Cloud na Macu vlastníka:** Ověřit, že přihlášení nativní Codex.app zpřístupní `codex cloud list --json` z procesu Agenteeq a že právě běžící cloudová úloha se do 20 s ukáže v Přehledu se správným stavem a odkazem. Bez tohoto ověření zůstává konektor Beta a vydání nesmí slibovat detekci každého běhu.

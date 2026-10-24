@@ -23,7 +23,8 @@ test('relace z účtu: tvar jako seznam v cache, stav podle worker_status a arch
   assert.equal(r.session_context.model, 'claude-opus-5-5');
   assert.equal(relaceZApi(surova({ worker_status: 'requires_action' })).session_status, 'requires_action');
   assert.equal(relaceZApi(surova({ status: 'archived' })).session_status, 'archived');
-  assert.equal(relaceZApi(surova({ worker_status: undefined })).session_status, 'idle');
+  assert.equal(relaceZApi(surova({ worker_status: undefined })), null);
+  assert.equal(relaceZApi(surova({ worker_status: 'future_unknown_status' })), null);
   assert.equal(relaceZApi(surova({ id: 'cse_qaabcdefgh12345678' })).id, 'session_qaabcdefgh12345678');
   assert.equal(relaceZApi(surova({ id: '../etc' })), null);
   assert.equal(relaceZApi(surova({ last_event_at: 'nesmysl', updated_at: undefined, created_at: undefined })), null);
@@ -111,6 +112,8 @@ test('cloudový běh bez cache Claude Desktopu: z účtu je vidět jako pracují
     const id = 'claude-desktop-code:session_qaabcdefgh12345678';
     await waitFor(() => server.app.store.summary(id)?.status === 'working', 3000);
     assert.equal(server.app.store.summary(id).stale, false);
+    assert.equal(server.app.store.summary(id).source, 'claude-account');
+    assert.match(server.app.store.summary(id).reason, /živého stavu účtu Claude/);
     worker = 'requires_action';
     await server.app.connectors['claude-desktop-code'].scan(true);
     await waitFor(() => server.app.store.summary(id)?.status === 'needs_input', 3000);
@@ -159,3 +162,7 @@ test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nez�
     await waitFor(() => server.app.store.summary(id)?.status !== 'working', 3000);
   } finally { await server.close(); }
 });
+
+ test('neznámý stav platné relace není prázdný seznam ani potvrzené čekání', async () => {
+  await assert.rejects(nactiCloudoveRelace({prihlaseni:async()=>({accessToken:'test'}),fetchImpl:async()=>odpoved(200,{data:[surova({worker_status:undefined})]}),now:ted}), /nečitelný/);
+ });
