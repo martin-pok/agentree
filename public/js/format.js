@@ -183,7 +183,12 @@ export function resetsLabel(ts, now = Date.now()) {
   return tr('{0} {1}.\u00a0{2}. v\u00a0{3}', WEEKDAYS[d.getDay()], d.getDate(), d.getMonth() + 1, timeHM(ts));
 }
 
+// Starý vzdálený běh není potvrzené čekání na zadání. Kanonický stav a příznak stale
+// necháváme pro kompatibilitu API, zobrazení používá poctivý samostatný stav.
+export const displayStatus = (s) => s?.connector === 'claude-desktop-code' && s.stale && ['waiting', 'idle', 'archived'].includes(s.status) ? 'unknown' : s?.status;
+
 export const STATUS = {
+  unknown: { label: tr('Stav neověřen') },
   needs_input: { label: tr('Potřebuje tebe') },
   limited: { label: tr('Vyčerpaný limit') },
   failed: { label: tr('Selhalo') },

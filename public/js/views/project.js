@@ -34,7 +34,7 @@ function rowHtml(s, now) {
       <span class="icon-tile">${glyph(s)}<i class="status-dot status-${esc(s.status)}"></i></span>
       <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${s.status === 'working' && s.activity ? `<span class="sub-live"><span class="live-dot" aria-hidden="true"></span><span>${esc(vetaStavu(s))}</span></span>` : sub}</span></span>
     </a>
-    <span class="prow-meta">${statusPill(s.status)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '–'}</span></span>
+    <span class="prow-meta">${statusPill(s)}<span class="prow-tok">${sessionTotal(s) ? fmtTok(sessionTotal(s)) : '–'}</span></span>
     <span class="prow-actions">${actions}</span>
   </li>`;
 }

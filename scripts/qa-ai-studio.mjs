@@ -41,11 +41,14 @@ for (const engine of engines) {
     await page.screenshot({ path: `dist/qa/${engine}-ai-studio-tracked.png` });
 
     const result = server.app.connectors.web.ingest({
-      site: 'google-ai-studio', conversationId: 'qa-prompt', url: 'https://aistudio.google.com/prompts/qa-prompt',
+      site: 'google-ai-studio', conversationId: 'qa-prompt', url: 'https://aistudio.google.com/apps/qa-prompt',
       title: 'QA Studio prompt', generating: true,
       messages: [{ role: 'user', text: 'Test prompt' }, { role: 'assistant', text: 'Test reply' }],
     });
     assert.equal(result.ok, true);
+    const live = (await a.get('/api/state')).body.sessions.find(s => s.id === 'web:google-ai-studio:qa-prompt');
+    assert.equal(live?.status, 'working');
+    assert.equal(live?.url, 'https://aistudio.google.com/apps/qa-prompt');
     await page.locator('[data-region="table"] [data-key]').getByText('QA Studio prompt', { exact: true }).waitFor();
     assert.equal(await page.getByText('Zatím žádná webová konverzace', { exact: true }).count(), 0);
     assert.deepEqual(errors, []);

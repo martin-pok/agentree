@@ -42,7 +42,7 @@ export function normalizedWebUrl(site, raw) {
     if (site === 'codex-web' && !/^\/codex(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'claude-code-web' && !/^\/code(?:\/|$)/.test(url.pathname)) return null;
     if (site === 'github-copilot' && !/^\/copilot(?:\/|$)/.test(url.pathname)) return null;
-    if (site === 'google-ai-studio' && !/^\/(?:app\/)?prompts(?:\/|$)/.test(url.pathname)) return null;
+    if (site === 'google-ai-studio' && !/^\/(?:(?:app\/)?prompts|apps)(?:\/|$)/.test(url.pathname)) return null;
     // URLs may carry temporary tokens or user queries; only the route is needed.
     url.search = '';
     url.hash = '';

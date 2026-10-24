@@ -25,9 +25,9 @@ const VZDALENE_CERSTVE = 2 * 60e3;
 
 // `nevidim`: jména otevřených AI aplikací, jejichž chaty Agenteeq nečte (ChatGPT, Claude…). Když
 // nikdo nepracuje, řekne to poznámka – „nikdo nepracuje“ platí jen pro to, co Agenteeq vidí.
-export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, vzdaleneAt = 0, nevidim = [], now = Date.now() } = {}) {
+export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, nejiste = 0, vzdaleneAt = 0, nevidim = [], now = Date.now() } = {}) {
   const problemy = selhalo + limit;
-  const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim ? 'nevim' : 'ok';
+  const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim || nejiste ? 'nevim' : 'ok';
   const vzdaleneStare = vzdaleneAt > 0 && now - vzdaleneAt > VZDALENE_CERSTVE;
   let veta;
   if (stav === 'problem') {
@@ -37,11 +37,11 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
   } else if (stav === 'pozor') {
     veta = plural(cekaji, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů').replace('{0}', cekaji);
   } else if (stav === 'nevim') {
-    veta = tr('Nepodařilo se zjistit, co na počítači běží');
+    veta = nejiste ? tr('U části agentů chybí aktuální stav') : tr('Nepodařilo se zjistit, co na počítači běží');
   } else {
     veta = pracuje ? tr('Vše běží v pořádku') : vzdaleneStare ? tr('Na tomto počítači nikdo nepracuje') : tr('V pořádku, nikdo nepracuje');
   }
-  const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
+  const poznamka = nejiste ? tr('Poslední známý stav není potvrzení, že agent přestal pracovat.') : procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
     : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now))
       : stav === 'ok' && !pracuje && nevidim.length ? tr('Otevřené: {0}. Chaty z těchto aplikací Agenteeq nevidí.', nevidim.join(', ')) : '';
   return { stav, veta, poznamka };
