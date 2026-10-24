@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.46.72 – 2026-10-24 · Bubliny po větách
+## 0.46.72 – 2026-10-24 · Cloudoví agenti poctivě, bubliny po větách
 
+- **Když agenty v cloudu nevidím, Přehled to řekne:** když čtení z účtu Claude selže (třeba vypršelé přihlášení Claude Code v Klíčence), Přehled už netvrdí „V pořádku, nikdo nepracuje“, ale „Agenty v cloudu teď nevidím“ s důvodem a tím, co s tím udělat. Bez Claude Code se nic nehlásí – aplikace funguje i bez něj.
 - **Bubliny robotů zalomené po větách:** když se věta nevejde na jeden řádek, začne každá další věta na novém řádku („Velký úkol klidně rozsekej. / Malé kroky doběhnou rychleji.“), nikdy ne „rozsekej. Malé / kroky…“. Bublina dál sedí přesně na šířku textu.
 
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
