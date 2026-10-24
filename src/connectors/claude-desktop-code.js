@@ -215,36 +215,62 @@ function applyReportedStatus(s, metadata, observedAt, now) {
 // (`type: 'session'`, `session_status`), takže stav čte tatáž hlasenyStav. Interní API, 🧪 Beta.
 // Id relace přichází jako `session_…`, případně `cse_…` se stejnou příponou.
 export const CLOUD_API = 'https://api.anthropic.com/v1/code/sessions';
+const NASTROJ = /^[\w.:-]{1,80}$/;
 export function relaceZApi(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const id = remoteId(typeof raw.id === 'string' ? raw.id.replace(/^cse_/, 'session_') : '');
   const updated = [raw.last_event_at, raw.updated_at, raw.created_at].find((t) => typeof t === 'string' && Number.isFinite(Date.parse(t)));
   if (!id || !updated) return null;
   const stav = raw.status === 'archived' ? 'archived' : raw.status === 'failed' ? 'failed' : typeof raw.worker_status === 'string' ? raw.worker_status : 'idle';
+  // Čekání na schválení nese `external_metadata.pending_action.tool_name` (jako v Claude Code); jiný
+  // text o čekání API neposílá, takže se nic nedomýšlí.
+  const nastroj = stav === 'requires_action' ? raw.external_metadata?.pending_action?.tool_name : undefined;
   return {
     type: 'session', id, title: typeof raw.title === 'string' ? raw.title : '',
     created_at: typeof raw.created_at === 'string' ? raw.created_at : updated, updated_at: updated, session_status: stav,
+    ...(typeof nastroj === 'string' && NASTROJ.test(nastroj) ? { post_turn_summary: { needs_action: ui('Čeká na tvé schválení nástroje {0}. Otevři Claude.', nastroj) } } : {}),
     session_context: { sources: Array.isArray(raw.config?.sources) ? raw.config.sources : [], model: typeof raw.config?.model === 'string' ? raw.config.model : null },
   };
 }
-// Chyby jsou věty pro Nastavení; nikdy se z nich nestane „nic neběží“.
-export async function nactiCloudoveRelace({ prihlaseni, fetchImpl = globalThis.fetch, now = Date.now() }) {
+
+// Jeden dotaz na účet. Token jde jen na api.anthropic.com: přesměrování se odmítá (hlavička
+// Authorization by jinak mohla odejít jinam), odpověď nad 4 MB se nečte. Chyby jsou věty pro
+// Nastavení; nikdy se z nich nestane „nic neběží“. 429 a 503 nesou, za jak dlouho to zkusit znovu.
+const chybaPrihlaseni = (text) => Object.assign(new Error(text), { prihlaseni: true });
+async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
   const p = await prihlaseni();
-  if (!p) throw Object.assign(new Error(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.')), { prihlaseni: true });
-  if (p.expiresAt && p.expiresAt <= now) throw Object.assign(new Error(ui('Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.')), { prihlaseni: true });
+  if (!p) throw chybaPrihlaseni(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.'));
+  if (p.expiresAt && p.expiresAt <= now) throw chybaPrihlaseni(ui('Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.'));
   let res;
   try {
-    res = await fetchImpl(CLOUD_API, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(10000) });
+    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json' }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
   } catch { throw new Error(ui('Účet Claude neodpověděl (síť). Zkusí se to znovu.')); }
-  if (res.status === 401 || res.status === 403) throw Object.assign(new Error(ui('Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.')), { prihlaseni: true });
-  if (!res.ok) throw new Error(ui('Účet Claude vrátil chybu {0}. Zkusí se to znovu.', res.status));
-  let data;
-  try { data = await res.json(); } catch { throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.')); }
+  if (res.status === 401 || res.status === 403) throw chybaPrihlaseni(ui('Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.'));
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const za = Number(res.headers?.get?.('retry-after'));
+    throw Object.assign(new Error(ui('Účet Claude vrátil chybu {0}. Zkusí se to znovu.', res.status)), { pauzaMs: Number.isFinite(za) && za > 0 ? Math.min(za, 600) * 1000 : res.status === 429 ? 60e3 : 0 });
+  }
+  if (Number(res.headers?.get?.('content-length')) > 4 * 1024 * 1024) throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.'));
+  try { return await res.json(); } catch { throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.')); }
+}
+export async function nactiCloudoveRelace({ prihlaseni, fetchImpl, now = Date.now() }) {
+  const data = await dotaz(CLOUD_API, { prihlaseni, fetchImpl, now });
   if (!Array.isArray(data?.data)) throw new Error(ui('Účet Claude nevrátil seznam relací.'));
   return { sessions: data.data.map(relaceZApi).filter(Boolean), observedAt: now };
 }
-// Z cache Claude Desktopu a ze seznamu z účtu platí u každé relace záznam s novějším `updated_at`,
-// při shodě ten s pozdějším načtením (stejné pravidlo jako uvnitř remoteSessions).
+// Detail jedné relace (`{ session }`, starší tvar `{ response_shape }`) – pro relaci, kterou známe
+// jako běžící nebo čekající, ale v první stránce seznamu už není. 404 = relace na účtu neexistuje.
+export async function nactiCloudovouRelaci(id, { prihlaseni, fetchImpl, now = Date.now() }) {
+  if (!remoteId(id)) return null;
+  const data = await dotaz(`${CLOUD_API}/${id}`, { prihlaseni, fetchImpl, now });
+  const raw = data && typeof data === 'object' ? data.session ?? data.response_shape : null;
+  const s = relaceZApi(raw);
+  return s && s.id === id ? { ...s, _observedAt: now } : null;
+}
+// Z cache Claude Desktopu a ze seznamu z účtu platí u každé relace pozdější pozorování (kdy zdroj
+// stav od serveru dostal), při shodě novější `updated_at`. Účet a cache nemusejí plnit `updated_at`
+// stejným polem, takže by starší pozorování s „novějším“ časem jinak přebilo čerstvý stav.
 export function slucRelace(...zdroje) {
   const out = new Map();
   for (const z of zdroje) {
@@ -252,8 +278,8 @@ export function slucRelace(...zdroje) {
     for (const x of z.sessions) {
       const s = x._observedAt === undefined ? { ...x, _observedAt: z.observedAt } : x;
       const old = out.get(s.id);
-      if (!old || Date.parse(s.updated_at) > Date.parse(old.updated_at)
-        || (Date.parse(s.updated_at) === Date.parse(old.updated_at) && s._observedAt > old._observedAt)) out.set(s.id, s);
+      if (!old || s._observedAt > old._observedAt
+        || (s._observedAt === old._observedAt && Date.parse(s.updated_at) > Date.parse(old.updated_at))) out.set(s.id, s);
     }
   }
   return [...out.values()];
@@ -272,7 +298,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   // Poslední přečtená cache Desktopu a poslední seznam z účtu; každý zdroj se obnovuje sám.
   let zCache = null, prepisy = new Map();
   // Seznam z účtu (🧪): zapnutý se síťovými funkcemi (config.cloudFetch, v testech vypnuté).
-  const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', at: 0, pokusAt: 0, timer: null, bezi: null };
+  const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
   // Přihlášení se čte jednou a drží v paměti do vypršení (Klíčenka se nečte každých 15 s). Po chybě
   // přihlášení se 10 minut znovu nečte – kdyby macOS na přístup ke Klíčence ptal, neptá se pořád.
   const cist = claudeCloud.prihlaseni || (() => prihlaseniClaudeCode(config));
@@ -344,19 +370,40 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       lastEventAt = Date.now();
     }
   }
-  // Každých 15 s; „pracuje“ drží deriveStatus 2 minuty od načtení, takže jeden výpadek stav nezestárne.
+  // Rytmus: 8 s, když na účtu něco běží nebo čeká na tebe, jinak 30 s; po 429/503 tolik, kolik
+  // řekne server. „Pracuje“ drží deriveStatus 2 minuty od načtení, takže jeden výpadek stav nezestárne.
+  const AKTIVNI = new Set(['running', 'requires_action']);
+  const rytmus = () => api.pauzaMs || (api.data?.sessions.some((x) => AKTIVNI.has(x.session_status)) ? (claudeCloud.aktivniMs || 8000) : (claudeCloud.intervalMs || 30000));
+  function naplanuj() {
+    clearTimeout(api.timer);
+    if (stopped || !api.zapnuto) return;
+    api.timer = setTimeout(() => nactiZUctu().finally(naplanuj), rytmus());
+    api.timer.unref?.();
+  }
   async function nactiZUctu() {
     if (!api.zapnuto || stopped) return;
     if (api.bezi) return api.bezi;
     api.pokusAt = Date.now();
     api.bezi = (async () => {
       try {
-        api.data = await nactiCloudoveRelace({ prihlaseni, fetchImpl: claudeCloud.fetchImpl });
-        api.at = api.data.observedAt;
+        const opts = { prihlaseni, fetchImpl: claudeCloud.fetchImpl };
+        const data = await nactiCloudoveRelace(opts);
+        // Relace, kterou známe jako běžící nebo čekající a v první stránce seznamu už není, se
+        // dotáže zvlášť (nanejvýš 5) – jinak by zůstala viset na starém stavu.
+        const vSeznamu = new Set(data.sessions.map((x) => x.id));
+        const dohledat = [...known].map((id) => store.get(id)).filter((x) => x && (x.running || x.pending) && !vSeznamu.has(x.localId)).slice(0, 5);
+        for (const x of dohledat) {
+          const d = await nactiCloudovouRelaci(x.localId, opts);
+          if (d) data.sessions.push(d);
+        }
+        api.data = data;
+        api.at = data.observedAt;
         api.error = '';
+        api.pauzaMs = 0;
         zpracuj();
       } catch (e) {
         api.error = e.message;
+        api.pauzaMs = e.pauzaMs || 0;
         if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }
       }
     })().finally(() => { api.bezi = null; });
@@ -376,11 +423,11 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     async start() {
       await queue.run(dir);
       watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 });
-      if (api.zapnuto) { await nactiZUctu(); api.timer = setInterval(nactiZUctu, claudeCloud.intervalMs || 15000); api.timer.unref?.(); }
+      if (api.zapnuto) { await nactiZUctu(); naplanuj(); }
     },
     // Pravidelný průchod aplikace seznam z účtu nežádá častěji než jednou za 10 s; ruční obnova (force) hned.
-    scan: async (force = false) => { await queue.run(dir); if (force) tok.chybaAt = 0; if (force || Date.now() - api.pokusAt >= 10000) await nactiZUctu(); },
-    stop() { stopped = true; watcher?.close(); queue.clear(); clearInterval(api.timer); }, idle: async () => { await queue.idle(); await api.bezi; },
+    scan: async (force = false) => { await queue.run(dir); if (force) tok.chybaAt = 0; if (force || (Date.now() - api.pokusAt >= 8000 && !api.pauzaMs)) await nactiZUctu(); },
+    stop() { stopped = true; watcher?.close(); queue.clear(); clearTimeout(api.timer); }, idle: async () => { await queue.idle(); await api.bezi; },
     status: () => {
       const ziveOk = api.zapnuto && !api.error && api.at > 0;
       const stav = ziveOk ? 'connected' : error ? 'error' : api.zapnuto && api.error && !exists ? 'error' : !exists && !ziveOk ? 'missing' : known.size ? 'connected' : 'idle';

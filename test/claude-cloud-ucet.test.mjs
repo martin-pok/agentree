@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { relaceZApi, nactiCloudoveRelace, slucRelace, CLOUD_API } from '../src/connectors/claude-desktop-code.js';
+import { relaceZApi, nactiCloudoveRelace, nactiCloudovouRelaci, slucRelace, CLOUD_API } from '../src/connectors/claude-desktop-code.js';
 import { prihlaseniClaudeCode } from '../src/platform.js';
 import { tempDir, startTestServer, waitFor } from './helpers.mjs';
 
@@ -12,7 +12,7 @@ import { tempDir, startTestServer, waitFor } from './helpers.mjs';
 const ted = Date.parse('2026-10-24T10:00:00Z');
 const iso = (ms) => new Date(ted + ms).toISOString();
 const surova = (o = {}) => ({ id: 'session_019pjCMAW6NZjG9fzTfPLyCe', title: 'AGTQ – nejnovější', status: 'active', worker_status: 'running', created_at: iso(-3600e3), last_event_at: iso(-5e3), config: { model: 'claude-opus-5-5', sources: [{ type: 'git_repository', url: 'https://github.com/martin-pok/agentree' }] }, ...o });
-const odpoved = (status, body) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
+const odpoved = (status, body, hlavicky = {}) => ({ ok: status >= 200 && status < 300, status, headers: new Headers(hlavicky), json: async () => body });
 
 test('relace z účtu: tvar jako seznam v cache, stav podle worker_status a archivace', () => {
   const r = relaceZApi(surova());
@@ -51,16 +51,38 @@ test('seznam z účtu: přihlášení, hlavičky a chyby, které se nikdy nevyd�
   assert.equal(odeslano, false);
 });
 
-test('sloučení s cache Claude Desktopu: novější stav vyhrává, při shodě pozdější načtení', () => {
-  const cache = { observedAt: ted - 600e3, sessions: [{ ...relaceZApi(surova({ worker_status: 'idle' })), updated_at: iso(-700e3), _observedAt: ted - 600e3 }] };
-  const ucet = { observedAt: ted, sessions: [relaceZApi(surova())] };
+test('sloučení s cache Claude Desktopu: platí pozdější pozorování, i když má starší cache „novější“ čas', () => {
+  // Cache uložila relaci jako běžící před 10 minutami s updated_at novějším než last_event_at z účtu.
+  const cache = { observedAt: ted - 600e3, sessions: [{ ...relaceZApi(surova()), updated_at: iso(-1e3), _observedAt: ted - 600e3 }] };
+  const ucet = { observedAt: ted, sessions: [relaceZApi(surova({ worker_status: 'idle', last_event_at: iso(-60e3) }))] };
   const [r] = slucRelace(cache, ucet);
-  assert.equal(r.session_status, 'running');
+  assert.equal(r.session_status, 'idle', 'čerstvý stav z účtu přebije starou cache');
   assert.equal(r._observedAt, ted);
-  const stejna = { observedAt: ted, sessions: [{ ...cache.sessions[0], _observedAt: undefined }] };
-  delete stejna.sessions[0]._observedAt;
-  assert.equal(slucRelace(cache, stejna)[0]._observedAt, ted);
+  assert.equal(slucRelace(ucet, cache)[0].session_status, 'idle', 'nezáleží na pořadí zdrojů');
   assert.equal(slucRelace(null, ucet).length, 1);
+});
+
+test('čekání na schválení: název nástroje z pending_action, jinak nic domyšleného', () => {
+  const r = relaceZApi(surova({ worker_status: 'requires_action', external_metadata: { pending_action: { tool_name: 'Bash', tool_use_id: 't1' } } }));
+  assert.match(r.post_turn_summary.needs_action, /Bash/);
+  assert.equal(relaceZApi(surova({ worker_status: 'requires_action', external_metadata: { pending_action: { tool_name: '<img src=x>' } } })).post_turn_summary, undefined);
+  assert.equal(relaceZApi(surova({ worker_status: 'running', external_metadata: { pending_action: { tool_name: 'Bash' } } })).post_turn_summary, undefined);
+});
+
+test('dotaz na účet: token nikdy nejde přes přesměrování, 429 nese pauzu, detail relace a 404', async () => {
+  let init;
+  await nactiCloudoveRelace({ now: ted, prihlaseni: async () => ({ accessToken: 'tok', expiresAt: 0 }), fetchImpl: async (u, i) => { init = i; return odpoved(200, { data: [] }); } });
+  assert.equal(init.redirect, 'error');
+  const e = await nactiCloudoveRelace({ now: ted, prihlaseni: async () => ({ accessToken: 'tok', expiresAt: 0 }), fetchImpl: async () => odpoved(429, {}, { 'retry-after': '42' }) }).catch((x) => x);
+  assert.equal(e.pauzaMs, 42000);
+  assert.doesNotMatch(e.message, /tok/);
+  let url;
+  const d = await nactiCloudovouRelaci('session_019pjCMAW6NZjG9fzTfPLyCe', { now: ted, prihlaseni: async () => ({ accessToken: 'tok', expiresAt: 0 }), fetchImpl: async (u) => { url = u; return odpoved(200, { session: surova({ worker_status: 'idle' }) }); } });
+  assert.equal(url, `${CLOUD_API}/session_019pjCMAW6NZjG9fzTfPLyCe`);
+  assert.equal(d.session_status, 'idle');
+  assert.equal(d._observedAt, ted);
+  assert.equal(await nactiCloudovouRelaci('session_019pjCMAW6NZjG9fzTfPLyCe', { now: ted, prihlaseni: async () => ({ accessToken: 'tok', expiresAt: 0 }), fetchImpl: async () => odpoved(404, {}) }), null);
+  assert.equal(await nactiCloudovouRelaci('../../v1/x', { now: ted, prihlaseni: async () => ({ accessToken: 'tok', expiresAt: 0 }), fetchImpl: async () => { throw new Error('nesmí odejít'); } }), null);
 });
 
 test('přihlášení Claude Code: klíčenka jen když je povolená, se jménem položky jako Claude Code; jinde soubor', async () => {
@@ -115,5 +137,25 @@ test('přihlášení se nečte pořád: drží se do vypršení, po nezdaru 10 m
     await c.scan(true); await c.scan(true);
     assert.equal(cteni, 2, 'platné přihlášení se drží v paměti');
     assert.equal(c.status().state, 'connected');
+  } finally { await server.close(); }
+});
+
+test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nezůstane viset jako „pracuje“', async () => {
+  let seznam = [surova()];
+  const dotazy = [];
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60e3, aktivniMs: 60e3,
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async (u) => {
+      dotazy.push(u);
+      if (u === CLOUD_API) return odpoved(200, { data: seznam.map((x) => ({ ...x, last_event_at: new Date(Date.now() - 1000).toISOString(), created_at: new Date(Date.now() - 600e3).toISOString() })) });
+      return odpoved(200, { session: surova({ worker_status: 'idle', last_event_at: new Date(Date.now() - 500).toISOString(), created_at: new Date(Date.now() - 600e3).toISOString() }) });
+    } } });
+  try {
+    const id = 'claude-desktop-code:session_019pjCMAW6NZjG9fzTfPLyCe';
+    await waitFor(() => server.app.store.summary(id)?.status === 'working', 3000);
+    seznam = [];
+    await server.app.connectors['claude-desktop-code'].scan(true);
+    assert.ok(dotazy.includes(`${CLOUD_API}/session_019pjCMAW6NZjG9fzTfPLyCe`));
+    await waitFor(() => server.app.store.summary(id)?.status !== 'working', 3000);
   } finally { await server.close(); }
 });
