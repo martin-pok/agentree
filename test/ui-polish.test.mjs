@@ -958,3 +958,10 @@ test('štítky projektu: vlastní našeptávač místo <datalist>, bez opakován
   assert.equal(doplnStitek('web, kl', 'klient'), 'web, klient, ');
   assert.equal(doplnStitek('', 'design'), 'design, ');
 });
+
+test('chybějící fotka z Googlu: nabídne nové načtení, ne radu „nastav si fotku“', async () => {
+  const src = await fs.readFile(new URL('../public/js/views/settings.js', import.meta.url), 'utf8');
+  const vetev = src.slice(src.indexOf("u.fotoStav === 'bez'"), src.indexOf("u.fotoStav === 'stahuji'"));
+  assert.match(vetev, /data-action="ucet-prihlasit"/);
+  assert.doesNotMatch(src, /Fotku nastavíš v účtu Google/);
+});

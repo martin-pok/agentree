@@ -1001,3 +1001,6 @@ html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill:
   .modal--project .modal-body { padding-bottom: 8px; }
   .modal--project .modal-foot { padding-block: 8px; }
 }
+/* Chybějící fotka z Googlu: věta a tlačítko pro nové načtení na jednom řádku, na úzkém okně pod sebou. */
+.acct-foto-znovu { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.acct-foto-znovu .btn svg { width: 16px; height: 16px; }

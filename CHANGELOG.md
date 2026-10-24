@@ -2,6 +2,7 @@
 
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
 
+- **Profilová fotka z Googlu:** když ji Google při přihlášení nepošle, karta Účet už neradí „nastav si fotku v Googlu“, ale nabídne tlačítko Načíst fotku z Googlu (fotka chodí jen s přihlášením, obnovení přihlášení ji nepřinese).
 - **Oprava: běžící Claude Code „bez přepisu“.** Agent spuštěný v repozitáři, který pracuje v jeho pracovní kopii (Claude Desktop: `.claude/worktrees/…`), se teď spáruje se svým přepisem – uvidíš zadání, stav i přepis místo prázdného „detekovaný proces“. Proces z domovské složky si cizí konverzaci nevezme.
 - **Oprava: robot bez rukou.** Když čekající robot nemá svou hračku nakreslenou (kniha, mobil), paže se už neschovají ani neotočí do prázdna.
 
