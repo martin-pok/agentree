@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { esc, rel, shortPath, durShort, clock, castiCesty } from './format.js';
 import { glyph, ICON } from './icons.js';
 import { fill, toast, modal, agentHref } from './ui.js';
-import { pickFolder, recentFolders, pdot } from './projects-ui.js';
+import { pickFolder, recentFolders, pdot, barvaProjektu } from './projects-ui.js';
 import { tr, LOCALE, tomtoPocitaci } from './i18n.js';
 import { modifikator, zkratka, MOD, JE_MAC } from './system.js';
 import { spustNapojeni } from './napojeni-ui.js';
@@ -246,7 +246,7 @@ export function createLauncher(root) {
     fill(root, 'controls', `
       ${t.modes.length > 1 ? `<div class="seg seg--light seg--sm" role="group" aria-label="${tr('Kde spustit')}">${t.modes.map((m) => `<button type="button" data-mode="${m}" aria-pressed="${m === mode}">${esc(modes[m] || m)}</button>`).join('')}</div>` : ''}
       <label class="lselect">${p ? pdot(p) : ICON.folder}<span class="sr-only">${tr('Projekt')}</span><select data-l-project>
-        <option value="">${tr('Bez projektu')}</option>${active.map((x) => `<option value="${esc(x.id)}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
+        <option value="" data-barva="">${tr('Bez projektu')}</option>${active.map((x) => `<option value="${esc(x.id)}" data-barva="${esc(barvaProjektu(x.color))}"${x.id === prefs.projectId ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
       </select></label>
       ${allowsFolder(t, mode) ? `<button type="button" class="lselect lselect--btn${cwd || !needsFolder(t, mode) ? '' : ' is-empty'}" data-l="folder" title="${esc(cwd || tr('Vybrat složku'))}">${ICON.folder}<span>${esc(cwd ? folderLabel(cwd) : needsFolder(t, mode) ? tr('Vybrat složku…') : tr('Složka (nepovinné)'))}</span></button>` : ''}
       ${t.id === 'claude-code' && mode === 'background' ? `<label class="lselect"><span class="sr-only">${tr('Oprávnění')}</span><select data-l-pref="permission">${Object.entries(t.permissions).map(([k, l]) => `<option value="${k}"${k === prefs.permission ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>` : ''}

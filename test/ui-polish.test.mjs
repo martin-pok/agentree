@@ -157,7 +157,8 @@ test('nabídky a kalendář v modálním okně jsou uvnitř něj a ve vrchní vr
   assert.match(dp, /pop\.setAttribute\('popover', 'manual'\);\s*pop\.showPopover\?\.\(\);\s*place\(/, 'kalendář se měří až ve vrchní vrstvě');
   assert.doesNotMatch(sel + dp, /document\.body\.append(Child)?\((panel|pop)\)/, 'nic se nevkládá natvrdo do body');
   const css = await zdroj('public/desktop.css');
-  assert.match(css, /\.picker-option\[aria-selected='true'\]::after \{ content: '✓'; content: '✓' \/ '';/, 'fajfka nemá být v názvu položky pro čtečku');
+  assert.match(css, /\.picker-option\[aria-selected='true'\]::after \{ content: '';/, 'fajfka je kreslená, nemá být v názvu položky pro čtečku');
+  assert.doesNotMatch(css, /\.picker-option\[aria-selected='true'\] \{[^}]*--teal/, 'vybraná položka nemá barevný (stavový) text');
 });
 
 // Zakázaný výběr (vypnuté „Dokončený úkol“, vypnuté noční ticho) zasekl celé Nastavení: sync()

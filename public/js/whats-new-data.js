@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.68',
+    date: '2026-10-24',
+    title: 'Přepis cloudového běhu a mřížka',
+    items: [
+      'Přepis cloudového agenta Claude se konečně načte z účtu – i tokeny a zadání.',
+      'Karty v Právě teď jsou stejně vysoké a srovnané.',
+      'Rozbalovací nabídky: vybraná položka je tiše podbarvená, projekty mají svou barevnou tečku.',
+    ],
+    en: {
+      title: 'Cloud transcript and grid',
+      items: [
+        'A cloud Claude agent’s transcript now actually loads from your account – with tokens and prompts.',
+        'Cards in Right now are the same height and aligned.',
+        'Dropdown menus: the selected item is subtly highlighted and projects show their colour dot.',
+      ],
+    },
+  },
+  {
     version: '0.46.67',
     date: '2026-10-24',
     title: 'Výchozí „V aplikaci“',

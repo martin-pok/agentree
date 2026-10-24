@@ -1145,3 +1145,13 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 @container lzadani (max-width: 340px) {
   .launch .launch-controls > :not(.seg) { flex-basis: 100%; }
 }
+
+/* Právě teď: pravidelná mřížka (vlastník 24. 10. 2026: „každý box jinak velký, kostrbaté“). Karta
+   vyplní celou buňku a název (2 řádky) i věta stavu (2 řádky) mají pevné místo, takže jsou všechny
+   karty stejně vysoké a robot, název, model a stav stojí na stejné výšce. */
+.home-live .pb-agents { align-items: stretch; }
+.home-live .pb-agents > li:not(.pb-dalsi) { display: flex; min-width: 0; }
+.home-live .pb-agents > li > .pb-agent { flex: 1; width: 100%; height: auto; }
+.home-live .pb-agent-text { display: flex; flex-direction: column; flex: 1; width: 100%; min-width: 0; }
+.home-live .pb-agent-text b { min-height: calc(2 * 1.25em); }
+.home-live .pb-agent-text small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; min-height: calc(2 * 1.5em); margin-top: auto; padding-top: 8px; }
