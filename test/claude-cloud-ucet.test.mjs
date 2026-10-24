@@ -214,3 +214,20 @@ test('události relace: obálka i plochá zpráva, sloučení s cache bez dvojic
   assert.deepEqual(spolu.tree.messages.map((m) => m.uuid), ['u1', 'a1']);
   assert.equal(slucPrepis(cache, null), cache);
 });
+
+// Vlastník 24. 10. 2026: cloudový běh nebyl vidět a Přehled tvrdil „V pořádku, nikdo nepracuje“.
+// Selhání čtení z účtu Claude se musí ukázat i s důvodem; bez přihlášení Claude Code se nehlásí nic.
+test('účet Claude nejde přečíst: Přehled to řekne s důvodem, bez Claude Code mlčí', async () => {
+  const { stavAgentu } = await import('../public/js/stav-vety.js');
+  const vyprselo = await nactiCloudoveRelace({ prihlaseni: async () => ({ accessToken: 't', expiresAt: 1 }), fetchImpl: async () => { throw new Error('nemá se volat'); }, now: 10 }).catch((e) => e);
+  assert.equal(vyprselo.prihlaseni, true);
+  assert.notEqual(vyprselo.bezUctu, true, 'vypršelé přihlášení se hlásí');
+  const bez = await nactiCloudoveRelace({ prihlaseni: async () => null, fetchImpl: async () => { throw new Error('nemá se volat'); } }).catch((e) => e);
+  assert.equal(bez.bezUctu, true, 'bez přihlášení Claude Code: aplikace funguje dál, nic se nehlásí');
+  const r = stavAgentu({ cloudNevim: vyprselo.message });
+  assert.equal(r.stav, 'nevim');
+  assert.equal(r.veta, 'Agenty v cloudu teď nevidím');
+  assert.equal(r.poznamka, vyprselo.message);
+  assert.notEqual(stavAgentu({}).veta, 'Agenty v cloudu teď nevidím');
+  assert.equal(stavAgentu({ cekaji: 1, cloudNevim: 'x' }).poznamka, 'x', 'důvod nezmizí, ani když má přednost jiná zpráva');
+});

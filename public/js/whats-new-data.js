@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.72',
+    date: '2026-10-24',
+    title: 'Bubliny po větách',
+    items: [
+      'Když agenty v cloudu nevidím (třeba vypršelé přihlášení Claude Code), Přehled to řekne i s důvodem – žádné falešné „nikdo nepracuje“.',
+      'Bubliny robotů se zalamují po celých větách a sedí přesně na text.',
+    ],
+    en: {
+      title: 'Bubbles by sentence',
+      items: [
+        'When cloud agents can’t be read (for example an expired Claude Code sign-in), the Overview says so with the reason – no false “nobody is working”.',
+        'Robot speech bubbles break between whole sentences and fit the text exactly.',
+      ],
+    },
+  },
+  {
     version: '0.46.71',
     date: '2026-10-24',
     title: 'Cloudoví agenti a aktualizace',

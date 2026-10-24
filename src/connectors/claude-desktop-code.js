@@ -236,12 +236,13 @@ export function relaceZApi(raw) {
 // Jeden dotaz na účet. Token jde jen na api.anthropic.com: přesměrování se odmítá (hlavička
 // Authorization by jinak mohla odejít jinam), odpověď nad 4 MB se nečte. Chyby jsou věty pro
 // Nastavení; nikdy se z nich nestane „nic neběží“. 429 a 503 nesou, za jak dlouho to zkusit znovu.
-const chybaPrihlaseni = (text) => Object.assign(new Error(text), { prihlaseni: true });
+const chybaPrihlaseni = (text, extra = {}) => Object.assign(new Error(text), { prihlaseni: true, ...extra });
 // `organizace` posílá hlavičku x-organization-uuid jen tam, kde ji posílá i Claude Code (události
 // relace). Seznam relací ji v Claude Code nemá; s ní ho účet odmítl a cloudoví agenti zmizeli (0.46.68).
 async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now, organizace = false }) {
   const p = await prihlaseni();
-  if (!p) throw chybaPrihlaseni(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.'));
+  // Bez přihlášení Claude Code (`bezUctu`) cloudoví agenti prostě nejsou – aplikace funguje i bez Claude.
+  if (!p) throw chybaPrihlaseni(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.'), { bezUctu: true });
   if (p.expiresAt && p.expiresAt <= now) throw chybaPrihlaseni(ui('Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.'));
   let res;
   try {
@@ -344,7 +345,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   // Přepisy z účtu: relace, které běží, čekají, nebo je má uživatel právě otevřené (zajem).
   const prepisyZUctu = new Map(), zajem = new Map();
   // Seznam z účtu (🧪): zapnutý se síťovými funkcemi (config.cloudFetch, v testech vypnuté).
-  const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
+  const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', bezUctu: false, at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
   // Přihlášení se čte jednou a drží v paměti do vypršení (Klíčenka se nečte každých 15 s). Po chybě
   // přihlášení se 10 minut znovu nečte – kdyby macOS na přístup ke Klíčence ptal, neptá se pořád.
   const cist = claudeCloud.prihlaseni || (() => prihlaseniClaudeCode(config));
@@ -447,11 +448,13 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         api.data = data;
         api.at = data.observedAt;
         api.error = '';
+        api.bezUctu = false;
         api.pauzaMs = 0;
         await nactiPrepisy(data, opts);
         zpracuj();
       } catch (e) {
         api.error = e.message;
+        api.bezUctu = Boolean(e.bezUctu);
         api.pauzaMs = e.pauzaMs || 0;
         if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }
       }
@@ -510,7 +513,10 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     status: () => {
       const ziveOk = api.zapnuto && !api.error && api.at > 0;
       const stav = ziveOk ? 'connected' : error ? 'error' : api.zapnuto && api.error && !exists ? 'error' : !exists && !ziveOk ? 'missing' : known.size ? 'connected' : 'idle';
-      return { state: stav, detail: popis() || (known.size ? ui('Sleduji {0} vzdálených relací.', known.size) : ui('Zatím bez vzdálených agentů.')), count: known.size, seznamAt, zivyAt: api.at, watching: Boolean(watcher?.active), lastEventAt };
+      // Účet Claude je, ale stav cloudových agentů z něj teď nejde přečíst: Přehled to musí říct
+      // (nikdy „nikdo nepracuje“). Bez přihlášení Claude Code se nic nehlásí.
+      const cloudNevim = Boolean(api.zapnuto && api.error && !api.bezUctu);
+      return { state: cloudNevim ? 'error' : stav, cloudNevim, cloudChyba: cloudNevim ? api.error : '', detail: popis() || (known.size ? ui('Sleduji {0} vzdálených relací.', known.size) : ui('Zatím bez vzdálených agentů.')), count: known.size, seznamAt, zivyAt: api.at, watching: Boolean(watcher?.active), lastEventAt };
     },
   };
 }

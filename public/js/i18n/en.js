@@ -1815,6 +1815,7 @@ export default {
     "Projekt drží podklady pohromadě. Nemusíš je psát pokaždé znovu.": "A project keeps your briefing in one place, so you don’t have to repeat it.",
     "Tajný level odemčen. Roboti tančí.": "Secret level unlocked. The robots are dancing.",
     "Nepodařilo se zjistit, co na počítači běží": "Couldn’t find out what is running on this computer",
+    "Agenty v cloudu teď nevidím": "I can’t see cloud agents right now",
     "Vše běží v pořádku": "Everything is running fine",
     "V pořádku, nikdo nepracuje": "All fine, nobody is working",
     "Při posledním přihlášení Google neposlal profilovou fotku.": "Google didn’t send your profile photo at your last sign-in.",

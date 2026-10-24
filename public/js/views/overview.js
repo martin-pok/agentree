@@ -420,7 +420,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, nejiste: all.filter((s) => displayStatus(s) === 'unknown').length, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, cloudNevim: (state.connectors || []).find((c) => c.id === 'claude-desktop-code')?.cloudChyba || '', nejiste: all.filter((s) => displayStatus(s) === 'unknown').length, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
     // Barvu stavu dostane jen dlaždice, ve které něco je (refinement.css).
     const pocty = [
       [working.length, popisPoctu('working', working.length), working.length ? 'pracuje' : '', '#/agenti?stav=working'],

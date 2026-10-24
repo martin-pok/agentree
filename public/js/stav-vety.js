@@ -25,9 +25,10 @@ const VZDALENE_CERSTVE = 2 * 60e3;
 
 // `nevidim`: jména otevřených AI aplikací, jejichž chaty Agenteeq nečte (ChatGPT, Claude…). Když
 // nikdo nepracuje, řekne to poznámka – „nikdo nepracuje“ platí jen pro to, co Agenteeq vidí.
-export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, nejiste = 0, vzdaleneAt = 0, nevidim = [], now = Date.now() } = {}) {
+export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, procesyNevim = false, cloudNevim = '', nejiste = 0, vzdaleneAt = 0, nevidim = [], now = Date.now() } = {}) {
   const problemy = selhalo + limit;
-  const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim || nejiste ? 'nevim' : 'ok';
+  // `cloudNevim`: důvod, proč agenty v cloudu (účet Claude) teď nejde zjistit – prázdné = vše v pořádku.
+  const stav = problemy ? 'problem' : cekaji ? 'pozor' : procesyNevim || nejiste || cloudNevim ? 'nevim' : 'ok';
   const vzdaleneStare = vzdaleneAt > 0 && now - vzdaleneAt > VZDALENE_CERSTVE;
   let veta;
   if (stav === 'problem') {
@@ -39,11 +40,15 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
   } else if (stav === 'nevim') {
     // Jen fakt s počtem, bez vysvětlování (vlastník 24. 10. 2026: žádné disclaimery). Kterého agenta
     // se to týká, ukazuje jeho karta štítkem „Stav neověřen“.
-    veta = nejiste ? plural(nejiste, '{0} agent bez čerstvého stavu', '{0} agenti bez čerstvého stavu', '{0} agentů bez čerstvého stavu').replace('{0}', nejiste) : tr('Nepodařilo se zjistit, co na počítači běží');
+    veta = nejiste ? plural(nejiste, '{0} agent bez čerstvého stavu', '{0} agenti bez čerstvého stavu', '{0} agentů bez čerstvého stavu').replace('{0}', nejiste)
+      : procesyNevim ? tr('Nepodařilo se zjistit, co na počítači běží') : tr('Agenty v cloudu teď nevidím');
   } else {
     veta = pracuje ? tr('Vše běží v pořádku') : vzdaleneStare ? tr('Na tomto počítači nikdo nepracuje') : tr('V pořádku, nikdo nepracuje');
   }
+  // Důvod, proč agenty v cloudu nevidím, je věta z konektoru (vypršelé přihlášení, chyba účtu…) –
+  // říká, co s tím udělat.
   const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
+    : cloudNevim ? cloudNevim
     : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now))
       : stav === 'ok' && !pracuje && nevidim.length ? tr('Otevřené: {0}. Chaty z těchto aplikací Agenteeq nevidí.', nevidim.join(', ')) : '';
   return { stav, veta, poznamka };

@@ -132,8 +132,12 @@ export function initRobotBubliny() {
     const zmer = (max = 0) => {
       bub.style.width = '';
       bub.style.maxWidth = max ? `${max}px` : '';
+      // Zalomení po větách: když se text nevejde na jeden řádek, začne každá věta na novém řádku
+      // („rozsekej. / Malé kroky…“), nikdy ne „rozsekej. Malé / kroky…“.
+      text.classList.remove('rb-text--vety');
       const rozsah = document.createRange();
       rozsah.selectNodeContents(text);
+      if (text.children.length > 1 && [...rozsah.getClientRects()].filter((x) => x.width > 0).length > 1) text.classList.add('rb-text--vety');
       const radky = [...rozsah.getClientRects()].filter((x) => x.width > 0);
       if (radky.length > 1) {
         const meritko = bub.getBoundingClientRect().width / (bub.offsetWidth || 1) || 1;
@@ -180,7 +184,8 @@ export function initRobotBubliny() {
     clearTimeout(skryt); clearTimeout(ukazat);
     u = robot; posledni = veta;
     // Česká sazba: jednopísmenná předložka nebo spojka nezůstane na konci řádku.
-    text.textContent = veta.replace(/(^|\s)([aikosuvzAIKOSUVZ])\s/g, '$1$2\u00a0');
+    const vety = veta.replace(/(^|\s)([aikosuvzAIKOSUVZ])\s/g, '$1$2\u00a0').split(/(?<=[.!?…])\s+(?=\S)/);
+    text.replaceChildren(...vety.map((v, i) => Object.assign(document.createElement('span'), { textContent: i < vety.length - 1 ? `${v} ` : v })));
     bub.hidden = false;
     bub.classList.remove('is-in');
     if (!umisti() && jenVolne) { zavri(); return false; }
