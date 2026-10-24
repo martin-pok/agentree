@@ -38,11 +38,12 @@
       const ctx = platno.getContext('2d');
       ctx.drawImage(await zakladIkony(s), 0, 0, s, s);
       if (ton) {
-        const r = s * 0.23;
-        const cx = s - r - s * 0.01;
-        const cy = r + s * 0.01;
+        // Tečka přesně v rohu a malá: obličej robota (oči) zůstane celý i v 16 px.
+        const r = s * 0.16;
+        const cx = s - r;
+        const cy = r;
         ctx.globalCompositeOperation = 'destination-out';
-        ctx.beginPath(); ctx.arc(cx, cy, r + s * 0.09, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy, r + s * 0.07, 0, Math.PI * 2); ctx.fill();
         ctx.globalCompositeOperation = 'source-over';
         ctx.fillStyle = BARVY[ton];
         ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
