@@ -1,5 +1,6 @@
 # One-time audited Preview publication for v0.46.63.
 # Intentionally isolated from main; only the exact commit below may be published.
+# Re-trigger after fixing YAML quoting; job only runs for the explicit one-time commit message.
 name: One-time audited Preview v0.46.63
 on:
   push:
