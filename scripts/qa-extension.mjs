@@ -90,7 +90,8 @@ try {
             runtime: { reload: () => { fixture.znovuNacteno = (fixture.znovuNacteno || 0) + 1; }, getManifest: () => ({ version: '0.12.0', content_scripts: [{ matches: ['https://chatgpt.com/*'] }] }), sendMessage: async m => {
               // Souhrn agentů z aplikace (POST /api/extension/prehled): jeden čeká, dva pracují, jedna nedávná.
               if (m.type === 'agenteeq:prehled') return ['paired', 'outdated', 'novejsi'].includes(state) && fixture.paired ? window.prehledFixture : null;
-              if (m.type === 'agenteeq:focus-agent') { fixture.focusedAgent = m.id; return { ok: true }; }
+              // Klik na agenta otevře rovnou konverzaci (open-agent): pozadí ji otevře v Chromu nebo aplikaci.
+              if (m.type === 'agenteeq:open-agent') { fixture.focusedAgent = m.id; return { ok: true, kde: 'chrome' }; }
               if (m.type === 'agenteeq:open-app') { fixture.openApp = true; return { ok: true }; }
               if (m.type === 'agenteeq:pair') {
                 if (fixture.fail) return { ok: false, error: 'Kód vypršel. Vytvoř nový v aplikaci.' };
@@ -156,7 +157,7 @@ try {
           // Řádek konverzace v jiné kartě do ní kliknutím přepne a okno se zavře.
           await page.locator('#konverzace li', { hasText: 'Plán marketingu na Q4' }).locator('button').click();
           assert.deepEqual(await page.evaluate(() => [fixture.prepnuto, fixture.okno, fixture.zavreno]), [5, 2, true]);
-          // Agent v ose se otevře v aplikaci (focus-agent), nedávná konverzace taky.
+          // Agent v ose otevře rovnou svou konverzaci (open-agent), nedávná konverzace taky.
           await page.locator('#konverzace li', { hasText: 'Refaktor platebního modulu' }).locator('button').click();
           await page.waitForFunction(() => fixture.focusedAgent === 'codex:b2');
           await page.locator('#konverzace li', { hasText: 'Lokální test promptu' }).locator('button').click();
@@ -455,11 +456,12 @@ try {
   console.log(`${results.length} popup scenarios passed; Chrome APIs mocked, live vendor selectors not verified.`);
 } finally { server.closeAllConnections(); await new Promise(r => server.close(r)); }
 
-// Hlavní tlačítko reflektoru otevře agenta v aplikaci (focus-agent) a vždy uvolní stav „pracuji“.
+// Hlavní tlačítko reflektoru otevře konverzaci agenta (open-agent); po úspěchu se okno zavře.
 async function cta(page) {
   const tlacitko = page.locator('#spot-stage .cta');
   assert.equal(await tlacitko.getAttribute('href'), null, 'Chrome must never navigate to a 403 localhost tab');
   await tlacitko.click();
-  await page.waitForFunction(() => fixture.focusedAgent === 'claude-code:a1');
-  assert.equal(await tlacitko.getAttribute('aria-busy'), null, 'button always clears busy state after successful focus');
+  await page.waitForFunction(() => fixture.focusedAgent === 'claude-code:a1' && fixture.zavreno === true);
+  assert.equal(await tlacitko.getAttribute('aria-busy'), null, 'button always clears busy state after opening');
+  await page.evaluate(() => { fixture.zavreno = false; });
 }

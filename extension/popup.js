@@ -454,7 +454,6 @@ async function otevriKonverzaci(id, tlacitko, chybaEl) {
   if (chybaEl) chybaEl.hidden = true;
   let result = null;
   try { result = await chrome.runtime.sendMessage({ type: 'agenteeq:open-agent', id }); } catch { /* aplikace neběží */ }
-  if (result?.ok) { window.close(); return; }
   if (!result?.ok) {
     const text = result?.unpaired
       ? tr('Rozšíření není spárované. Otevři Agenteeq a obnov připojení.')
@@ -465,6 +464,7 @@ async function otevriKonverzaci(id, tlacitko, chybaEl) {
   }
   tlacitko.disabled = false;
   tlacitko.removeAttribute('aria-busy');
+  if (result?.ok) window.close();
 }
 
 // ── Reflektor: jedna hlavní věc ─────────────────────────────────────────────
