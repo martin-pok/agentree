@@ -4,9 +4,10 @@ import { startTestServer } from './helpers.mjs';
 import { PROJECT_COLORS, normalizeProjects, reorderProjects } from '../src/projects.js';
 
 test('paleta má šestnáct různých barev a kalná šedožlutá v ní není', () => {
-  assert.equal(PROJECT_COLORS.length, 16);
-  assert.equal(new Set(PROJECT_COLORS).size, 16);
+  assert.equal(PROJECT_COLORS.length, 20);
+  assert.equal(new Set(PROJECT_COLORS).size, 20);
   assert.ok(!PROJECT_COLORS.includes('#C99A3E'));
+  for (const c of ['#E0282E', '#8E1B22', '#3FA34D']) assert.ok(PROJECT_COLORS.includes(c), `chybí ${c} (červená, krvavá, travní)`);
   assert.ok(PROJECT_COLORS.every((c) => /^#[0-9A-F]{6}$/.test(c)));
 });
 

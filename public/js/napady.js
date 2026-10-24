@@ -54,7 +54,7 @@ export function pripojNapady(pole, { interval = INTERVAL_MS } = {}) {
     for (const k of ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'fontSize', 'fontFamily', 'fontWeight', 'lineHeight', 'letterSpacing']) vrstva.style[k] = cs[k];
   };
   const viditelnost = () => { vrstva.hidden = pole.value.length > 0; };
-  srovnej();
+  // Polohu poprvé nastaví ResizeObserver ještě před vykreslením – bez vynuceného layoutu při stavbě obrazovky.
   viditelnost();
   const pozorovatel = new ResizeObserver(() => { if (!pole.isConnected) { zrus(); return; } srovnej(); });
   pozorovatel.observe(pole);

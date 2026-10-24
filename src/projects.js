@@ -7,10 +7,11 @@ import { ui } from './texty.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
-// Šestnáct barev ve dvou řadách po osmi: teplé, zelené a studené, nakonec neutrální. Původní šedožlutá
-// (#C99A3E) byla kalná, nahrazuje ji slunečnicová; starší projekty se s ní převedou samy.
-export const PROJECT_COLORS = ['#C2335A', '#E5533D', '#F08A24', '#F2B824', '#84B81F', '#22A38C', '#1F8A96', '#4285F4',
-  '#4A6CF7', '#8250DF', '#C25BD6', '#EE6AA7', '#D97757', '#6F8F5E', '#5B6B7F', '#16141D'];
+// Dvacet barev: červené a teplé, zelené, studené, nakonec neutrální. Čistá červená, krvavá červená
+// a travní zelená přibyly 24. 10. 2026 na přání vlastníka. Původní šedožlutá (#C99A3E) byla kalná,
+// nahrazuje ji slunečnicová; starší projekty se s ní převedou samy.
+export const PROJECT_COLORS = ['#E0282E', '#8E1B22', '#C2335A', '#EE6AA7', '#E5533D', '#D97757', '#F08A24', '#F2B824', '#84B81F', '#3FA34D',
+  '#6F8F5E', '#22A38C', '#1F8A96', '#4285F4', '#4A6CF7', '#24408E', '#8250DF', '#C25BD6', '#5B6B7F', '#16141D'];
 const LEGACY_COLORS = { '#C99A3E': '#F2B824' };
 const knownColor = (c) => (PROJECT_COLORS.includes(c) ? c : LEGACY_COLORS[c] || null);
 export const LIMITS = { name: 60, description: 280, notes: 20000, folders: 10, assign: 1000, instructions: 4000, tags: 8, tag: 24 };

@@ -1491,10 +1491,12 @@ html.is-cloud body { background: var(--paper); }
 .pf-slozky-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 16px 0 8px; }
 .pf-slozky-head .form-sub { margin: 0; }
 .modal--project .folder-list:empty { display: none; }
-/* Na telefonu se 16 barev vejde do dvou řádků po osmi; kruh se zmenší nejvýš na 28 px (cíl ≥ 24 px). */
-@media (max-width: 480px) {
-  .modal--project .swatches { display: grid; grid-template-columns: repeat(8, minmax(0, 32px)); gap: 8px; justify-content: space-between; }
-  .modal--project .swatch-opt { width: auto; height: auto; aspect-ratio: 1; }
+/* Dvacet barev: na počítači jedna řada (dialog tak neroste a neposouvá se), na telefonu dvě po deseti.
+   Kruh má nejvýš 32 px a nejméně 24 px (cíl dotyku podle WCAG 2.5.8). */
+.modal--project .swatches { display: grid; grid-template-columns: repeat(20, minmax(24px, 32px)); gap: 6px; justify-content: space-between; }
+.modal--project .swatch-opt { width: auto; height: auto; aspect-ratio: 1; }
+@media (max-width: 640px) {
+  .modal--project .swatches { grid-template-columns: repeat(10, minmax(24px, 32px)); }
 }
 /* Obrázek karty a logo klienta: dva řádky pod sebou na celou šířku dialogu, stejné sloupce
    (náhled 64 px, název s „i“ a rozměry, tlačítka vpravo). Vedle sebe se do poloviny dialogu nevešel

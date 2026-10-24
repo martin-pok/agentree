@@ -2,6 +2,9 @@
 
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
 
+- **Barvy projektů:** přibyla čistá červená, krvavě červená, travní zelená a tmavě modrá (20 barev, na počítači v jedné řadě).
+- **Dialog projektu bez posouvání:** dialog projektu se vejde celý bez posouvání i do nízkého okna; nápověda u „Složek projektu“ se otevírá nahoru.
+- **Plynulé přepínání obrazovek:** přepnutí po seznamu agentů je plynulé – úklid animací robotů běží až ve volné chvíli prohlížeče.
 - **Oprava: cloudový agent Claude Code zmizel z Přehledu.** Od 0.46.68 posílal Agenteeq hlavičku organizace i se seznamem relací z účtu Claude; Claude Code ji tam neposílá a účet seznam odmítl. Zbyla jen stará cache Claude Desktopu a běžící agent z Přehledu vypadl. Organizace teď jde jen s načtením přepisu (jako v Claude Code) a seznam si bere 100 relací, takže běžící relace z něj nevypadne.
 - **Bubliny robotů na míru textu:** zalomená věta už nenechá bublinu v plné šířce s prázdným místem vpravo – řádky jsou vyvážené a bublina se zúží na nejdelší z nich.
 - **Štítky projektu srozumitelně:** v hlavičce projektu je popisek „Štítky“ a štítky jsou čitelné kapsle s ikonou cenovky (dřív drobný podtržený text, který vypadal jako podsložka). Klik ukáže projekty se stejným štítkem.

@@ -867,6 +867,12 @@ function hlidejInfoTip() {
     if (skryta) b.style.removeProperty('display');
     const dx = br.right > innerWidth - 8 ? innerWidth - 8 - br.right : br.left < 8 ? 8 - br.left : 0;
     if (dx) b.style.setProperty('--tip-dx', `${Math.round(dx)}px`);
+    // Pod tlačítkem nemá místo (spodek dialogu nebo okna): bublina se otevře nahoru. Jinak by
+    // prodloužila rolování dialogu a v něm by se objevil posuvník, jen protože je otevřený tip.
+    const dno = Math.min(innerHeight, tip.closest('.modal-body, .modal')?.getBoundingClientRect().bottom ?? innerHeight);
+    const nahoru = r.bottom + 6 + br.height + 8 > dno && r.top - 6 - br.height - 8 >= 0;
+    if (nahoru) tip.dataset.svisle = 'nahoru';
+    else delete tip.dataset.svisle;
   };
   for (const typ of ['pointerover', 'focusin']) document.addEventListener(typ, (e) => { const t = e.target.closest?.('.info-tip'); if (t) umisti(t); });
   // Klepnutí (dotyk, kde hover není a Safari tlačítku fokus nedá) bublinu přepne; klepnutí mimo ji zavře.
