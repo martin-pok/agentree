@@ -11,6 +11,7 @@ export const RELEASES = [
       'Nový úkol se vždy spouští „V aplikaci“; Na pozadí nebo V Terminálu zvolíš jen pro jedno spuštění.',
       'Hotový agent tě 15 s volá anténou a mává, teprve pak se začne flákat.',
       'Hlavní tlačítka při najetí zfialoví a počty v menu jsou ve fialovém kolečku.',
+      'Konverzace z Claude Desktopu se otevírá v aplikaci Claude, ne v prohlížeči; oblečení zezadu nemá přední detaily.',
     ],
     en: {
       title: 'Default “In app”',
@@ -18,6 +19,7 @@ export const RELEASES = [
         'New tasks always start “In app”; choose In background or In Terminal for a single run only.',
         'A finished agent calls you with its antenna and waves for 15 s before it starts goofing around.',
         'Main buttons turn purple on hover, and menu counts sit in a purple circle.',
+        'Claude Desktop conversations open in the Claude app, not the browser; outfits seen from behind have no front details.',
       ],
     },
   },

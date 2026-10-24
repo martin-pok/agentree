@@ -3,6 +3,8 @@
 ## 0.46.67 – 2026-10-24 · Výchozí „V aplikaci“, oddech robotů, srozumitelné texty
 
 - **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).
+- **Oprava: „Otevřít konverzaci“ u vzdáleného Code z Claude Desktopu** otevírala claude.ai v prohlížeči, kde relace běžící v aplikaci Claude nemusí existovat („session couldn't be found“). Teď se otevře aplikace Claude, kde relace opravdu běží; web jen na počítači bez aplikace Claude. Platí i pro klik v rozšíření.
+- **Oblečení zezadu:** robot otočený zády (při práci) už neukazuje přední detaily – rytířská přilba je zezadu plná (bez hledí), kukla nindži a kapuce žabáka taky; znaky, knoflíky, kravaty, motýlek, kapsy a bříška jsou jen zepředu a při otočce zmizí v polovině jako obličej.
 - **Hotový agent tě zavolá:** prvních 15 s po dokončení úlohy robot volá svítící anténou se signálem a mává – ať si všimneš, že čeká na další zadání. Teprve potom se začne flákat.
 - **Fialová hlavní tlačítka:** každé bílé (hlavní) tlačítko v aplikaci i v okně rozšíření při najetí a fokusu zfialoví s bílým textem – pravidlo designového systému (docs/DESIGN.md), už ne tlačítko po tlačítku.
 - **Počty v menu:** Upozornění a Agenti mají počet ve fialovém kolečku s bílým číslem.
