@@ -4,6 +4,7 @@
 
 - **Detail cloudového běhu hned a čerstvý:** přepis vzdáleného agenta Claude Code se čte přímo z účtu Claude – při otevření detailu hned (nanejvýš 2,5 s) a dál každých 8 s, dokud agent běží nebo je detail otevřený. Dřív přepis čekal, až Claude Desktop uloží svou cache, takže byl „zatím prázdný“ a tokeny „—“. 🧪 Beta (docs/CONNECTORS.md).
 - **Doba trvání nemate:** u konverzace otevřené přes několik dní detail místo „20 d 2 h“ ukáže poslední aktivitu; rozpětí od založení není doba práce.
+- **Zadávací lišta na Přehledu se nerozpadá:** při zúženém okně se ovládání už nelámalo „jako noty“ mezi agenta a Spustit. Nahoře je agent a Spustit, pod nimi jeden pás s režimem (tři stejně široké volby), projektem a složkou; do jednoho řádku se vše složí, jen když se vejde. Řídí se šířkou karty, ne okna.
 - **Rozšíření má vlastní motiv:** v nastavení rozšíření (ikona posuvníků) zvolíš Systém, Světlý nebo Tmavý – nezávisle na motivu aplikace.
 - **Dialog Upravit projekt:** obrázek karty a logo klienta stojí pod sebou přes celou šířku; název, „i“, rozměry a tlačítka Změnit/Odebrat se už nepřekrývají. Na telefonu jdou tlačítka pod text.
 - **Spouštění agenta je vždy výchozí „V aplikaci“:** volba Na pozadí nebo V Terminálu platí jen pro jedno spuštění a po otevření aplikace i po každém zadání se vrátí na V aplikaci. Při zadání z projektu zůstává Claude v aplikaci (složku převezme).

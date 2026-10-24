@@ -1119,3 +1119,29 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 @media (prefers-reduced-motion: reduce) { .look-barva-kolo, .look-barva-kolo::after { transition: none; } .look-tab--barva:hover .look-barva-kolo { transform: none; } }
 /* Text záložek dělí zbytek řady rovným dílem (na telefonu se řada posouvá, šířka podle textu). */
 @media (min-width: 721px) { .look-tabs .look-tab:not(.look-tab--barva) { flex: 1 1 0; min-width: max-content; } }
+
+/* Lišta zadání (vlastník 24. 10. 2026: při zúženém okně „poskákaná jako noty“). Ovládání se už
+   nevolně nezalamuje mezi agentem a Spustit: nahoře agent a Spustit, pod nimi jeden pás
+   s režimem, projektem a složkou přes celou šířku. Do jednoho řádku se vše složí, jen když se
+   opravdu vejde. Rozhoduje šířka zadávací karty (container query), ne šířka okna. */
+.launch .launch-compose { container: lzadani / inline-size; }
+.launch .launch-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'pick . go' 'ctl ctl ctl'; align-items: center; gap: 8px; }
+.launch .launch-bar .lpick { grid-area: pick; min-width: 0; }
+.launch .launch-bar .launch-go { grid-area: go; margin-left: 0; }
+.launch .launch-bar .launch-kbd { display: none; }
+.launch .launch-controls { grid-area: ctl; display: flex; flex-wrap: nowrap; align-items: center; gap: 8px; min-width: 0; order: initial; flex-basis: auto; }
+.launch .launch-controls .seg--light { flex: none; }
+.launch .launch-controls > :not(.seg) { flex: 1 1 0; min-width: 0; }
+.launch .launch-controls .lselect :is(.picker-trigger, select, button) { width: 100%; min-width: 0; }
+@container lzadani (min-width: 1000px) {
+  .launch .launch-bar { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'pick ctl go'; }
+}
+/* Úzká karta: režim přes celou šířku se stejně širokými volbami, projekt a složka pod ním vedle sebe. */
+@container lzadani (max-width: 700px) {
+  .launch .launch-controls { flex-wrap: wrap; }
+  .launch .launch-controls .seg--light { flex: 1 1 100%; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .launch .launch-controls .seg--light button { min-width: 0; justify-content: center; padding-inline: 8px; }
+}
+@container lzadani (max-width: 340px) {
+  .launch .launch-controls > :not(.seg) { flex-basis: 100%; }
+}
