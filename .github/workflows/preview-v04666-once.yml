@@ -1,0 +1,118 @@
+name: One-time Agenteeq 0.46.66 Preview
+on:
+  push:
+    branches: [ops/preview-v0.46.66-once]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - name: Verify exact main, build, audit, publish Preview
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: 33a1afdf387ce61a8fca2327c203412b43138db4
+          TAG: v0.46.66
+        run: |
+          set -euo pipefail
+          repo="$GITHUB_REPOSITORY"
+
+          assert_main() {
+            actual=$(gh api "repos/$repo/commits/main" --jq .sha)
+            if [ "$actual" != "$SOURCE_SHA" ]; then
+              echo "::error::main changed; refusing to build/release an unreviewed SHA: $actual"
+              exit 1
+            fi
+          }
+          wait_run() {
+            local workflow="$1"
+            local id="" status="" conclusion=""
+            for n in $(seq 1 80); do
+              assert_main
+              response=$(gh api "repos/$repo/actions/workflows/$workflow/runs?head_sha=$SOURCE_SHA&event=workflow_dispatch&per_page=15")
+              id=$(printf '%s' "$response" | jq -r '.workflow_runs[0].id // empty')
+              status=$(printf '%s' "$response" | jq -r '.workflow_runs[0].status // empty')
+              conclusion=$(printf '%s' "$response" | jq -r '.workflow_runs[0].conclusion // empty')
+              if [ "$status" = completed ]; then
+                echo "$workflow: $conclusion - https://github.com/$repo/actions/runs/$id"
+                if [ "$conclusion" != success ]; then
+                  echo "::error::$workflow failed ($conclusion); Preview remains unpublished."
+                  exit 1
+                fi
+                echo "$workflow successful"
+                return 0
+              fi
+              sleep 25
+            done
+            echo "::error::Timed out checking $workflow (run $id, $status)"
+            exit 1
+          }
+
+          assert_main
+          if gh api "repos/$repo/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag already exists; never rebuild an immutable tag in one-shot workflow"
+            exit 1
+          fi
+
+          echo "Waiting for exact main SHA $SOURCE_SHA CI and CodeQL."
+          for n in $(seq 1 85); do
+            assert_main
+            good=$(gh api "repos/$repo/actions/workflows/test.yml/runs?head_sha=$SOURCE_SHA&event=push&status=success" --jq .total_count)
+            ql=$(gh api "repos/$repo/actions/workflows/codeql.yml/runs?head_sha=$SOURCE_SHA&event=push&status=success" --jq .total_count)
+            if [ "$good" -gt 0 ] && [ "$ql" -gt 0 ]; then
+              echo "Exact main CI and CodeQL passed"
+              break
+            fi
+            last=$(gh api "repos/$repo/actions/workflows/test.yml/runs?head_sha=$SOURCE_SHA&event=push&per_page=5" --jq '.workflow_runs[0].conclusion // ""')
+            if [ -n "$last" ] && [ "$last" != success ]; then
+              echo "::error::main CI ended with $last"
+              exit 1
+            fi
+            if [ "$n" -eq 85 ]; then
+              echo "::error::Timed out waiting for exact main CI and CodeQL"
+              exit 1
+            fi
+            sleep 25
+          done
+
+          stable_before=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
+          echo "Stable Latest before: $stable_before"
+          gh api --method POST "repos/$repo/actions/workflows/release.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=$TAG" -f "inputs[expected_sha]=$SOURCE_SHA"
+          echo "Release build and independent asset audit dispatched for $TAG"
+          sleep 10
+          wait_run release.yml
+
+          assert_main
+          gh api --method POST "repos/$repo/actions/workflows/publish.yml/dispatches" \
+            -f ref=main -f "inputs[tag]=$TAG" -f "inputs[channel]=preview"
+          echo "Publish dispatched strictly to Preview channel"
+          sleep 10
+          wait_run publish.yml
+
+          release=$(gh api "repos/$repo/releases/tags/$TAG")
+          printf '%s' "$release" | jq -e '.draft == false and .prerelease == true and (.assets | length) == 8' >/dev/null
+          actual_tag_sha=$(gh api "repos/$repo/git/ref/tags/$TAG" --jq .object.sha)
+          [ "$actual_tag_sha" = "$SOURCE_SHA" ] || {
+            echo "::error::Published release tag differs from tested main SHA"; exit 1;
+          }
+          stable_after=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
+          [ "$stable_after" = "$stable_before" ] || {
+            echo "::error::Stable Latest changed unexpectedly"; exit 1;
+          }
+          url=$(printf '%s' "$release" | jq -r .html_url)
+          echo "Preview published and verified: $url"
+          echo "Immutable source SHA: $SOURCE_SHA"
+          {
+            echo "### Preview published: $TAG"
+            echo "URL: $url"
+            echo "Source SHA: $SOURCE_SHA"
+            echo "Exact CI + CodeQL, independent byte audit and publish workflow: SUCCESS"
+            echo "Stable Latest unchanged: $stable_after"
+            echo "Physical Mac UAT is not performed by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"
