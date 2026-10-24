@@ -28,6 +28,14 @@ export function radekNapojeni(n) {
   } else if (n.druh === 'web' && !n.nainstalovano) {
     stav = stateBadge('missing', tr('Potřebuje rozšíření'));
     akce = `<button class="btn btn--sm" type="button" data-action="extension-scroll">${tr('Přidat rozšíření')}</button>`;
+  } else if (n.druh === 'aplikace') {
+    // Aplikace čtená přes Zpřístupnění: povoleno a čte se / chybí povolení / aplikace je zavřená.
+    stav = n.stav === 'ok' ? stateBadge('connected', tr('Napojeno'))
+      : n.stav === 'povoleni' ? stateBadge('idle', tr('Potřebuje povolení'))
+        : n.stav === 'nebezi' ? stateBadge('idle', tr('Aplikace neběží'))
+          : n.stav === 'nezapnuto' ? stateBadge('idle', tr('Nenapojeno'))
+          : stateBadge('unavailable', tr('Nepodařilo se zjistit'));
+    if (n.stav !== 'ok' && n.stav !== 'nebezi') akce = `<button class="btn btn--sm btn--primary" type="button" data-napojit="${esc(n.id)}">${n.stav === 'nezapnuto' ? tr('Napojit') : tr('Povolit')}</button>`;
   } else if (n.napojeno === true) {
     // A Chrome event confirms that the extension saw a conversation, not an OAuth grant.
     stav = n.druh === 'web' ? stateBadge('connected', tr('Data z Chromu'))
@@ -45,7 +53,7 @@ export function radekNapojeni(n) {
   // a nad Zdroji agentů, které pro tentýž nástroj hlásí, že tu nejsou žádné konverzace. Přítomnost
   // programu patří štítku (ten rozlišuje nevím / není / je), práce na počítači podtitulku.
   return `<li class="model-row"><span class="model-logo">${logo}</span>
-    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'web' ? `${tr('Webový chat')}${n.posledni ? ` · ${esc(rel(n.posledni))}` : ''}` : `${tr('Programovací agent')} · ${posledniPrace(n)}`}</span></div>
+    <div class="model-main"><b>${esc(n.label)}</b><span>${n.druh === 'aplikace' ? tr('Chaty z aplikace pro Mac · přes Zpřístupnění') : n.druh === 'web' ? `${tr('Webový chat')}${n.posledni ? ` · ${esc(rel(n.posledni))}` : ''}` : `${tr('Programovací agent')} · ${posledniPrace(n)}`}</span></div>
     ${stav}${akce}</li>`;
 }
 
@@ -72,6 +80,7 @@ function posledniPrace(n) {
 
 function textCekani(n) {
   const kdo = DODAVATEL[n.provider] || n.label;
+  if (n.druh === 'aplikace') return tr('Otevřelo se Nastavení systému → Soukromí a zabezpečení → Zpřístupnění. Zapni tam Agenteeq – Agenteeq pak čte jen název chatu a to, jestli {0} právě odpovídá. Napojení se potvrdí samo.', esc('ChatGPT'));
   return n.druh === 'web'
     ? tr('V prohlížeči se otevřel {0}. Přihlas se, pokud ještě nejsi, a otevři jakoukoli konverzaci – rozšíření dá Agenteeq vědět a napojení se potvrdí samo.', esc(n.label))
     : tr('V prohlížeči se otevírá přihlášení {0}. Přihlas se svým účtem u {1} a potvrď přístup. Až bude hotovo, Agenteeq to pozná sám.', esc(n.label), esc(kdo));
@@ -129,12 +138,14 @@ function zaloha(n, scrim) {
 }
 
 function uspechTitulek(u) {
-  return u.overeni === 'pozorovano' ? tr('Data z webu dorazila') : tr('Přihlášení ověřeno');
+  return u.overeni === 'pozorovano' ? tr('Data z webu dorazila') : u.overeni === 'zpristupneni' ? tr('Povolení ověřeno') : tr('Přihlášení ověřeno');
 }
 
 function obsahHotovo(u) {
   const web = u.overeni === 'pozorovano';
-  const detail = web
+  const detail = u.overeni === 'zpristupneni'
+    ? tr('Agenteeq čte okno aplikace. Chat se objeví, jakmile začne odpovídat.')
+    : web
     ? tr('Rozšíření načetlo stav konverzace. Přihlášení k webovému účtu Agenteeq neověřuje.')
     : u.dataError
       ? tr('Přihlášení funguje, ale údaje o účtu se zatím nepodařilo obnovit.')
@@ -185,7 +196,7 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
   }
   if (r.uz) {
     vLetu.delete(n.id);
-    ukazHotovo({ label: n.label, plan: r.plan, uz: true, overeni: 'cli', posledniData: r.posledniData, dataError: r.dataError });
+    ukazHotovo({ label: n.label, plan: r.plan, uz: true, overeni: n.druh === 'aplikace' ? 'zpristupneni' : 'cli', posledniData: r.posledniData, dataError: r.dataError });
     poZmene();
     return;
   }
@@ -194,7 +205,7 @@ export async function spustNapojeni(n, { poZmene = () => {} } = {}) {
     title: `${tr('Napojit')} ${n.label}`,
     body: `<div class="model-wait" aria-live="polite">
         <p>${textCekani(n)}</p>
-        <p class="model-wait-state"><span class="model-wait-dot" aria-hidden="true"></span>${tr('Čekám na přihlášení…')}</p>
+        <p class="model-wait-state"><span class="model-wait-dot" aria-hidden="true"></span>${n.druh === 'aplikace' ? tr('Čekám na povolení…') : tr('Čekám na přihlášení…')}</p>
         ${n.druh === 'agent' ? `<div class="model-wait-fallback"><button type="button" class="btn btn--sm" data-otevrit-znovu>${tr('Prohlížeč se neotevřel?')}</button></div>` : ''}
         <p class="account-privacy">${ICON.shield}<span>${esc(SOUKROMI)}</span></p>
       </div>`,

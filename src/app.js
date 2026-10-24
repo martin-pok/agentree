@@ -32,6 +32,7 @@ import { createCopilotCliConnector, createVsCodeCopilotConnector } from './conne
 import { createWebConnector, WEB_SITES } from './connectors/web.js';
 import { createCloudBillingConnector } from './connectors/cloud-billing.js';
 import { createClaudeDesktopCodeConnector } from './connectors/claude-desktop-code.js';
+import { createChatGptAppConnector } from './connectors/chatgpt-app.js';
 import { createClaudeDesktopUsageConnector } from './connectors/claude-desktop-usage.js';
 import { createProcessesConnector, sdilenyVypis } from './connectors/processes.js';
 import { createLocalAgentsConnector } from './connectors/local-agents.js';
@@ -357,6 +358,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
     createClaudeDesktopCodeConnector({ ...ctx, claudeCloud }),
+    createChatGptAppConnector({ ...ctx, povoleno: () => Boolean(datastore.data.chatgptApp?.zapnuto) }),
   ];
   // Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js): běžící proces bez konverzace se
   // ukáže sám. Proměnná domova z jeho prostředí (CLAUDE_CONFIG_DIR, CODEX_HOME) přidá konektoru kořen,
@@ -405,7 +407,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const connectors = Object.fromEntries(list.map((c) => [c.id, c]));
 
   // Počet u konektorů se sessions = sessions viditelné v okně sledování (ne počet souborů na disku).
-  const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'codex-cloud', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web']);
+  const SESSION_CONNECTORS = new Set(['claude-code', 'claude-desktop-code', 'codex', 'codex-cloud', 'cursor', 'copilot-cli', 'vscode-copilot', 'gemini-cli', 'qwen-code', 'web', 'chatgpt-app']);
 
   // Detekce agentů v činnosti: oznámí nástroj, o kterém Agenteeq zatím nic neví (src/detekce.js).
   // `connectorList` je deklarace funkce, takže tady už existuje.
@@ -933,6 +935,13 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   // Napojení modelů tlačítkem (src/napojeni.js). Přihlašuje se vždy u dodavatele; tady se jen
   // spustí jeho přihlášení a hlídá, kdy je hotovo. V testech dotazy na stav odpovídá atrapa.
   const napojeni = createNapojeni({
+    aplikace: () => ({ chatgpt: connectors['chatgpt-app']?.stavOkna?.() }),
+    zapniAplikaci: async (id) => {
+      if (id !== 'chatgpt') return;
+      datastore.data.chatgptApp = { zapnuto: true };
+      datastore.save();
+      await connectors['chatgpt-app']?.scan();
+    },
     // Dokud se programy nehledaly (jiný systém než macOS, nebo spouštění vypnuté), nevíme – ne „není“.
     bins: () => (launchDetected || dry ? launchEnv.bins : null),
     // Kdy agent na tomhle Macu naposledy pracoval (z konverzací v úložišti, ne z času načtení).

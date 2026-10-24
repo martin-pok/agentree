@@ -51,7 +51,7 @@ test('co Agenteeq vidí: přesná věta u sdílených zdrojů, poctivá u nesled
   assert.doesNotMatch(coVidim({ sledovano: false, umiCist: true }), /nečtou/);
   assert.match(coVidim({ sledovano: true }), /^Čtou se/);
   const chatgpt = RUNTIMES.find((r) => r.id === 'chatgpt');
-  assert.match(coVidim({ sledovano: true, vidim: chatgpt.vidim }), /Běžné chaty z aplikace ne/);
+  assert.match(coVidim({ sledovano: true, vidim: chatgpt.vidim }), /běžné chaty po napojení přes Zpřístupnění/);
   const desktop = RUNTIMES.find((r) => r.id === 'claude-desktop');
   assert.match(desktop.vidim, /Běžné chaty z aplikace ne/);
 });

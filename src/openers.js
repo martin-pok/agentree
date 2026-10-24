@@ -100,6 +100,9 @@ function appPlan(s, apps) {
       if (!/^session_[A-Za-z0-9]{8,80}$/.test(id)) return null;
       return { kind: 'open', args: [`https://claude.ai/code/${id}`], label: 'Claude', title: ui('Otevřít konverzaci') };
     }
+    case 'chatgpt-app':
+      // Chat z aplikace ChatGPT pro Mac: přepne do aplikace (odkaz na konkrétní chat neexistuje).
+      return { kind: 'open', args: ['-a', RUNTIME_APPS.chatgpt.app], label: 'ChatGPT', title: ui('Otevřít v ChatGPT') };
     case 'web': {
       let url;
       try { url = new URL(s.url); } catch { return null; }

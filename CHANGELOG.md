@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.69 – 2026-10-24 · Chaty z aplikace ChatGPT pro Mac
+
+- **Agenteeq vidí běžné chaty z aplikace ChatGPT pro Mac** 🧪 Beta. Aplikace si je ukládá zašifrované, takže je dosud vidělo jen rozšíření v Chromu (chatgpt.com) a z aplikace jen Codex. Teď se čte okno aplikace přes Zpřístupnění macOS: název chatu (podle řádku se spinnerem v postranním panelu nebo názvu okna) a to, jestli ChatGPT právě odpovídá (ukazatel průběhu, tlačítko Stop). Když odpověď skončí, je chat „Hotovo“. Text konverzace se nečte. Codex z téže aplikace zůstává zvlášť.
+- **Napojit „ChatGPT · aplikace“** v Nastavení → Propojení otevře Nastavení systému → Zpřístupnění (ne prohlížeč) a potvrdí se samo, jakmile čtení projde. Bez kliknutí na Napojit se okno nečte, takže se macOS na povolení sám neptá. Bez povolení aplikace píše „nemá povolené Zpřístupnění“, nikdy „nic neběží“. Klik na chat otevře aplikaci ChatGPT.
+
 ## 0.46.68 – 2026-10-24 · Přepis cloudového běhu opravdu z účtu, pravidelná mřížka, čistší nabídky
 
 - **Oprava: přepis cloudového agenta byl v 0.46.67 dál prázdný.** Události relace se teď čtou přesně jako v Claude Code: nejnovější první (`sort_order=desc`), s organizací účtu v hlavičce `x-organization-uuid` a zprávy z pole `payload`. 0.46.67 četla bez organizace a jen nejstarší stránku dlouhé relace, takže z ní nic nezobrazila; s přepisem se doplní i tokeny a počet zadání. Větev se ukazuje bez `refs/heads/`.

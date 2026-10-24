@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.69',
+    date: '2026-10-24',
+    title: 'Chaty z aplikace ChatGPT',
+    items: [
+      'Agenteeq vidí chaty z aplikace ChatGPT pro Mac: název a to, jestli právě odpovídá (Beta). Napojíš v Nastavení → Propojení.',
+    ],
+    en: {
+      title: 'ChatGPT app chats',
+      items: [
+        'Agenteeq sees chats from the ChatGPT app for Mac: the name and whether it’s replying right now (Beta). Connect in Settings → Connections.',
+      ],
+    },
+  },
+  {
     version: '0.46.68',
     date: '2026-10-24',
     title: 'Přepis cloudového běhu a mřížka',

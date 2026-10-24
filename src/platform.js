@@ -508,3 +508,70 @@ export async function prihlaseniClaudeCode({ sourceHome, claudeConfigDir = '', k
   const slozka = claudeConfigDir || path.join(sourceHome, '.claude');
   try { return await sOrganizaci(vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8'))); } catch { return null; }
 }
+
+// Aplikace ChatGPT pro Mac (com.openai.chat) si chaty ukládá zašifrované, takže z disku nejde
+// poznat ani název, ani jestli právě odpovídá. Spolehlivý zdroj je její okno přes Zpřístupnění
+// macOS (System Events): název okna a probíhající odpověď poznaná podle ukazatele průběhu (bez
+// ohledu na jazyk) nebo tlačítka Stop/Zastavit. Skript je pevný, nic zvenku se do něj nevkládá;
+// čte jen popisky ovládacích prvků, ne text konverzace. Bez povolení vrací `povoleni` – nikdy
+// „nic neběží“. Jen macOS; jinde `nepodporovano`.
+const SKRIPT_CHATGPT = `function run() {
+  const se = Application('System Events');
+  const ps = se.applicationProcesses.whose({ bundleIdentifier: 'com.openai.chat' })();
+  if (!ps.length) return JSON.stringify({ stav: 'nebezi' });
+  const okna = [];
+  let seznam = [];
+  try { seznam = ps[0].windows(); } catch (e) { return JSON.stringify({ stav: 'povoleni' }); }
+  for (const w of seznam.slice(0, 4)) {
+    let nazev = '';
+    try { nazev = String(w.name() || ''); } catch (e) {}
+    const bezi = [];
+    let stop = false;
+    let prvky = [];
+    try { prvky = w.entireContents(); } catch (e) {}
+    for (const e of prvky.slice(0, 6000)) {
+      let role = '';
+      try { role = e.role(); } catch (x) { continue; }
+      if (role === 'AXProgressIndicator' || role === 'AXBusyIndicator') {
+        let text = '';
+        try {
+          const rodic = e.attributes.byName('AXParent').value();
+          for (const t of rodic.staticTexts()) { const v = t.value() || t.name(); if (v) { text = String(v); break; } }
+        } catch (x) {}
+        bezi.push(text);
+      } else if (role === 'AXButton') {
+        let d = '';
+        try { d = [e.description(), e.name()].filter(Boolean).join(' '); } catch (x) {}
+        if (/^\\s*(stop|zastavit)/i.test(d)) stop = true;
+      }
+    }
+    okna.push({ nazev, bezi, stop });
+  }
+  return JSON.stringify({ stav: 'ok', okna });
+}`;
+const text = (v, max = 200) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max) : '');
+export function prectiOknaChatGPT(r) {
+  if (!r?.ok) {
+    const chyba = `${r?.stderr || ''}`;
+    // -1743: Agenteeq nesmí ovládat System Events; -1719 / -25211: nemá Zpřístupnění.
+    return /-1743|-1719|-25211|assistive|not allowed|není povolen|nemá povolen/i.test(chyba) ? { stav: 'povoleni' } : { stav: 'chyba' };
+  }
+  let j;
+  try { j = JSON.parse(String(r.stdout || '').trim()); } catch { return { stav: 'chyba' }; }
+  if (j?.stav === 'nebezi' || j?.stav === 'povoleni') return { stav: j.stav };
+  if (j?.stav !== 'ok' || !Array.isArray(j.okna)) return { stav: 'chyba' };
+  return {
+    stav: 'ok',
+    okna: j.okna.slice(0, 4).map((o) => ({
+      nazev: text(o?.nazev),
+      bezi: Array.isArray(o?.bezi) ? o.bezi.slice(0, 20).map((t) => text(t)) : [],
+      stop: o?.stop === true,
+    })),
+  };
+}
+export async function oknaChatGPT({ runImpl = run, jeMac = JE_MAC } = {}) {
+  if (!jeMac) return { stav: 'nepodporovano' };
+  return prectiOknaChatGPT(await runImpl('/usr/bin/osascript', ['-l', 'JavaScript', '-e', SKRIPT_CHATGPT], { timeout: 8000 }));
+}
+// Nastavení systému → Soukromí a zabezpečení → Zpřístupnění.
+export const NASTAVENI_ZPRISTUPNENI = JE_MAC ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility' : '';

@@ -132,7 +132,7 @@ export const RUNTIMES = [
   ...WEBOVE_AI,
   { id: 'claude-desktop', name: 'Claude Desktop', provider: 'anthropic', druh: 'aplikace', overeno: true, konektory: ['claude-code', 'claude-desktop-usage'], vidim: ui('Čte se práce v záložce Code a limity předplatného. Běžné chaty z aplikace ne.'), popis: ui('Claude od Anthropicu – chat a Claude Code v záložce Code'), test: (a) => aplikace('Claude').test(a) },
   { id: 'claude-code', name: 'Claude Code', provider: 'anthropic', druh: 'terminal', overeno: true, konektory: ['claude-code'], popis: ui('Programovací agent od Anthropicu'), test: (a) => (program('claude').test(a) || npmSkript('claude-code').test(a)) && !/disclaimer|chrome-native-host/.test(a) },
-  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', druh: 'aplikace', overeno: true, konektory: ['codex'], vidim: ui('Čte se práce Codexu a limity tvého plánu. Běžné chaty z aplikace ne.'), popis: ui('ChatGPT od OpenAI – chat, agent a Codex'), test: (a) => aplikace('ChatGPT').test(a) },
+  { id: 'chatgpt', name: 'ChatGPT', provider: 'openai', druh: 'aplikace', overeno: true, konektory: ['codex'], vidim: ui('Čte se práce Codexu a limity tvého plánu; běžné chaty po napojení přes Zpřístupnění macOS.'), popis: ui('ChatGPT od OpenAI – chat, agent a Codex'), test: (a) => aplikace('ChatGPT').test(a) },
   // Desktopová aplikace Codex (bundle `com.openai.codex`). Podle zdrojového kódu `codex app`
   // (openai/codex, codex-rs/cli/src/desktop_app/mac.rs a windows.rs, 5. 10. 2026) se na macOS instaluje
   // jako `Codex.app` – stejný bundle může nést i jméno `ChatGPT.app`, ten pak poznáme jako ChatGPT – a na
