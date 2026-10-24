@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.70',
+    date: '2026-10-24',
+    title: 'Generátor nápadů',
+    items: [
+      'Prázdné pole zadání každých 7 s ukáže jiný nápad na projekt, nástroj nebo usnadnění.',
+      'Detail projektu v přehledné mřížce, karty bez schodu a stejně vysoké widgety.',
+      'V Nastavení na telefonu jde záložkami posouvat tažením posuvníku.',
+    ],
+    en: {
+      title: 'Idea generator',
+      items: [
+        'The empty prompt shows a new idea for a project, tool or shortcut every 7 s.',
+        'Project detail in a clean grid, cards without a step and equal-height widgets.',
+        'In Settings on a phone you can scroll the tabs by dragging a slider.',
+      ],
+    },
+  },
+  {
     version: '0.46.69',
     date: '2026-10-24',
     title: 'Chaty z aplikace ChatGPT',

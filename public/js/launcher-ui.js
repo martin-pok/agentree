@@ -1,4 +1,5 @@
 import { state, projectById, launchIntent } from './state.js';
+import { pripojNapady } from './napady.js';
 import { api } from './api.js';
 import { esc, rel, shortPath, durShort, clock, castiCesty } from './format.js';
 import { glyph, ICON } from './icons.js';
@@ -137,7 +138,7 @@ export function createLauncher(root) {
     </div>
     <div class="launch-compose">
       <label class="sr-only" for="launch-prompt">${tr('Zadání pro agenta')}</label>
-      <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt placeholder="${tr('Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“')}"></textarea>
+      <textarea id="launch-prompt" class="launch-prompt" rows="3" maxlength="${PROMPT_MAX}" data-l-prompt></textarea>
       <div class="launch-bar">
         <div class="lpick" data-region="pick"></div>
         <div class="launch-controls" data-region="controls"></div>
@@ -154,6 +155,8 @@ export function createLauncher(root) {
     <div class="runs" data-region="runs"></div>`;
 
   const promptEl = root.querySelector('[data-l-prompt]');
+  // Generátor nápadů v prázdném poli (public/js/napady.js).
+  const napady = pripojNapady(promptEl);
   const popEl = root.querySelector('.lpick-pop');
   const hledatEl = root.querySelector('[data-l-hledat]');
 
@@ -194,6 +197,7 @@ export function createLauncher(root) {
   });
   const goBtn = root.querySelector('[data-l="go"]');
   promptEl.value = prefs.draft || '';
+  napady.obnov();
 
   const targets = () => state.launch?.targets || [];
   const target = () => targets().find((t) => t.id === prefs.agent) || targets()[0] || null;
@@ -311,6 +315,7 @@ export function createLauncher(root) {
       if (t.id === 'ollama') body.model = t.models.includes(prefs.model) ? prefs.model : t.models[0];
       const r = await api.launch(body);
       promptEl.value = '';
+      napady.obnov();
       delete prefs.modes[t.id]; // další zadání zase „V aplikaci“
       render();
       persist();

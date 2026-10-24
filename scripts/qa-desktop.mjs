@@ -387,9 +387,15 @@ async function zkontrolujPlynulost(browser, engine) {
         // The real entrance lasts 2200 ms. Measure settled screens, not live odometer SVGs.
         await p.waitForFunction(() => !document.querySelector('#view.is-entering'));
         await p.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-        await cdp.send('HeapProfiler.collectGarbage');
-        const m = Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value]));
-        return { posluchacu: m.JSEventListeners, uzlu: m.Nodes };
+        // Tři měření po úklidu paměti, platí nejnižší: obrazovka, kterou prohlížeč v pomalém CI
+        // uvolní až o chvíli později, se tak nepočítá jako únik. Skutečný únik zůstane ve všech třech.
+        const vzorky = [];
+        for (let i = 0; i < 3; i++) {
+          await cdp.send('HeapProfiler.collectGarbage');
+          vzorky.push(Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((x) => [x.name, x.value])));
+          if (i < 2) await p.waitForTimeout(500);
+        }
+        return { posluchacu: Math.min(...vzorky.map((m) => m.JSEventListeners)), uzlu: Math.min(...vzorky.map((m) => m.Nodes)) };
       };
       const kolo = async () => { for (const t of ['projekty', 'agenti']) { await p.click(`.nav [data-nav="${t}"]`); await p.waitForTimeout(500); } };
       await kolo();

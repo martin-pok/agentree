@@ -924,8 +924,7 @@ html[data-theme='dark'] .robot-objem { opacity: .6; }
 .hra-strana { fill: #fbf8f2; }
 .hra-radky { fill: none; stroke: color-mix(in srgb, var(--ink) 25%, #fbf8f2); stroke-width: .8; stroke-linecap: round; }
 .hra-list { transform-box: view-box; }
-:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-left { rotate: -84deg; }
-:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { rotate: 84deg; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) :is(.robot-arm-left, .robot-arm-right) { opacity: 0; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-cteni 6s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-list { animation: rz-list 6s var(--robot-delay, 0s) infinite; }
 @keyframes rz-cteni { 0%, 100% { translate: 0 2px; rotate: -3deg; } 45% { translate: 0 2px; rotate: 3deg; } 55% { translate: 0 1px; rotate: 0deg; } }
@@ -975,3 +974,16 @@ html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 html[data-theme='dark'] .robot-leg { fill: color-mix(in srgb, var(--persona) 72%, var(--card)); }
 html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill: var(--persona); }
 .robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
+
+/* Přehled: widgety v jedné řadě jsou stejně vysoké (vlastník 24. 10. 2026: „Kam šly tokeny“ kratší než
+   „Náklady z API“ vedle). Poslední sekce widgetu vyplní výšku řady a karta v ní se protáhne. */
+.home-board { align-items: stretch; }
+.widget > section:last-child { flex: 1; display: flex; flex-direction: column; }
+.widget > section:last-child > .card:last-child { flex: 1; }
+/* Odkaz v hlavičce widgetu („Detail“, „Statistiky“) zůstává uvnitř: jeho plocha při najetí
+   nepřesahuje okraj karty a název se zalomí dřív, než by odkaz vytlačil. */
+.widget .sec-head { flex-wrap: nowrap; align-items: flex-start; }
+.widget .sec-head :is(h2, h3) { min-width: 0; }
+.widget .sec-head > .link:last-child { flex: none; margin-inline-end: 0; }
+/* Při gestu nebo otočce se vrací běžné paže; ruce držící knihu by je zdvojily. */
+.robot:is([data-gesto], [data-otocka]) .hra-ruce { display: none; }

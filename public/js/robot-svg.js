@@ -222,7 +222,7 @@ function praceNad(g) {
 // mobil, nebo protahování. Kreslí se nad tělem; které hraní robot má, říká data-hra u agenta
 // (část čekajících si nehraje vůbec – home-studio.js).
 function zabava(g, druh = true) {
-  const { pravo: [sx, sy, rx, ry] } = paze(g);
+  const { levo: [lsx, lsy], pravo: [sx, sy, rx, ry] } = paze(g);
   const h = g.head;
   const t = g.torso;
   const nx = 54 + h.w / 2 - 2;
@@ -245,7 +245,10 @@ function zabava(g, druh = true) {
     + (ma('kniha') ? `<g class="hra-kniha"><path class="hra-desky" d="M${n(54 - 14)} ${n(ky)}L54 ${n(ky + 2)}L${n(54 + 14)} ${n(ky)}V${n(ky + 13)}L54 ${n(ky + 15)}L${n(54 - 14)} ${n(ky + 13)}Z"/>`
       + `<path class="hra-strana" d="M${n(54 - 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 - 12.5)} ${n(ky + 11.8)}Z"/><path class="hra-strana" d="M${n(54 + 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 + 12.5)} ${n(ky + 11.8)}Z"/>`
       + `<path class="hra-strana hra-list" style="transform-origin:54px ${n(ky + 8)}px" d="M${n(54 + 12.5)} ${n(ky + 0.6)}L54 ${n(ky + 2.4)}V${n(ky + 13.6)}L${n(54 + 12.5)} ${n(ky + 11.8)}Z"/>`
-      + `<path class="hra-radky" d="M${n(54 - 10)} ${n(ky + 4.5)}l7 1.2M${n(54 - 10)} ${n(ky + 7.5)}l7 1.2M${n(54 + 3)} ${n(ky + 5.7)}l7 -1.2M${n(54 + 3)} ${n(ky + 8.7)}l7 -1.2"/></g>` : '')
+      + `<path class="hra-radky" d="M${n(54 - 10)} ${n(ky + 4.5)}l7 1.2M${n(54 - 10)} ${n(ky + 7.5)}l7 1.2M${n(54 + 3)} ${n(ky + 5.7)}l7 -1.2M${n(54 + 3)} ${n(ky + 8.7)}l7 -1.2"/>`
+      // Ruce, které knihu drží: od ramen k dolním rohům desek, kreslené přes knihu – robot
+      // nevypadá, že ruce nemá (vlastník 24. 10. 2026). Běžné paže se při čtení schovají.
+      + `<path class="robot-limbs hra-ruce" d="M${n(lsx)} ${n(lsy)}Q${n(lsx - 3)} ${n(ky + 15)} ${n(54 - 13)} ${n(ky + 11)}M${n(sx)} ${n(sy)}Q${n(sx + 3)} ${n(ky + 15)} ${n(54 + 13)} ${n(ky + 11)}"/></g>` : '')
     + (ma('bublina') ? `<circle class="hra-bublina" style="transform-origin:${n(56)}px ${n(pusa + 1)}px" cx="${n(59.5)}" cy="${n(pusa + 1)}" r="6"/>` : '')
     + (ma('mobil') ? `<g class="hra-mobil"><rect class="hra-mobil-telo" x="${n(mx - 4.5)}" y="${n(my - 10)}" width="9" height="14" rx="2.2"/><rect class="hra-mobil-displej" x="${n(mx - 3.2)}" y="${n(my - 8.6)}" width="6.4" height="10.8" rx="1"/></g>` : '')
     + `</g>`;

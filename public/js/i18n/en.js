@@ -8,8 +8,6 @@ export default {
   server,
   texty: {
   "Stav neověřen": "Status unverified",
-  "U části agentů chybí aktuální stav": "Some agents have no current status",
-  "Poslední známý stav není potvrzení, že agent přestal pracovat.": "The last known status does not confirm that the agent stopped working.",
 
     "jen v této konverzaci": "only in this conversation",
     "v tomto projektu, jen u tebe": "in this project, just for you",
@@ -143,6 +141,7 @@ export default {
     "Detekované procesy": "Detected processes",
     "proces bez přepisu": "process without a transcript",
     "Detekovaný proces bez přepisu": "Detected process without a transcript",
+    "Co má agent udělat? Např.": "What should the agent do? E.g.",
     "Potřebuje povolení": "Needs permission",
     "Aplikace neběží": "App isn’t running",
     "Chaty z aplikace pro Mac · přes Zpřístupnění": "Chats from the Mac app · via Accessibility",
@@ -362,7 +361,6 @@ export default {
     "Obnovit nabídku": "Refresh list",
     "Agent": "Agent",
     "Zadání pro agenta": "Task for the agent",
-    "Co má agent udělat? Např. „Přidej na web stránku s ceníkem a otestuj ji na mobilu.“": "What should the agent do? For example: “Add a pricing page to the website and test it on mobile.”",
     "Spustit": "Start",
     "Zdarma lokálně": "Free, local",
     "Na webu": "On the web",
@@ -1865,6 +1863,7 @@ export default {
     "Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.": "Robots show agent status through motion. Your system’s reduced-motion setting always takes priority.",
   },
   mnozne: {
+    '{0} agent bez čerstvého stavu|{0} agenti bez čerstvého stavu|{0} agentů bez čerstvého stavu': ['{0} agent without fresh status', '{0} agents without fresh status'],
     "AI nástroj|AI nástroje|AI nástrojů": ["AI tool","AI tools"],
     "Nejdřív rozhodni, ať agent může pokračovat.|Nejdřív rozhodni, ať agenti můžou pokračovat.|Nejdřív rozhodni, ať agenti můžou pokračovat.": ["Decide first so the agent can carry on.", "Decide first so the agents can carry on."],
     "Další úkol můžeš zadat hned, nemusíš čekat, až agent doběhne.|Další úkol můžeš zadat hned, nemusíš čekat, až agenti doběhnou.|Další úkol můžeš zadat hned, nemusíš čekat, až agenti doběhnou.": ["You can start the next task right away – no need to wait for the agent to finish.", "You can start the next task right away – no need to wait for the agents to finish."],

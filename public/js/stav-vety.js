@@ -37,11 +37,13 @@ export function stavAgentu({ pracuje = 0, cekaji = 0, selhalo = 0, limit = 0, pr
   } else if (stav === 'pozor') {
     veta = plural(cekaji, 'Potřebuje tě {0} agent', 'Potřebují tě {0} agenti', 'Potřebuje tě {0} agentů').replace('{0}', cekaji);
   } else if (stav === 'nevim') {
-    veta = nejiste ? tr('U části agentů chybí aktuální stav') : tr('Nepodařilo se zjistit, co na počítači běží');
+    // Jen fakt s počtem, bez vysvětlování (vlastník 24. 10. 2026: žádné disclaimery). Kterého agenta
+    // se to týká, ukazuje jeho karta štítkem „Stav neověřen“.
+    veta = nejiste ? plural(nejiste, '{0} agent bez čerstvého stavu', '{0} agenti bez čerstvého stavu', '{0} agentů bez čerstvého stavu').replace('{0}', nejiste) : tr('Nepodařilo se zjistit, co na počítači běží');
   } else {
     veta = pracuje ? tr('Vše běží v pořádku') : vzdaleneStare ? tr('Na tomto počítači nikdo nepracuje') : tr('V pořádku, nikdo nepracuje');
   }
-  const poznamka = nejiste ? tr('Poslední známý stav není potvrzení, že agent přestal pracovat.') : procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
+  const poznamka = procesyNevim && stav !== 'nevim' ? tr('Nepodařilo se zjistit, co na počítači běží')
     : vzdaleneStare ? tr('Agenty v cloudu znám jen z Claude Desktopu, naposledy {0}.', rel(vzdaleneAt, now))
       : stav === 'ok' && !pracuje && nevidim.length ? tr('Otevřené: {0}. Chaty z těchto aplikací Agenteeq nevidí.', nevidim.join(', ')) : '';
   return { stav, veta, poznamka };
