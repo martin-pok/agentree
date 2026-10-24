@@ -54,9 +54,45 @@ jobs:
           }
 
           assert_main
+          # A rerun after successful publication must ONLY verify immutable release data,
+          # never rebuild or re-publish the existing tag.
           if gh api "repos/$repo/git/ref/tags/$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag already exists; never rebuild an immutable tag in one-shot workflow"
-            exit 1
+            echo "Existing immutable tag: release verification only"
+            existing_release=$(gh api "repos/$repo/releases/tags/$TAG")
+            printf '%s' "$existing_release" | jq -e '.draft == false and .prerelease == true and (.assets | length) == 8 and all(.assets[]; .size > 0 and (.digest | test("^sha256:[0-9a-f]{64}$")))' >/dev/null
+            tag_ref=$(gh api "repos/$repo/git/ref/tags/$TAG")
+            tag_sha=$(printf '%s' "$tag_ref" | jq -r '.object.sha')
+            tag_type=$(printf '%s' "$tag_ref" | jq -r '.object.type')
+            if [ "$tag_type" = tag ]; then
+              tag_sha=$(gh api "repos/$repo/git/tags/$tag_sha" --jq .object.sha)
+            fi
+            [ "$tag_sha" = "$SOURCE_SHA" ] || {
+              echo "::error::Release tag does not point to the exact tested source commit"; exit 1;
+            }
+            for wf in test.yml codeql.yml; do
+              success=$(gh api "repos/$repo/actions/workflows/$wf/runs?head_sha=$SOURCE_SHA&event=push&status=success" --jq .total_count)
+              [ "$success" -gt 0 ] || { echo "::error::Missing successful $wf on exact source SHA"; exit 1; }
+            done
+            for wf in release.yml publish.yml; do
+              success=$(gh api "repos/$repo/actions/workflows/$wf/runs?head_sha=$SOURCE_SHA&event=workflow_dispatch&status=success" --jq .total_count)
+              [ "$success" -gt 0 ] || { echo "::error::Missing successful $wf on exact source SHA"; exit 1; }
+            done
+            latest=$(gh api "repos/$repo/releases/latest" --jq .tag_name)
+            [ "$latest" = v0.46.58 ] || {
+              echo "::error::Unexpected Stable Latest: $latest"; exit 1;
+            }
+            url=$(printf '%s' "$existing_release" | jq -r .html_url)
+            {
+              echo "### Verified published Preview: $TAG"
+              echo "URL: $url"
+              echo "Immutable source commit: $tag_sha"
+              echo "Exact CI, CodeQL, release build + audit, publish: SUCCESS"
+              echo "Public Preview has 8 SHA256-digested assets"
+              echo "Stable Latest unchanged: $latest"
+              echo "Physical Mac install not verified"
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "Published Preview independently verified: $url"
+            exit 0
           fi
 
           echo "Waiting for exact main SHA $SOURCE_SHA CI and CodeQL."
@@ -97,7 +133,11 @@ jobs:
 
           release=$(gh api "repos/$repo/releases/tags/$TAG")
           printf '%s' "$release" | jq -e '.draft == false and .prerelease == true and (.assets | length) == 8' >/dev/null
-          actual_tag_sha=$(gh api "repos/$repo/git/ref/tags/$TAG" --jq .object.sha)
+          tag_ref=$(gh api "repos/$repo/git/ref/tags/$TAG")
+          actual_tag_sha=$(printf '%s' "$tag_ref" | jq -r '.object.sha')
+          if [ "$(printf '%s' "$tag_ref" | jq -r '.object.type')" = tag ]; then
+            actual_tag_sha=$(gh api "repos/$repo/git/tags/$actual_tag_sha" --jq .object.sha)
+          fi
           [ "$actual_tag_sha" = "$SOURCE_SHA" ] || {
             echo "::error::Published release tag differs from tested main SHA"; exit 1;
           }
