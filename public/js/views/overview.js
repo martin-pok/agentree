@@ -603,6 +603,6 @@ export default {
     v.board?.destroy();
     v.studio?.destroy();
     v.launcher?.destroy();
-    Object.assign(v, { el: null, launcher: null, board: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
+    Object.assign(v, { el: null, launcher: null, studio: null, board: null, chartTimer: null, chartAt: 0, timelineNow: 0 });
   },
 };

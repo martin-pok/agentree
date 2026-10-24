@@ -83,7 +83,12 @@ export function skladejCipy(rada) {
   dalsi.hidden = true;
   if (!sledovane.has(rada)) {
     let snimek = 0;
-    const observer = new ResizeObserver(() => { cancelAnimationFrame(snimek); snimek = requestAnimationFrame(() => { if (rada.isConnected) skladejCipy(rada); }); });
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(snimek);
+      // Realtime merging may replace a row before the view unmounts.
+      if (!rada.isConnected) { sledovane.get(rada)?.(); sledovane.delete(rada); return; }
+      snimek = requestAnimationFrame(() => { if (rada.isConnected) skladejCipy(rada); });
+    });
     observer.observe(rada);
     const klik = () => otevri(rada, dalsi);
     dalsi.addEventListener('click', klik);
