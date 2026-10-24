@@ -555,3 +555,9 @@ přihlášení: `claude auth status` může hlásit přihlášený účet i při
 Při přímém read-only ověření API byl pozorován HTTP 401 `authentication_error`.
 Přihlášení Claude Desktopu nenahrazuje přihlášení Claude Code. Dokud přímý zdroj
 nevrátí čerstvý stav, nelze tvrdit, že je detekce této vzdálené relace opravena.
+
+Živý zdroj byl následně ověřen po standardním obnovení přihlášení oficiálním
+Claude Code. Samostatný izolovaný server bez cache načetl skutečnou běžící
+relaci a přes konektor i model ji zobrazil `working`, `stale=false`. V PR #357
+je převzatá pouze detekční cesta z PR #356, včetně testů; ostatní změny PR #356
+nejsou součástí tohoto cíleného vydání. Publikace a fyzický upgrade jsou další brány.

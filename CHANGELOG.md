@@ -1,6 +1,9 @@
 # Changelog
 
-## Nevydáno
+## 0.46.65 – 2026-10-24 · Živý stav vzdáleného Claude Code
+
+- Cloudové relace Claude Code se načítají přímo z účtu přes existující přihlášení Claude Code. Prázdná nebo zastaralá cache Desktopu už nebrání zjištění běžícího agenta.
+- Vypršelé přihlášení a chyby sítě jsou viditelné v Nastavení; nesmějí být vydávané za potvrzení, že nikdo nepracuje.
 
 - Zastaralý stav vzdáleného agenta se ukazuje jako „Stav neověřen“. Přehled už při takové nejistotě nehlásí zelené „nikdo nepracuje“ a robot nepředstírá čekání na zadání.
 

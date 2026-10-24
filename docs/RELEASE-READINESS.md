@@ -6,6 +6,9 @@
 
 ## Zdroj pravdy
 
+- **v0.46.65: cílená oprava vzdáleného Claude Code (PR #357).** Živý seznam relací byl ověřen proti skutečnému účtu po standardním obnovení přihlášení Claude Code: API vrací aktivní relaci a izolovaný server bez cache ji přes konektor a model ukazuje `working`, `stale=false`. Veřejná publikace a kontrola v nainstalované aplikaci ještě nejsou dokončené. Žádné přihlašovací údaje ani soukromé názvy relací se do důkazů neukládají.
+
+
 - **v0.46.64: připravovaný Preview kandidát.** Tečka stavu agentů na ikoně Chrome rozšíření (šedá = nezjištěno, bez tečky = nic neběží) a stav větou v popisku ikony. Zveřejnění až po přesném `main` CI, Draftu a auditu příloh.
 - **v0.46.63: veřejné Preview od 24. 10. 2026.** Roboti v dílně, otočka jako těleso, flákání a volání anténou, nové nohy, filtry Agentů skládané do „+N“; obsahuje i v0.46.62. Zveřejnění až po přesném `main` CI, Draftu a auditu osmi příloh.
 - **v0.46.62: nezveřejněný kandidát, součást v0.46.63.** Přidává zjišťování cloudových běhů nativní aplikace Codex. Jeho nové přílohy vyžadují přesné zelené `main` CI a nezávislý audit.

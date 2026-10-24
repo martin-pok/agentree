@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.65', date: '2026-10-24',
+    title: 'Živý stav vzdáleného Claude Code', items: ['Cloudové relace Claude Code se načítají přímo z účtu přes existující přihlášení Claude Code, i když Desktop neukládá čerstvou cache.', 'Nečerstvý stav se ukazuje jako neověřený. Neznamená, že agent čeká nebo přestal pracovat.'],
+    en: { title: 'Live remote Claude Code status', items: ['Cloud Claude Code sessions are read directly from your account using your existing Claude Code sign-in, even when Desktop does not save a fresh cache.', 'Stale status is shown as unverified. It does not mean the agent is waiting or has stopped working.'] },
+  },
+  {
     version: '0.46.64',
     date: '2026-10-24',
     title: 'Tečka stavu na ikoně rozšíření',
