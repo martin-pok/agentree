@@ -6,6 +6,9 @@
 
 ## Zdroj pravdy
 
+- **v0.46.65: cílená oprava vzdáleného Claude Code (PR #357).** Živý seznam relací byl ověřen proti skutečnému účtu po standardním obnovení přihlášení Claude Code: API vrací aktivní relaci a izolovaný server bez cache ji přes konektor a model ukazuje `working`, `stale=false`. Veřejná publikace a kontrola v nainstalované aplikaci ještě nejsou dokončené. Žádné přihlašovací údaje ani soukromé názvy relací se do důkazů neukládají.
+
+
 - **v0.46.64: připravovaný Preview kandidát.** Tečka stavu agentů na ikoně Chrome rozšíření (šedá = nezjištěno, bez tečky = nic neběží) a stav větou v popisku ikony. Zveřejnění až po přesném `main` CI, Draftu a auditu příloh.
 - **v0.46.63: veřejné Preview od 24. 10. 2026.** Roboti v dílně, otočka jako těleso, flákání a volání anténou, nové nohy, filtry Agentů skládané do „+N“; obsahuje i v0.46.62. Zveřejnění až po přesném `main` CI, Draftu a auditu osmi příloh.
 - **v0.46.62: nezveřejněný kandidát, součást v0.46.63.** Přidává zjišťování cloudových běhů nativní aplikace Codex. Jeho nové přílohy vyžadují přesné zelené `main` CI a nezávislý audit.
@@ -106,6 +109,9 @@
 | Schválení a kanál | výslovně zvolit `preview` nebo `stable` při ručním `publish.yml`; pro Stable navíc potvrdit změnu `Latest` | Preview nikdy nesmí změnit stabilní `Latest`; koncept bez schválení ponechat neveřejný |
 
 ## Jaký je další postup
+
+Připravit `v0.46.65` jako Preview z přesného zeleného main CI, ověřit osm nových příloh a živou relaci na skutečném účtu, zveřejnit přes publish.yml (preview) a ověřit upgrade a aktuální stav v aplikaci.
+
 
 Připravit `v0.46.64` jako Preview stejným postupem a v Chromu ověřit tečku na ikoně rozšíření. Pro `v0.46.63` platilo: po zeleném PR a přesném postmerge `main` CI nechat „Připravit vydání“ sestavit nový neveřejný Draft, nezávisle ověřit všech 8 příloh a pak ručně spustit `publish.yml` pro **`v0.46.63` jako Preview**; na Macu ověřit aktualizaci z `0.46.60` uvnitř aplikace. `v0.46.61` jako Preview je veřejné, ale cloudové běhy Codexu nevidí; na Macu vlastníka běží `v0.46.60`. Další postup: aktualizovat spárované rozšíření v Chromu na stejnou verzi, ověřit živé názvy a přepisy webových chatů, skutečné dva profily Claude, QR párování a Windows beta na fyzickém zařízení. Vlastník rozhodl ponechat vydání v Preview do UAT Windows/Chrome; současné Stable zůstává `v0.46.58`. Při nalezené chybě vytvořit nový tag, nepřepisovat přílohy 0.46.60.
 

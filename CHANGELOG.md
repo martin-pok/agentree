@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.65 – 2026-10-24 · Živý stav vzdáleného Claude Code
+
+- Cloudové relace Claude Code se načítají přímo z účtu přes existující přihlášení Claude Code. Prázdná nebo zastaralá cache Desktopu už nebrání zjištění běžícího agenta.
+- Vypršelé přihlášení a chyby sítě jsou viditelné v Nastavení; nesmějí být vydávané za potvrzení, že nikdo nepracuje.
+
+- Zastaralý stav vzdáleného agenta se ukazuje jako „Stav neověřen“. Přehled už při takové nejistotě nehlásí zelené „nikdo nepracuje“ a robot nepředstírá čekání na zadání.
+
+
 ## 0.46.64 – 2026-10-24 · Tečka stavu na ikoně rozšíření
 
 - **Stav agentů přímo na liště prohlížeče:** v pravém horním rohu ikony rozšíření svítí tečka v barvě stavu – růžová, když tě agent potřebuje, červená po selhání, zlatá na limitu, zelená, když agenti pracují. Když nic neběží, tečka zmizí. Přednost má to, co tě potřebuje.

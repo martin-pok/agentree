@@ -1,7 +1,7 @@
 import { agentRobot } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS, modelPopis } from '../format.js';
+import { displayStatus, esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS, modelPopis } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON, ENV, envOf, jeCloud } from '../icons.js';
 import { sessionTotal, needsYou, agentListRank, compareAgentsForList } from '../data.js';
 import { fill, statusPill, emptyState, agentHref, toast, vetaStavu, infoTip } from '../ui.js';
@@ -60,7 +60,7 @@ const SEGMENTS = [
   ['archived', tr('Archiv')],
 ];
 
-const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : s.status === st);
+const matchStatus = (s, st) => (st === 'all' ? true : st === 'needs_input' ? needsYou(s) : displayStatus(s) === st);
 
 // Aplikace, které Agenteeq umí přepnout do popředí (server má pevný seznam v src/openers.js).
 const PREPNUTELNE = new Set(['claude-desktop', 'chatgpt', 'codex-app', 'cursor', 'vscode', 'ms-copilot', 'perplexity', 'grok', 'lmstudio', 'ollama']);
@@ -190,7 +190,7 @@ function rowHtml(s) {
   const cells = `
     <span class="cell-title"><b>${esc(s.title)}</b><span class="cell-sub">${tag}${runs > 1 ? `<span class="badge">${runs} ${tr('spuštění')}</span>` : ''}${sub}</span>${progress}</span>
     ${appCell(s)}
-    <span class="cell-status">${statusPill(s.status)}</span>
+    <span class="cell-status">${statusPill(s)}</span>
     <span class="cell-num">${total ? `${fmtTok(total)} <span class="cell-unit">${tr('tokenů')}</span>` : '–'}</span>
     <span class="cell-time" data-ago="${s.lastAt}">${rel(s.lastAt)}</span>`;
   if (f.selecting && !s.proces) {
@@ -332,7 +332,7 @@ function update() {
   const matchFacets = (s) =>
     (f.source === 'all' || (f.source === 'web' ? jeCloud(s) : !jeCloud(s)))
     && (!f.providers.size || f.providers.has(pkey(s.provider)))
-    && (!q.length || ((text) => q.every((w) => text.includes(w)))(norm([s.title, s.fullTitle, s.lastPrompt, s.project, s.cwd, s.app, s.model, s.branch, s.repo, s.url, STATUS[s.status]?.label, projectById(s.projectId)?.name].join(' '))));
+    && (!q.length || ((text) => q.every((w) => text.includes(w)))(norm([s.title, s.fullTitle, s.lastPrompt, s.project, s.cwd, s.app, s.model, s.branch, s.repo, s.url, STATUS[displayStatus(s)]?.label, projectById(s.projectId)?.name].join(' '))));
   const scoped = all.filter(matchFacets);
   const base = scoped.filter(matchProject);
 

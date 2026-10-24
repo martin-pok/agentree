@@ -74,7 +74,7 @@ test('karta „Právě teď“: štítek je stejný jako na Agentech, „Hotovo�
 
 test('Přehled nemá vlastní slovník stavů a nedoběhlé čekání přizná všude, kde je štítek', async () => {
   const prehled = await zdroj('public/js/views/overview.js');
-  assert.match(prehled, /statusPill\(s\.status, 'pb-stav'\)/);
+  assert.match(prehled, /statusPill\(s, 'pb-stav'\)/);
   assert.match(prehled, /esc\(vetaStavu\(s\)\)/);
   assert.doesNotMatch(prehled, /waiting: tr\('Hotovo'\)/, 'čekání se nesmí jmenovat „Hotovo“');
   assert.doesNotMatch(prehled, /data-ton="\$\{s\.status/, 'barva štítku jen z .pill[data-status]');
@@ -84,7 +84,7 @@ test('Přehled nemá vlastní slovník stavů a nedoběhlé čekání přizná v
   const agenti = await zdroj('public/js/views/agents.js');
   assert.match(agenti, /s\.status === 'waiting' && !s\.done && s\.reason\) sub = `\$\{esc\(s\.reason\)\}/);
   const detail = await zdroj('public/js/views/session.js');
-  assert.match(detail, /statusPill\(s\.status\)\}\$\{s\.status === 'waiting' && !s\.done && s\.reason \? `<span>\$\{esc\(s\.reason\)\}<\/span>`/);
+  assert.match(detail, /statusPill\(s\)\}\$\{s\.status === 'waiting' && !s\.done && s\.reason \? `<span>\$\{esc\(s\.reason\)\}<\/span>`/);
   assert.match(await zdroj('public/js/home-studio.js'), /s\.status === 'waiting' && !s\.done \? ' data-done="false"'/);
 });
 

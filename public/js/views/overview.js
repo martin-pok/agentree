@@ -1,7 +1,7 @@
 import { createHomeStudio, dilnaAtributy } from '../home-studio.js';
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
-import { esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
+import { displayStatus, esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
 import { tokensSince, konverzaceOd, providerSeries, STATUS_ORDER, needsYou, attentionRank, chartColor } from '../data.js';
@@ -369,7 +369,7 @@ function update(topics = new Set(['all'])) {
       || b.lastAt - a.lastAt);
   const failedCount = failed.length;
   const decideCount = needs.length;
-  const waiting = all.filter((s) => s.status === 'waiting');
+  const waiting = all.filter((s) => displayStatus(s) === 'waiting');
   const observed = all.filter((s) => s.status === 'observed');
   const live = [...needs, ...failed, ...limited, ...working, ...observed, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
   const STRIP_MAX = 12;
@@ -392,8 +392,8 @@ function update(topics = new Set(['all'])) {
       ? `<ul class="pb-agents" aria-label="${tr('Aktivní agenti')}">${live.slice(0, STRIP_MAX).map((s) => {
         // Štítek i barva jako na Agentech a v detailu (statusPill). `data-done="false"` u čekání,
         // které nedoběhlo, říká robotovi, ať netvrdí „hotovo“ (robot-bubliny.js).
-        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(s.status)}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)} href="${agentHref(s.id)}">
-          ${statusPill(s.status, 'pb-stav')}
+        return `<li data-key="${esc(s.id)}"><a class="pb-agent" data-state="${needsYou(s) || s.status === 'failed' || s.status === 'limited' ? 'alert' : esc(s.status)}" data-status="${esc(displayStatus(s))}"${s.status === 'waiting' && !s.done ? ' data-done="false"' : ''}${dilnaAtributy(s)} href="${agentHref(s.id)}">
+          ${statusPill(s, 'pb-stav')}
           <span class="pb-agent-logo">${glyph(s)}</span>
           <span class="pb-agent-text"><b${s.fullTitle ? ` title="${esc(s.fullTitle)}"` : ''}>${esc(s.title)}</b><small><i aria-hidden="true"></i>${esc(vetaStavu(s))}<span class="sr-only"> · ${esc(s.app)}</span></small></span>
         </a></li>`;
@@ -420,7 +420,7 @@ function update(topics = new Set(['all'])) {
   // Selhání zjišťování procesů se nikdy nehlásí jako „nic neběží“.
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     const problemy = [...failed, ...limited];
-    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
+    const { stav, veta, poznamka } = stavAgentu({ pracuje: working.length, cekaji: needs.length, selhalo: failed.length, limit: limited.length, procesyNevim, nejiste: all.filter((s) => displayStatus(s) === 'unknown').length + Number((state.connectors || []).some((c) => c.id === 'claude-desktop-code' && c.state === 'error')), vzdaleneAt: (state.connectors || []).find((c) => c.id === 'claude-desktop-code' && c.state === 'connected')?.seznamAt || 0, nevidim: otevreneNevidim(), now });
     // Barvu stavu dostane jen dlaždice, ve které něco je (refinement.css).
     const pocty = [
       [working.length, popisPoctu('working', working.length), working.length ? 'pracuje' : '', '#/agenti?stav=working'],

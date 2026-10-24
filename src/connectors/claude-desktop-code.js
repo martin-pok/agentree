@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { appSupportDir } from '../platform.js';
+import { appSupportDir, prihlaseniClaudeCode } from '../platform.js';
 import { statSafe, toTs, clip, DAY, MIN } from '../util.js';
 import { createSession, touch } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
@@ -99,7 +99,7 @@ export function applyDesktopUsage(store, usage) {
   return wrote;
 }
 
-export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.now()) {
+export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.now(), source = 'desktop-cache') {
   const st = newFileState(), seen = new Set();
   const messages = cached?.tree?.kind === 'code_session' && Array.isArray(cached.tree.messages) ? cached.tree.messages : [];
   const ordered = messages.filter((m) => m && ['user', 'assistant', 'result'].includes(m.type))
@@ -125,7 +125,7 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   touch(s, updated);
   // Jen horní mez; na zobrazení zkracuje model.js#summarize na hranici slova s „…“.
   s.title = clip(typeof metadata.title === 'string' ? metadata.title : '', 400);
-  s.source = 'desktop-cache';
+  s.source = source;
   s.app = ui('Claude Desktop · vzdálený Code');
   s.url = `https://claude.ai/code/${metadata.id}`;
   s.resume = null; s.cwd = ''; // Remote VM paths are never local folders/resume commands.
@@ -184,18 +184,18 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.staleMs = 2 * MIN;
   s.toolWaitSince = 0;
   s.pending = null; s.limit = null; s.failure = null;
-  s.staleReason = ui('Při posledním načtení pracoval · novější stav Claude Desktop neuložil');
+  s.staleReason = s.source === 'claude-account' ? ui('Chybí aktuální stav z účtu Claude') : ui('Při posledním načtení pracoval · novější stav Claude Desktop neuložil');
   if (hlaseno === 'working') {
     s.running = true;
     s.runningAt = Math.max(hlasenoAt, prepis.running ? prepis.at : 0);
-    s.activity = prepis.running && prepis.at >= hlasenoAt && prepis.activity ? prepis.activity : ui('Pracuje podle stavu v Claude Desktopu');
+    s.activity = prepis.running && prepis.at >= hlasenoAt && prepis.activity ? prepis.activity : (s.source === 'claude-account' ? ui('Pracuje podle živého stavu účtu Claude') : ui('Pracuje podle stavu v Claude Desktopu'));
     return;
   }
   if (prepis.running && prepis.at > hlasenoAt) {
     // Uložený přepis je novější než seznam relací a tah v něm ještě neskončil.
     s.running = true;
     s.runningAt = prepis.at;
-    s.activity = prepis.activity || ui('Pracuje podle stavu v Claude Desktopu');
+    s.activity = prepis.activity || (s.source === 'claude-account' ? ui('Pracuje podle živého stavu účtu Claude') : ui('Pracuje podle stavu v Claude Desktopu'));
     return;
   }
   s.running = false;
@@ -208,26 +208,120 @@ function applyReportedStatus(s, metadata, observedAt, now) {
     s.pending = { kind: 'question', at: updated, observedAt: hlasenoAt, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
   }
 }
+// Seznam cloudových relací přímo z účtu – týž dotaz, kterým ho čte Claude Code (`claude --teleport`):
+// GET https://api.anthropic.com/v1/code/sessions s přihlášením Claude Code. Vrací `worker_status`
+// („running“ / „idle“ / „requires_action“), `status` (archivace), `last_event_at` a `config`
+// (zdroje, model). Do tvaru seznamu v cache Claude Desktopu ho převádí stejně jako Claude Code
+// (`type: 'session'`, `session_status`), takže stav čte tatáž hlasenyStav. Interní API, 🧪 Beta.
+// Id relace přichází jako `session_…`, případně `cse_…` se stejnou příponou.
+export const CLOUD_API = 'https://api.anthropic.com/v1/code/sessions';
+const NASTROJ = /^[\w.:-]{1,80}$/;
+export function relaceZApi(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = remoteId(typeof raw.id === 'string' ? raw.id.replace(/^cse_/, 'session_') : '');
+  const updated = [raw.last_event_at, raw.updated_at, raw.created_at].find((t) => typeof t === 'string' && Number.isFinite(Date.parse(t)));
+  if (!id || !updated) return null;
+  const stav = raw.status === 'archived' ? 'archived' : raw.status === 'failed' ? 'failed' : typeof raw.worker_status === 'string' ? raw.worker_status : '';
+  if (![...STAV_PRACUJE, ...STAV_CEKA, ...STAV_SELHAL, 'idle', 'stopped', 'completed', 'archived'].includes(stav)) return null;
+  // Čekání na schválení nese `external_metadata.pending_action.tool_name` (jako v Claude Code); jiný
+  // text o čekání API neposílá, takže se nic nedomýšlí.
+  const nastroj = stav === 'requires_action' ? raw.external_metadata?.pending_action?.tool_name : undefined;
+  return {
+    type: 'session', id, title: typeof raw.title === 'string' ? raw.title : '',
+    created_at: typeof raw.created_at === 'string' ? raw.created_at : updated, updated_at: updated, session_status: stav,
+    ...(typeof nastroj === 'string' && NASTROJ.test(nastroj) ? { post_turn_summary: { needs_action: ui('Čeká na tvé schválení nástroje {0}. Otevři Claude.', nastroj) } } : {}),
+    session_context: { sources: Array.isArray(raw.config?.sources) ? raw.config.sources : [], model: typeof raw.config?.model === 'string' ? raw.config.model : null },
+  };
+}
+
+// Jeden dotaz na účet. Token jde jen na api.anthropic.com: přesměrování se odmítá (hlavička
+// Authorization by jinak mohla odejít jinam), odpověď nad 4 MB se nečte. Chyby jsou věty pro
+// Nastavení; nikdy se z nich nestane „nic neběží“. 429 a 503 nesou, za jak dlouho to zkusit znovu.
+const chybaPrihlaseni = (text) => Object.assign(new Error(text), { prihlaseni: true });
+async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
+  const p = await prihlaseni();
+  if (!p) throw chybaPrihlaseni(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.'));
+  if (p.expiresAt && p.expiresAt <= now) throw chybaPrihlaseni(ui('Přihlášení Claude Code vypršelo. Obnov ho v Claude Code a zkontroluj spojení znovu.'));
+  let res;
+  try {
+    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json' }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
+  } catch { throw new Error(ui('Účet Claude neodpověděl (síť). Zkusí se to znovu.')); }
+  if (res.status === 401 || res.status === 403) throw chybaPrihlaseni(ui('Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.'));
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const za = Number(res.headers?.get?.('retry-after'));
+    throw Object.assign(new Error(ui('Účet Claude vrátil chybu {0}. Zkusí se to znovu.', res.status)), { pauzaMs: Number.isFinite(za) && za > 0 ? Math.min(za, 600) * 1000 : res.status === 429 ? 60e3 : 0 });
+  }
+  if (Number(res.headers?.get?.('content-length')) > 4 * 1024 * 1024) throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.'));
+  try { return await res.json(); } catch { throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.')); }
+}
+export async function nactiCloudoveRelace({ prihlaseni, fetchImpl, now = Date.now() }) {
+  const data = await dotaz(CLOUD_API, { prihlaseni, fetchImpl, now });
+  if (!Array.isArray(data?.data)) throw new Error(ui('Účet Claude nevrátil seznam relací.'));
+  if (data.data.some((x) => remoteId(typeof x?.id === 'string' ? x.id.replace(/^cse_/, 'session_') : '') && !relaceZApi(x))) throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.'));
+  return { sessions: data.data.map(relaceZApi).filter(Boolean), observedAt: now };
+}
+// Detail jedné relace (`{ session }`, starší tvar `{ response_shape }`) – pro relaci, kterou známe
+// jako běžící nebo čekající, ale v první stránce seznamu už není. 404 = relace na účtu neexistuje.
+export async function nactiCloudovouRelaci(id, { prihlaseni, fetchImpl, now = Date.now() }) {
+  if (!remoteId(id)) return null;
+  const data = await dotaz(`${CLOUD_API}/${id}`, { prihlaseni, fetchImpl, now });
+  const raw = data && typeof data === 'object' ? data.session ?? data.response_shape : null;
+  const s = relaceZApi(raw);
+  return s && s.id === id ? { ...s, _observedAt: now } : null;
+}
+// Z cache Claude Desktopu a ze seznamu z účtu platí u každé relace pozdější pozorování (kdy zdroj
+// stav od serveru dostal), při shodě novější `updated_at`. Účet a cache nemusejí plnit `updated_at`
+// stejným polem, takže by starší pozorování s „novějším“ časem jinak přebilo čerstvý stav.
+export function slucRelace(...zdroje) {
+  const out = new Map();
+  for (const z of zdroje) {
+    if (!z) continue;
+    for (const x of z.sessions) {
+      const s = x._observedAt === undefined ? { ...x, _observedAt: z.observedAt } : x;
+      const old = out.get(s.id);
+      if (!old || s._observedAt > old._observedAt
+        || (s._observedAt === old._observedAt && Date.parse(s.updated_at) > Date.parse(old.updated_at))) out.set(s.id, s);
+    }
+  }
+  return [...out.values()];
+}
+
 // Kdy Claude Desktop seznam relací naposledy uložil – stav vzdálených agentů je přesně tak čerstvý.
 const kdy = (ts) => {
   const d = new Date(ts);
   return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
-export function createClaudeDesktopCodeConnector({ config, store }) {
+export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = {} }) {
   const root = path.join(appSupportDir(config.sourceHome), 'Claude', 'IndexedDB');
   const dir = path.join(root, 'https_claude.ai_0.indexeddb.leveldb');
   let watcher, exists = false, lastEventAt = 0, error = '', stopped = false, seznamAt = 0;
   const known = new Set(), fingerprints = new Map();
+  // Poslední přečtená cache Desktopu a poslední seznam z účtu; každý zdroj se obnovuje sám.
+  let zCache = null, prepisy = new Map();
+  // Seznam z účtu (🧪): zapnutý se síťovými funkcemi (config.cloudFetch, v testech vypnuté).
+  const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
+  // Přihlášení se čte jednou a drží v paměti do vypršení (Klíčenka se nečte každých 15 s). Po chybě
+  // přihlášení se 10 minut znovu nečte – kdyby macOS na přístup ke Klíčence ptal, neptá se pořád.
+  const cist = claudeCloud.prihlaseni || (() => prihlaseniClaudeCode(config));
+  const tok = { p: null, chybaAt: 0 };
+  const prihlaseni = async () => {
+    if (tok.p && !(tok.p.expiresAt && tok.p.expiresAt <= Date.now())) return tok.p;
+    if (tok.chybaAt && Date.now() - tok.chybaAt < 10 * MIN) return null;
+    tok.p = await cist();
+    if (!tok.p || (tok.p.expiresAt && tok.p.expiresAt <= Date.now())) tok.chybaAt = Date.now();
+    return tok.p;
+  };
   const queue = createFileQueue(sync, 60);
   async function sync() {
     if (stopped) return;
     exists = Boolean(await statSafe(dir));
-    if (!exists) return;
+    if (!exists) { zCache = null; zpracuj(); return; }
     try {
       const records = await readClaudeDesktopCache(dir), data = remoteSessions(records);
       // Vytížení plánu z uložené stránky Usage – nezávisle na tom, jestli cache nese vzdálené relace.
       if (applyDesktopUsage(store, desktopUsage(records))) lastEventAt = Date.now();
-      if (!data) { error = ui('Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'); return; }
+      if (!data) { error = ui('Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.'); zCache = null; zpracuj(); return; }
       seznamAt = data.observedAt;
       const cache = new Map();
       for (const { value } of records) {
@@ -235,50 +329,112 @@ export function createClaudeDesktopCodeConnector({ config, store }) {
         const id = remoteId(String(value.conversationUuid || '').replace(/^code:cse_/, 'session_'));
         if (id && (!cache.has(id) || (value.writtenAt || 0) > (cache.get(id).writtenAt || 0))) cache.set(id, value);
       }
-      for (const metadata of data.sessions) {
-        if (Date.now() - Date.parse(metadata.updated_at) > config.windowDays * DAY) continue;
-        const id = `claude-desktop-code:${metadata.id}`;
-        const { _observedAt, ...facts } = metadata;
-        const fingerprint = JSON.stringify([facts, cache.get(metadata.id)?.writtenAt]);
-        known.add(id);
-        if (fingerprints.get(id) === fingerprint) {
-          const existing = store.get(id);
-          if (existing && existing.observation.at !== _observedAt) {
-            applyReportedStatus(existing, metadata, _observedAt, Date.now());
-            existing.observation.at = _observedAt;
-            store.commit(existing); // Refresh reported status, preserve transcript and open UI.
-          }
-          continue;
-        }
-        const s = createSession({ connector: 'claude-desktop-code', localId: metadata.id, provider: 'anthropic', app: ui('Claude Desktop · vzdálený Code') });
-        const previous = store.get(id);
-        if (previous) s.seq = previous.seq; // A shorter cache must not look like an older SSE snapshot.
-        applyRemoteSession(s, metadata, cache.get(metadata.id), metadata._observedAt);
-        s.resetTranscript = Boolean(previous);
-        // Otevřená karta claude.ai/code s touž relací (rozšíření, web.js): živý důkaz zůstává u relace
-        // a webová konverzace, která vznikla dřív než záznam v cache, se do ní převede – agent je jeden.
-        const web = store.get(webIdClaudeCode(metadata.id));
-        s.karta = web ? kartaZWebu(web) : previous?.karta || null;
-        if (s.karta?.lastAt) touch(s, s.karta.lastAt);
-        if (web) store.remove(web.id);
-        store.sessions.set(id, s);
-        store.commit(s);
-        fingerprints.set(id, fingerprint);
-        lastEventAt = Date.now();
-      }
+      zCache = data;
+      prepisy = cache;
       // The list is paginated: absence from its first page is not proof of deletion.
       error = '';
+      zpracuj();
     } catch {
       error = ui('Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.');
     }
   }
+  function zpracuj() {
+    const cache = prepisy;
+    for (const metadata of slucRelace(zCache, api.data)) {
+      if (Date.now() - Date.parse(metadata.updated_at) > config.windowDays * DAY) continue;
+      const id = `claude-desktop-code:${metadata.id}`;
+      const { _observedAt, ...facts } = metadata;
+      const source = api.data?.sessions.some((x) => x.id === metadata.id) && _observedAt === api.data.observedAt ? 'claude-account' : 'desktop-cache';
+      const fingerprint = JSON.stringify([facts, cache.get(metadata.id)?.writtenAt, source]);
+      known.add(id);
+      if (fingerprints.get(id) === fingerprint) {
+        const existing = store.get(id);
+        if (existing && existing.observation.at !== _observedAt) {
+          applyReportedStatus(existing, metadata, _observedAt, Date.now());
+          existing.observation.at = _observedAt;
+          store.commit(existing); // Refresh reported status, preserve transcript and open UI.
+        }
+        continue;
+      }
+      const s = createSession({ connector: 'claude-desktop-code', localId: metadata.id, provider: 'anthropic', app: ui('Claude Desktop · vzdálený Code') });
+      const previous = store.get(id);
+      if (previous) s.seq = previous.seq; // A shorter cache must not look like an older SSE snapshot.
+      applyRemoteSession(s, metadata, cache.get(metadata.id), _observedAt, Date.now(), source);
+      s.resetTranscript = Boolean(previous);
+      // Otevřená karta claude.ai/code s touž relací (rozšíření, web.js): živý důkaz zůstává u relace
+      // a webová konverzace, která vznikla dřív než záznam v cache, se do ní převede – agent je jeden.
+      const web = store.get(webIdClaudeCode(metadata.id));
+      s.karta = web ? kartaZWebu(web) : previous?.karta || null;
+      if (s.karta?.lastAt) touch(s, s.karta.lastAt);
+      if (web) store.remove(web.id);
+      store.sessions.set(id, s);
+      store.commit(s);
+      fingerprints.set(id, fingerprint);
+      lastEventAt = Date.now();
+    }
+  }
+  // Rytmus: 8 s, když na účtu něco běží nebo čeká na tebe, jinak 30 s; po 429/503 tolik, kolik
+  // řekne server. „Pracuje“ drží deriveStatus 2 minuty od načtení, takže jeden výpadek stav nezestárne.
+  const AKTIVNI = new Set(['running', 'requires_action']);
+  const rytmus = () => api.pauzaMs || (api.data?.sessions.some((x) => AKTIVNI.has(x.session_status)) ? (claudeCloud.aktivniMs || 8000) : (claudeCloud.intervalMs || 30000));
+  function naplanuj() {
+    clearTimeout(api.timer);
+    if (stopped || !api.zapnuto) return;
+    api.timer = setTimeout(() => nactiZUctu().finally(naplanuj), rytmus());
+    api.timer.unref?.();
+  }
+  async function nactiZUctu() {
+    if (!api.zapnuto || stopped) return;
+    if (api.bezi) return api.bezi;
+    api.pokusAt = Date.now();
+    api.bezi = (async () => {
+      try {
+        const opts = { prihlaseni, fetchImpl: claudeCloud.fetchImpl };
+        const data = await nactiCloudoveRelace(opts);
+        // Relace, kterou známe jako běžící nebo čekající a v první stránce seznamu už není, se
+        // dotáže zvlášť (nanejvýš 5) – jinak by zůstala viset na starém stavu.
+        const vSeznamu = new Set(data.sessions.map((x) => x.id));
+        const dohledat = [...known].map((id) => store.get(id)).filter((x) => x && (x.running || x.pending) && !vSeznamu.has(x.localId)).slice(0, 5);
+        for (const x of dohledat) {
+          const d = await nactiCloudovouRelaci(x.localId, opts);
+          if (d) data.sessions.push(d);
+        }
+        api.data = data;
+        api.at = data.observedAt;
+        api.error = '';
+        api.pauzaMs = 0;
+        zpracuj();
+      } catch (e) {
+        api.error = e.message;
+        api.pauzaMs = e.pauzaMs || 0;
+        if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }
+      }
+    })().finally(() => { api.bezi = null; });
+    return api.bezi;
+  }
+  const popis = () => {
+    const casti = [];
+    if (api.zapnuto) casti.push(api.error ? ui('Stav z účtu Claude: {0}', api.error) : api.at ? ui('Stav cloudových agentů čtu přímo z účtu Claude (naposledy {0}).', kdy(api.at)) : '');
+    if (error) casti.push(error);
+    else if (zCache) casti.push(seznamAt ? ui('Cache Claude Desktopu uložila seznam relací {0}.', kdy(seznamAt)) : ui('Čtu i místní cache Claude Desktopu.'));
+    return casti.filter(Boolean).join(' ');
+  };
   return {
     id: 'claude-desktop-code', name: ui('Claude Desktop · vzdálený Code'), provider: 'anthropic', kind: 'local', verified: false,
-    source: ui('Claude/IndexedDB (místní cache vzdálených relací)'),
-    description: ui('Vzdálení agenti, poslední hlášený stav a dostupná část přepisu. Interní formát Claude Desktopu; tokeny mohou být neúplné.'),
-    async start() { await queue.run(dir); watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 }); },
-    scan: () => queue.run(dir),
-    stop() { stopped = true; watcher?.close(); queue.clear(); }, idle: () => queue.idle(),
-    status: () => ({ state: error ? 'error' : !exists ? 'missing' : known.size ? 'connected' : exists ? 'idle' : 'missing', detail: error || (known.size ? (seznamAt ? ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu. Seznam relací naposledy uložil {1}.', known.size, kdy(seznamAt)) : ui('Sleduji {0} vzdálených relací z místní cache Claude Desktopu.', known.size)) : ui('Zatím bez místní cache vzdálených agentů.')), count: known.size, seznamAt, watching: Boolean(watcher?.active), lastEventAt }),
+    source: ui('Účet Claude (seznam relací jako Claude Code) a Claude/IndexedDB (místní cache)'),
+    description: ui('Vzdálení agenti Claude Code: stav přímo z účtu Claude, dostupná část přepisu z cache Claude Desktopu. Interní formáty; tokeny mohou být neúplné.'),
+    async start() {
+      await queue.run(dir);
+      watcher = watchTree(root, () => queue.schedule(dir), { retryMs: 500 });
+      if (api.zapnuto) { await nactiZUctu(); naplanuj(); }
+    },
+    // Pravidelný průchod aplikace seznam z účtu nežádá častěji než jednou za 10 s; ruční obnova (force) hned.
+    scan: async (force = false) => { await queue.run(dir); if (force) tok.chybaAt = 0; if (force || (Date.now() - api.pokusAt >= 8000 && !api.pauzaMs)) await nactiZUctu(); },
+    stop() { stopped = true; watcher?.close(); queue.clear(); clearTimeout(api.timer); }, idle: async () => { await queue.idle(); await api.bezi; },
+    status: () => {
+      const ziveOk = api.zapnuto && !api.error && api.at > 0;
+      const stav = ziveOk ? 'connected' : api.zapnuto && api.error ? 'error' : error ? 'error' : api.zapnuto && api.error && !exists ? 'error' : !exists && !ziveOk ? 'missing' : known.size ? 'connected' : 'idle';
+      return { state: stav, detail: popis() || (known.size ? ui('Sleduji {0} vzdálených relací.', known.size) : ui('Zatím bez vzdálených agentů.')), count: known.size, seznamAt, zivyAt: api.at, watching: Boolean(watcher?.active), lastEventAt };
+    },
   };
 }
