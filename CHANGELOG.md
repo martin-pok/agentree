@@ -3,6 +3,7 @@
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
 
 - **Oprava: cloudový agent Claude Code zmizel z Přehledu.** Od 0.46.68 posílal Agenteeq hlavičku organizace i se seznamem relací z účtu Claude; Claude Code ji tam neposílá a účet seznam odmítl. Zbyla jen stará cache Claude Desktopu a běžící agent z Přehledu vypadl. Organizace teď jde jen s načtením přepisu (jako v Claude Code) a seznam si bere 100 relací, takže běžící relace z něj nevypadne.
+- **Bubliny robotů na míru textu:** zalomená věta už nenechá bublinu v plné šířce s prázdným místem vpravo – řádky jsou vyvážené a bublina se zúží na nejdelší z nich.
 - **Nová verze se ukáže nahoře sama:** aplikace hledá aktualizaci každých 15 minut (dřív jednou za 6 hodin) a hned, když se do ní vrátíš. Upozornění „Nová verze“ s tlačítkem Aktualizovat je v horní liště, do Nastavení chodit nemusíš.
 
 ## 0.46.70 – 2026-10-24 · Generátor nápadů a vyrovnaný layout

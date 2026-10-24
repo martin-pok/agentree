@@ -126,7 +126,24 @@ export function initRobotBubliny() {
     const r = u.getBoundingClientRect();
     if (!r.width || r.bottom < 0 || r.top > innerHeight) { zavri(); return false; }
     const okraj = 12, mezera = 10;
-    const zmer = (max = 0) => { bub.style.maxWidth = max ? `${max}px` : ''; return { width: bub.offsetWidth, height: bub.offsetHeight }; };
+    // Bublina na míru textu: zalomený text by jinak nechal bublinu v plné šířce max-width a vpravo
+    // prázdné místo. Šířka se proto zúží na nejdelší skutečný řádek (měřeno přes Range, přepočteno
+    // z animačního zmenšení).
+    const zmer = (max = 0) => {
+      bub.style.width = '';
+      bub.style.maxWidth = max ? `${max}px` : '';
+      const rozsah = document.createRange();
+      rozsah.selectNodeContents(text);
+      const radky = [...rozsah.getClientRects()].filter((x) => x.width > 0);
+      if (radky.length > 1) {
+        const meritko = bub.getBoundingClientRect().width / (bub.offsetWidth || 1) || 1;
+        const sirkaTextu = (Math.max(...radky.map((x) => x.right)) - Math.min(...radky.map((x) => x.left))) / meritko;
+        const cs = getComputedStyle(bub);
+        const okraje = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+        bub.style.width = `${Math.ceil(sirkaTextu + okraje + 1)}px`;
+      }
+      return { width: bub.offsetWidth, height: bub.offsetHeight };
+    };
     const hlavaY = r.top + r.height * 0.35;
     const stredX = r.left + r.width / 2;
     // Karta, ve které robot sedí: vpravo od robota bývá prázdné místo, kam se bublina vejde celá.
