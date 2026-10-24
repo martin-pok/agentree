@@ -2,6 +2,9 @@
 
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
 
+- **Oprava: běžící Claude Code „bez přepisu“.** Agent spuštěný v repozitáři, který pracuje v jeho pracovní kopii (Claude Desktop: `.claude/worktrees/…`), se teď spáruje se svým přepisem – uvidíš zadání, stav i přepis místo prázdného „detekovaný proces“. Proces z domovské složky si cizí konverzaci nevezme.
+- **Oprava: robot bez rukou.** Když čekající robot nemá svou hračku nakreslenou (kniha, mobil), paže se už neschovají ani neotočí do prázdna.
+
 - **Barvy projektů:** přibyla čistá červená, krvavě červená, travní zelená a tmavě modrá (20 barev, na počítači v jedné řadě).
 - **Dialog projektu bez posouvání:** dialog projektu se vejde celý bez posouvání i do nízkého okna; nápověda u „Složek projektu“ se otevírá nahoru.
 - **Plynulé přepínání obrazovek:** přepnutí po seznamu agentů je plynulé – úklid animací robotů běží až ve volné chvíli prohlížeče.
