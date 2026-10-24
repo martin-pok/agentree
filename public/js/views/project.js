@@ -109,6 +109,9 @@ function saveNotes(textarea, statusEl) {
   }, 700);
 }
 
+// Štítek projektu: kapsle s ikonou cenovky, ať je jasné, že jde o štítek (a odkaz na filtr), ne složku.
+const STITEK_IKONA = '<svg class="ptag-ikona" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l9 9-9 9z"/><circle cx="7.5" cy="7.5" r="1.4"/></svg>';
+
 function mount(el, [id]) {
   Object.assign(v, { el, id, filter: 'all' });
   el.innerHTML = `<div class="project">
@@ -248,7 +251,7 @@ function update() {
     <div class="project-kicker">${projectMark(p, 'pdot--lg')}<span>${tr('Projekt')}</span>${p.archived ? `<span class="badge">${tr('Archiv')}</span>` : ''}<span class="dot-sep"></span><span>${tr('založen')} ${dateLong(p.createdAt)}</span></div>
     <h2 class="session-title">${esc(p.name)}</h2>
     ${p.description ? `<p class="project-desc">${esc(p.description)}</p>` : ''}
-    ${p.tags?.length ? `<p class="pcard-tags project-tags" aria-label="${tr('Štítky')}">${p.tags.map((t) => `<a class="ptag" href="#/projekty?stitek=${encodeURIComponent(t)}">${esc(t)}</a>`).join('')}</p>` : ''}
+    ${p.tags?.length ? `<p class="project-tags"><span class="project-tags-label">${tr('Štítky')}</span>${p.tags.map((t) => `<a class="ptag ptag--odkaz" href="#/projekty?stitek=${encodeURIComponent(t)}" title="${esc(tr('Zobrazit projekty se štítkem {0}', t))}">${STITEK_IKONA}<span>${esc(t)}</span></a>`).join('')}</p>` : ''}
     <div class="session-actions">
       <button class="btn btn--primary" type="button" data-action="launch">${ICON.spark}${tr('Spustit agenta v projektu')}</button>
       <button class="btn" type="button" data-action="edit">${ICON.sliders}${tr('Upravit')}</button>

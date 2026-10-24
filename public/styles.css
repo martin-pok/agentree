@@ -3041,3 +3041,11 @@ html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(42% 42% at 5
 .avatar-pick:has(svg) { background: transparent; }
 .avatar-pick svg, .avatar-face svg, .avatar-mini svg { position: absolute; inset: -1px; width: calc(100% + 2px); height: calc(100% + 2px); max-width: none; display: block; }
 .avatar-mini { position: relative; }
+
+/* Štítky v hlavičce projektu: popisek „Štítky“ a čitelné kapsle 32 px s ikonou cenovky. Klik vede
+   na Projekty filtrované tímto štítkem. */
+.project-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; }
+.project-tags-label { color: var(--mute); font-size: 13px; }
+.ptag.ptag--odkaz { gap: 6px; height: 32px; padding: 0 14px 0 10px; margin: 0; background: var(--card); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font-size: 13px; text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.ptag.ptag--odkaz:hover { background: var(--line-2); box-shadow: inset 0 0 0 1px var(--mute); }
+.ptag-ikona { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; color: var(--mute); }

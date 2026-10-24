@@ -142,6 +142,7 @@ export default {
     "proces bez přepisu": "process without a transcript",
     "Detekovaný proces bez přepisu": "Detected process without a transcript",
     "Co má agent udělat? Např.": "What should the agent do? E.g.",
+    "Zobrazit projekty se štítkem {0}": "Show projects tagged {0}",
     "Potřebuje povolení": "Needs permission",
     "Aplikace neběží": "App isn’t running",
     "Chaty z aplikace pro Mac · přes Zpřístupnění": "Chats from the Mac app · via Accessibility",
