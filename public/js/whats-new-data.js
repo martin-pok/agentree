@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.71',
+    date: '2026-10-24',
+    title: 'Cloudoví agenti a aktualizace',
+    items: [
+      'Běžící cloudový agent Claude Code je zase vidět v Přehledu.',
+      'Nová verze se ukáže nahoře sama – kontrola každých 15 minut a při návratu do aplikace.',
+    ],
+    en: {
+      title: 'Cloud agents and updates',
+      items: [
+        'A running cloud Claude Code agent shows up in the Overview again.',
+        'A new version appears at the top on its own – checked every 15 minutes and when you return to the app.',
+      ],
+    },
+  },
+  {
     version: '0.46.70',
     date: '2026-10-24',
     title: 'Generátor nápadů',

@@ -231,7 +231,7 @@ ve složce, o které Agenteeq neví. Proto:
   stav čte tatáž `hlasenyStav`. Z cache a z účtu platí u relace záznam s novějším `updated_at`,
   při shodě pozdější načtení (`slucRelace`).
   **Přepis z účtu (od 0.46.67) 🧪 Beta:** pro relace, které běží nebo čekají, a pro otevřený detail
-  (10 minut od otevření, nanejvýš 4 relace na kolo) se čte `GET …/v1/code/sessions/{id}/events?limit=100&sort_order=desc` s hlavičkou `x-organization-uuid` (organizace z `oauthAccount.organizationUuid` v `~/.claude.json`) – přesně jako načítání historie v Claude Code; odpověď `{ data: [{ payload, created_at }], next_cursor }` nese zprávu SDK v `payload` (0.46.67 četla jen nejstarší stránku bez organizace, proto byl přepis prázdný).
+  (10 minut od otevření, nanejvýš 4 relace na kolo) se čte `GET …/v1/code/sessions/{id}/events?limit=100&sort_order=desc` s hlavičkou `x-organization-uuid` (organizace z `oauthAccount.organizationUuid` v `~/.claude.json`; jen u událostí – seznam relací `?limit=100` ji v Claude Code nemá a s ní ho účet odmítl, 0.46.68–0.46.70) – přesně jako načítání historie v Claude Code; odpověď `{ data: [{ payload, created_at }], next_cursor }` nese zprávu SDK v `payload` (0.46.67 četla jen nejstarší stránku bez organizace, proto byl přepis prázdný).
   Události jsou tytéž zprávy SDK, jaké Desktop ukládá do cache (`type`, `uuid`, `created_at`,
   `parent_tool_use_id`, `message`); čte se plochý tvar i obálka `{ created_at, user|assistant|result }`
   (`zpravaZUdalosti`) a s cache se slučují podle `uuid` (`slucPrepis`). Obálku i časy událostí
