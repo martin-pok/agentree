@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.64',
+    date: '2026-10-24',
+    title: 'Tečka stavu na ikoně rozšíření',
+    items: [
+      'Ikona rozšíření v prohlížeči ukazuje tečkou, jak na tom agenti jsou: růžová, když tě potřebují, červená po selhání, zlatá na limitu, zelená při práci.',
+      'Když Agenteeq stav nezjistí, tečka je šedá; když nic neběží, tečka zmizí.',
+      'Popisek ikony říká stav větou, například „Potřebují tě 2 agenti“.',
+    ],
+    en: {
+      title: 'Status dot on the extension icon',
+      items: [
+        'The browser extension icon shows how your agents are doing with a dot: pink when they need you, red after a failure, gold at a limit, green while working.',
+        'If Agenteeq cannot tell, the dot is grey; when nothing is running, the dot disappears.',
+        'The icon tooltip states the status in words, for example “2 agents need you”.',
+      ],
+    },
+  },
+  {
     version: '0.46.63',
     date: '2026-10-23',
     title: 'Roboti v dílně',

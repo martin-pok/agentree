@@ -1,6 +1,8 @@
 // Service worker: spárování s Agenteeq a odeslání dat na 127.0.0.1 (nikam jinam).
 // Port aplikace je výchozí 4620. Běží-li Agenteeq jinde (PORT), nastaví se v okně
 // rozšíření; manifest se kvůli tomu nemění (volitelné oprávnění pro 127.0.0.1, popup.js).
+// Jazyk a tečka stavu na ikoně (odznak.js) – klasické skripty, sdílené s oknem rozšíření.
+if (typeof importScripts === 'function') importScripts('i18n.js', 'odznak.js');
 const HOST = 'http://127.0.0.1';
 const VYCHOZI_PORT = 4620;
 const platnyPort = (p) => Number.isInteger(p) && p >= 1024 && p <= 65535;
@@ -127,6 +129,7 @@ const post = async (t, payload) =>
 async function forgetToken() {
   token = null;
   await chrome.storage.local.remove('token');
+  obnovOdznak(null).catch(() => {});
 }
 
 // Otevřené konverzace pro okno rozšíření: služba, karta (aby se do ní dalo přepnout), jestli agent
@@ -176,8 +179,11 @@ async function send(payload, karta) {
   const res = await post(await getToken(), payload);
   if (res.status === 401) await forgetToken();
   await chrome.storage.local.set({ lastStatus: { ok: res.ok, code: res.status, site: payload.site, at: Date.now() } });
+  // Hlášení z karty chodí i několikrát za vteřinu (odpověď se píše); tečka se přepočítá nejvýš po 5 s.
+  if (Date.now() - odznakPoHlaseni > 5000) { odznakPoHlaseni = Date.now(); obnovOdznak().catch(() => {}); }
   return res.ok;
 }
+let odznakPoHlaseni = 0;
 
 async function takeHandoff(site) {
   const { disabledSites = [] } = await chrome.storage.local.get(['disabledSites']);
@@ -286,15 +292,31 @@ async function vlozDoOtevrenychKaret() {
   }
 }
 
+// Tečka stavu na ikoně: stav agentů z aplikace každých 30 s (nejkratší interval budíku), po každém
+// hlášení z karty a při otevření okna. Nespárované rozšíření tečku nemá; nedostupná aplikace = šedá.
+const ODZNAK_ALARM = 'agenteeq-odznak';
+async function obnovOdznak(data) {
+  if (!globalThis.AgenteeqOdznak || !chrome.action) return;
+  const sparovano = Boolean(token || (await chrome.storage.local.get(['token'])).token);
+  const prehledAgentu = data === undefined && sparovano ? await prehled() : data ?? null;
+  await globalThis.AgenteeqOdznak.nastav(globalThis.AgenteeqOdznak.stavOdznaku(prehledAgentu, { sparovano }));
+}
+const armOdznak = () => chrome.alarms.create(ODZNAK_ALARM, { periodInMinutes: 0.5 });
+
 const HELLO_ALARM = 'agenteeq-hello';
 const armHello = () => chrome.alarms.create(HELLO_ALARM, { periodInMinutes: 30 });
 chrome.runtime.onInstalled.addListener(({ reason }) => {
   armHello();
+  armOdznak();
+  obnovOdznak().catch(() => {});
   hello({ hned: true });
   if (reason === 'install' || reason === 'update') vlozDoOtevrenychKaret().catch(() => {});
 });
-chrome.runtime.onStartup.addListener(() => { armHello(); hello(); });
-chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === HELLO_ALARM) hello(); });
+chrome.runtime.onStartup.addListener(() => { armHello(); hello(); armOdznak(); obnovOdznak().catch(() => {}); });
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === HELLO_ALARM) hello();
+  else if (alarm.name === ODZNAK_ALARM) obnovOdznak().catch(() => {});
+});
 chrome.tabs?.onRemoved?.addListener((tabId) => { zapomenKartu(tabId).catch(() => {}); });
 
 // Do not trust a content-script payload claiming to originate from a different AI site.
@@ -356,7 +378,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     openNativeApp().then(sendResponse, () => sendResponse({ ok: false }));
     return true;
   } else if (msg?.type === 'agenteeq:prehled') {
-    prehled().then(sendResponse, () => sendResponse(null));
+    prehled().then((data) => { obnovOdznak(data).catch(() => {}); sendResponse(data); }, () => sendResponse(null));
     return true;
   } else if (msg?.type === 'agenteeq:hello') {
     hello({ hned: true }).then(sendResponse, () => sendResponse({ chyba: true }));

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.64 – 2026-10-24 · Tečka stavu na ikoně rozšíření
+
+- **Stav agentů přímo na liště prohlížeče:** v pravém horním rohu ikony rozšíření svítí tečka v barvě stavu – růžová, když tě agent potřebuje, červená po selhání, zlatá na limitu, zelená, když agenti pracují. Když nic neběží, tečka zmizí. Přednost má to, co tě potřebuje.
+- **Nezjištěno se netváří jako klid:** když Agenteeq neodpovídá nebo nezjistil, co na počítači běží, tečka je šedá. Nespárované rozšíření tečku nemá.
+- **Popisek ikony říká stav větou** (česky i anglicky), např. „Potřebují tě 2 agenti“. Tečka se obnovuje každých 30 s, po hlášení z karty a při otevření okna rozšíření.
+
 ## 0.46.63 – 2026-10-23 · Roboti v dílně
 
 - **Co je nového:** tlačítko Rozumím při najetí a fokusu zfialoví s bílým textem.
