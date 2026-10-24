@@ -489,12 +489,22 @@ export async function prihlaseniClaudeCode({ sourceHome, claudeConfigDir = '', k
       return { accessToken: o.accessToken, expiresAt: Number(o.expiresAt) || 0 };
     } catch { return null; }
   };
+  // Organizace účtu (`oauthAccount.organizationUuid` v globálním nastavení Claude Code): události
+  // relace z účtu ji chtějí v hlavičce `x-organization-uuid`, stejně jako je čte Claude Code.
+  const organizace = async () => {
+    try {
+      const soubor = claudeConfigDir ? path.join(claudeConfigDir, '.claude.json') : path.join(sourceHome, '.claude.json');
+      const id = JSON.parse(await cti.readFile(soubor, 'utf8'))?.oauthAccount?.organizationUuid;
+      return typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id) ? id : '';
+    } catch { return ''; }
+  };
+  const sOrganizaci = async (p) => (p ? { ...p, orgUuid: await organizace() } : null);
   if (jeMac) {
     if (!keychain || !/^[a-zA-Z0-9._-]+$/.test(uzivatel)) return null;
     const pripona = claudeConfigDir ? `-${crypto.createHash('sha256').update(claudeConfigDir.normalize('NFC')).digest('hex').slice(0, 8)}` : '';
     const r = await runImpl('/usr/bin/security', ['find-generic-password', '-a', uzivatel, '-w', '-s', `Claude Code-credentials${pripona}`], { timeout: 5000 });
-    return r?.ok ? vyber(r.stdout.trim()) : null;
+    return r?.ok ? sOrganizaci(vyber(r.stdout.trim())) : null;
   }
   const slozka = claudeConfigDir || path.join(sourceHome, '.claude');
-  try { return vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8')); } catch { return null; }
+  try { return await sOrganizaci(vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8'))); } catch { return null; }
 }

@@ -90,7 +90,7 @@ test('přihlášení Claude Code: klíčenka jen když je povolená, se jménem 
   const runImpl = async (cmd, args) => { volani.push([cmd, args]); return { ok: true, stdout: JSON.stringify({ claudeAiOauth: { accessToken: 'a1', expiresAt: 123 } }) + '\n' }; };
   assert.equal(await prihlaseniClaudeCode({ sourceHome: '/x', keychain: false, uzivatel: 'martin' }, { runImpl, jeMac: true }), null);
   assert.equal(volani.length, 0);
-  assert.deepEqual(await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'martin' }, { runImpl, jeMac: true }), { accessToken: 'a1', expiresAt: 123 });
+  assert.deepEqual(await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'martin' }, { runImpl, jeMac: true }), { accessToken: 'a1', expiresAt: 123, orgUuid: '' });
   assert.deepEqual(volani[0], ['/usr/bin/security', ['find-generic-password', '-a', 'martin', '-w', '-s', 'Claude Code-credentials']]);
   await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'martin', claudeConfigDir: '/Users/martin/.claude-prace' }, { runImpl, jeMac: true });
   assert.equal(volani[1][1].at(-1), `Claude Code-credentials-${crypto.createHash('sha256').update('/Users/martin/.claude-prace').digest('hex').slice(0, 8)}`);
@@ -99,7 +99,12 @@ test('přihlášení Claude Code: klíčenka jen když je povolená, se jménem 
   assert.equal(await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false }), null);
   await fs.mkdir(path.join(home, '.claude'), { recursive: true });
   await fs.writeFile(path.join(home, '.claude', '.credentials.json'), JSON.stringify({ claudeAiOauth: { accessToken: 'b2', expiresAt: 9 } }));
-  assert.deepEqual(await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false }), { accessToken: 'b2', expiresAt: 9 });
+  assert.deepEqual(await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false }), { accessToken: 'b2', expiresAt: 9, orgUuid: '' });
+  // Organizace z globálního nastavení Claude Code; cokoli jiného než UUID se nepoužije.
+  await fs.writeFile(path.join(home, '.claude.json'), JSON.stringify({ oauthAccount: { organizationUuid: '11111111-2222-4333-8444-555555555555' } }));
+  assert.equal((await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false })).orgUuid, '11111111-2222-4333-8444-555555555555');
+  await fs.writeFile(path.join(home, '.claude.json'), JSON.stringify({ oauthAccount: { organizationUuid: 'x\r\nEvil: 1' } }));
+  assert.equal((await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false })).orgUuid, '');
 });
 
 test('cloudový běh bez cache Claude Desktopu: z účtu je vidět jako pracující a čerstvý', async () => {
@@ -165,16 +170,17 @@ test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nez�
 test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cache Claude Desktopu', async () => {
   const sid = 'session_019pjCMAW6NZjG9fzTfPLyCe';
   const kdy = (ms) => new Date(Date.now() - ms).toISOString();
+  // Tvar jako u Claude Code (načítání historie relace): nejnovější první, zpráva SDK v `payload`.
   const udalosti = () => ({ data: [
-    { created_at: kdy(20e3), user: { uuid: 'u1', internal_anthropic_catchall: { message: { role: 'user', content: 'Oprav dialog projektu' }, parent_tool_use_id: null } } },
-    { type: 'assistant', uuid: 'a1', created_at: kdy(10e3), parent_tool_use_id: null, message: { role: 'assistant', content: [{ type: 'text', text: 'Opravuji rozložení.' }], usage: { input_tokens: 120, output_tokens: 30 } } },
-  ] });
-  const dotazy = [];
+    { created_at: kdy(10e3), source: 'worker', payload: { type: 'assistant', uuid: 'a1', parent_tool_use_id: null, message: { role: 'assistant', content: [{ type: 'text', text: 'Opravuji rozložení.' }], usage: { input_tokens: 120, output_tokens: 30 } } } },
+    { created_at: kdy(20e3), source: 'client', payload: { type: 'user', uuid: 'u1', parent_tool_use_id: null, message: { role: 'user', content: 'Oprav dialog projektu' } } },
+  ], next_cursor: 'c1' });
+  const dotazy = [], hlavicky = [];
   const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60e3,
-    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
-    fetchImpl: async (u) => {
-      dotazy.push(u);
-      if (u === `${CLOUD_API}/${sid}/events?limit=100`) return odpoved(200, udalosti());
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3, orgUuid: '11111111-2222-4333-8444-555555555555' }),
+    fetchImpl: async (u, init) => {
+      dotazy.push(u); hlavicky.push(init.headers);
+      if (u === `${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`) return odpoved(200, udalosti());
       return odpoved(200, { data: [surova({ worker_status: 'idle', last_event_at: kdy(5e3), created_at: kdy(600e3) })] });
     } } });
   try {
@@ -185,12 +191,16 @@ test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cach
     const texty = JSON.stringify(detail.transcript);
     assert.match(texty, /Oprav dialog projektu/, 'zadání z účtu je v přepisu hned při prvním otevření');
     assert.match(texty, /Opravuji rozložení/);
-    assert.ok(dotazy.includes(`${CLOUD_API}/${sid}/events?limit=100`));
+    assert.ok(dotazy.includes(`${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`));
+    assert.equal(hlavicky.at(-1)['x-organization-uuid'], '11111111-2222-4333-8444-555555555555', 'organizace jde v hlavičce jako u Claude Code');
+    assert.ok(detail.session.tokens?.output >= 30 || JSON.stringify(detail.session).includes('30'), 'tokeny z přepisu z účtu');
   } finally { await server.close(); }
 });
 
 test('události relace: obálka i plochá zpráva, sloučení s cache bez dvojic', () => {
   assert.equal(zpravaZUdalosti({ created_at: iso(0), nic: {} }), null);
+  assert.equal(zpravaZUdalosti({ created_at: iso(-2e3), payload: { type: 'user', uuid: 'u9' } }).created_at, iso(-2e3), 'payload z odpovědi účtu');
+  assert.equal(zpravaZUdalosti({ payload: { type: 'system', subtype: 'init' } }), null, 'systémové události nejsou zprávy');
   const z = zpravaZUdalosti({ created_at: iso(-1e3), assistant: { uuid: 'a1', internal_anthropic_catchall: { message: { content: [] } } } });
   assert.equal(z.type, 'assistant');
   assert.equal(z.uuid, 'a1');

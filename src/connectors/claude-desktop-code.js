@@ -136,7 +136,7 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   if (repo && typeof repo.url === 'string') {
     const match = /^https:\/\/github\.com\/([\w.-]+\/[\w.-]+)(?:\.git)?$/.exec(repo.url);
     if (match) s.repo = match[1].replace(/\.git$/, '');
-    if (typeof repo.revision === 'string') s.branch = clip(repo.revision, 100);
+    if (typeof repo.revision === 'string') s.branch = clip(repo.revision.replace(/^refs\/heads\//, ''), 100);
   }
   applyReportedStatus(s, metadata, observedAt, now);
   s.observation = {
@@ -243,7 +243,7 @@ async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
   if (p.expiresAt && p.expiresAt <= now) throw chybaPrihlaseni(ui('Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.'));
   let res;
   try {
-    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json' }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json', ...(p.orgUuid ? { 'x-organization-uuid': p.orgUuid } : {}) }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
   } catch { throw new Error(ui('Účet Claude neodpověděl (síť). Zkusí se to znovu.')); }
   if (res.status === 401 || res.status === 403) throw chybaPrihlaseni(ui('Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.'));
   if (res.status === 404) return null;
@@ -269,12 +269,17 @@ export async function nactiCloudovouRelaci(id, { prihlaseni, fetchImpl, now = Da
   return s && s.id === id ? { ...s, _observedAt: now } : null;
 }
 // Přepis z účtu (🧪, docs/CONNECTORS.md): nejnovější události relace, tytéž zprávy SDK, které
-// Claude Desktop ukládá do cache (`type`, `uuid`, `created_at`, `parent_tool_use_id`). Cache drží jen
+// Claude Desktop ukládá do cache (`type`, `uuid`, `parent_tool_use_id`, `message`). Cache drží jen
 // to, co Desktop naposledy zobrazil, takže bez tohoto dotazu byl přepis běžícího agenta prázdný nebo
-// starý. Čte se obojí: plochá zpráva i obálka `{ created_at, user|assistant|result: { … } }`.
+// starý. Tvar odpovědi podle Claude Code (načítání historie relace): `{ data: [{ payload, created_at }],
+// next_cursor }`, zpráva SDK je v `payload`. Čte se i plochá zpráva a obálka `{ user|assistant: … }`.
 const DRUHY_ZPRAV = ['user', 'assistant', 'result'];
 export function zpravaZUdalosti(e) {
   if (!e || typeof e !== 'object') return null;
+  if (e.payload && typeof e.payload === 'object') {
+    const z = e.payload;
+    return DRUHY_ZPRAV.includes(z.type) ? { ...z, created_at: z.created_at ?? z.timestamp ?? e.created_at } : null;
+  }
   if (DRUHY_ZPRAV.includes(e.type)) return e;
   for (const druh of DRUHY_ZPRAV) {
     const v = e[druh];
@@ -286,7 +291,8 @@ export function zpravaZUdalosti(e) {
 }
 export async function nactiUdalostiRelace(id, { prihlaseni, fetchImpl, now = Date.now() }) {
   if (!remoteId(id)) return null;
-  const data = await dotaz(`${CLOUD_API}/${id}/events?limit=100`, { prihlaseni, fetchImpl, now });
+  // Nejnovější události (sort_order=desc, jako Claude Code); stará relace jich má tisíce.
+  const data = await dotaz(`${CLOUD_API}/${id}/events?limit=100&sort_order=desc`, { prihlaseni, fetchImpl, now });
   if (!Array.isArray(data?.data)) return null;
   return { messages: data.data.map(zpravaZUdalosti).filter(Boolean), at: now };
 }

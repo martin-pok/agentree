@@ -1,7 +1,9 @@
 # Changelog
 
-## 0.46.68 – 2026-10-24 · Čistší rozbalovací nabídky
+## 0.46.68 – 2026-10-24 · Přepis cloudového běhu opravdu z účtu, pravidelná mřížka, čistší nabídky
 
+- **Oprava: přepis cloudového agenta byl v 0.46.67 dál prázdný.** Události relace se teď čtou přesně jako v Claude Code: nejnovější první (`sort_order=desc`), s organizací účtu v hlavičce `x-organization-uuid` a zprávy z pole `payload`. 0.46.67 četla bez organizace a jen nejstarší stránku dlouhé relace, takže z ní nic nezobrazila; s přepisem se doplní i tokeny a počet zadání. Větev se ukazuje bez `refs/heads/`.
+- **Právě teď v pravidelné mřížce:** všechny karty jsou stejně vysoké; název i věta stavu mají vždy místo na dva řádky, takže robot, název, model a stav stojí na všech kartách na stejné výšce.
 - **Rozbalovací nabídky (výběr projektu a všechny ostatní):** vybraná položka už nemá zelený text, je tiše podbarvená s fajfkou v barvě textu; řádky mají jednotnou výšku 40 px a jemné najetí. Projekty v nabídce nesou svou barevnou tečku, „Bez projektu“ prázdný kroužek. Nabídka je široká podle nejdelší položky (do 360 px), takže se názvy jako „POKORNY DESIGN“ nelámou.
 
 ## 0.46.67 – 2026-10-24 · Výchozí „V aplikaci“, oddech robotů, srozumitelné texty
