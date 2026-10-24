@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
+
+- **Profilová fotka z Googlu:** když ji Google při přihlášení nepošle, karta Účet už neradí „nastav si fotku v Googlu“, ale nabídne tlačítko Načíst fotku z Googlu (fotka chodí jen s přihlášením, obnovení přihlášení ji nepřinese).
+- **Oprava: běžící Claude Code „bez přepisu“.** Agent spuštěný v repozitáři, který pracuje v jeho pracovní kopii (Claude Desktop: `.claude/worktrees/…`), se teď spáruje se svým přepisem – uvidíš zadání, stav i přepis místo prázdného „detekovaný proces“. Proces z domovské složky si cizí konverzaci nevezme.
+- **Oprava: robot bez rukou.** Když čekající robot nemá svou hračku nakreslenou (kniha, mobil), paže se už neschovají ani neotočí do prázdna.
+
+- **Barvy projektů:** přibyla čistá červená, krvavě červená, travní zelená a tmavě modrá (20 barev, na počítači v jedné řadě).
+- **Dialog projektu bez posouvání:** dialog projektu se vejde celý bez posouvání i do nízkého okna; nápověda u „Složek projektu“ se otevírá nahoru.
+- **Plynulé přepínání obrazovek:** přepnutí po seznamu agentů je plynulé – úklid animací robotů běží až ve volné chvíli prohlížeče.
+- **Oprava: cloudový agent Claude Code zmizel z Přehledu.** Od 0.46.68 posílal Agenteeq hlavičku organizace i se seznamem relací z účtu Claude; Claude Code ji tam neposílá a účet seznam odmítl. Zbyla jen stará cache Claude Desktopu a běžící agent z Přehledu vypadl. Organizace teď jde jen s načtením přepisu (jako v Claude Code) a seznam si bere 100 relací, takže běžící relace z něj nevypadne.
+- **Bubliny robotů na míru textu:** zalomená věta už nenechá bublinu v plné šířce s prázdným místem vpravo – řádky jsou vyvážené a bublina se zúží na nejdelší z nich.
+- **Štítky projektu srozumitelně:** v hlavičce projektu je popisek „Štítky“ a štítky jsou čitelné kapsle s ikonou cenovky (dřív drobný podtržený text, který vypadal jako podsložka). Klik ukáže projekty se stejným štítkem.
+- **Našeptávač štítků ve stylu aplikace:** pole Štítky v projektu už nepoužívá systémovou nabídku prohlížeče; návrhy jsou ve stejné nabídce jako ostatní výběry, nenabízí už zadané štítky a ovládá se šipkami, Enterem, Tabem i Esc.
+- **Nová verze se ukáže nahoře sama:** aplikace hledá aktualizaci každých 15 minut (dřív jednou za 6 hodin) a hned, když se do ní vrátíš. Upozornění „Nová verze“ s tlačítkem Aktualizovat je v horní liště, do Nastavení chodit nemusíš.
+
 ## 0.46.70 – 2026-10-24 · Generátor nápadů a vyrovnaný layout
 
 - **Generátor nápadů v poli zadání:** prázdné pole každých 7 s plynule ukáže jiný nápad – 122 tipů na projekty, nástroje, pluginy, automatizace a usnadnění rutiny, česky i anglicky. Pořadí se míchá, v jednom kole se nic neopakuje. Při psaní zmizí; bez pohybu (omezení animací) se text jen vymění.

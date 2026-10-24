@@ -237,13 +237,15 @@ export function relaceZApi(raw) {
 // Authorization by jinak mohla odejít jinam), odpověď nad 4 MB se nečte. Chyby jsou věty pro
 // Nastavení; nikdy se z nich nestane „nic neběží“. 429 a 503 nesou, za jak dlouho to zkusit znovu.
 const chybaPrihlaseni = (text) => Object.assign(new Error(text), { prihlaseni: true });
-async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
+// `organizace` posílá hlavičku x-organization-uuid jen tam, kde ji posílá i Claude Code (události
+// relace). Seznam relací ji v Claude Code nemá; s ní ho účet odmítl a cloudoví agenti zmizeli (0.46.68).
+async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now, organizace = false }) {
   const p = await prihlaseni();
   if (!p) throw chybaPrihlaseni(ui('Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.'));
   if (p.expiresAt && p.expiresAt <= now) throw chybaPrihlaseni(ui('Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.'));
   let res;
   try {
-    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json', ...(p.orgUuid ? { 'x-organization-uuid': p.orgUuid } : {}) }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    res = await fetchImpl(url, { headers: { Authorization: `Bearer ${p.accessToken}`, 'anthropic-version': '2023-06-01', Accept: 'application/json', ...(organizace && p.orgUuid ? { 'x-organization-uuid': p.orgUuid } : {}) }, redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10000) });
   } catch { throw new Error(ui('Účet Claude neodpověděl (síť). Zkusí se to znovu.')); }
   if (res.status === 401 || res.status === 403) throw chybaPrihlaseni(ui('Účet Claude odmítl přihlášení Claude Code. Spusť Claude Code a přihlas se znovu.'));
   if (res.status === 404) return null;
@@ -255,7 +257,8 @@ async function dotaz(url, { prihlaseni, fetchImpl = globalThis.fetch, now }) {
   try { return await res.json(); } catch { throw new Error(ui('Účet Claude vrátil nečitelný seznam relací.')); }
 }
 export async function nactiCloudoveRelace({ prihlaseni, fetchImpl, now = Date.now() }) {
-  const data = await dotaz(CLOUD_API, { prihlaseni, fetchImpl, now });
+  // Jako Claude Code: první stránka se 100 relacemi (výchozí stránka je kratší a běžící relace z ní vypadla).
+  const data = await dotaz(`${CLOUD_API}?limit=100`, { prihlaseni, fetchImpl, now });
   if (!Array.isArray(data?.data)) throw new Error(ui('Účet Claude nevrátil seznam relací.'));
   return { sessions: data.data.map(relaceZApi).filter(Boolean), observedAt: now };
 }
@@ -292,7 +295,7 @@ export function zpravaZUdalosti(e) {
 export async function nactiUdalostiRelace(id, { prihlaseni, fetchImpl, now = Date.now() }) {
   if (!remoteId(id)) return null;
   // Nejnovější události (sort_order=desc, jako Claude Code); stará relace jich má tisíce.
-  const data = await dotaz(`${CLOUD_API}/${id}/events?limit=100&sort_order=desc`, { prihlaseni, fetchImpl, now });
+  const data = await dotaz(`${CLOUD_API}/${id}/events?limit=100&sort_order=desc`, { prihlaseni, fetchImpl, now, organizace: true });
   if (!Array.isArray(data?.data)) return null;
   return { messages: data.data.map(zpravaZUdalosti).filter(Boolean), at: now };
 }

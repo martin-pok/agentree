@@ -61,8 +61,23 @@ export function initMascotMotion() {
   r.classList.remove('is-zivy');
   r.style.removeProperty('--gaze-x');
   r.style.removeProperty('--gaze-y');
-  for (const a of r.getAnimations({ subtree: true })) a.cancel();
+  doUklidu.add(r);
+  uklid ||= naklid(uklidAnimace);
  };
+ // Rušení animací odpojených robotů (getAnimations přes celé SVG) stálo u 140 agentů ~40 ms v jedné
+ // úloze a zasekávalo přepnutí obrazovky. Běží proto až ve volné chvíli prohlížeče, po dávkách.
+ const doUklidu = new Set();
+ const naklid = (f) => (window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(() => f({ timeRemaining: () => 8 }), 50));
+ let uklid = 0;
+ function uklidAnimace(lhuta) {
+  uklid = 0;
+  for (const r of doUklidu) {
+   if (lhuta.timeRemaining() < 2 && !lhuta.didTimeout) break;
+   doUklidu.delete(r);
+   if (!r.isConnected) for (const a of r.getAnimations({ subtree: true })) a.cancel();
+  }
+  if (doUklidu.size) uklid = naklid(uklidAnimace);
+ }
  if (io) {
   for (const r of roboti(document.body)) io.observe(r);
   new MutationObserver((zmeny) => {

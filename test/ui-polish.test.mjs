@@ -943,3 +943,25 @@ test('pořadí karet: chyba uložení vrátí předchozí stav, výchozí pořad
   const save = src.slice(src.indexOf('export async function saveOrder'), src.indexOf('export async function resetLayout'));
   assert.match(save, /catch \(err\) \{\s*if \(state\.settings\) state\.settings = \{ \.\.\.state\.settings, layout: predtim \};\s*emit\('settings'\);/);
 });
+
+// Vlastník 24. 10. 2026: žádná systémová nabídka – štítky našeptává nabídka ve stylu aplikace.
+test('štítky projektu: vlastní našeptávač místo <datalist>, bez opakování a s doplněním čárkou', async () => {
+  const pu = await zdroj('public/js/projects-ui.js');
+  assert.doesNotMatch(pu, /<datalist/);
+  assert.match(pu, /data-naseptavac="stitky"/);
+  const { navrhyStitku, doplnStitek } = await import('../public/js/naseptavac.js');
+  const vse = ['development', 'design', 'klient', 'web'];
+  assert.deepEqual(navrhyStitku('de', vse), ['design', 'development']);
+  assert.deepEqual(navrhyStitku('design, ', vse), ['development', 'klient', 'web'], 'už zadaný štítek se nenabízí');
+  assert.deepEqual(navrhyStitku('web, kl', vse), ['klient']);
+  assert.deepEqual(navrhyStitku('klient', vse), [], 'přesná shoda už není návrh');
+  assert.equal(doplnStitek('web, kl', 'klient'), 'web, klient, ');
+  assert.equal(doplnStitek('', 'design'), 'design, ');
+});
+
+test('chybějící fotka z Googlu: nabídne nové načtení, ne radu „nastav si fotku“', async () => {
+  const src = await fs.readFile(new URL('../public/js/views/settings.js', import.meta.url), 'utf8');
+  const vetev = src.slice(src.indexOf("u.fotoStav === 'bez'"), src.indexOf("u.fotoStav === 'stahuji'"));
+  assert.match(vetev, /data-action="ucet-prihlasit"/);
+  assert.doesNotMatch(src, /Fotku nastavíš v účtu Google/);
+});

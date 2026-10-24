@@ -246,7 +246,7 @@ export function projectForm(existing = null) {
     body: `<div class="pf-hlavni"><div class="form-grid">
         <label class="field field--wide"><span>${tr('Název')}</span><input name="name" type="text" maxlength="60" required value="${esc(existing?.name || '')}" placeholder="${tr('Např. Kavárna U Mostu – web')}"></label>
         <label class="field"><span>${tr('Popis')} <small class="muted">${tr('nepovinné')}</small></span><input name="description" type="text" maxlength="280" value="${esc(existing?.description || '')}" placeholder="${tr('Pro koho a co v projektu děláš')}"></label>
-        <label class="field"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" list="${id}-tags" autocomplete="off"><datalist id="${id}-tags">${vsechnyStitky().map((t) => `<option value="${esc(t)}"></option>`).join('')}</datalist></label>
+        <label class="field"><span>${tr('Štítky')} <small class="muted">${tr('odděl čárkou')}</small></span><input name="tags" type="text" maxlength="220" value="${esc((existing?.tags || []).join(', '))}" placeholder="${tr('Např. klient, web, Q4')}" autocomplete="off" data-naseptavac="stitky"></label>
       </div>
       ${existing ? '' : `<p class="form-sub" id="${id}-tpl">${tr('Šablona')} <small class="muted">${tr('předvyplní podklady a štítek')}</small></p>
       <div class="tpl-picks" role="radiogroup" aria-labelledby="${id}-tpl">${SABLONY_PROJEKTU().map((t, i) => `<label class="tpl-pick"><input type="radio" name="template" value="${t.id}"${i ? '' : ' checked'}><span>${esc(t.label)}</span></label>`).join('')}</div>`}

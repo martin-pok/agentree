@@ -1782,7 +1782,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Časem může zestárnout poslední pozorování plánu Codexu i bez nového souboru.
     every(() => subscriptionsChanged(), 60_000);
     every(() => refreshSubscriptions(), 2 * 60e3);
-    every(() => checkForUpdates(), 6 * HOUR);
+    // Nová verze se má ukázat nahoře sama, bez ruční kontroly (vlastník 24. 10. 2026): každých 15 min
+    // (4 dotazy za hodinu, hluboko pod limitem GitHubu 60/h) a navíc při návratu do aplikace (app.js).
+    every(() => checkForUpdates(), 15 * 60e3);
     rateFeed.start();
     // Selhání zápisu na pozadí (upozornění, projekty, výdaje) dřív skončilo jen v logu.
     let storageJson = JSON.stringify(storageStatus());

@@ -396,6 +396,8 @@ html[data-theme] .home-desk .decision-actions, .decision-actions { display: flex
   transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease), visibility 0s linear var(--motion-response), display var(--motion-response) allow-discrete; }
 .info-tip-bubble::before { content: ''; position: absolute; inset: -8px 0 auto; height: 8px; }
 .info-tip[data-strana='vpravo'] .info-tip-bubble { right: auto; left: -8px; }
+.info-tip[data-svisle='nahoru'] .info-tip-bubble { top: auto; bottom: calc(100% + 6px); }
+.info-tip[data-svisle='nahoru'] .info-tip-bubble::before { inset: auto 0 -8px; }
 .info-tip-bubble { translate: var(--tip-dx, 0) 0; }
 /* Zavřená bublina je display: none – jinak by i neviditelná u spodního okraje dialogu prodlužovala
    jeho rolování. Náběh drží @starting-style, odchod allow-discrete. */
@@ -924,7 +926,7 @@ html[data-theme='dark'] .robot-objem { opacity: .6; }
 .hra-strana { fill: #fbf8f2; }
 .hra-radky { fill: none; stroke: color-mix(in srgb, var(--ink) 25%, #fbf8f2); stroke-width: .8; stroke-linecap: round; }
 .hra-list { transform-box: view-box; }
-:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) :is(.robot-arm-left, .robot-arm-right) { opacity: 0; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]):has(.hra-ruce) :is(.robot-arm-left, .robot-arm-right) { opacity: 0; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-cteni 6s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='kniha'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-list { animation: rz-list 6s var(--robot-delay, 0s) infinite; }
 @keyframes rz-cteni { 0%, 100% { translate: 0 2px; rotate: -3deg; } 45% { translate: 0 2px; rotate: 3deg; } 55% { translate: 0 1px; rotate: 0deg; } }
@@ -937,7 +939,7 @@ html[data-theme='dark'] .robot-objem { opacity: .6; }
 /* Mobil: telefon v ruce před hrudí, hlava skloněná k displeji, palec občas posune obsah. */
 .hra-mobil-telo { fill: color-mix(in srgb, var(--ink) 85%, var(--card)); }
 .hra-mobil-displej { fill: #7cc4ff; transform-box: view-box; }
-:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-arm-right { rotate: 115deg; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]):has(.hra-mobil) .robot-arm-right { rotate: 115deg; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: none; rotate: 3deg; translate: 0 2.5px; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-mobil-displej { animation: rz-displej 3.4s steps(1) var(--robot-delay, 0s) infinite; }
 @keyframes rz-displej { 0%, 100% { opacity: 1; } 40% { opacity: .7; } 46% { opacity: 1; } 78% { opacity: .8; } 82% { opacity: 1; } }
@@ -987,3 +989,18 @@ html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill:
 .widget .sec-head > .link:last-child { flex: none; margin-inline-end: 0; }
 /* Při gestu nebo otočce se vrací běžné paže; ruce držící knihu by je zdvojily. */
 .robot:is([data-gesto], [data-otocka]) .hra-ruce { display: none; }
+
+/* Dialog projektu bez posuvníku i na nižším okně (vlastník 24. 10. 2026): o něco těsnější řádky
+   obrázku a loga a menší mezery mezi poli. */
+.modal--project .media-pick { min-height: 56px; padding-block: 8px; }
+.modal--project .media-thumb--logo { width: 40px; height: 40px; }
+.modal--project .modal-body .field + .field, .modal--project .modal-body .field-row { margin-top: 12px; }
+/* Nízké okno (do 760 px): dialog projektu se vejde celý bez posouvání – menší vzduch nahoře a dole. */
+@media (max-height: 760px) and (min-width: 641px) {
+  .modal--project .modal-head { padding-top: 16px; }
+  .modal--project .modal-body { padding-bottom: 8px; }
+  .modal--project .modal-foot { padding-block: 8px; }
+}
+/* Chybějící fotka z Googlu: věta a tlačítko pro nové načtení na jednom řádku, na úzkém okně pod sebou. */
+.acct-foto-znovu { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.acct-foto-znovu .btn svg { width: 16px; height: 16px; }

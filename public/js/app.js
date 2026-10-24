@@ -12,9 +12,10 @@ import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
 import { udalostNapojeni } from './napojeni-ui.js';
-import { projectHref, projectForm, assignDialog, pdot } from './projects-ui.js';
+import { projectHref, projectForm, assignDialog, pdot, vsechnyStitky } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
 import { umiInstalovat, nainstalujAktualizaci } from './aktualizace.js';
+import { initNaseptavac } from './naseptavac.js';
 import overview from './views/overview.js';
 import agents from './views/agents.js';
 import session from './views/session.js';
@@ -1205,6 +1206,18 @@ function tichaObnova(duvod, options) {
 // stahuje snapshot stejně jako návrat z uspání. Pravidelná pojistka chrání před tichým výpadkem
 // EventSource, ale při běžícím proudu jen čte lokální API bez reloadu a bez ztráty rozpracované práce.
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tichaObnova(tr('návrat do aplikace'), { force: true }); });
+// Návrat do aplikace po delší době: zeptat se na novou verzi hned, ne až při příští pravidelné kontrole.
+// Jen na tomto Macu (spárovaný telefon aktualizace nekontroluje) a nejvýš jednou za 5 minut.
+let aktualizaceDotazAt = 0;
+function zkontrolujAktualizaciPriNavratu() {
+  if (document.visibilityState !== 'visible' || !state.updates || state.updates.status === 'disabled') return;
+  const ted = Date.now();
+  if (ted - Math.max(aktualizaceDotazAt, Number(state.updates.checkedAt) || 0) < 5 * 60e3) return;
+  aktualizaceDotazAt = ted;
+  api.checkUpdates().then((r) => { if (r?.updates) { state.updates = r.updates; renderUpdate(); } }).catch(() => {});
+}
+document.addEventListener('visibilitychange', zkontrolujAktualizaciPriNavratu);
+window.addEventListener('focus', zkontrolujAktualizaciPriNavratu);
 window.addEventListener('focus', () => tichaObnova(tr('okno znovu v popředí'), { force: true }));
 window.addEventListener('online', () => tichaObnova(tr('obnovená síť'), { force: true }));
 window.addEventListener('pageshow', (e) => { if (e.persisted) tichaObnova(tr('stránka z paměti'), { force: true }); });
@@ -1213,6 +1226,7 @@ setInterval(() => tichaObnova(tr('ověření aktuálnosti')), 30000);
 navigate();
 initMascotMotion();
 initRobotBubliny();
+initNaseptavac(vsechnyStitky);
 setInterval(tickClock, 1000);
 setInterval(tickLabels, 10000);
 setInterval(() => emit('tick'), 30000);

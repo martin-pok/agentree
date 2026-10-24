@@ -205,6 +205,11 @@ test('párování procesů s konverzacemi', () => {
   assert.deepEqual(nesparovane([p(1, ted - H, '/w', 'codex')], [s('a', ted)]).map((x) => x.pid), [1], 'jiný nástroj');
   assert.deepEqual(nesparovane([p(1, ted - H)], [{ ...s('a', 0), hookAt: ted }]), [], 'hook SessionStart stačí');
   assert.deepEqual(nesparovane([p(1, ted - H)], [{ ...s('a', ted), proces: { pid: 9 } }]).map((x) => x.pid), [1], 'procesový záznam se nepočítá');
+  // Vlastník 24. 10. 2026: Claude Code spuštěný v repozitáři pracuje v pracovní kopii uvnitř něj.
+  assert.deepEqual(nesparovane([p(1, ted - H, '/Users/eva/agentree')], [s('a', ted, '/Users/eva/agentree/.claude/worktrees/zevleni')]), [], 'přepis z podsložky téhož projektu');
+  assert.deepEqual(nesparovane([p(1, ted - H, '/Users/eva/agentree')], [s('a', ted, '/Users/eva/agentree-jiny')]).map((x) => x.pid), [1], 'jen opravdová podsložka, ne podobné jméno');
+  assert.deepEqual(nesparovane([p(1, ted - H, os.homedir())], [s('a', ted, path.join(os.homedir(), 'projekt'))]).map((x) => x.pid), [1], 'z domovské složky si proces cizí konverzaci nevezme');
+  assert.deepEqual(nesparovane([p(1, ted - H, '/w'), p(2, ted - 10 * 60e3, '/w/sub')], [s('pod', ted - 60e3, '/w/sub'), s('w', ted, '/w')]), [], 'přesná složka má přednost před podsložkou');
 });
 
 test('pojistka: proces bez přepisu se ukáže, s přepisem zmizí, po skončení zmizí, při nejistotě zůstane', () => {

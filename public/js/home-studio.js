@@ -79,7 +79,9 @@ export function dilnaAtributy(s) {
   const od = s.status === 'working' && s.turnStartedAt > 0 ? s.turnStartedAt : 0;
   // Prvních 15 s po dokončení úlohy robot volá anténou a mává (refinement.css, [data-hra-od]), teprve
   // pak se začne flákat (mascot-motion.js přepne data-hra z „klid“ na jeho zábavu, až čas uplyne).
-  const hra = hraAgenta(s.id);
+  // Stejné rozhodnutí jako kresba (kusyPodleStavu): u nejistého stavu se hračka nekreslí, takže ani
+  // styl nesmí schovat paže kvůli knize, která v SVG není (robot pak vypadal jako bez rukou).
+  const hra = displayStatus(s) === 'unknown' ? 'klid' : hraAgenta(s.id);
   const hraOd = (s.status === 'waiting' || s.status === 'idle') && s.lastAt > 0 ? s.lastAt + ODDECH_MS : 0;
   const hraAttr = hraOd > Date.now() ? ` data-hra="klid" data-hra-pak="${hra}" data-hra-od="${hraOd}"` : ` data-hra="${hra}"`;
   return ` data-nastroj="${otisk(s.id) % 2 ? 'pila' : 'kladivo'}"${hraAttr}${od ? ` data-od="${od}" data-postup="${postupPrace(od)}"` : ''}`;

@@ -33,7 +33,8 @@ test('seznam z účtu: přihlášení, hlavičky a chyby, které se nikdy nevyd�
   let dotaz;
   const fetchImpl = async (url, init) => { dotaz = { url, init }; return odpoved(200, { data: [surova(), { id: 'x' }] }); };
   const ok = await nactiCloudoveRelace({ prihlaseni: async () => ({ accessToken: 'tok', expiresAt: ted + 60e3 }), fetchImpl, now: ted });
-  assert.equal(dotaz.url, CLOUD_API);
+  assert.equal(dotaz.url, `${CLOUD_API}?limit=100`);
+  assert.equal(dotaz.init.headers['x-organization-uuid'], undefined, 'seznam relací bez organizace, jako Claude Code');
   assert.equal(dotaz.init.headers.Authorization, 'Bearer tok');
   assert.equal(dotaz.init.headers['anthropic-version'], '2023-06-01');
   assert.equal(ok.sessions.length, 1);
@@ -152,7 +153,7 @@ test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nez�
     prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
     fetchImpl: async (u) => {
       dotazy.push(u);
-      if (u === CLOUD_API) return odpoved(200, { data: seznam.map((x) => ({ ...x, last_event_at: new Date(Date.now() - 1000).toISOString(), created_at: new Date(Date.now() - 600e3).toISOString() })) });
+      if (u === `${CLOUD_API}?limit=100`) return odpoved(200, { data: seznam.map((x) => ({ ...x, last_event_at: new Date(Date.now() - 1000).toISOString(), created_at: new Date(Date.now() - 600e3).toISOString() })) });
       return odpoved(200, { session: surova({ worker_status: 'idle', last_event_at: new Date(Date.now() - 500).toISOString(), created_at: new Date(Date.now() - 600e3).toISOString() }) });
     } } });
   try {
@@ -192,7 +193,10 @@ test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cach
     assert.match(texty, /Oprav dialog projektu/, 'zadání z účtu je v přepisu hned při prvním otevření');
     assert.match(texty, /Opravuji rozložení/);
     assert.ok(dotazy.includes(`${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`));
-    assert.equal(hlavicky.at(-1)['x-organization-uuid'], '11111111-2222-4333-8444-555555555555', 'organizace jde v hlavičce jako u Claude Code');
+    const iUdalosti = dotazy.lastIndexOf(`${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`);
+    assert.equal(hlavicky[iUdalosti]['x-organization-uuid'], '11111111-2222-4333-8444-555555555555', 'organizace jde u událostí jako u Claude Code');
+    const iSeznam = dotazy.indexOf(`${CLOUD_API}?limit=100`);
+    assert.equal(hlavicky[iSeznam]['x-organization-uuid'], undefined, 'u seznamu relací organizace nejde – účet by ho odmítl');
     assert.ok(detail.session.tokens?.output >= 30 || JSON.stringify(detail.session).includes('30'), 'tokeny z přepisu z účtu');
   } finally { await server.close(); }
 });

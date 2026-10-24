@@ -614,3 +614,14 @@ test('aktualizace: stahování hlásí skutečný průběh a po dokončení ho u
   assert.deepEqual(hlaseni.at(-1), { received: 4, total: 4 }, 'final byte count is always reported');
   assert.equal(service.state().transfer, null, 'no stale progress after the download finished');
 });
+
+// Vlastník 24. 10. 2026: nová verze se má nahoře ukázat sama – bez ruční kontroly v Nastavení.
+test('aktualizace: kontrola každých 15 minut a hned po návratu do aplikace', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const server = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.match(server, /every\(\(\) => checkForUpdates\(\), 15 \* 60e3\)/);
+  const klient = await readFile(new URL('../public/js/app.js', import.meta.url), 'utf8');
+  assert.match(klient, /addEventListener\('visibilitychange', zkontrolujAktualizaciPriNavratu\)/);
+  assert.match(klient, /addEventListener\('focus', zkontrolujAktualizaciPriNavratu\)/);
+  assert.match(klient, /5 \* 60e3/, 'při návratu nejvýš jednou za 5 minut');
+});

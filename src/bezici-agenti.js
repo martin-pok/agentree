@@ -10,6 +10,7 @@
 // jakmile se přepis najde nebo proces skončí. Z procesu se bere jen to, co o něm víme jistě:
 // že běží, od kdy a v jaké složce. Co právě dělá, neví nikdo – a tak se to ani netvrdí.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { touch } from './model.js';
 import { lastSegment } from './util.js';
@@ -43,7 +44,18 @@ export const jeProcesovyId = (id) => /:proces-\d+$/.test(String(id || ''));
 const REZERVA_MS = 15e3;
 
 const slozka = (cesta) => (cesta ? path.resolve(cesta) : '');
-const stejnaSlozka = (a, b) => !a || !b || slozka(a) === slozka(b);
+const presne = (a, b) => Boolean(a && b) && slozka(a) === slozka(b);
+const uvnitr = (vnitrni, vnejsi) => vnitrni.startsWith(vnejsi.endsWith(path.sep) ? vnejsi : vnejsi + path.sep);
+// Stejný strom projektu: agent spuštěný v repozitáři často pracuje v jeho podsložce nebo pracovní
+// kopii (Claude Code: `.claude/worktrees/…`) a přepis pak nese tu vnitřní složku, ne složku procesu.
+// Bez toho zůstal běžící agent „bez přepisu“, i když přepis existoval (vlastník 24. 10. 2026).
+// Proces spuštěný v domovské složce nebo v kořeni disku si podsložku nebere – patřila by mu každá konverzace.
+const PRILIS_SIROKE = new Set([path.resolve(os.homedir()), path.parse(process.cwd()).root]);
+const stejnaSlozka = (procesu, konverzace) => {
+  if (!procesu || !konverzace) return true;
+  const [x, y] = [slozka(procesu), slozka(konverzace)];
+  return x === y || (!PRILIS_SIROKE.has(x) && uvnitr(y, x));
+};
 
 /**
  * Procesy, ke kterým se nenašla konverzace. Proces patří konverzaci téhož nástroje, která od jeho
@@ -64,7 +76,7 @@ export function nesparovane(procesy, sessions) {
     const zila = (s) => Math.max(s.lastAt || 0, s.hookAt || 0);
     const kandidat = volne
       .filter((s) => s.connector === connector && zila(s) >= p.od - REZERVA_MS && stejnaSlozka(p.cwd, s.cwd))
-      .sort((a, b) => zila(a) - zila(b))[0];
+      .sort((a, b) => Number(!presne(p.cwd, a.cwd)) - Number(!presne(p.cwd, b.cwd)) || zila(a) - zila(b))[0];
     if (kandidat) volne.splice(volne.indexOf(kandidat), 1);
     else zbyva.push(p);
   }
