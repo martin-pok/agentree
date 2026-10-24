@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.72',
+    date: '2026-10-24',
+    title: 'Bubliny po větách',
+    items: [
+      'Bubliny robotů se zalamují po celých větách a sedí přesně na text.',
+    ],
+    en: {
+      title: 'Bubbles by sentence',
+      items: [
+        'Robot speech bubbles break between whole sentences and fit the text exactly.',
+      ],
+    },
+  },
+  {
     version: '0.46.71',
     date: '2026-10-24',
     title: 'Cloudoví agenti a aktualizace',

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.72 – 2026-10-24 · Bubliny po větách
+
+- **Bubliny robotů zalomené po větách:** když se věta nevejde na jeden řádek, začne každá další věta na novém řádku („Velký úkol klidně rozsekej. / Malé kroky doběhnou rychleji.“), nikdy ne „rozsekej. Malé / kroky…“. Bublina dál sedí přesně na šířku textu.
+
 ## 0.46.71 – 2026-10-24 · Cloudoví agenti zase vidět, aktualizace se ukáže sama
 
 - **Profilová fotka z Googlu:** když ji Google při přihlášení nepošle, karta Účet už neradí „nastav si fotku v Googlu“, ale nabídne tlačítko Načíst fotku z Googlu (fotka chodí jen s přihlášením, obnovení přihlášení ji nepřinese).

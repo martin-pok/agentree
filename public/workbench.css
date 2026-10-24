@@ -1165,3 +1165,5 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 @media (prefers-reduced-motion: reduce) { .launch-napad-text { transition: none; } }
 /* Řádky v bublině vyvážené (žádné osiřelé slovo na konci), šířku pak zúží robot-bubliny.js. */
 .rb { text-wrap: balance; }
+/* Víc vět, které se nevejdou na řádek: každá začíná na novém řádku (robot-bubliny.js). */
+.rb-text--vety > span { display: block; }
