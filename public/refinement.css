@@ -111,6 +111,9 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
   .sidebar .profile { display: none; }
   .sidebar .side-foot { margin-top: auto; }
 }
+/* Položky bočního menu 44 px – jen když je menu opravdu boční (od 881 px). Mezi 721 a 880 px je
+   menu spodní lišta s ikonou nad popiskem a 44 px by popisek usekly (tablet na výšku). */
+@media (min-width: 881px) { .sidebar .nav a { height: 44px; min-height: 44px; } }
 /* Široké Nastavení drží sloupec ve středu okna. Bez @media: na užším okně vyjde 0, takže výsledek
    nezávisí na tom, kdy prohlížeč po změně velikosti přepočítá podmínky šířky (v CI to bývalo pozdě). */
 .set-main { margin-left: max(0px, calc(50vw - 980px)); }
@@ -123,7 +126,6 @@ html[data-theme] .home-live .pb-agent[data-state='alert'] small { color: var(--v
    – věta pod pozdravem 20 px s mezerou 12 px. */
 @media (min-width: 721px) {
   :is(.btn, .chip, .lchip, .picker-trigger, .link):not(.btn--lg) { height: 44px; min-height: 44px; }
-  .sidebar .nav a { height: 44px; min-height: 44px; }
   /* Kulaté ikonové tlačítko stojí v řadě vedle 44px tlačítek (Smazat výdaj vedle Ukončit) – stejně vysoké. */
   .icon-btn, .btn.btn--ico { width: 44px; height: 44px; min-height: 44px; padding: 0; }
   .seg--light:not(.seg--sm):not(.launch-controls *) button, .set-nav button, .appearance-options--lang .appearance-option, .palette-list li { height: 44px; min-height: 44px; }

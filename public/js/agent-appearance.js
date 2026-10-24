@@ -40,9 +40,11 @@ export function defaultPersona(id) {
 
 // Postava a barva jsou záložky jako šatník: dlaždice ukazují robota přesně tak, jak bude vypadat –
 // každá postava v tom, co má agent na sobě, každá barva na zvolené postavě.
+// Barva je první a jiná než ostatní: kulaté tlačítko s duhovým kolem rozděleným na čtvrtiny a se
+// středem v barvě, kterou robot právě má – je hned vidět, že mění barvu, ne další kus oblečení.
 const TABS = [
-  { slot: 'avatar', label: () => tr('Postava') },
   { slot: 'color', label: () => tr('Barva') },
+  { slot: 'avatar', label: () => tr('Postava') },
   { slot: 'hat', label: () => tr('Hlava'), none: () => tr('Bez čepice') },
   { slot: 'face', label: () => tr('Obličej'), none: () => tr('Bez doplňku') },
   { slot: 'outfit', label: () => tr('Oblečení'), none: () => tr('Bez oblečení') },
@@ -78,7 +80,9 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     '<label class="look-name">' + tr('Vlastní jméno') + '<input name="nickname" maxlength="32" autocomplete="off"></label>' +
     '</div>' +
     '<div class="look-right"><div class="look-tabs" role="tablist" aria-label="' + tr('Vzhled robota') + '">' +
-    TABS.map((t) => '<button type="button" class="look-tab" role="tab" id="look-tab-' + t.slot + '" aria-controls="look-grid" data-tab="' + t.slot + '">' + esc(t.label()) + '</button>').join('') +
+    TABS.map((t) => t.slot === 'color'
+      ? '<button type="button" class="look-tab look-tab--barva" role="tab" id="look-tab-color" aria-controls="look-grid" data-tab="color" title="' + esc(t.label()) + '"><span class="look-barva-kolo" aria-hidden="true"></span><span class="sr-only">' + esc(t.label()) + '</span></button>'
+      : '<button type="button" class="look-tab" role="tab" id="look-tab-' + t.slot + '" aria-controls="look-grid" data-tab="' + t.slot + '">' + esc(t.label()) + '</button>').join('') +
     '</div><div class="look-grid" id="look-grid" role="tabpanel"></div></div></div></div>' +
     '<footer><button type="button" class="btn btn--sm look-reset" data-reset>' + tr('Obnovit výchozí') + '</button>' +
     '<span class="muted small" data-error role="status"></span>' +

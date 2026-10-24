@@ -1269,6 +1269,28 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
     return { ok: true, focused: true };
   }
+  // Klik v okně rozšíření vede rovnou do konverzace, ne do Agenteeq: webový chat (a cloudová relace
+  // na claude.ai) vrátí adresu, kterou rozšíření otevře v Chromu (přepne na existující kartu); ostatní
+  // se otevřou hlavní akcí z karty agenta (aplikace Codex, Terminál s konverzací…) – stejný plán jako
+  // tlačítko „Otevřít“ v aplikaci (openers.js#planOpen). Jen agent, kterého okno právě ukazuje.
+  async function openExtensionAgent(id) {
+    if (typeof id !== 'string' || !id || id.length > 200) return { status: 422, error: ui('Neplatný agent.') };
+    const nabidka = prehledProRozsireni(store.list());
+    if (![...nabidka.rozhodnuti, ...nabidka.pracuji, ...nabidka.nedavne].some((x) => x.id === id)) return { status: 404, error: ui('Agent už není v aktuálním přehledu. Obnov seznam.') };
+    const s = store.summary(id);
+    if (!s) return { status: 404, error: ui('Konverzace nenalezena.') };
+    const plan = planOpen(s, 'app', apps, moznostiOtevreni(s));
+    if (plan?.kind === 'open' && plan.args.length === 1 && /^https:\/\//.test(plan.args[0])) return { ok: true, url: plan.args[0], label: plan.label };
+    const cil = (s.open || []).find((x) => x.id !== 'folder');
+    if (cil) {
+      const r = await openSession(id, cil.id);
+      if (r.ok) return { ok: true, opened: true, label: r.label };
+      if (r.status !== 422) return r;
+    }
+    // Bez místa, kde konverzace žije (detekovaný proces, neznámá aplikace): aspoň detail v Agenteeq.
+    const f = focusExtensionAgent(id);
+    return f.ok ? { ok: true, focused: true } : f;
+  }
   function openExtensionApp() {
     if (!config.desktop || !desktopReport) return { status: 409, error: ui('Nejprve otevři nativní aplikaci Agenteeq na tomto počítači.') };
     desktopReport({ type: 'open-app', route: '#/prehled' });
@@ -1787,7 +1809,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
-    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent, openExtensionApp,
+    launch, launchPayload, refreshLaunch, runsPayload, listFolders, autostart, revealInstallPackage, checkForUpdates, downloadUpdate, revealUpdate, installUpdate, nastavDesktop, focusExtensionAgent, openExtensionAgent, openExtensionApp,
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,

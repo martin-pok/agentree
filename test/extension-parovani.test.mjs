@@ -10,8 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 const zdroj = await fs.readFile(fileURLToPath(new URL('../extension/background.js', import.meta.url)), 'utf8');
 
-function spust(sit, { ulozeno = {} } = {}) {
+function spust(sit, { ulozeno = {}, karty = [] } = {}) {
   const local = { ...ulozeno };
+  const otevreno = [];
   let zmenaUloziste = null;
   const session = {};
   const volani = [];
@@ -39,14 +40,15 @@ function spust(sit, { ulozeno = {} } = {}) {
       storage: { local: oblast(local), session: oblast(session), onChanged: { addListener: (fn) => { zmenaUloziste = fn; } } },
       runtime: {
         id: 'abcdefghijklmnopabcdefghijklmnop',
-        getManifest: () => ({ version: '1.0.0', content_scripts: [] }),
+        getManifest: () => ({ version: '1.0.0', content_scripts: [], host_permissions: ['http://127.0.0.1:4620/*', 'https://chatgpt.com/*', 'https://claude.ai/*'] }),
         getURL: (name) => 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/' + name,
         onInstalled: { addListener() {} },
         onStartup: { addListener() {} },
         onMessage: { addListener: (fn) => { posluchac = fn; } },
       },
       alarms: { create() {}, onAlarm: { addListener() {} } },
-      tabs: { query: async () => [], onRemoved: { addListener: (fn) => { zavreni = fn; } } },
+      windows: { update: async (id, o) => { otevreno.push(['okno', id, o]); } },
+      tabs: { query: async () => karty, create: async (o) => { otevreno.push(['nova', o.url]); }, update: async (id, o) => { otevreno.push(['karta', id, o]); }, onRemoved: { addListener: (fn) => { zavreni = fn; } } },
     },
   });
   vm.runInContext(zdroj, kontext);
@@ -54,7 +56,7 @@ function spust(sit, { ulozeno = {} } = {}) {
   // je to okno rozšíření (popup).
   const zprava = (msg, sender = { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/popup.html' }) => new Promise((resolve) => { posluchac(msg, { id: 'abcdefghijklmnopabcdefghijklmnop', ...sender }, resolve); });
   const zavri = async (tabId) => { zavreni(tabId); await new Promise((res) => setTimeout(res, 0)); };
-  return { local, session, volani, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
+  return { local, session, volani, otevreno, zprava, zavri, posun: (ms) => { ted += ms; }, zmenPort: (port) => { local.port = port; zmenaUloziste?.({ port: { newValue: port } }, 'local'); } };
 }
 
 test('pozadí rozšíření: aplikace neběží → „nedostupné“, bez tokenu a bez zahlcení dotazy', async () => {
@@ -324,4 +326,23 @@ test('pozadí rozšíření: párování, přehled a stav smí jen okno rozší�
   assert.equal((await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude' } }, { id: 'cizi-rozsireni', url: 'chrome-extension://cizi/popup.html' })).ok, false);
   assert.equal((await r.zprava({ type: 'agenteeq:handoff', site: 'chatgpt' }, stranka)).prompt, null, 'karta na claude.ai nepřevezme zadání pro ChatGPT');
   assert.equal((await r.zprava({ type: 'agenteeq:update', payload: { site: 'claude' } }, { url: 'chrome-extension://abcdefghijklmnopabcdefghijklmnop/jina.html' })).ok, false);
+});
+
+test('pozadí rozšíření: klik na agenta otevře konverzaci v Chromu – existující kartu, jen povolený web', async () => {
+  const odpoved = (body) => () => ({ status: 200, body });
+  const ulozeno = { ulozeno: { token: 't'.repeat(43) } };
+  const r = spust(odpoved({ ok: true, url: 'https://chatgpt.com/c/abc' }), { ...ulozeno, karty: [{ id: 7, windowId: 2, url: 'https://chatgpt.com/c/abc#konec' }] });
+  assert.equal((await r.zprava({ type: 'agenteeq:open-agent', id: 'web:chatgpt:abc' })).ok, true);
+  assert.deepEqual(r.otevreno.map((x) => x[0]), ['karta', 'okno'], 'přepne na otevřenou kartu, nezaloží druhou');
+  const nova = spust(odpoved({ ok: true, url: 'https://claude.ai/code/session_01FixtureRemoteAgent123' }), ulozeno);
+  await nova.zprava({ type: 'agenteeq:open-agent', id: 'x' });
+  assert.equal(JSON.stringify(nova.otevreno), JSON.stringify([['nova', 'https://claude.ai/code/session_01FixtureRemoteAgent123']]));
+  for (const url of ['https://evil.example/c', 'http://chatgpt.com/c/a', 'javascript:alert(1)', 'https://user:pw@chatgpt.com/']) {
+    const zla = spust(odpoved({ ok: true, url }), ulozeno);
+    assert.equal((await zla.zprava({ type: 'agenteeq:open-agent', id: 'x' })).ok, false, url);
+    assert.equal(zla.otevreno.length, 0, url);
+  }
+  const doma = spust(odpoved({ ok: true, opened: true, label: 'Codex' }), ulozeno);
+  assert.deepEqual({ ...(await doma.zprava({ type: 'agenteeq:open-agent', id: 'x' })) }, { ok: true, kde: 'aplikace', label: 'Codex' });
+  assert.equal((await doma.zprava({ type: 'agenteeq:open-agent', id: 'x' }, { tab: { id: 4, url: 'https://claude.ai/chat/a' } })).ok, false, 'stránka nesmí otevírat');
 });

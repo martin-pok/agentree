@@ -19,7 +19,7 @@
       'Ověření stránky': 'Page check',
       'Obnovit aktuální stav': 'Refresh current status',
       // Hlavní pohled
-      'Otevřít agenta {0} v aplikaci Agenteeq': 'Open {0} in Agenteeq',
+      'Otevřít konverzaci {0}': 'Open conversation {0}',
       'Rozšíření není spárované. Otevři Agenteeq a obnov připojení.': 'The extension is not paired. Open Agenteeq and reconnect.',
       'Tato akce vyžaduje nativní aplikaci Agenteeq pro Mac.': 'This action requires the native Agenteeq app for Mac.',
       'Agenta se nepodařilo otevřít. Ověř, že Agenteeq běží, a obnov seznam.': 'Could not open the agent. Make sure Agenteeq is running, then refresh the list.',

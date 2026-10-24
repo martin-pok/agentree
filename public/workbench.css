@@ -1091,3 +1091,27 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .studio-nickname--sluzba > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .studio-nickname--sluzba .cell-logo { width: 28px; height: 28px; }
 .studio-nickname--sluzba .cell-logo :is(.logo, .glyph) { width: 18px; height: 18px; }
+
+/* Barva: první v řadě, kulaté tlačítko 1 : 1 stejně vysoké jako záložky (32/40/44 px). Kolo je
+   rozdělené na čtyři čtvrtiny z palety robotů (malinová, medová, mátová, indigo) – na první pohled
+   „mění barvu“; střed ukazuje barvu, kterou robot právě má, obtočenou plochou okna. Ostatní záložky
+   se roztáhnou do zbytku řady se stejnými mezerami. Při najetí se kolo pootočí o čtvrtinu. */
+.look-tabs .look-tab--barva { flex: none; aspect-ratio: 1; width: auto; padding: 0; display: grid; place-items: center; border-color: transparent; background: none; }
+.look-barva-kolo {
+  position: relative; width: calc(100% - 4px); aspect-ratio: 1; border-radius: 50%;
+  /* Čtvrtiny oddělené tenkou mezerou v barvě plochy: paleta, ne logo. */
+  background: conic-gradient(from 0deg, #e06aa0 0 23.5%, var(--card) 0 25%, #d9a53a 0 48.5%, var(--card) 0 50%, #4fbf9f 0 73.5%, var(--card) 0 75%, #6260d8 0 98.5%, var(--card) 0);
+  transition: transform 300ms cubic-bezier(.2, .8, .2, 1);
+}
+.look-barva-kolo::after {
+  content: ''; position: absolute; inset: 27%; border-radius: 50%; background: var(--persona);
+  box-shadow: 0 0 0 3px var(--card);
+  transition: background-color 200ms ease;
+}
+@media (hover: hover) { .look-tab--barva:hover .look-barva-kolo { transform: rotate(90deg); } }
+.look-tabs .look-tab--barva:hover { border-color: transparent; }
+.look-tabs .look-tab--barva[aria-selected='true'] { border-color: var(--action); background: none; }
+.look-tabs .look-tab--barva[aria-selected='true'] .look-barva-kolo { width: calc(100% - 8px); }
+@media (prefers-reduced-motion: reduce) { .look-barva-kolo, .look-barva-kolo::after { transition: none; } .look-tab--barva:hover .look-barva-kolo { transform: none; } }
+/* Text záložek dělí zbytek řady rovným dílem (na telefonu se řada posouvá, šířka podle textu). */
+@media (min-width: 721px) { .look-tabs .look-tab:not(.look-tab--barva) { flex: 1 1 0; min-width: max-content; } }

@@ -395,7 +395,7 @@ async function obnovSeznam() {
 
 // ── Agenti na tomto počítači ────────────────────────────────────────────────
 // Souhrn posílá aplikace (POST /api/extension/prehled) přes background s tokenem spárování.
-// Klik na agenta ho otevře přímo v Agenteeq (focus-agent) – schválit z okna nic nejde.
+// Klik na agenta otevře rovnou jeho konverzaci (open-agent): v Chromu, nebo v aplikaci na Macu.
 let prehled = null;
 let rezim = 'nacitam';
 let odvolano = false;
@@ -444,20 +444,23 @@ async function nactiPrehled() {
   return r && r.zdravi ? { rozhodnuti: [], pracuji: [], nedavne: [], ...r } : null;
 }
 
-// Otevře agenta v aplikaci. Chyba se ukáže u tlačítka (reflektor) nebo jako oznámení (osa).
-async function otevriVAgenteeq(id, tlacitko, chybaEl) {
+// Otevře konverzaci agenta tam, kde žije: webový chat v kartě Chromu, ostatní v aplikaci na Macu
+// (Codex, Terminál…). Teprve když konverzace nemá kam vést, ukáže agenta Agenteeq. Po úspěchu se
+// okno zavře; chyba se ukáže u tlačítka (reflektor) nebo jako oznámení (osa).
+async function otevriKonverzaci(id, tlacitko, chybaEl) {
   if (tlacitko.disabled) return;
   tlacitko.disabled = true;
   tlacitko.setAttribute('aria-busy', 'true');
   if (chybaEl) chybaEl.hidden = true;
   let result = null;
-  try { result = await chrome.runtime.sendMessage({ type: 'agenteeq:focus-agent', id }); } catch { /* aplikace neběží */ }
+  try { result = await chrome.runtime.sendMessage({ type: 'agenteeq:open-agent', id }); } catch { /* aplikace neběží */ }
+  if (result?.ok) { window.close(); return; }
   if (!result?.ok) {
     const text = result?.unpaired
       ? tr('Rozšíření není spárované. Otevři Agenteeq a obnov připojení.')
       : result?.unsupported
         ? tr('Tato akce vyžaduje nativní aplikaci Agenteeq pro Mac.')
-        : tr('Agenta se nepodařilo otevřít. Ověř, že Agenteeq běží, a obnov seznam.');
+        : result?.error ? result.error : tr('Agenta se nepodařilo otevřít. Ověř, že Agenteeq běží, a obnov seznam.');
     if (chybaEl) { chybaEl.hidden = false; chybaEl.textContent = sazba(text); } else toast(text);
   }
   tlacitko.disabled = false;
@@ -514,7 +517,7 @@ function slideHtml(M) {
       <div class="who"><span class="tile tile--48" data-s="tile">${logoHtml(logoKlic(it.app), 26)}${M.druh === 'prace' ? '<span class="badge badge--work"></span>' : ''}</span>
         <div data-s><h2 class="spot-title">${esc(sazba(nazev))}</h2><p class="spot-meta"><span>${esc(it.app || '')}${it.app ? ' · ' : ''}<span data-at="${Number(it.at) || 0}" data-format="pred">${esc(ago(it.at))}</span></span></p></div></div>
       ${duvod ? `<p class="say" data-s>${ikona(M.druh === 'prace' ? 'terminal' : ikonaDuvodu(duvod, it.status))}<span class="say-text">${esc(sazba(duvod))}</span></p>` : ''}
-      ${tlacitko(tr('Otevřít konverzaci'), `data-agent="${esc(it.id)}" aria-label="${esc(tr('Otevřít agenta {0} v aplikaci Agenteeq', nazev))}"`)}
+      ${tlacitko(tr('Otevřít konverzaci'), `data-agent="${esc(it.id)}" aria-label="${esc(tr('Otevřít konverzaci {0}', nazev))}"`)}
       <p class="spot-err" role="status" hidden></p>`;
   }
   if (M.druh === 'chat') {
@@ -673,7 +676,7 @@ $('spot').addEventListener('pointerup', (e) => {
 $('spot').addEventListener('pointercancel', () => { tah = null; });
 $('spot').addEventListener('click', (e) => {
   const agent = e.target.closest('[data-agent]');
-  if (agent) { otevriVAgenteeq(agent.dataset.agent, agent, agent.parentElement.querySelector('.spot-err')); return; }
+  if (agent) { otevriKonverzaci(agent.dataset.agent, agent, agent.parentElement.querySelector('.spot-err')); return; }
   const karta = e.target.closest('[data-karta]');
   const k = karta && seznam.konverzace.find((x) => x.klic === karta.dataset.karta);
   if (k) prepni(k);
@@ -702,7 +705,7 @@ function polozkaAgenta(a, status) {
   return {
     klic: `a:${a.id}`, druh, title: a.title || a.app || tr('Agent'), src: a.app || '', logo: logoKlic(a.app),
     act: status === 'working' ? a.reason || STAV_AGENTA.working() : STAV_AGENTA[status]?.() || '', ton: TON_AGENTA[status] || '',
-    at: a.at, zive: ZIVE.has(status), cil: { typ: 'agent', id: a.id }, popis: tr('Otevřít agenta {0} v aplikaci Agenteeq', a.title || a.app || tr('Agent')),
+    at: a.at, zive: ZIVE.has(status), cil: { typ: 'agent', id: a.id }, popis: tr('Otevřít konverzaci {0}', a.title || a.app || tr('Agent')),
   };
 }
 const TON_CHATU = { work: 'work', warn: 'wait', wait: 'wait' };
@@ -814,7 +817,7 @@ $('konverzace').addEventListener('click', (e) => {
   const p = tlacitko && poslednePolozky.get(tlacitko.closest('[data-klic]').dataset.klic);
   if (!p?.cil) return;
   if (p.cil.typ === 'karta') prepni(p.cil.k);
-  else otevriVAgenteeq(p.cil.id, tlacitko, null);
+  else otevriKonverzaci(p.cil.id, tlacitko, null);
 });
 // Seznam se ovládá šipkami nahoru a dolů, Home a End; Enter a mezerník řádek otevřou.
 $('konverzace').addEventListener('keydown', (e) => {
@@ -1096,7 +1099,7 @@ setInterval(async () => {
   } finally {
     probihaKontrolaSpojeni = false;
   }
-}, 5000);
+}, 2000);
 
 // Agenteeq běží na jiném portu (PORT): rozšíření si ho uloží. Jiný než výchozí port
 // potřebuje oprávnění pro 127.0.0.1 na libovolném portu – Chrome se zeptá jednou, v tomhle kliknutí.

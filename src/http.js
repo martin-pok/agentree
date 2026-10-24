@@ -602,6 +602,14 @@ export function createHttpServer(app, existingServer = null) {
       const body = await readBody(req);
       return unwrap(app.focusExtensionAgent(body && typeof body === 'object' ? body.id : null));
     }, { token: true }],
+    // Klik na agenta v okně rozšíření: rovnou do konverzace (adresa pro Chrome, nebo hlavní akce
+    // z karty agenta na tomto Macu). Jen místní požadavek se spárovaným rozšířením.
+    ['POST', /^\/api\/extension\/open-agent$/, async (req) => {
+      if (!zTohotoMacu(req)) throw new HttpError(403, ui('Agenta lze otevřít jen na místním počítači.'));
+      if (!extensionOk(req)) throw new HttpError(401, EXTENSION_UNPAIRED);
+      const body = await readBody(req);
+      return unwrap(await app.openExtensionAgent(body && typeof body === 'object' ? body.id : null));
+    }, { token: true }],
     // Popup brand action: bring the already-running native app to its overview.
     // The extension never receives the window key and never opens localhost in Chrome.
     ['POST', /^\/api\/extension\/open-app$/, async (req) => {
