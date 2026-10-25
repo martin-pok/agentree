@@ -2959,19 +2959,21 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
    enableReorder (views/session.js, views/project.js) – bez :has(), který zdržuje přepočet stylů. Na dotykové obrazovce je úchyt vidět. */
 /* Vlastník 24. 10. 2026: v klidu žádný vyhrazený pás nad kartami („schod“) – karty lícují s obsahem
    vedle. Úchyt se ukáže až při najetí a sedí na horní hraně karty, v mezeře mezi kartami. */
-.side-razeni { gap: 24px; }
+.side-razeni { row-gap: 48px; }
 .side-card { --glow: var(--brand); position: relative; }
-.side-razeni > .side-card::after { content: ''; position: absolute; inset: -6px; border-radius: calc(var(--r-lg) + 6px); pointer-events: none; opacity: 0;
+.side-razeni > .side-card::after { content: ''; position: absolute; inset: -36px -12px -12px; border-radius: calc(var(--r-lg) + 12px); pointer-events: none; opacity: 0;
   background: linear-gradient(45deg, color-mix(in srgb, var(--glow) 6%, transparent), transparent 55%);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 26%, transparent), 0 0 0 1px color-mix(in srgb, var(--glow) 6%, transparent), 0 18px 48px -30px color-mix(in srgb, var(--glow) 70%, transparent);
   transition: opacity var(--motion-response) var(--ease); }
 @media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover::after { opacity: 1; } }
+.side-card:focus-within::after { opacity: 1; }
 .side-card.is-lifted::after { opacity: 1; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 40%, transparent), 0 30px 70px -30px color-mix(in srgb, var(--glow) 80%, transparent); }
-.grip { --glow: var(--brand); position: absolute; top: -10px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
+.grip { --glow: var(--brand); position: absolute; top: -28px; left: 50%; z-index: 3; display: grid; grid-template-columns: repeat(3, 4px); gap: 3px; place-content: center; width: 44px; height: 20px; padding: 0; border: 0; border-radius: var(--r-full); background: color-mix(in srgb, var(--glow) 16%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--glow) 34%, transparent); opacity: 0; transform: translate(-50%, 4px); cursor: grab; touch-action: none; transition: opacity var(--motion-response) var(--ease), transform var(--motion-response) var(--ease); }
 .grip i { width: 4px; height: 4px; border-radius: 50%; background: var(--glow); }
 .grip::before { content: ''; position: absolute; inset: -12px -4px; } /* cílová plocha 52 × 44 px */
 @media (hover: hover) { .side-razeni:not(.is-reordering) > .side-card:hover .grip { opacity: 1; transform: translate(-50%, 0); } }
 .side-card.is-lifted .grip { opacity: 1; transform: translate(-50%, 0); }
+.grip:focus-visible { opacity: 1; transform: translate(-50%, 0); outline: 2px solid var(--ink); outline-offset: 2px; }
 @media (hover: none) { .grip { opacity: 1; transform: translate(-50%, 0); } }
 .side-card.is-lifted { z-index: 30; cursor: grabbing; will-change: translate, scale; }
 .side-card.is-lifted .grip { cursor: grabbing; }
