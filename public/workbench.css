@@ -327,8 +327,9 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
    změřená výška karty (253–304 px); `auto` si pak pamatuje skutečnou výšku vykreslené karty. */
 .table.table--roboti > .row { content-visibility: auto; contain-intrinsic-size: auto 280px; }
 .table.table--roboti .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 22px; border: 1px solid var(--line-2); border-radius: var(--r-lg); background: var(--card); box-shadow: none; }
-.table.table--roboti .agent-robot-tile { grid-column: 1; width: 76px; height: 80px; }
-.table.table--roboti .agent-portrait, .table.table--roboti .robot { width: 76px; height: 80px; }
+/* Robot na kartě decentně větší (dřív 76 px, karta působila prázdně) a vedle něj jeho jméno. */
+.table.table--roboti .agent-robot-tile { grid-column: 1; width: 92px; height: 96px; }
+.table.table--roboti .agent-portrait, .table.table--roboti .robot { width: 92px; height: 96px; }
 .table.table--roboti .cell-status { grid-column: 2; grid-row: 1; align-self: start; }
 .table.table--roboti .cell-title { grid-column: 1 / -1; }
 .table.table--roboti .cell-title b { font-size: 18px; font-weight: 400; white-space: normal; }
@@ -345,6 +346,8 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .cell-unit { display: none; }
 .table.table--roboti .cell-unit { display: inline; color: var(--mute); }
 .agent-robot-tile .status-dot { display: none; }
+.agent-jmeno { display: none; }
+.table.table--roboti .agent-jmeno { display: block; position: absolute; left: calc(100% + 22px); bottom: 8px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 14px/20px var(--f-body); color: var(--ink-2); letter-spacing: .01em; pointer-events: none; }
 .agent-robot-tile .env-badge { left: auto; right: 2px; bottom: 2px; }
 .table.table--roboti .cell-time { display: block; font-size: 12px; }
 .table.table--roboti .row > .icon { display: none; }

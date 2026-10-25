@@ -101,6 +101,13 @@ const hraAgenta = (id) => {
 const pravDokoncil = (s) => displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') && s.lastAt > 0 && Date.now() - s.lastAt < ODDECH_MS;
 const kusyPodleStavu = (s) => ({ prace: s.status === 'working', hra: displayStatus(s) !== 'unknown' && (s.status === 'waiting' || s.status === 'idle') && hraAgenta(s.id) !== 'klid' ? hraAgenta(s.id) : false, signal: s.status === 'needs_input' || pravDokoncil(s) });
 
+// Jméno agenta: vlastní jméno z „Vzhledu agenta“, jinak jméno jeho postavy (Orbit, Nova…).
+export function jmenoAgenta(s) {
+  const p = loadPersonas()[s.id] || {};
+  const index = [...String(s.id)].reduce((n, c) => n + c.charCodeAt(0), 0) % 4;
+  return String(p.name || '').trim() || (avatars.includes(p.avatar) ? p.avatar : avatars[index]);
+}
+
 export function agentRobot(s) {
   let p = {};
   p = loadPersonas()[s.id] || {};

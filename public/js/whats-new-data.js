@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.82',
+    date: '2026-10-25',
+    title: 'Klidné nabídky a pořadí agentů',
+    items: [
+      'Nabídka projektu ve spouštěči drží u kapsle i při rolování.',
+      'Právě teď: nahoře pracující, pak rozhodnutí, hotoví a nakonec neaktivní – bez přeskakování.',
+      'Obrázky projektů hned při otevření, jemná fialová záře při najetí a čistší zvýraznění po hledání.',
+      'Karty agentů ukazují jméno robota a robot je o něco větší.',
+    ],
+    en: {
+      title: 'Steady menus and agent order',
+      items: [
+        'The project menu in the launcher stays attached while you scroll.',
+        'Right now: working agents first, then decisions, finished and finally idle – no shuffling.',
+        'Project images show immediately, a soft violet glow on hover and a cleaner search highlight.',
+        'Agent cards show the robot’s name and the robot is a little larger.',
+      ],
+    },
+  },
+  {
     version: '0.46.81',
     date: '2026-10-25',
     title: 'Roboti s větší hloubkou',

@@ -1,4 +1,4 @@
-import { agentRobot } from '../home-studio.js';
+import { agentRobot, jmenoAgenta } from '../home-studio.js';
 import { state, agentsList, taskRunCount, projectById } from '../state.js';
 import { api } from '../api.js';
 import { displayStatus, esc, fmtTok, rel, norm, shortPath, plural, timeHM, STATUS, modelPopis } from '../format.js';
@@ -201,7 +201,7 @@ function rowHtml(s) {
   }
   const env = envOf(s);
   return `<a class="row" href="${agentHref(s.id)}" data-session-drag="${esc(s.id)}" data-key="${esc(s.id)}">
-    <span class="icon-tile agent-robot-tile">${agentRobot(s)}<i class="status-dot status-${esc(s.status)}"></i><span class="env-badge" title="${esc(env.label)}">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
+    <span class="icon-tile agent-robot-tile">${agentRobot(s)}<span class="agent-jmeno">${esc(jmenoAgenta(s))}</span><i class="status-dot status-${esc(s.status)}"></i><span class="env-badge" title="${esc(env.label)}">${env.icon}<span class="sr-only">${env.label}</span></span></span>${cells}${ICON.chev}
   </a>`;
 }
 

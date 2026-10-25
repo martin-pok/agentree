@@ -95,6 +95,8 @@ function pripoj(pole) {
   pole.addEventListener('input', otevri);
   pole.addEventListener('focus', otevri);
   pole.addEventListener('blur', () => setTimeout(zavri, 0));
+  // Posun stránky nebo okna pod nabídkou: nabídka se zavře, nezůstane viset mimo pole.
+  addEventListener('scroll', (e) => { if (panel && !(e.target instanceof Node && panel.contains(e.target))) zavri(); }, { capture: true, passive: true });
   pole.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       if (!panel) otevri();

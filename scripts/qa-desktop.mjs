@@ -11,6 +11,52 @@ await fs.mkdir(out, { recursive: true });
 const results = [];
 const engines = process.env.QA_ENGINE ? [process.env.QA_ENGINE] : ['chromium', 'webkit'];
 
+// Nabídka výběru (projekt ve spouštěči) běží ve vrchní vrstvě s pevnou polohou. Kolečko na
+// konci jejího seznamu nesmí posunout stránku pod ní a při posunu stránky (dojezd, klávesnice)
+// nabídka jede s kapslí – nikdy nezůstane viset uprostřed obrazovky (0.46.80 se v aplikaci na
+// Macu „odepnula“).
+async function zkontrolujNabidkuPriPosunu(browser, engine, errors) {
+  const server = await startTestServer();
+  try {
+    const a = api(server.url);
+    await a.send('PUT', '/api/settings', { welcomeCompleted: true, objevHotovo: true, onboardingDismissed: true, lastSeenVersion: '999.0.0', language: 'cs' });
+    const { PROJECT_COLORS } = await import('../src/projects.js');
+    for (let i = 0; i < 12; i++) assert.equal((await a.send('POST', '/api/projects', { name: `QA projekt ${i + 1}`, color: PROJECT_COLORS[i % PROJECT_COLORS.length] })).status, 201);
+    for (const [w, h] of [[1440, 900], [375, 812]]) {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: 'no-preference', serviceWorkers: 'block' });
+      await ctx.route('**/*', (route) => route.request().url().startsWith(server.url) ? route.continue() : route.abort());
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => errors.push(`nabídka ${w}: ${e.message}`));
+      await p.goto(`${server.url}/#/prehled`);
+      const spoustec = p.locator('.lselect .picker-trigger').first();
+      await spoustec.waitFor();
+      await spoustec.scrollIntoViewIfNeeded();
+      await spoustec.click();
+      const menu = p.locator('.picker-menu');
+      await menu.waitFor();
+      const y0 = await p.evaluate(() => scrollY);
+      const box = await menu.boundingBox();
+      await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      for (let i = 0; i < 12; i++) { await p.mouse.wheel(0, 300); await p.waitForTimeout(40); }
+      await p.waitForTimeout(450);
+      assert.equal(await p.evaluate(() => scrollY), y0, `${engine} ${w}: kolečko v nabídce posunulo stránku pod ní`);
+      await p.evaluate(() => scrollBy(0, 60));
+      await p.waitForTimeout(250);
+      const poloha = await p.evaluate(() => {
+        const m = document.querySelector('.picker-menu');
+        const k = document.querySelector('.picker-trigger[aria-expanded="true"]')?.closest('.lselect');
+        if (!m || !k) return { zavreno: true };
+        const mr = m.getBoundingClientRect(), kr = k.getBoundingClientRect();
+        return { mezera: Math.round(mr.top >= kr.bottom ? mr.top - kr.bottom : kr.top - mr.bottom) };
+      });
+      assert.ok(poloha.zavreno || (poloha.mezera >= 0 && poloha.mezera <= 10), `${engine} ${w}: nabídka se od kapsle odpojila ${JSON.stringify(poloha)}`);
+      await ctx.close();
+    }
+  } finally {
+    await server.close();
+  }
+}
+
 // Rozhodnutí v Agenteeq (src/rozhodnuti.js): skutečná žádost Claude Code se ukáže všude, kde jde
 // rozhodnout, vždy s přesným příkazem, pravidlem pro „příště se neptat“ a odpočtem – nikdy se
 // neschvaluje naslepo podle popisu. Klepnutí v okně dojde až do odpovědi hooku. Na úzkém okně
@@ -1589,9 +1635,10 @@ for (const engine of engines) {
     }
     await zkontrolujPostranniPanel(browser, engine, errors);
     await zkontrolujProcesBezPrepisu(browser, engine, errors);
+    await zkontrolujNabidkuPriPosunu(browser, engine, errors);
     await zkontrolujRozhodnuti(browser, engine, errors);
     assert.deepEqual(errors, []);
-    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'agent decision shows exact command everywhere and reaches the hook', 'offline fonts', 'zero JS errors'] });
+    results.push({ engine, passed: true, cases: ['onboarding 4 steps', 'save failure and retry', 'completion survives reload', 'picker open-layer and escape', 'live updates preserve picker and throttle chart', 'foreground refresh updates the open UI without reload', 'update check button re-enables after repeated success and failure', 'budget modal close button, overlay and Escape', 'project modal preserves page scroll position', 'notification hover changes in light and dark themes', 'Claude backfill uses last measured date and displays only actual limit percentages', 'empty decision state vertically centered at natural card padding and sidebar badge inset', 'sidebar nav fully visible 620–1200 px (881/1180/1440, cs/en, offline, 6 sources)', 'web sources Perplexity and Grok', '24 local avatars', 'light/dark/system persistence and AA tokens', 'centered settings at 2528 px', 'all routes', 'no native selects', '375/900/1180/1440 layout', 'smooth wheel scrolling', 'detected process truthfulness', 'picker menu stays anchored while the page scrolls', 'agent decision shows exact command everywhere and reaches the hook', 'offline fonts', 'zero JS errors'] });
   } catch (error) {
     await page.screenshot({ path: `dist/qa/${engine}-failure.png` });
     await fs.writeFile(`dist/qa/${engine}-failure.txt`, `${error.stack || error}\n`);
