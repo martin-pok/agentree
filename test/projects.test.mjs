@@ -2,7 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import { normalizeProjects, validateProject, resolveProject, assignSessions, deleteProject, projectCsv, PROJECT_COLORS, NO_PROJECT } from '../src/projects.js';
+import { normalizeProjects, validateProject, resolveProject, assignSessions, deleteProject, projectCsv, snapshotOf, PROJECT_COLORS, NO_PROJECT } from '../src/projects.js';
+
+test('starý projektový snímek vzdáleného Claude neotevře odhadnutý webový chat', () => {
+  const id = 'claude-desktop-code:session_01FixtureRemoteAgent123';
+  const url = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
+  const old = { id, connector: 'claude-desktop-code', source: 'desktop-cache', url };
+  assert.equal(snapshotOf(old).url, '');
+  const verified = snapshotOf({ ...old, exactUrl: url });
+  assert.equal(verified.url, url);
+  assert.equal(snapshotOf(verified).url, url, 'ověřený odkaz přežije opětovné načtení projektu');
+});
 import { tempDir } from './helpers.mjs';
 
 test('projekty: normalizace zahodí neplatná data a sirotčí přiřazení', () => {

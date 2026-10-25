@@ -319,6 +319,7 @@ interface Notifications {
 
 interface Project { id: string; name: string; color: string; description: string; notes: string; folders: string[]; archived: boolean; createdAt: number; updatedAt: number }
 interface ProjectSnapshot { id: string; projectId: string; title: string; app: string; provider: Provider; connector: string; source: string; model: string; cwd: string; url: string; resume: string; startedAt: number; lastAt: number; turns: number; tokens: { input: number; output: number; cacheWrite: number } }
+// U Claude Desktop · vzdálený Code se url ukládá pouze pro ověřenou kartu; exactUrl nese její původ i při opětovném načtení snímku.
 interface ProjectsPayload { items: Project[]; assignments: Record<string, string>; snapshots: Record<string, ProjectSnapshot>; colors: string[]; limits: { name: number; description: number; notes: number; folders: number; assign: number } }
 
 interface LaunchTarget { id: string; label: string; logo: string; provider: Provider; group: 'agent' | 'local' | 'web'; modes: LaunchMode[]; projectModes: LaunchMode[]; permissions?: Record<string, string>; sandboxes?: Record<string, string>; models?: string[]; note: string; beta?: boolean; prefill?: boolean }

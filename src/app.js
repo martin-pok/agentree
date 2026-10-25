@@ -1283,8 +1283,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     desktopReport({ type: 'focus-agent', route: `#/agent/${encodeURIComponent(id)}` });
     return { ok: true, focused: true };
   }
-  // Klik v okně rozšíření vede rovnou do konverzace, ne do Agenteeq: webový chat (a cloudová relace
-  // na claude.ai) vrátí adresu, kterou rozšíření otevře v Chromu (přepne na existující kartu); ostatní
+  // Klik v okně rozšíření vede rovnou do konverzace, pokud známe její přesnou adresu: webový
+  // chat a vzdálená relace Claude ověřená kartou vrátí adresu pro Chrome; ostatní
   // se otevřou hlavní akcí z karty agenta (aplikace Codex, Terminál s konverzací…) – stejný plán jako
   // tlačítko „Otevřít“ v aplikaci (openers.js#planOpen). Jen agent, kterého okno právě ukazuje.
   async function openExtensionAgent(id) {
