@@ -34,11 +34,11 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
     return true;
   }
   const fokus = klicFokusu(el);
-  // Živé přepisy mohou měnit text karty několikrát za sekundu. Již dekódované logo
-  // ponecháme jako stejný DOM uzel, aby mezi dvěma snímky nezmizelo při novém innerHTML.
+  // Živé přepisy mohou měnit text karty několikrát za sekundu. Zachováme i obrázky, které
+  // se ještě dekódují; jinak by se při každé změně načítání rušilo a logo mohlo zůstat prázdné.
   const obrazky = new Map();
   for (const img of el.querySelectorAll('img')) {
-    if (!img.complete || !img.naturalWidth) continue;
+    if (img.complete && !img.naturalWidth) continue;
     const key = img.outerHTML;
     if (!obrazky.has(key)) obrazky.set(key, []);
     obrazky.get(key).push(img);

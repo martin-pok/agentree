@@ -1,5 +1,5 @@
 import { tr, tomtoPocitaci } from './i18n.js';
-import { adresaSouboru } from './verze.js';
+import { LOGO_VECTORS } from './logo-vectors.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT) a Simple Icons 16.34.0 (CC0), uložená v public/logos/. Slouží jen k označení napojených služeb.
 export const PROVIDERS = {
@@ -82,9 +82,9 @@ const GLYPHS = {
 
 export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
-  if (key) {
+  if (key && LOGO_VECTORS[key]) {
     const l = LOGOS[key];
-    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="${adresaSouboru(`/logos/${key}.svg`)}" alt="" width="18" height="18" decoding="sync" draggable="false" data-label="${l.label}">`;
+    return LOGO_VECTORS[key].replace('<svg ', `<svg class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" data-logo-key="${key}" aria-hidden="true" focusable="false" `);
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
