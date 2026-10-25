@@ -19,17 +19,21 @@ async function fixture(t) {
   return { server, messages, web, cloud, proces, send };
 }
 
-test('rozšíření: webový chat a cloudová relace vrátí adresu pro Chrome, Agenteeq se neotvírá', async (t) => {
+test('rozšíření: vzdálený Claude bez ověřené karty ukáže detail, s kartou otevře přesný chat', async (t) => {
   const f = await fixture(t);
   const w = await f.send(f.web.id);
   assert.equal(w.status, 200);
   assert.equal(w.body.url, 'https://chatgpt.com/c/abc');
-  // Relace z Claude Desktopu se otevře v aplikaci Claude (je-li), nikdy na webu, kde ji claude.ai nemusí najít.
+  // Cache-only relace nesmí aktivovat poslední cizí chat v Claude ani odhadnutý odkaz.
   const c = await f.send(f.cloud.id);
   assert.equal(c.status, 200);
-  if (c.body.url) assert.equal(c.body.url, 'https://claude.ai/code/session_01FixtureRemoteAgent123');
-  else assert.equal(c.body.opened || c.body.focused, true);
-  assert.equal(f.messages.length, 0, 'okno Agenteeq se nepřepnulo');
+  assert.equal(c.body.focused, true);
+  assert.equal(f.messages.length, 1, 'otevře se detail agenta v Agenteeq');
+  assert.equal(f.messages[0].route, `#/agent/${encodeURIComponent(f.cloud.id)}`);
+  f.server.app.connectors.web.ingest({ site: 'claude-code-web', conversationId: 'session_01FixtureRemoteAgent123', url: 'https://claude.ai/code/session_01FixtureRemoteAgent123', generating: true, counts: { user: 1, assistant: 0 } });
+  const verified = await f.send(f.cloud.id);
+  assert.equal(verified.body.url, 'https://claude.ai/code/session_01FixtureRemoteAgent123');
+  assert.equal(f.messages.length, 1, 'ověřený odkaz už nepřepne okno Agenteeq');
   assert.equal(f.server.app.runs.children.size, 0);
 });
 

@@ -4,6 +4,7 @@ import { csv } from './csv.js';
 import { uid, hourKey, hourKeyTs, localDay, DAY } from './util.js';
 import { isSafeRef } from './git.js';
 import { ui } from './texty.js';
+import { planOpen } from './openers.js';
 
 // Projekty: skupiny konverzací napříč službami. Přiřazení je ruční (session → projekt) nebo automatické podle složky.
 
@@ -102,6 +103,10 @@ const str = (v, n = 500) => (typeof v === 'string' ? v.slice(0, n) : '');
 
 // Snímek konverzace v projektu: zůstane v projektu i po vypadnutí z okna sledování (výchozí 30 dní).
 export function snapshotOf(s) {
+  // Starší snímky obsahují s.url odvozenou z ID cache. Odkaz lze zachovat jen tehdy,
+  // když jej dříve ověřilo rozšíření a přesné ID znovu projde kontrolou openeru.
+  const remoteClaude = s.connector === 'claude-desktop-code';
+  const exactUrl = remoteClaude ? planOpen({ ...s, exactUrl: s.exactUrl || s.karta?.url }, 'app', {})?.args[0] || '' : '';
   return {
     id: str(s.id, 200),
     projectId: typeof s.projectId === 'string' ? s.projectId : null,
@@ -112,7 +117,8 @@ export function snapshotOf(s) {
     source: str(s.source, 20),
     model: str(s.model, 80),
     cwd: str(s.cwd),
-    url: str(s.url),
+    url: remoteClaude ? exactUrl : str(s.url),
+    ...(remoteClaude && exactUrl ? { exactUrl } : {}),
     resume: str(s.resume, 600),
     startedAt: Number(s.startedAt) || 0,
     lastAt: Number(s.lastAt) || 0,
