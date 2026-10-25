@@ -5,6 +5,8 @@ import { skocNa } from './plynule-posouvani.js';
 
 const KEY = 'agenteeq.jump';
 const KEY_SEKCE = 'agenteeq.jump.sekce';
+let zrusDoskok = () => {};
+const zvyrTimers = new WeakMap();
 
 const uloz = (klic, hodnota) => {
   try { sessionStorage.setItem(klic, hodnota); return true; } catch { return false; }
@@ -64,19 +66,45 @@ export function takeSectionJump(route) {
  * Přivede místo na obrazovku a krátce ho zvýrazní (styles.css `.is-called-out`). Stránka má v CSS
  * `scroll-behavior: smooth`, takže `scrollIntoView` s 'auto' posouvá plynule – a v okně, které
  * zrovna nekreslí, se plynulý posun vůbec nerozběhne. Cíl se proto počítá přesně a u skrytého
- * okna nebo omezeného pohybu se skočí okamžitě. 96 px = místo pod lištou. `fokus` dostane fokus
+ * okna nebo omezeného pohybu se skočí okamžitě. Odsazení vychází ze skutečné výšky horní lišty,
+ * aby nadpis sekce nebyl schovaný ani v úzkém okně. `fokus` dostane fokus
  * bez dalšího posunu, aby čtečka obrazovky i klávesnice pokračovaly odtud – ne však, když člověk
  * právě píše do pole mimo cíl.
  */
 export function vyvolejMisto(misto, fokus = null) {
   if (!misto) return;
+  zrusDoskok();
+  zrusDoskok = () => {};
   const instant = document.hidden || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const top = Math.max(0, window.scrollY + misto.getBoundingClientRect().top - 96);
+  const polohuj = () => {
+    const lista = document.querySelector('.topbar');
+    const odsazeni = Math.max(96, lista?.getBoundingClientRect().bottom + 12 || 0);
+    return Math.max(0, window.scrollY + misto.getBoundingClientRect().top - odsazeni);
+  };
+  const top = polohuj();
   if (instant) skocNa(top);
-  else window.scrollTo({ top, behavior: 'smooth' });
+  else {
+    window.scrollTo({ top, behavior: 'smooth' });
+    // Živá data mohou změnit výšku karet během plynulého posunu. Po dojezdu srovnat cíl
+    // přesně pod lištu; jakýkoli vlastní pohyb uživatele tuto korekci okamžitě zruší.
+    const stop = new AbortController();
+    const timer = setTimeout(() => {
+      stop.abort();
+      if (misto.isConnected && Math.abs(polohuj() - window.scrollY) > 3) skocNa(polohuj());
+    }, 850);
+    zrusDoskok = () => { clearTimeout(timer); stop.abort(); };
+    for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+      window.addEventListener(event, zrusDoskok, { passive: true, once: true, signal: stop.signal });
+    }
+  }
   misto.classList.remove('is-called-out');
   void misto.offsetWidth;
   misto.classList.add('is-called-out');
+  clearTimeout(zvyrTimers.get(misto));
+  zvyrTimers.set(misto, setTimeout(() => {
+    misto.classList.remove('is-called-out');
+    zvyrTimers.delete(misto);
+  }, 1900));
   // Kdo mezitím píše jinde (třeba další dotaz pomocníkovi), tomu fokus neukrade: Enter by jinak
   // dopadl na zvýrazněný přepínač a přepnul ho.
   if (!pisePrave(misto)) fokus?.focus({ preventScroll: true });

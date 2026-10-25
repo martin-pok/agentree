@@ -1750,10 +1750,15 @@ html.is-cloud body { background: var(--paper); }
 .set-note { margin: 12px 0 0; color: var(--ink-2); font-size: 13px; line-height: 20px; }
 .set-note code { padding: 1px 6px; border-radius: var(--r-xs); background: color-mix(in srgb, var(--ink) 6%, transparent); white-space: nowrap; }
 .set-card { padding: 28px; }
-/* Krátké zvýraznění karty, na kterou odkázalo tlačítko – jinak není poznat, kam skok vedl. */
-.is-called-out { animation: callout 1.8s var(--ease) both; }
-@keyframes callout { 0%, 55% { box-shadow: 0 0 0 2px var(--teal-ink), var(--shadow-sm); } 100% { box-shadow: var(--shadow-sm); } }
-@media (prefers-reduced-motion: reduce) { .is-called-out { animation: none; box-shadow: 0 0 0 2px var(--teal-ink), var(--shadow-sm); } }
+/* Skok z hledání zvýrazní přesný cíl tenkou linkou v barvě značky. Outline nemění stín karty
+   ani rozložení řádku a respektuje jeho zaoblení. */
+.is-called-out { outline: 1px solid transparent; outline-offset: 2px; animation: callout 1.8s var(--ease) both; }
+@keyframes callout {
+  0% { outline-color: transparent; outline-offset: 5px; }
+  20%, 60% { outline-color: var(--brand, #6260d8); outline-offset: 2px; }
+  100% { outline-color: transparent; outline-offset: 2px; }
+}
+@media (prefers-reduced-motion: reduce) { .is-called-out { animation: none; outline-color: var(--brand, #6260d8); } }
 .set-card-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
 .set-card-head > div { flex: 1; min-width: 0; }
 .set-card-head h2, .set-card-head h3 { margin: 0 0 4px; font: 500 17px/1.3 var(--f-body); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
