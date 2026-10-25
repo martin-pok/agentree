@@ -327,7 +327,10 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + `<rect class="robot-objem" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/></g>`
     + `<g class="robot-ucho-pres" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
     + `<g class="robot-celo" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">`
+    + `<rect class="robot-face-well" x="${n(f.x - 1.2)}" y="${n(f.top - 1.2)}" width="${n(f.w + 2.4)}" height="${n(f.h + 2.4)}" rx="${n(f.r + 1.2)}"/>`
     + `<rect class="robot-face" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
+    + `<rect class="robot-face-glass" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
+    + `<path class="robot-face-glint" d="M${n(f.x + Math.max(4, f.r * .48))} ${n(f.top + 2.4)}H${n(f.x + f.w * .54)}"/>`
     + cheeks
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
     + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`

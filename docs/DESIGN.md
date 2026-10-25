@@ -296,6 +296,10 @@ Mapa „Kdy agenti pracují“ míchá značkovou fialovou `--brand` s neutráln
 - Robot (robot-svg.js, Figma 18. 10. 2026): paže začínají 2 jednotky uvnitř trupu (žádná
   mezera) s vektorem 14 × 10, oči přesně uprostřed obličeje, chodidla končí na zemi (y 102,5),
   kde leží střed stínu.
+- Objem postav: společný přechod přes hlavu a trup má měkké světlo zleva nahoře a čitelný
+  stín na pravém boku. Displej leží v mělké tmavé prohlubni s jemným odleskem skla; nové
+  vrstvy se při pohledu zezadu skryjí spolu s očima. Úprava zůstává vidět i v malém portrétu,
+  nemění siluetu, barvu postavy ani pohyb.
 - Posuvník: tenký (8 px, kapsle 4 px), bez podkladu; místo pro něj je vždy vyhrazené
   (`scrollbar-gutter: stable`), takže zamčená stránka pod oknem neposkočí.
 - Dlaždice Stav agentů: barva stavu (25 % odstínu na kartě) jen když je počet nenulový;

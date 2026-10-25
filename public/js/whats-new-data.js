@@ -27,10 +27,10 @@ export const RELEASES = [
     version: '0.46.78',
     date: '2026-10-25',
     title: 'Správný chat vzdáleného agenta',
-    items: ['Claude už neotevře poslední cizí chat. Přesné otevření nabídne u ověřené webové relace; u samotné cache jasně označí chybějící přepis.'],
+    items: ['Claude už neotevře poslední cizí chat. Přesné otevření nabídne u ověřené webové relace; u samotné cache jasně označí chybějící přepis.', 'Roboti působí plastičtěji díky měkkému světlu, stínu na boku a jemně zapuštěnému displeji.'],
     en: {
       title: 'The right remote agent chat',
-      items: ['Claude no longer opens the last unrelated chat. Exact opening is offered for a verified web session; cache-only sessions clearly explain missing transcripts.'],
+      items: ['Claude no longer opens the last unrelated chat. Exact opening is offered for a verified web session; cache-only sessions clearly explain missing transcripts.', 'Robots have more depth through soft lighting, side shading and a subtly recessed display.'],
     },
   },
   {

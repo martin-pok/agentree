@@ -280,6 +280,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .robot-shadow { fill: var(--ink); opacity: .07; }
 .robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 26%, var(--card)); }
 .robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
+.robot-torso { stroke: color-mix(in srgb, var(--persona) 44%, var(--card)); stroke-width: .8; }
 .robot-face { fill: #242632; }
 .robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
 .robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
