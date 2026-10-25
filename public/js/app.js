@@ -12,7 +12,7 @@ import { bindCharts, bindHeatmap, restoreHover } from './charts.js';
 import { startDatePickers } from './datepicker.js';
 import { tokensSince, needsYou } from './data.js';
 import { udalostNapojeni } from './napojeni-ui.js';
-import { projectHref, projectForm, assignDialog, pdot, vsechnyStitky } from './projects-ui.js';
+import { projectHref, projectForm, assignDialog, pdot, vsechnyStitky, prednactiMedia } from './projects-ui.js';
 import { avatarSvg, hasAvatar, cycleAvatar } from './avatars.js';
 import { umiInstalovat, nainstalujAktualizaci } from './aktualizace.js';
 import { initNaseptavac } from './naseptavac.js';
@@ -1020,6 +1020,8 @@ function vykresliOdlozene() {
 }
 
 subscribe((topics) => {
+  // Obrázky projektů se stahují hned, i když je zrovna otevřená jiná stránka (projects-ui.js).
+  if (!topics || topics.has?.('projects') || topics.has?.('all')) prednactiMedia(state.projects?.items);
   if (!behemRolovani()) { refresh(topics); return; }
   if (!odlozenaTemata) odlozenaTemata = new Set();
   for (const t of topics) odlozenaTemata.add(t);

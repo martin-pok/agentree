@@ -1,6 +1,7 @@
 import { createHomeStudio, dilnaAtributy } from '../home-studio.js';
 import { state, sessionsList, agentsList, emit } from '../state.js';
 import { api } from '../api.js';
+import { poradiPraveTed } from '../prave-ted.js';
 import { displayStatus, esc, fmtTok, fmtMoney, plural, startOfDay, dayStart, rel, H, MIN } from '../format.js';
 import { glyph, PROVIDERS, pkey, ICON } from '../icons.js';
 import { stackedColumns, timeline, hbars, gauge } from '../charts.js';
@@ -371,7 +372,16 @@ function update(topics = new Set(['all'])) {
   const decideCount = needs.length;
   const waiting = all.filter((s) => displayStatus(s) === 'waiting');
   const observed = all.filter((s) => s.status === 'observed');
-  const live = [...needs, ...failed, ...limited, ...working, ...observed, ...waiting.sort((a, b) => b.lastAt - a.lastAt)];
+  // Pořadí v „Právě teď“ je závazné (docs/DESIGN.md → Pořadí agentů v „Právě teď“):
+  // 1. pracuje, 2. potřebuje tvé rozhodnutí (a s ním selhání a limit), 3. dokončil a čeká na
+  // zadání, 4. neaktivní a připravený (otevřená konverzace bez práce, proces bez přepisu).
+  // Uvnitř skupiny rozhoduje čas, který se mění jen při skutečné změně (začátek tahu, dokončení,
+  // spuštění), ne každá živá událost – jinak by karty pořád přeskakovaly zleva doprava.
+  const zacatek = (s) => s.turnStartedAt || s.startedAt || s.lastAt || 0;
+  const hotovo = waiting.filter((s) => s.done).sort((a, b) => b.lastAt - a.lastAt);
+  const pripraveni = [...waiting.filter((s) => !s.done), ...observed]
+    .sort((a, b) => (b.proces?.od || b.lastAt || 0) - (a.proces?.od || a.lastAt || 0));
+  const live = poradiPraveTed({ working, needs, failed, limited, hotovo, pripraveni, zacatek });
   const STRIP_MAX = 12;
   if (changed(topics, 'sessions', 'runtimes', 'connectors')) {
     el.querySelector('[data-region="hero"]').classList.toggle('is-live', working.length > 0);

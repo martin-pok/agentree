@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.82 – 2026-10-25 · Nabídky drží na místě, agenti v pevném pořadí
+
+- **Nabídka projektu se už neodepne:** když se v nabídce výběru (projekt ve spouštěči na Přehledu) dorolovalo na konec, kolečko posunulo stránku pod ní a nabídka zůstala viset uprostřed obrazovky. Teď kolečko patří jen nabídce, a když se stránka posune jinak (dojezd, klávesnice), nabídka jede s kapslí; když kapsle z okna zmizí, zavře se. Totéž platí pro našeptávač štítků.
+- **Pořadí v „Právě teď“:** 1. pracující, 2. čekající na tvé rozhodnutí (pak selhání a limit), 3. hotoví a čekající na zadání, 4. neaktivní. Naposledy použití agenti zůstávají nahoře, karty už nepřeskakují zleva doprava. Když agent začne nebo skončí práci, robot se nejdřív otočí na místě a karta pak klidně dojede.
+- **Zvýraznění po hledání:** řádek v Nastavení, na který skok vedl, dostane zaoblenou fialovou plochu s odsazením kolem obsahu; karta měkký prstenec po svých rozích.
+- **Projekty:** vlastní obálky a loga se stahují hned po startu, takže karta je ukáže v prvním snímku – bez probliknutí cizího výchozího přechodu. Při najetí se za kartou rozsvítí měkká fialová záře, ve světlém i tmavém vzhledu.
+- **Agenti:** karta ukazuje jméno robota (vlastní, jinak jméno postavy) a robot je o něco větší.
+
 ## 0.46.81 – 2026-10-25 · Jemnější hloubka robotů
 
 - **Roboti s větším objemem:** měkčí světlo na hlavě a těle, výraznější stín na boku a jemně zapuštěný displej jim dávají hloubku i v malých kartách. Postavy, barvy a gesta zůstávají stejné.

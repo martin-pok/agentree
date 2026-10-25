@@ -173,13 +173,44 @@ export function pickFolder({ title = tr('Vybrat složku') } = {}) {
 
 /* ---------- Obrázky projektu (náhled karty a logo) ---------- */
 
+// Vlastní obálky a loga se stahují a dekódují předem, hned jak dorazí seznam projektů – ne až při
+// otevření karty. Karta s už načteným obrázkem ho ukáže v prvním snímku; jinak místo cizího
+// výchozího přechodu ukáže tichou plochu v barvě projektu a obrázek se na ni plynule vyjasní
+// (styles.css `img[data-media]`). Dřív se u všech karet nejdřív ukázal stejný přechod a obrázky
+// problikly až po vteřině či dvou.
+const predem = new Map();
+const nacteno = (url) => {
+  const img = predem.get(url);
+  return Boolean(img?.complete && img.naturalWidth > 0);
+};
+export function prednactiMedia(items = []) {
+  for (const p of items) {
+    for (const kind of ['cover', 'logo']) {
+      const url = mediaUrl(p, kind);
+      if (!url || predem.has(url)) continue;
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+      predem.set(url, img);
+      const hotovo = () => {
+        if (img.naturalWidth > 0 && kind === 'logo') zaradLogo(img);
+        for (const el of document.querySelectorAll(`img[data-media][src="${CSS.escape(url)}"]`)) {
+          if (img.naturalWidth > 0) el.classList.add('is-nacteno');
+          if (kind === 'logo' && el.complete && el.naturalWidth > 0) zaradLogo(el);
+        }
+      };
+      (img.decode ? img.decode() : Promise.reject()).then(hotovo, () => img.addEventListener('load', hotovo, { once: true }));
+    }
+  }
+}
+
 export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeURIComponent(p.id)}/media/${kind}?f=${encodeURIComponent(p[kind].file)}` : '');
 
 // Náhled karty: nahraný obrázek, jinak přechod podle vybraného pozadí. Barva projektu zůstává
 // jen jako jemný pruh při spodní hraně, aby se karty dál rozlišily i bez obrázku.
 export const projectCover = (p, cls = '') => {
   const url = mediaUrl(p, 'cover');
-  return `<span class="pcover ${url ? 'pcover--custom' : `cover--${esc(p?.cover?.preset || 'aurora')}`}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false">` : ''}</span>`;
+  return `<span class="pcover ${url ? 'pcover--custom' : `cover--${esc(p?.cover?.preset || 'aurora')}`}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false" data-media${nacteno(url) ? ' class="is-nacteno"' : ''}>` : ''}</span>`;
 };
 
 // Logo klienta nahrazuje barevnou tečku. Logo s vlastním tvarem (neprůhledná ikona se zaoblenými
@@ -191,7 +222,7 @@ export const projectMark = (p, cls = '') => {
   const url = mediaUrl(p, 'logo');
   const druh = druhLoga.get(url);
   return url
-    ? `<span class="plogo${druh ? ` plogo--${druh}` : ''}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false" data-plogo></span>`
+    ? `<span class="plogo${druh ? ` plogo--${druh}` : ''}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false" data-plogo data-media${nacteno(url) ? ' class="is-nacteno"' : ''}></span>`
     : pdot(p, cls);
 };
 
@@ -226,7 +257,10 @@ function zaradLogo(img) {
   tile?.classList.add(`plogo--${druh}`);
 }
 if (typeof document !== 'undefined' && document.addEventListener) {
-  document.addEventListener('load', (e) => { if (e.target?.matches?.('img[data-plogo]')) zaradLogo(e.target); }, true);
+  document.addEventListener('load', (e) => {
+    if (e.target?.matches?.('img[data-plogo]')) zaradLogo(e.target);
+    if (e.target?.matches?.('img[data-media]')) e.target.classList.add('is-nacteno');
+  }, true);
 }
 
 /* ---------- Formulář projektu ---------- */

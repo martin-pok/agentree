@@ -306,6 +306,23 @@ Mapa „Kdy agenti pracují“ míchá značkovou fialovou `--brand` s neutráln
   nula zůstává neutrální. Text dlaždice je vždy v barvě textu.
 - Nadpisy sekcí 24 px, odkazy u nich 16 px, text v kartách 16 px, druhý řádek 14 px.
 
+## Přehled: pořadí agentů v „Právě teď“ (vlastník 25. 10. 2026, závazné)
+
+Karty v „Právě teď“ se řadí vždy v tomto pořadí skupin:
+
+1. **Pracuje** – agent, který právě pracuje. Nejdřív ten, kdo začal svůj tah naposledy.
+2. **Vyžaduje tvé rozhodnutí** – žádost o povolení nebo otázka agenta; za nimi selhání
+   a vyčerpaný limit (taky čekají na tebe).
+3. **Dokončil práci a čeká na zadání** – nejdřív ten, kdo skončil naposledy. Naposledy
+   použití agenti tak zůstávají nahoře na očích, nikdy neodjedou za neaktivní.
+4. **Neaktivní a připravený** – otevřená konverzace bez práce, detekovaný proces bez přepisu.
+
+Uvnitř skupiny rozhoduje čas, který se mění jen při skutečné změně (začátek tahu, dokončení,
+spuštění), ne každá živá událost: karty nesmí přeskakovat zleva doprava. Když agent změní
+skupinu, robot se nejdřív otočí na místě (600 ms) a teprve pak karta klidně dojede na nové místo
+(560 ms, ostatní se rozestoupí současně). Kód: `public/js/prave-ted.js#poradiPraveTed`,
+test `test/prave-ted-poradi.test.mjs`.
+
 ## Agenti: hromadný výběr konverzací
 
 Vstup do výběru je plné primární tlačítko oddělené od obrysových filtrů. Po vstupu je jeho stav

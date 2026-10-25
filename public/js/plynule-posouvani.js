@@ -140,6 +140,9 @@ export function plynulePosouvani() {
     if ((!plynule && !(omezitPohyb.matches && presnyUkazatel.matches && navigator.maxTouchPoints === 0))
       || e.defaultPrevented || e.ctrlKey || e.metaKey) return; // ctrl = přiblížení na trackpadu
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY) || !e.deltaY) return;       // vodorovný posun nechat být
+    // Nabídka ve vrchní vrstvě (výběr, kalendář, upozornění): kolečko patří jí, stránka pod ní
+    // stojí. Jinak by se na konci seznamu posunula stránka a nabídka by zůstala viset.
+    if (e.target?.closest?.('[popover]')) return;
     if (zamceno(e.target) || vnitrniPosuv(e.target, e.deltaY > 0)) return;
     const krok = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
     // Website trackpads already animate through the browser compositor. Do not

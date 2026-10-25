@@ -1007,3 +1007,28 @@ html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill:
 /* Chybějící fotka z Googlu: věta a tlačítko pro nové načtení na jednom řádku, na úzkém okně pod sebou. */
 .acct-foto-znovu { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .acct-foto-znovu .btn svg { width: 16px; height: 16px; }
+
+/* Karta projektu při najetí: zvedne se o 3 px a za ní se rozsvítí měkká fialová záře značky
+   s jemným prstencem. Platí ve světlém i tmavém motivu (dřív světlý motiv záři přepsal neutrálním
+   stínem). Během posouvání a na dotyku se nezvedá nic. */
+@media (hover: hover) {
+  html:not(.is-scrolling) :not(.is-reordering) > .pgrid > .pcard.card:not(.is-lifted):hover {
+    transform: translateY(-3px);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--brand) 46%, transparent),
+      0 2px 6px -2px color-mix(in srgb, var(--brand) 22%, transparent),
+      0 22px 48px -20px color-mix(in srgb, var(--brand) 55%, transparent),
+      0 0 40px -6px color-mix(in srgb, var(--brand) 26%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html:not(.is-scrolling) .pgrid .pcard.card:hover { transform: none !important; }
+}
+
+/* Vlastní obálka a logo projektu: dokud se obrázek nenačte, karta ukazuje tichou plochu v barvě
+   projektu (ne cizí výchozí přechod) a obrázek se na ni plynule vyjasní. Už načtený obrázek
+   (projects-ui.js#prednactiMedia) má třídu hned při vykreslení a ukáže se v prvním snímku. */
+.pcover.pcover--custom { background: color-mix(in srgb, var(--pc) 16%, var(--card)); }
+img[data-media] { opacity: 0; transition: opacity var(--motion-response) var(--ease); }
+img[data-media].is-nacteno { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { img[data-media] { transition: none; } }

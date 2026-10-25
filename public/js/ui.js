@@ -78,11 +78,22 @@ export function sloucit(el, html, { presun = false } = {}) {
   // Polohy řádků se měří jen u odrolované stránky (kvůli kotvě) nebo pro dojezd přesunu.
   const merit = typeof document !== 'undefined' && (scrollY > 0 || (presun && chcePresun()));
   const pred = merit ? polohy(el) : null;
+  const stavyPred = pred && presun ? stavy(el) : null;
   sloucitDeti(el, sablona.content);
   if (!pred) return;
   ukotvi(el, pred);
-  if (presun && chcePresun()) dojezd(el, pred);
+  if (presun && chcePresun()) dojezd(el, pred, stavyPred);
 }
+
+// Stav robota v každém klíčovaném řádku (data-state) před sloučením: když agent začne nebo skončí
+// práci, robot se otočí (mascot-motion.js, 600 ms). Přesun karty pak počká, až se otočí na místě,
+// a teprve potom klidně dojede – dřív letěla karta i s robotem naráz a otočka nebyla vidět.
+function stavy(el) {
+  const m = new Map();
+  for (const n of el.querySelectorAll('[data-key]')) m.set(n, n.querySelector('[data-state]')?.dataset.state || '');
+  return m;
+}
+const OTOCKA_MS = 600;
 
 // Kotva celé obrazovky kolem jednoho živého překreslení (app.js#refresh): změní se i oblasti nad
 // seznamem (počty ve filtrech, pruh nahoře), a ty se do měření jedné oblasti nepromítnou – ve
@@ -130,9 +141,18 @@ function polohy(el) {
   }
   return m;
 }
-function dojezd(el, pred) {
+function dojezd(el, pred, stavyPred = null) {
   const vyska = innerHeight;
   const krivka = 'cubic-bezier(.2, .8, .2, 1)';
+  // Když se některý agent dal do práce nebo z ní odešel, všechny karty počkají na jeho otočku
+  // a pohnou se spolu – pomaleji, aby bylo vidět, kam karta odjela.
+  const otocka = stavyPred && [...el.querySelectorAll('[data-key]')].some((n) => {
+    if (!stavyPred.has(n)) return false;
+    const byl = stavyPred.get(n), je = n.querySelector('[data-state]')?.dataset.state || '';
+    return byl !== je && (byl === 'working' || je === 'working');
+  });
+  const zpozdeni = otocka ? OTOCKA_MS : 0;
+  const trvani = otocka ? 560 : 360;
   for (const n of el.querySelectorAll('[data-key]')) {
     const r0 = pred.get(n);
     const r = n.getBoundingClientRect();
@@ -141,13 +161,13 @@ function dojezd(el, pred) {
     // ostatní uvolní místo (do té doby je neviditelný). Bez odkladu by ležel přes řádek, který
     // z jeho místa teprve odjíždí.
     if (!r0) {
-      n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: 100, easing: krivka, fill: 'backwards' });
+      n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay: zpozdeni + 140, easing: krivka, fill: 'backwards' });
       continue;
     }
     const dx = r0.left - r.left;
     const dy = r0.top - r.top;
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-    n.animate([{ transform: `translate(${Math.round(dx)}px, ${Math.round(dy)}px)` }, { transform: 'none' }], { duration: 280, easing: krivka });
+    n.animate([{ transform: `translate(${Math.round(dx)}px, ${Math.round(dy)}px)` }, { transform: 'none' }], { duration: trvani, delay: zpozdeni, easing: krivka, fill: 'backwards' });
   }
 }
 

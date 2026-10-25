@@ -1,4 +1,5 @@
 import { tr } from './i18n.js';
+import { containPopoverWheel } from './scroll-containment.js';
 // Native form values stay the source of truth; every visible picker uses our design.
 let serial = 0;
 let active = null;
@@ -8,6 +9,7 @@ const labelOf = (select) => select.getAttribute('aria-label') || select.labels?.
 function close(restore = false) {
   if (!active) return;
   const { button, panel } = active;
+  active.uklid?.();
   active = null;
   button.setAttribute('aria-expanded', 'false');
   button.removeAttribute('aria-activedescendant');
@@ -68,16 +70,43 @@ function open(select, button) {
   panel.showPopover?.();
   // V launcheru kreslí viditelnou kapsli rodič .lselect (ikona + tlačítko).
   // Měření samotného tlačítka dávalo 240 px i při kapsli široké téměř 500 px.
-  const rect = (button.closest('.lselect') || button).getBoundingClientRect();
-  // Nabídka má aspoň šířku celé viditelné kapsle a vejde se do okna.
-  panel.style.width = 'max-content';
-  const width = Math.min(Math.max(Math.ceil(rect.width), 240, Math.ceil(panel.getBoundingClientRect().width)), innerWidth - 24);
-  panel.style.width = `${width}px`;
-  panel.style.left = `${Math.max(12, Math.min(rect.left, innerWidth - width - 12))}px`;
-  const below = innerHeight - rect.bottom - 16;
-  const above = rect.top - 16;
-  panel.style.maxHeight = `${Math.max(64, Math.min(320, Math.max(below, above)))}px`;
-  panel.style.top = `${below >= Math.min(panel.scrollHeight, 240) || below >= above ? rect.bottom + 6 : Math.max(8, rect.top - panel.offsetHeight - 6)}px`;
+  const kotva = button.closest('.lselect') || button;
+  // Nabídka je ve vrchní vrstvě s pevnou polohou: když se pod ní posune stránka (plynulé
+  // dojíždění, klávesnice, posuvník, živé přeskládání), musí jet s kapslí, ne zůstat viset
+  // uprostřed obrazovky. Když kapsle z okna zmizí, nabídka se zavře.
+  let nahore = false;
+  const umisti = (prvni = false) => {
+    const rect = kotva.getBoundingClientRect();
+    if (!prvni && (!kotva.isConnected || rect.bottom < 0 || rect.top > innerHeight || !rect.width)) { close(); return; }
+    // Nabídka má aspoň šířku celé viditelné kapsle a vejde se do okna.
+    if (prvni) {
+      panel.style.width = 'max-content';
+      const width = Math.min(Math.max(Math.ceil(rect.width), 240, Math.ceil(panel.getBoundingClientRect().width)), innerWidth - 24);
+      panel.style.width = `${width}px`;
+    }
+    const width = panel.offsetWidth;
+    panel.style.left = `${Math.round(Math.max(12, Math.min(rect.left, innerWidth - width - 12)))}px`;
+    const below = innerHeight - rect.bottom - 16;
+    const above = rect.top - 16;
+    // Strana (pod / nad kapslí) se volí jen při otevření; při posunu se nepřeklápí, jinak by nabídka
+    // poskakovala a mohla přetéct okno.
+    if (prvni) {
+      panel.style.maxHeight = `${Math.max(64, Math.min(320, Math.max(below, above)))}px`;
+      nahore = !(below >= Math.min(panel.scrollHeight, 240) || below >= above);
+    }
+    panel.style.top = `${Math.round(nahore ? Math.max(8, rect.top - panel.offsetHeight - 6) : rect.bottom + 6)}px`;
+  };
+  umisti(true);
+  let snimek = 0;
+  const priPosunu = (e) => {
+    if (e.target instanceof Node && panel.contains(e.target)) return;
+    cancelAnimationFrame(snimek);
+    snimek = requestAnimationFrame(() => { if (active?.panel === panel) umisti(); });
+  };
+  addEventListener('scroll', priPosunu, { capture: true, passive: true });
+  // Kolečko na konci seznamu nesmí posunout stránku pod nabídkou (WebKit řetězí posun i přes
+  // overscroll-behavior: contain).
+  panel.addEventListener('wheel', (e) => containPopoverWheel(panel, e, '.picker-menu'), { passive: false });
   button.setAttribute('aria-expanded', 'true');
   const highlight = () => {
     [...panel.children].forEach((item, i) => item.classList.toggle('is-highlighted', i === index));
@@ -89,7 +118,7 @@ function open(select, button) {
     }
   };
   let typed = '', typedAt = 0;
-  active = { button, panel, select, key(e) {
+  active = { button, panel, select, uklid() { cancelAnimationFrame(snimek); removeEventListener('scroll', priPosunu, { capture: true }); }, key(e) {
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(true); return; }
     if (e.key === 'Tab') { close(); return; }
     if (['Enter', ' '].includes(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); choose(index); return; }
