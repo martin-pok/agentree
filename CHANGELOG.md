@@ -1,8 +1,11 @@
 # Changelog
 
-## Nevydané · Čitelné ruce robota v malých kartách
+## 0.46.76 – 2026-10-25 · Přesné skoky a vyladěné projekty
 
-- **Čekající robot má viditelné paže:** malé portréty už nevybírají knihu ani mobil, které paže zakrývaly. Paže se při žádné čekací póze neschovají a v kartách mají čitelnější obrys.
+- **Hledání ukáže přesné místo:** vybranou sekci posune pod horní lištu i při živé změně obsahu a krátce ji označí jemným fialovým obrysem.
+- **Úchyty karet drží stejný styl:** v detailu agenta a projektu plavou nad kartou stejně jako widgety na Přehledu; lze je ovládat klávesnicí.
+- **Projekty bez úzké nabídky a přebliknutí:** nabídka má alespoň šířku tlačítka, vlastní bannery a loga se načítají hned a karty při najetí dostanou jemnou fialovou záři.
+- **Čekající robot má ruce vidět:** malé portréty nevolí pózy s knihou a mobilem, které paže zakrývaly; obrys paží je v kartách čitelnější.
 
 ## 0.46.75 – 2026-10-25 · Loga služeb bez čekání
 
