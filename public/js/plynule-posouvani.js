@@ -37,6 +37,14 @@ export function skocNa(y) {
   html.style.scrollBehavior = puvodni;
 }
 
+// Plynulý návrat na začátek stránky (klik na logo). Rozjetý dojezd kolečka se zruší, ať se s pohybem
+// nahoru nepere; s omezením pohybu je to okamžitý skok.
+export function nahoru() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) { skocNa(0); return; }
+  zrusDojezd();
+  scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 export function plynulePosouvani() {
   const html = document.documentElement;
   const presnyUkazatel = matchMedia('(hover: hover) and (pointer: fine)');

@@ -119,3 +119,12 @@ test('Notion: English translations cover all new agent appearance controls', asy
     assert.ok(dict.includes('"' + text + '":'), text + ' needs English translation');
   }
 });
+
+test('Přehled: jméno má každý agent (stejně jako stránka Agenti), logo na Přehledu vrací nahoru', async () => {
+  const fs = await import('node:fs/promises');
+  const studio = await fs.readFile(new URL('../public/js/home-studio.js', import.meta.url), 'utf8');
+  assert.match(studio, /const nazev = jmenoAgenta\(/, 'jméno z téže funkce jako stránka Agenti');
+  assert.doesNotMatch(studio, /if \(p\.name\) \{\s*if \(!jmeno\)/, 'jméno už nezávisí na vlastním pojmenování');
+  const app = await fs.readFile(new URL('../public/js/app.js', import.meta.url), 'utf8');
+  assert.match(app, /querySelector\('\.brand'\)\.addEventListener\('click'[\s\S]{0,200}nahoru\(\)/);
+});

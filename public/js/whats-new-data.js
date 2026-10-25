@@ -4,20 +4,38 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.83',
+    version: '0.46.84',
     date: '2026-10-25',
-    title: 'Vzdálení agenti a Dovednosti',
+    title: 'Vzdálení agenti, čisté názvy, Dovednosti',
     items: [
       'Když aplikace nemůže číst stav agentů v cloudu z účtu Claude, řekne proč a co s tím – a přihlášení hledá na více místech.',
-      'Karty dovedností mají stejnou výšku a tlačítka na jedné lince.',
-      'Název dovednosti při najetí zfialoví v barvě značky.',
+      'Názvy agentů z Claude bez prázdných čtverečků a bez stavu z bočního panelu.',
+      'Nedávné složky na jeden řádek: jméno a konec cesty, bez dočasných složek Claude.',
+      'Karty dovedností mají stejnou výšku a název při najetí zfialoví v barvě značky.',
     ],
     en: {
-      title: 'Remote agents and Skills',
+      title: 'Remote agents, clean names, Skills',
       items: [
         'When the app cannot read cloud agents from your Claude account, it says why and what to do – and it looks for the sign-in in more places.',
-        'Skill cards share one height with their buttons on one line.',
-        'A skill’s name turns brand violet on hover.',
+        'Claude agent names without empty boxes or sidebar status text.',
+        'Recent folders on one line: name and the end of the path, without Claude scratch folders.',
+        'Skill cards share one height and a skill’s name turns brand violet on hover.',
+      ],
+    },
+  },
+  {
+    version: '0.46.83',
+    date: '2026-10-25',
+    title: 'Jména na Přehledu',
+    items: [
+      'Každý agent v „Právě teď“ má jméno, stejně jako na stránce Agenti.',
+      'Klik na logo na Přehledu plynule vyroluje stránku nahoru.',
+    ],
+    en: {
+      title: 'Names in the Overview',
+      items: [
+        'Every agent in “Right now” has a name, just like on the Agents page.',
+        'Clicking the logo in the Overview smoothly scrolls back to the top.',
       ],
     },
   },

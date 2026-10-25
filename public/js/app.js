@@ -33,7 +33,7 @@ import { initRozhodnuti } from './rozhodnuti-ui.js';
 import { rozhodnutiPro } from './rozhodnuti-data.js';
 import { initWhatsNew } from './whats-new.js';
 import { applyAppearance, applyLook, initAppearance } from './appearance.js';
-import { plynulePosouvani, skocNa } from './plynule-posouvani.js';
+import { plynulePosouvani, skocNa, nahoru } from './plynule-posouvani.js';
 import { tr, tohotoPocitace, tomtoPocitaci, tvemPocitaci, tvujPocitac } from './i18n.js';
 import { popisPoctu } from './stav-vety.js';
 import { modifikator, ariaZkratka, JE_MAC } from './system.js';
@@ -125,6 +125,12 @@ const narrowMq = window.matchMedia('(max-width: 880px)');
 // texty z `.nav` do mobilního panelu „Více“, jinak by zůstaly česky i tam.
 document.querySelector('.skip-link').textContent = tr('Přeskočit na obsah');
 document.querySelector('.brand').setAttribute('aria-label', tr('Agenteeq – přehled'));
+// Logo na Přehledu: plynule nahoru (na jiné obrazovce dál vede na Přehled).
+document.querySelector('.brand').addEventListener('click', (e) => {
+  if ((location.hash || '#/prehled') !== '#/prehled' || modifikator(e) || e.shiftKey) return;
+  e.preventDefault();
+  nahoru();
+});
 document.querySelector('.nav').setAttribute('aria-label', tr('Hlavní navigace'));
 for (const [nav, text] of Object.entries({ prehled: tr('Přehled'), upozorneni: tr('Upozornění'), agenti: tr('Agenti'), projekty: tr('Projekty'), statistiky: tr('Statistiky'), utrata: tr('Útrata'), dovednosti: tr('Dovednosti'), nastaveni: tr('Nastavení') })) {
   document.querySelector(`.nav [data-nav="${nav}"] span`).textContent = text;
