@@ -2455,6 +2455,7 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 .pcard { padding-top: 0; }
 .pcard > .pcover { z-index: 0; margin: 0 -24px; aspect-ratio: 7 / 2; }
 .pcover { position: relative; display: block; overflow: hidden; background: radial-gradient(70% 130% at 8% 0%, var(--c1) 0, transparent 68%), radial-gradient(65% 120% at 96% 10%, var(--c2) 0, transparent 70%), radial-gradient(90% 110% at 50% 130%, var(--c3) 0, transparent 66%), var(--c0); }
+.pcover--custom { background: linear-gradient(125deg, color-mix(in srgb, var(--pc) 60%, var(--card)), color-mix(in srgb, var(--pc) 25%, var(--card))); }
 .pcover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pcover::after { content: ''; position: absolute; inset: auto 0 0; height: 3px; background: color-mix(in srgb, var(--pc) 70%, transparent); }
 .cover--aurora { --c0: #16283a; --c1: #52e0b0; --c2: #8a7dff; --c3: #3a8fe8; }
@@ -2465,7 +2466,7 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 .cover--orchid { --c0: #2c1740; --c1: #e878e0; --c2: #8562ff; --c3: #ffb0d0; }
 .cover--graphite { --c0: #1d2026; --c1: #7a8494; --c2: #aab4c4; --c3: #414753; }
 .cover--sage { --c0: #1c2f25; --c1: #9fd49f; --c2: #d6e6a8; --c3: #48917a; }
-.plogo { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--r-logo); overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px rgb(22 20 29 / .08), 0 6px 16px -10px rgb(12 11 16 / .45); }
+.plogo { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--r-logo); overflow: hidden; background: color-mix(in srgb, var(--pc) 12%, #fff); box-shadow: inset 0 0 0 1px rgb(22 20 29 / .08), 0 6px 16px -10px rgb(12 11 16 / .45); }
 /* Logo s vlastním tvarem: žádná dlaždice ani linka, jen jemný stín pod tvarem samotného obrázku. */
 .plogo.plogo--tvar { background: none; box-shadow: none; overflow: visible; border-radius: 0; }
 .plogo.plogo--tvar img { filter: drop-shadow(0 6px 10px rgb(12 11 16 / .28)); }
@@ -2489,7 +2490,7 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 /* Telefon: náhled, text a „Nahrát“ zůstávají v jednom řádku; text se smí zalomit na dva. */
 @media (max-width: 560px) { .media-pick { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; } .media-thumb { width: 48px; height: 24px; } .media-thumb--logo { width: 36px; height: 36px; } .media-text small { overflow: hidden; text-overflow: ellipsis; } }
 .pcard > * { position: relative; z-index: 1; }
-:where(html:not(.is-scrolling)) .pcard:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--pc) 40%, transparent); }
+:where(html:not(.is-scrolling)) .pcard:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--brand) 42%, transparent), 0 18px 36px -24px color-mix(in srgb, var(--brand) 52%, transparent); }
 .pcard.is-archived { opacity: .72; }
 .pcard-top { display: flex; align-items: center; gap: 12px; min-width: 0; margin-top: 4px; }
 .pcard-name { font: 400 22px/1.2 var(--f-display); letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }

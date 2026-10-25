@@ -67,9 +67,10 @@ function open(select, button) {
   (button.closest('[aria-modal="true"]') || document.body).append(panel);
   panel.showPopover?.();
   const rect = button.getBoundingClientRect();
-  // Šířka podle nejdelší položky (do 360 px), aspoň jako spouštěč – „POKORNY DESIGN“ se nelámal.
+  // Nabídka nikdy nesmí být užší než spouštěč; na úzké obrazovce se vejde mezi okraje.
+  // Dlouhý název projektu smí panel rozšířit, ale nikdy ho neposune mimo okno.
   panel.style.width = 'max-content';
-  const width = Math.min(Math.max(rect.width, 240, Math.ceil(panel.getBoundingClientRect().width)), 360, innerWidth - 24);
+  const width = Math.min(Math.max(Math.ceil(rect.width), 240, Math.ceil(panel.getBoundingClientRect().width)), innerWidth - 24);
   panel.style.width = `${width}px`;
   panel.style.left = `${Math.max(12, Math.min(rect.left, innerWidth - width - 12))}px`;
   const below = innerHeight - rect.bottom - 16;
