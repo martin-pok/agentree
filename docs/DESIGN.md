@@ -60,8 +60,8 @@ zaoblení podle hloubky vnoření a nic nemá ostré rohy.
 
 **Loga služeb:** oficiální vektory v `public/logos/*.svg` jsou zdrojem pravdy. Skript
 `scripts/generate-logo-vectors.mjs` z nich připravuje modul rozhraní; při prvním zobrazení
-logo nečeká na samostatný HTTP požadavek. Adresa každého vektoru se vytvoří jednou pro celé okno
-a při živých změnách se už načítaný obrázek nevyměňuje.
+se znak kreslí přímo jako SVG. Není třeba další HTTP požadavek, obrázková cache ani asynchronní
+dekódování; na tmavých a světlých plochách platí stejná pravidla barev jako u původních log.
 
 Výjimky, které jsou záměrné:
 

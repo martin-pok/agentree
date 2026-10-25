@@ -1,5 +1,4 @@
 import { tr, tomtoPocitaci } from './i18n.js';
-import { adresaSouboru } from './verze.js';
 import { LOGO_VECTORS } from './logo-vectors.js';
 // Barvy poskytovatelů (grafy) a oficiální loga služeb.
 // Loga: @lobehub/icons-static-svg 1.95.0 (MIT) a Simple Icons 16.34.0 (CC0), uložená v public/logos/. Slouží jen k označení napojených služeb.
@@ -81,47 +80,15 @@ const GLYPHS = {
   other: '<path class="g" d="M4 16c3-7 5-9 8-9s5 2 8 9"/><circle class="gf" cx="12" cy="7" r="2.2"/>',
 };
 
-// Jedna krátká adresa k vektoru v paměti na službu. Samostatný /logos/*.svg by při prvním
-// vykreslení čekal na WebView/server a několik karet by mezitím ukazovalo prázdný kruh.
-const logoUrls = new Map();
-function logoUrl(key) {
-  if (logoUrls.has(key)) return logoUrls.get(key);
-  const vector = LOGO_VECTORS[key];
-  if (!vector) return adresaSouboru(`/logos/${key}.svg`);
-  let url;
-  try {
-    if (globalThis.document && globalThis.URL?.createObjectURL) {
-      url = URL.createObjectURL(new Blob([vector], { type: 'image/svg+xml' }));
-    }
-  } catch { /* Prohlížeč bez blob URL použije přibalený vektor přímo. */ }
-  url ||= `data:image/svg+xml;charset=utf-8,${encodeURIComponent(vector)}`;
-  logoUrls.set(key, url);
-  return url;
-}
-
 export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
-  if (key) {
+  if (key && LOGO_VECTORS[key]) {
     const l = LOGOS[key];
-    return `<img class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" src="${logoUrl(key)}" alt="" width="18" height="18" decoding="sync" draggable="false" data-logo-key="${key}" data-label="${l.label}">`;
+    return LOGO_VECTORS[key].replace('<svg ', `<svg class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" data-logo-key="${key}" aria-hidden="true" focusable="false" `);
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
 }
-
-// Pokud WebView odmítne blob URL, použije tatáž data přímo. Ani při druhé chybě
-// nesmí místo označení služby zůstat prázdný prostor.
-globalThis.document?.addEventListener?.('error', (event) => {
-  const img = event.target;
-  if (img?.tagName !== 'IMG' || !img.dataset.logoKey) return;
-  if (!img.dataset.logoInline && LOGO_VECTORS[img.dataset.logoKey]) {
-    img.dataset.logoInline = '1';
-    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(LOGO_VECTORS[img.dataset.logoKey])}`;
-    return;
-  }
-  img.insertAdjacentHTML('afterend', glyph(null));
-  img.remove();
-}, true);
 
 const svg = (d) => `<svg viewBox="0 0 24 24" class="icon" aria-hidden="true" focusable="false">${d}</svg>`;
 

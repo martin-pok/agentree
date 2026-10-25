@@ -640,9 +640,9 @@ async function zkontrolujKontrastLogVCTA(page, engine) {
           const session = { id: 'qa-logo-' + key, logo: key, open: [{ id: 'app', label: 'Otevřít konverzaci' }] };
           host.innerHTML = openButtons(session, { small: true, primary });
           const button = host.querySelector('button');
-          const img = button?.querySelector('img.logo--mono');
-          if (!img) { issues.push(look + '/' + theme + '/' + key + ': logo missing'); continue; }
-          const filter = getComputedStyle(img).filter;
+          const logo = button?.querySelector('svg.logo--mono');
+          if (!logo) { issues.push(look + '/' + theme + '/' + key + ': logo missing'); continue; }
+          const filter = getComputedStyle(logo).filter;
           const expected = (primary ? theme === 'light' : theme === 'dark') ? 'invert(1)' : 'none';
           if (filter !== expected) issues.push(look + '/' + theme + '/' + key + (primary ? '/primary' : '/secondary') + ': filter=' + filter + ', expected ' + expected);
           if (primary) {
@@ -762,7 +762,7 @@ for (const engine of engines) {
     await page.waitForFunction(async () => (await (await fetch('/api/state')).json()).settings?.objevHotovo === true);
     await page.reload();
     await page.waitForFunction(() => document.querySelector('#conn-pill')?.textContent.includes('Připojeno'));
-    await page.waitForFunction(() => document.querySelectorAll('img.logo').length >= 4);
+    await page.waitForFunction(() => document.querySelectorAll('svg.logo').length >= 4);
     await zkontrolujKontrastLogVCTA(page, engine);
     const malePismo = await page.evaluate(() => {
       const nodes = [];
@@ -778,34 +778,35 @@ for (const engine of engines) {
       return nodes;
     });
     assert.deepEqual(malePismo, [], `${engine}: viditelný text menší než 12 px: ${JSON.stringify(malePismo)}`);
-    // Logo musí být skutečně dekódovatelné i po aktualizaci; dřívější roční HTTP cache
-    // nechala v nativní aplikaci bílé kruhy místo značek služeb.
-    const loga = await page.evaluate(async () => {
-      const imgs = [...document.querySelectorAll('img.logo')];
-      await Promise.all(imgs.map((img) => img.decode().catch(() => {})));
-      return imgs.map((img) => ({ src: img.getAttribute('src'), width: img.naturalWidth, height: img.naturalHeight }));
+    // Vektor musí být vykreslený hned v DOM, bez dalšího požadavku nebo dekódování obrázku.
+    const loga = await page.evaluate(() => {
+      return [...document.querySelectorAll('svg.logo')].map((logo) => ({
+        key: logo.dataset.logoKey,
+        width: logo.getBoundingClientRect().width,
+        height: logo.getBoundingClientRect().height,
+        shape: Boolean(logo.querySelector('path, circle, rect, polygon, ellipse')),
+      }));
     });
-    assert.ok(loga.length >= 4 && loga.every((img) => img.width > 0 && img.height > 0), `${engine}: některé logo se nevykreslilo: ${JSON.stringify(loga)}`);
+    assert.ok(loga.length >= 4 && loga.every((logo) => logo.key && logo.width > 0 && logo.height > 0 && logo.shape), `${engine}: některé logo se nevykreslilo: ${JSON.stringify(loga)}`);
     const obrazekPriAktualizaci = await page.evaluate(async () => {
       const { fill } = await import('/js/ui.js');
-      const vzory = [...document.querySelectorAll('img.logo')].filter((img) => img.naturalWidth > 0);
-      const druhy = vzory.find((img) => img.src !== vzory[0].src);
+      const vzory = [...document.querySelectorAll('svg.logo')];
+      const druhy = vzory.find((logo) => logo.dataset.logoKey !== vzory[0]?.dataset.logoKey);
       if (!druhy) return null;
       const host = document.createElement('div');
       host.innerHTML = '<section data-region="qa-logo"></section>';
       document.body.append(host);
       const prvniHtml = vzory[0].outerHTML;
       fill(host, 'qa-logo', `${prvniHtml}<span>První stav</span>`);
-      const prvni = host.querySelector('img');
-      await prvni.decode();
+      const prvni = host.querySelector('svg.logo');
       fill(host, 'qa-logo', `${prvniHtml}<span>Druhý živý stav</span>`);
-      const zachovany = host.querySelector('img') === prvni && host.querySelector('img').naturalWidth > 0;
+      const zachovany = host.querySelector('svg.logo')?.dataset.logoKey === prvni.dataset.logoKey;
       fill(host, 'qa-logo', `${druhy.outerHTML}<span>Jiné logo</span>`);
-      const zmeneny = host.querySelector('img') !== prvni;
+      const zmeneny = host.querySelector('svg.logo')?.dataset.logoKey === druhy.dataset.logoKey;
       host.remove();
       return { zachovany, zmeneny };
     });
-    assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila dekódované logo nebo ponechala staré`);
+    assert.deepEqual(obrazekPriAktualizaci, { zachovany: true, zmeneny: true }, `${engine}: živá aktualizace ztratila logo nebo ponechala staré`);
     // Odpověď podržíme jeden snímek, aby se ověřil i mezistav: tlačítko neztratí rozměr ani
     // hover přes disabled, ale druhá obnova se během prvního požadavku nespustí.
     await page.route('**/api/connectors/rescan', async (route) => {

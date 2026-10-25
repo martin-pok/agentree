@@ -39,14 +39,13 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
   const obrazky = new Map();
   for (const img of el.querySelectorAll('img')) {
     if (img.complete && !img.naturalWidth) continue;
-    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
+    const key = img.outerHTML;
     if (!obrazky.has(key)) obrazky.set(key, []);
     obrazky.get(key).push(img);
   }
   el.innerHTML = html;
   for (const img of el.querySelectorAll('img')) {
-    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
-    const old = obrazky.get(key)?.shift();
+    const old = obrazky.get(img.outerHTML)?.shift();
     if (old) img.replaceWith(old);
   }
   el._html = html;
@@ -197,16 +196,13 @@ function sloucitUzel(a, b) {
   }
   const detaily = a.tagName === 'DETAILS';
   const robot = a.classList.contains('robot');
-  const logoInline = a.tagName === 'IMG' && a.dataset.logoInline && a.dataset.logoKey === b.dataset.logoKey;
   for (const at of b.attributes) {
     if (detaily && at.name === 'open') continue;
-    if (logoInline && at.name === 'src') continue;
     const hodnota = robot && at.name === 'class' && a.classList.contains('is-zivy') ? `${at.value} is-zivy` : at.value;
     if (a.getAttributeNS(at.namespaceURI, at.localName) !== hodnota) a.setAttributeNS(at.namespaceURI, at.name, hodnota);
   }
   for (const at of [...a.attributes]) {
     if (detaily && at.name === 'open') continue;
-    if (logoInline && (at.name === 'src' || at.name === 'data-logo-inline')) continue;
     if (robot && BEHOVE_ROBOTA.has(at.name)) continue;
     if (!b.hasAttributeNS(at.namespaceURI, at.localName)) a.removeAttributeNS(at.namespaceURI, at.localName);
   }

@@ -191,6 +191,7 @@ code { font-family: var(--f-code); font-size: max(12px, .9em); }
 .icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .glyph { width: 18px; height: 18px; flex: none; }
 .logo { width: 18px; height: 18px; flex: none; display: block; object-fit: contain; user-select: none; }
+.logo--mono { color: #000; }
 .logo--invert { filter: invert(1); }
 /* Monochromatická loga (OpenAI, GitHub Copilot, Grok, Cursor, Ollama, LM Studio) mají v brand manuálech
    černou variantu na světlé ploše a bílou na tmavé. V noci tedy obracíme – barevná loga se nikdy nepřebarvují. */

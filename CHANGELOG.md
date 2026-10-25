@@ -2,7 +2,7 @@
 
 ## Připravovaná oprava – 2026-10-25 · Loga služeb bez čekání
 
-- **Loga hned po otevření:** aplikace má oficiální SVG loga připravená v paměti a pro každou službu používá jednu krátkou adresu. Karty už nečekají na samostatné požadavky na obrázky; živé překreslení nepřeruší ani právě dekódované logo. Když WebView adresu odmítne, použije stejný vektor přímo z aplikace.
+- **Loga hned po otevření:** oficiální SVG se kreslí přímo v kartách bez načítání obrázků. Při živé aktualizaci zůstává znak služby vidět i při změně textu nebo stavu; prázdné kruhy při pomalém načítání už nevznikají.
 
 ## 0.46.72 – 2026-10-24 · Cloudoví agenti poctivě, bubliny po větách
 
