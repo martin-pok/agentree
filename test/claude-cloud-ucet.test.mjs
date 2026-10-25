@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { relaceZApi, nactiCloudoveRelace, nactiCloudovouRelaci, slucRelace, CLOUD_API, zpravaZUdalosti, slucPrepis } from '../src/connectors/claude-desktop-code.js';
+import { relaceZApi, nactiCloudoveRelace, nactiCloudovouRelaci, nactiUdalostiRelace, slucRelace, CLOUD_API, zpravaZUdalosti, slucPrepis } from '../src/connectors/claude-desktop-code.js';
 import { prihlaseniClaudeCode } from '../src/platform.js';
 import { tempDir, startTestServer, waitFor } from './helpers.mjs';
 
@@ -17,6 +17,7 @@ const odpoved = (status, body, hlavicky = {}) => ({ ok: status >= 200 && status 
 test('relace z účtu: tvar jako seznam v cache, stav podle worker_status a archivace', () => {
   const r = relaceZApi(surova());
   assert.equal(r.id, 'session_019pjCMAW6NZjG9fzTfPLyCe');
+  assert.equal(relaceZApi(surova({ id: 'cse_019pjCMAW6NZjG9fzTfPLyCe' })).apiId, 'cse_019pjCMAW6NZjG9fzTfPLyCe');
   assert.equal(r.type, 'session');
   assert.equal(r.session_status, 'running');
   assert.equal(r.updated_at, iso(-5e3));
@@ -170,6 +171,7 @@ test('běžící relace, která vypadla ze seznamu, se dotáže zvlášť a nez�
 // Desktop zapíše cache. Události relace se berou z účtu; obálka i plochá zpráva SDK.
 test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cache Claude Desktopu', async () => {
   const sid = 'session_019pjCMAW6NZjG9fzTfPLyCe';
+  const apiId = sid.replace(/^session_/, 'cse_');
   const kdy = (ms) => new Date(Date.now() - ms).toISOString();
   // Tvar jako u Claude Code (načítání historie relace): nejnovější první, zpráva SDK v `payload`.
   const udalosti = () => ({ data: [
@@ -181,8 +183,9 @@ test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cach
     prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3, orgUuid: '11111111-2222-4333-8444-555555555555' }),
     fetchImpl: async (u, init) => {
       dotazy.push(u); hlavicky.push(init.headers);
-      if (u === `${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`) return odpoved(200, udalosti());
-      return odpoved(200, { data: [surova({ worker_status: 'idle', last_event_at: kdy(5e3), created_at: kdy(600e3) })] });
+      if (u === `${CLOUD_API}/${apiId}/events?limit=100&sort_order=desc`) return odpoved(200, udalosti());
+      if (u.startsWith(`${CLOUD_API}/${apiId}/events?`)) return odpoved(200, { data: [] });
+      return odpoved(200, { data: [surova({ id: apiId, worker_status: 'idle', last_event_at: kdy(5e3), created_at: kdy(600e3) })] });
     } } });
   try {
     const id = `claude-desktop-code:${sid}`;
@@ -192,8 +195,8 @@ test('přepis cloudového běhu z účtu: hned při otevření detailu, bez cach
     const texty = JSON.stringify(detail.transcript);
     assert.match(texty, /Oprav dialog projektu/, 'zadání z účtu je v přepisu hned při prvním otevření');
     assert.match(texty, /Opravuji rozložení/);
-    assert.ok(dotazy.includes(`${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`));
-    const iUdalosti = dotazy.lastIndexOf(`${CLOUD_API}/${sid}/events?limit=100&sort_order=desc`);
+    assert.ok(dotazy.includes(`${CLOUD_API}/${apiId}/events?limit=100&sort_order=desc`), 'API dostane původní cse_ ID, ne zobrazené session_ ID');
+    const iUdalosti = dotazy.lastIndexOf(`${CLOUD_API}/${apiId}/events?limit=100&sort_order=desc`);
     assert.equal(hlavicky[iUdalosti]['x-organization-uuid'], '11111111-2222-4333-8444-555555555555', 'organizace jde u událostí jako u Claude Code');
     const iSeznam = dotazy.indexOf(`${CLOUD_API}?limit=100`);
     assert.equal(hlavicky[iSeznam]['x-organization-uuid'], undefined, 'u seznamu relací organizace nejde – účet by ho odmítl');
@@ -213,6 +216,40 @@ test('události relace: obálka i plochá zpráva, sloučení s cache bez dvojic
   const spolu = slucPrepis(cache, { at: ted, messages: [{ type: 'user', uuid: 'u1', created_at: iso(-3e3) }, z] });
   assert.deepEqual(spolu.tree.messages.map((m) => m.uuid), ['u1', 'a1']);
   assert.equal(slucPrepis(cache, null), cache);
+});
+
+test('přepis se najde i za první stránkou nástrojových událostí', async () => {
+  const id = 'cse_019pjCMAW6NZjG9fzTfPLyCe';
+  const urls = [];
+  const fetched = await nactiUdalostiRelace(id, {
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async (url) => {
+      urls.push(url);
+      return odpoved(200, urls.length === 1
+        ? { data: Array.from({ length: 100 }, () => ({ payload: { type: 'tool_result' } })), next_cursor: 'older page' }
+        : { data: [{ created_at: new Date().toISOString(), payload: { type: 'user', uuid: 'u1', message: { content: 'Viditelný text' } } }] });
+    },
+  });
+  assert.equal(fetched.messages.length, 1);
+  assert.equal(fetched.messages[0].message.content, 'Viditelný text');
+  assert.match(urls[1], /cursor=older\+page$/);
+});
+
+test('chybějící Claude přepis se v detailu přizná místo prázdné zprávy', async () => {
+  const sid = 'session_019pjCMAW6NZjG9fzTfPLyCe';
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60e3,
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async (url) => url.includes('/events?') ? odpoved(404, {})
+      : odpoved(200, { data: [surova({ id: sid, worker_status: 'idle', last_event_at: new Date().toISOString() })] }),
+  } });
+  try {
+    const id = `claude-desktop-code:${sid}`;
+    await waitFor(() => server.app.store.summary(id), 3000);
+    const response = await fetch(`${server.url}/api/sessions/${encodeURIComponent(id)}`, { headers: server.headers });
+    const detail = await response.json();
+    assert.equal(detail.transcript.length, 0);
+    assert.match(detail.session.observation.transcriptIssue, /Účet Claude pro tuto relaci nevrátil zprávy/);
+  } finally { await server.close(); }
 });
 
 // Vlastník 24. 10. 2026: cloudový běh nebyl vidět a Přehled tvrdil „V pořádku, nikdo nepracuje“.

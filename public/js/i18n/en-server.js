@@ -11,6 +11,7 @@ export default {
   "Účet Claude vrátil chybu {0}. Zkusí se to znovu.": "The Claude account returned error {0}. Will retry.",
   "Účet Claude vrátil nečitelný seznam relací.": "The Claude account returned an unreadable session list.",
   "Účet Claude nevrátil seznam relací.": "The Claude account did not return a session list.",
+  "Účet Claude pro tuto relaci nevrátil zprávy. Zkusíme to znovu; může jít o jiný přihlášený účet.": "The Claude account returned no messages for this session. We will retry; a different signed-in account may be the cause.",
   "Stav z účtu Claude: {0}": "Status from the Claude account: {0}",
   "Stav cloudových agentů čtu přímo z účtu Claude (naposledy {0}).": "Reading cloud agent status directly from the Claude account (last {0}).",
   "Cache Claude Desktopu uložila seznam relací {0}.": "The Claude Desktop cache saved the session list {0}.",
