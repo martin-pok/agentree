@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.46.73 – 2026-10-25 · Loga služeb bez čekání
+## 0.46.74 – 2026-10-25 · Loga služeb bez čekání
 
 - **Loga hned po otevření:** oficiální SVG se kreslí přímo v kartách bez načítání obrázků. Při živé aktualizaci zůstává znak služby vidět i při změně textu nebo stavu; prázdné kruhy při pomalém načítání už nevznikají.
 
