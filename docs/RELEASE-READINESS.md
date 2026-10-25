@@ -1,13 +1,13 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 25. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.79 je poslední veřejné Preview, v0.46.58 zůstává Stable Latest. Instalace 0.46.79 na Macu vlastníka zatím není doložena; rozsah dřívějšího UAT je popsán níže.
+**Aktualizováno 25. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.80 je poslední veřejné Preview, v0.46.58 zůstává Stable Latest. Instalace 0.46.80 na Macu vlastníka zatím není doložena; rozsah dřívějšího UAT je popsán níže.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
 ## Zdroj pravdy
 
 - **v0.46.81: rozpracovaný Preview kandidát.** Jemnější světlo, boční stín a zapuštěný displej robotů. Vydání vyžaduje zelené CI přesného `main`, osm příloh a nezávislý audit; vzhled na fyzickém Macu čeká na ověření.
-- **v0.46.80: rozpracovaný Preview kandidát.** Oprava načítání vzdáleného Claude přepisu pod původním ID relace, novější místní cache a stránkování událostí. Živá relace „Brno app aktuální stav“ na Macu čeká na fyzické ověření. Vydání vyžaduje zelené CI přesného `main`, osm příloh a nezávislý audit.
+- **v0.46.80: veřejné Preview.** [Vydání](https://github.com/martin-pok/agentree/releases/tag/v0.46.80) opravuje načítání vzdáleného Claude přepisu pod původním ID relace, novější místní cache a stránkování událostí. CI přesného `main`, osm příloh a nezávislý audit prošly; živá relace „Brno app aktuální stav“ na Macu čeká na fyzické ověření.
 - **v0.46.79: veřejné Preview.** [Vydání](https://github.com/martin-pok/agentree/releases/tag/v0.46.79) opravuje detekci vláken nativní aplikace Codex přes `thread/list` i bez místního přepisu. CI přesného `main`, osm příloh a nezávislý audit prošly; živý Mac a konkrétní „LATEST AG“ čekají na ověření.
 - **v0.46.78: veřejné Preview.** Oprava otevření konkrétního vzdáleného Claude chatu z detailu, rozšíření i projektových snímků a vysvětlení chybějícího přepisu. Obsahuje i šířku nabídky projektu z neveřejného Draftu v0.46.77. Zelené CI na přesném `main` commitu, osm příloh a nezávislý audit prošly; skutečný Mac ještě musí potvrdit chování na živé relaci.
 - **v0.46.77: neveřejný Preview kandidát.** Opravuje úzkou nabídku projektu v hlavním spouštěči: šířka i zarovnání vycházejí z celé viditelné kapsle, nikoli z vnitřního tlačítka omezeného na 240 px. Před zveřejněním vyžaduje přesné zelené CI, sestavení a nezávislý audit příloh; fyzické ověření na Macu zůstává otevřené.
