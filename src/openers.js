@@ -66,6 +66,9 @@ const localIdOf = (s) => String(s.id || '').slice(String(s.connector || '').leng
 const hasFolder = (s) => typeof s.cwd === 'string' && jeAbsolutniCesta(s.cwd) && !s.cwd.includes('\n');
 
 function terminalCommand(s, apps) {
+  // A process placeholder has no resumable thread ID. Never manufacture a
+  // `codex resume proces-<pid>` command from its synthetic store key.
+  if (s.proces) return null;
   const id = localIdOf(s);
   if (!SAFE_ID.test(id)) return null;
   const cd = hasFolder(s) ? `cd ${shellQuote(s.cwd)} && ` : '';
@@ -79,6 +82,7 @@ function appPlan(s, apps) {
   const id = localIdOf(s);
   switch (s.connector) {
     case 'codex':
+      if (s.proces && s.app === 'Codex · aplikace') return planRuntimeFocus('codex-app');
       return apps.codex && UUID.test(id) ? { kind: 'open', args: [`codex://threads/${id}`], label: 'Codex', title: ui('Otevřít v Codexu') } : null;
     case 'codex-cloud': {
       let url;

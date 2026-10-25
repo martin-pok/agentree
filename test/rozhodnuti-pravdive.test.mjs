@@ -84,6 +84,14 @@ test('B2: Claude Desktop a aplikace Codex se dál otevírají hlavně v aplikaci
   assert.deepEqual(openTargets(bezCli, { claude: true, cli: { claude: false } }).map((t) => t.id), ['app', 'folder']);
 });
 
+test('otevřená aplikace Codex bez vlákna nenabízí falešné pokračování procesu', () => {
+  const placeholder = { id: 'codex:proces-123', connector: 'codex', app: 'Codex · aplikace',
+    source: 'proces', proces: { pid: 123 }, cwd: '' };
+  assert.deepEqual(openTargets(placeholder, ALL_APPS).map((target) => target.id), ['app']);
+  assert.deepEqual(planOpen(placeholder, 'app', ALL_APPS)?.args, ['-a', 'Codex']);
+  assert.equal(planOpen(placeholder, 'terminal', ALL_APPS), null);
+});
+
 test('B2: konverzace, jejíž program ve složce běží, se nerozdvojí – Terminál se jen přepne do popředí', () => {
   const cli = { id: 'claude-code:0b6a3c1e-1111-4222-8333-944455556666', connector: 'claude-code', app: 'Claude Code', source: 'local', cwd: '/Users/jana/Design & Web' };
   const bezi = planOpen(cli, 'terminal', ALL_APPS, { bezi: true });
