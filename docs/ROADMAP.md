@@ -18,6 +18,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+- **v0.46.80 Preview:** vrátit přepis vzdálených Claude chatů: zachovat původní API ID `cse_`, podporovat `code:session_` v cache a načíst starší stránky událostí. Na fyzickém Macu ověřit relaci „Brno app aktuální stav“ a konkrétní zprávy; pokud účet vrátí 404 nebo prázdno, detail musí ukázat důvod a při dalším otevření zkusit znovu. Vydání až po přesném CI a auditu.
 - **v0.46.79 Preview:** doplnit detekci nativních vláken Codex.app přes místní app-server `thread/list`, když chybí JSONL přepis. Na skutečném Macu ověřit konkrétní běžící vlákno „LATEST AG“ a zda app-server potvrzuje jeho živý stav; samostatný app-server může hlásit jen `notLoaded`, který se musí poctivě ukázat jako nalezené vlákno. Vydání až po přesném CI a auditu.
 - **v0.46.78 Preview:** opravit incident, kdy „Otevřít v Claude“ u vzdálené relace jen aktivovalo poslední vybraný, cizí chat. Přesné otevření nabídnout výhradně po potvrzení URL stejné relace párovaným rozšířením; u samotné cache přiznat chybějící přepis a dát název k ručnímu vyhledání. Vydat nový neměnný tag až po CI a auditu; Draft 0.46.77 s touto chybou nezveřejňovat. Na skutečném Macu potom ověřit správnou relaci a dostupnost přepisu.
 

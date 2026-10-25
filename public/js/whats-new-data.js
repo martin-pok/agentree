@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.80',
+    date: '2026-10-25',
+    title: 'Přepis vzdáleného Claude agenta',
+    items: ['Vzdálený Claude chat hledá zprávy pod správným ID i v novějším formátu cache. Když účet přepis nevrátí, detail ukáže důvod a při dalším otevření to zkusí znovu.'],
+    en: {
+      title: 'Remote Claude agent transcript',
+      items: ['Remote Claude chats look up messages using the original ID and newer cache format. If the account returns no transcript, the detail explains why and retries when reopened.'],
+    },
+  },
+  {
     version: '0.46.79',
     date: '2026-10-25',
     title: 'Vlákna nativní aplikace Codex',

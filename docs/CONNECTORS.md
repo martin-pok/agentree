@@ -238,6 +238,11 @@ ve složce, o které Agenteeq neví. Proto:
   ověřilo 24. 10. 2026 čtení událostí vlastní relace Claude Code; parametr `limit` a pořadí stránky
   na `api.anthropic.com` z Macu vlastníka ověřené nejsou. Selhání přepisu nemění stav relace –
   zůstává přepis z cache. Tokeny jsou dál jen součet dostupné části přepisu.
+  Od 0.46.80 zůstává pro dotaz na události zachováno původní ID `cse_…` z účtu (zobrazované ID
+  `session_…` je pouze společný klíč relace); při 404 se zkusí druhá varianta ID. Až čtyři stránky
+  pokryjí případ, kdy první obsahuje jen nástrojové události. Místní cache čte také klíče
+  `code:session_…`. Když účet nevrátí zprávy nebo dotaz selže, detail uvede důvod a nové otevření
+  přepis znovu vyžádá; skutečný chat „Brno app aktuální stav“ na Macu stále čeká na fyzické ověření.
   **Přihlášení:** na macOS položka Klíčenky „Claude Code-credentials“ (účet = uživatel, s
   `CLAUDE_CONFIG_DIR` přívěsek z sha256 složky), čtená `/usr/bin/security` jako v Claude Code;
   jinde `~/.claude/.credentials.json` (`src/platform.js#prihlaseniClaudeCode`). Token se drží jen

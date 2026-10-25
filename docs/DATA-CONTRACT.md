@@ -210,7 +210,7 @@ interface SessionSummary {
   exactUrl?: string;          // vzdálený Claude Code: URL stejné relace ověřená párovaným rozšířením
   hooked: boolean;
   hookHealth: 'linked' | 'before' | 'silent' | 'unknown' | 'pending' | null; // jen aktivní konverzace Claude Code CLI se zapnutým propojením, jinak null; význam v docs/CONNECTORS.md (Zdraví propojení)
-  observation?: { at: number; transcriptThrough: number; partial: true }; // remote Claude: query observation time, available cached transcript boundary; never complete usage
+  observation?: { at: number; transcriptThrough: number; partial: true; transcriptIssue?: string }; // remote Claude: query observation time, available cached transcript boundary, optional read error; never complete usage
   transcriptSeq: number;
 }
 
