@@ -899,6 +899,8 @@ for (const engine of engines) {
     server.app.datastore.data.settings.avatar = 7;
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.waitForFunction(() => document.querySelector('[data-face]')?.dataset.face === '7');
+    // Široká kapsle odhalí regresi, kterou test při 1440 px neviděl: tlačítko mělo limit 240 px.
+    await page.setViewportSize({ width: 1628, height: 1000 });
     const projectPicker = page.locator('[data-l-project] + .picker-trigger');
     assert.ok(await projectPicker.evaluate(el => parseFloat(getComputedStyle(el).paddingRight) >= 16));
     await projectPicker.screenshot({ path: `dist/qa/${engine}-project-picker.png` });
@@ -906,8 +908,19 @@ for (const engine of engines) {
     const pickerMenu = page.locator('.picker-menu');
     await pickerMenu.waitFor();
     assert.equal(await projectPicker.evaluate(el => getComputedStyle(el).boxShadow), 'none', `${engine} otevřený picker nekreslí druhý obrys`);
-    const [sourceBox, menuBox] = await Promise.all([projectPicker.boundingBox(), pickerMenu.boundingBox()]);
-    assert.ok(menuBox.y >= sourceBox.y + sourceBox.height + 6, `${engine} nabídka začíná až pod zdrojem`);
+    const [sourceBox, shellBox, menuBox] = await Promise.all([
+      projectPicker.boundingBox(),
+      projectPicker.evaluate(el => {
+        const r = el.closest('.lselect').getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      }),
+      pickerMenu.boundingBox(),
+    ]);
+    assert.ok(shellBox.width > 260, `${engine} test potřebuje kapsli širší než starý limit 240 px`);
+    assert.ok(sourceBox.x + sourceBox.width >= shellBox.x + shellBox.width - 2, `${engine} tlačítko projektu vyplňuje celou kapsli`);
+    assert.ok(menuBox.width >= shellBox.width - 1, `${engine} nabídka projektu není užší než kapsle (${menuBox.width} < ${shellBox.width})`);
+    assert.ok(Math.abs(menuBox.x - shellBox.x) <= 1, `${engine} nabídka projektu začíná na levém okraji kapsle`);
+    assert.ok(menuBox.y >= shellBox.y + shellBox.height + 6, `${engine} nabídka začíná až pod zdrojem`);
     assert.equal(await pickerMenu.evaluate((el) => {
       const r = el.getBoundingClientRect();
       return document.elementFromPoint(r.left + r.width / 2, r.top + Math.min(18, r.height / 2))?.closest('.picker-menu') === el;
@@ -931,6 +944,7 @@ for (const engine of engines) {
     assert.ok(await page.evaluate(() => window.__qaChartMutations <= 4), `${engine} graf se nepřekresluje při každé živé události`);
     await page.keyboard.press('Escape');
     await pickerMenu.waitFor({ state: 'detached' });
+    await page.setViewportSize({ width: 1440, height: 1000 });
     // Long project names must truncate without pushing the chevron out of the pill.
     await page.evaluate(() => {
       const select = document.querySelector('[data-l-project]');
