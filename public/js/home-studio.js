@@ -53,11 +53,11 @@ export function createHomeStudio(el) {
       const obsahModelu = a ? `<span class="cell-logo">${glyph(a)}</span><span class="sr-only">${esc(a.app)} · </span><span>${esc(modelPopis(a.model) || a.app)}</span>` : '';
       if (model.innerHTML !== obsahModelu) model.innerHTML = obsahModelu;
       model.hidden = !a;
+      // Jméno má každý agent, stejně jako na stránce Agenti: vlastní, jinak jméno jeho postavy.
       let jmeno = li.querySelector('.studio-jmeno');
-      if (p.name) {
-        if (!jmeno) { jmeno = document.createElement('span'); jmeno.className = 'studio-jmeno'; logo.after(jmeno); }
-        if (jmeno.textContent !== p.name) jmeno.textContent = p.name;
-      } else jmeno?.remove();
+      const nazev = jmenoAgenta({ id: li.dataset.key });
+      if (!jmeno) { jmeno = document.createElement('span'); jmeno.className = 'studio-jmeno'; logo.after(jmeno); }
+      if (jmeno.textContent !== nazev) jmeno.textContent = nazev;
       li.querySelector('.studio-nickname')?.remove();
     });
   };
