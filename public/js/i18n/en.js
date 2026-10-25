@@ -810,6 +810,7 @@ export default {
     "Nové zprávy": "New messages",
     "Načítám přepis…": "Loading transcript…",
     "Přepis je zatím prázdný.": "The transcript is empty so far.",
+    "Vlákno bylo nalezeno v aplikaci Codex. Přepis zatím není k dispozici.": "The thread was found in the Codex app. Its transcript is not available yet.",
     "Přepis této relace není k dispozici. Cache Claude obsahuje jen její stav a metadata; otevři ji v Claude podle názvu nahoře.": "This session's transcript is unavailable. The Claude cache only contains its status and metadata; find it in Claude using the title above.",
     "Agent nenalezen": "Agent not found",
     "webová aplikace": "web app",

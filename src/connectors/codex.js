@@ -465,6 +465,9 @@ export function createCodexConnector(ctx) {
       files.set(file, st);
     }
     const s = store.ensure({ connector: 'codex', localId: st.localId, provider: 'openai', app: 'Codex' });
+    // A real rollout supersedes metadata discovered through thread/list.
+    s.metadataOnly = false;
+    s.source = 'local';
     s.staleMs = 15 * MIN;
     const title = titles.get(st.localId);
     if (title) s.title = title.name;

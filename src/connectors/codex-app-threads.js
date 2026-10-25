@@ -1,0 +1,139 @@
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { clip, DAY } from '../util.js';
+import { touch } from '../model.js';
+import { codexAppName, readableCodexTitle } from './codex.js';
+import { ui } from '../texty.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Codex.app maintains thread metadata in its state DB even when it has not
+// written a local rollout. Ask the public app-server protocol for that index.
+export function readCodexAppThreads(bin, home, { spawnFn = spawn, timeoutMs = 10000 } = {}) {
+  if (!bin) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let child;
+    try {
+      child = spawnFn(bin, ['app-server', '--stdio'], {
+        stdio: ['pipe', 'pipe', 'ignore'],
+        env: { ...process.env, CODEX_HOME: home },
+      });
+    } catch { resolve(null); return; }
+    let settled = false;
+    let buffer = '';
+    const finish = (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      child.kill();
+      resolve(result);
+    };
+    const timer = setTimeout(() => finish(null), timeoutMs);
+    child.on('error', () => finish(null));
+    child.on('exit', () => finish(null));
+    child.stdin.on('error', () => finish(null));
+    child.stdout.on('data', (chunk) => {
+      buffer += chunk.toString();
+      if (buffer.length > 4_000_000) return finish(null);
+      let index;
+      while ((index = buffer.indexOf('\n')) !== -1) {
+        const line = buffer.slice(0, index);
+        buffer = buffer.slice(index + 1);
+        let message;
+        try { message = JSON.parse(line); } catch { continue; }
+        if (message.id === 1 && message.result) {
+          child.stdin.write(`${JSON.stringify({ method: 'initialized' })}\n`);
+          child.stdin.write(`${JSON.stringify({ id: 2, method: 'thread/list', params: {
+            limit: 100, sortKey: 'updated_at', sortDirection: 'desc', useStateDbOnly: true,
+          } })}\n`);
+        } else if (message.id === 1 && message.error) finish(null);
+        else if (message.id === 2 && message.error) {
+          // Older bundled Codex binaries do not know useStateDbOnly.
+          child.stdin.write(`${JSON.stringify({ id: 3, method: 'thread/list', params: {
+            limit: 100, sortKey: 'updated_at', sortDirection: 'desc',
+          } })}\n`);
+        } else if (message.id === 2 || message.id === 3) {
+          finish(Array.isArray(message.result?.data) ? message.result.data : null);
+        }
+      }
+    });
+    child.stdin.write(`${JSON.stringify({ id: 1, method: 'initialize', params: {
+      clientInfo: { name: 'agenteeq', title: 'Agenteeq', version: '0.1.0' },
+    } })}\n`);
+  });
+}
+
+export function normalizeCodexAppThread(thread, now = Date.now()) {
+  if (!UUID.test(thread?.id) || thread.ephemeral || thread.parentThreadId) return null;
+  if (thread.source !== 'appServer' && !/desktop/i.test(thread.originator || '')) return null;
+  const updatedAt = Number(thread.updatedAt) * 1000;
+  if (!Number.isFinite(updatedAt) || updatedAt <= 0 || updatedAt > now + 60_000) return null;
+  const createdAt = Number(thread.createdAt) * 1000;
+  return {
+    id: thread.id,
+    title: readableCodexTitle(thread.name) || readableCodexTitle(thread.preview),
+    cwd: typeof thread.cwd === 'string' ? clip(thread.cwd, 1000) : '',
+    model: typeof thread.model === 'string' ? clip(thread.model, 100) : '',
+    app: codexAppName(thread.originator || 'Codex Desktop'),
+    updatedAt,
+    createdAt: Number.isFinite(createdAt) && createdAt > 0 ? createdAt : updatedAt,
+    // Another app-server process cannot prove that Codex.app currently runs a
+    // turn. Only an explicit active state is allowed to become "working".
+    active: thread.status?.type === 'active',
+  };
+}
+
+export function createCodexAppThreadsConnector({ store, config, codexCloudBin, codexCloudHome,
+  readThreads = readCodexAppThreads }) {
+  let lastEventAt = 0;
+  let lastError = '';
+  let count = 0;
+  let pending = null;
+  const scan = () => {
+    if (pending) return pending;
+    pending = (async () => {
+      const bin = codexCloudBin();
+      if (!bin) { lastError = ui('Spustitelný Codex není dostupný.'); return; }
+      const now = Date.now();
+      const home = codexCloudHome() || path.join(config.sourceHome, '.codex');
+      const threads = await readThreads(bin, home);
+      if (!threads) { lastError = ui('Seznam vláken aplikace Codex není dostupný.'); return; }
+      lastError = '';
+      lastEventAt = now;
+      count = 0;
+      for (const raw of threads) {
+        const t = normalizeCodexAppThread(raw, now);
+        if (!t || now - t.updatedAt > config.windowDays * DAY) continue;
+        count++;
+        const existing = store.get(`codex:${t.id}`);
+        // A local rollout carries stronger evidence, including exact turn
+        // status and transcript. Never overwrite it with index metadata.
+        if (existing && !existing.metadataOnly) continue;
+        const s = existing || store.ensure({ connector: 'codex', localId: t.id,
+          provider: 'openai', app: t.app, source: 'app-server' });
+        s.metadataOnly = true;
+        s.app = t.app;
+        if (t.title) s.title = t.title;
+        if (t.cwd) s.cwd = t.cwd;
+        if (t.model) s.model = t.model;
+        s.resume = `codex resume ${t.id}`;
+        s.staleMs = 45_000;
+        s.running = t.active;
+        s.runningAt = t.active ? now : 0;
+        s.activity = t.active ? ui('Pracuje · podle aplikace Codex') : '';
+        touch(s, t.createdAt);
+        touch(s, t.updatedAt);
+        store.commit(s, now);
+      }
+    })().finally(() => { pending = null; });
+    return pending;
+  };
+  return {
+    id: 'codex-app-threads', name: ui('Vlákna aplikace Codex'), provider: 'openai',
+    kind: 'local', verified: true, source: 'Codex app-server thread/list',
+    description: ui('Názvy a stav vláken aplikace Codex bez místního přepisu.'),
+    start: scan, scan, stop() {},
+    status: () => ({ state: lastError ? 'error' : lastEventAt ? 'connected' : 'idle',
+      detail: lastError || ui('Nalezeno {0} vláken aplikace Codex.', count), count, lastEventAt }),
+  };
+}

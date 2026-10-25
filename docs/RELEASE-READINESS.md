@@ -6,6 +6,7 @@
 
 ## Zdroj pravdy
 
+- **v0.46.79: rozpracovaný Preview kandidát.** Detekce vláken nativní aplikace Codex přes `thread/list` i bez místního přepisu. Cílené testy protokolu a přechodu na skutečný přepis prošly; živý Mac a konkrétní „LATEST AG“ čekají na ověření. Vydání vyžaduje zelené CI přesného `main`, osm příloh a nezávislý audit.
 - **v0.46.78: připravovaný Preview kandidát.** Oprava otevření konkrétního vzdáleného Claude chatu z detailu, rozšíření i projektových snímků a vysvětlení chybějícího přepisu. Obsahuje i šířku nabídky projektu z neveřejného Draftu v0.46.77. Před zveřejněním vyžaduje zelené CI na přesném `main` commitu, nový tag, osm příloh a nezávislý audit; skutečný Mac ještě musí potvrdit chování na živé relaci.
 - **v0.46.77: neveřejný Preview kandidát.** Opravuje úzkou nabídku projektu v hlavním spouštěči: šířka i zarovnání vycházejí z celé viditelné kapsle, nikoli z vnitřního tlačítka omezeného na 240 px. Před zveřejněním vyžaduje přesné zelené CI, sestavení a nezávislý audit příloh; fyzické ověření na Macu zůstává otevřené.
 - **v0.46.76: veřejné Preview od 25. 10. 2026.** [Vydání](https://github.com/martin-pok/agentree/releases/tag/v0.46.76) má osm příloh, přesné CI [8/8](https://github.com/martin-pok/agentree/actions/runs/40200498081), nezávislý audit [uspěl](https://github.com/martin-pok/agentree/actions/runs/40201585258) a [publikace](https://github.com/martin-pok/agentree/actions/runs/40201668053) doběhla. Předchozí oprava nabídky měřila jen vnitřní tlačítko a na široké kapsli nestačila; fyzická instalace na Macu zůstává otevřená.
