@@ -499,7 +499,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         const apiId = data.sessions.find((x) => x.id === id)?.apiId || store.get(`claude-desktop-code:${id}`)?.apiId || id;
         const z = await nactiUdalostiRelace(apiId, opts);
         if (z?.messages.length) { prepisyZUctu.set(id, z); prepisChyby.delete(id); }
-        else prepisChyby.set(id, ui('Účet Claude pro tuto relaci nevrátil zprávy. Zkusíme to znovu; může jít o jiný přihlášený účet.'));
+        else prepisChyby.set(id, ui('Účet Claude pro tuto relaci nevrátil zprávy. Načtení se zopakuje; může jít o jiný přihlášený účet.'));
       } catch (e) { prepisChyby.set(id, e.message); }
     }));
     for (const id of prepisyZUctu.keys()) if (!ids.includes(id) && !zajem.has(id)) prepisyZUctu.delete(id);
@@ -518,7 +518,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         const apiId = api.data?.sessions.find((x) => x.id === localId)?.apiId || store.get(`claude-desktop-code:${localId}`)?.apiId || localId;
         const z = await nactiUdalostiRelace(apiId, { prihlaseni, fetchImpl: claudeCloud.fetchImpl });
         if (z?.messages.length) { prepisyZUctu.set(localId, z); prepisChyby.delete(localId); }
-        else prepisChyby.set(localId, ui('Účet Claude pro tuto relaci nevrátil zprávy. Zkusíme to znovu; může jít o jiný přihlášený účet.'));
+        else prepisChyby.set(localId, ui('Účet Claude pro tuto relaci nevrátil zprávy. Načtení se zopakuje; může jít o jiný přihlášený účet.'));
       } catch (e) { prepisChyby.set(localId, e.message); }
       zpracuj();
     })();
