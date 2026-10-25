@@ -18,6 +18,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+- **v0.46.83 Preview:** jméno u každého agenta v „Právě teď“ (jako stránka Agenti), klik na logo na Přehledu plynule nahoru.
 - **v0.46.82 Preview:** nabídka výběru drží u kapsle při posunu stránky, pevné pořadí v „Právě teď“ (docs/DESIGN.md), obrázky projektů předem načtené, jména robotů na kartách. Na fyzickém Macu ověřit rolování v nabídce projektu a přechod agenta mezi skupinami.
 - **v0.46.81 Preview:** doladit objem robotů měkkým světlem, bočním stínem a zapuštěným displejem. Před vydáním ověřit konzistentní vzhled malých i velkých karet, přesné CI a audit příloh.
 - **v0.46.80 Preview:** vrátit přepis vzdálených Claude chatů: zachovat původní API ID `cse_`, podporovat `code:session_` v cache a načíst starší stránky událostí. Na fyzickém Macu ověřit relaci „Brno app aktuální stav“ a konkrétní zprávy; pokud účet vrátí 404 nebo prázdno, detail musí ukázat důvod a při dalším otevření zkusit znovu. Vydání až po přesném CI a auditu.

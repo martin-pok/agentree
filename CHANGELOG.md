@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.83 – 2026-10-25 · Jména na Přehledu, logo nahoru
+
+- **Jméno u každého agenta na Přehledu:** karty v „Právě teď“ ukazují jméno robota stejně jako stránka Agenti – vlastní, jinak jméno postavy (Scout, Orbit…). Dřív ho měli jen ručně pojmenovaní. Na telefonu má jméno místo vedle těla robota a neusekne se.
+- **Logo vrací nahoru:** klik na logo Agenteeq vlevo nahoře na Přehledu stránku plynule vyroluje na začátek (s omezením pohybu okamžitě). Na jiných obrazovkách dál vede na Přehled.
+
 ## 0.46.82 – 2026-10-25 · Nabídky drží na místě, agenti v pevném pořadí
 
 - **Nabídka projektu se už neodepne:** když se v nabídce výběru (projekt ve spouštěči na Přehledu) dorolovalo na konec, kolečko posunulo stránku pod ní a nabídka zůstala viset uprostřed obrazovky. Teď kolečko patří jen nabídce, a když se stránka posune jinak (dojezd, klávesnice), nabídka jede s kapslí; když kapsle z okna zmizí, zavře se. Totéž platí pro našeptávač štítků.

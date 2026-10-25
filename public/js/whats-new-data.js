@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.83',
+    date: '2026-10-25',
+    title: 'Jména na Přehledu',
+    items: [
+      'Každý agent v „Právě teď“ má jméno, stejně jako na stránce Agenti.',
+      'Klik na logo na Přehledu plynule vyroluje stránku nahoru.',
+    ],
+    en: {
+      title: 'Names in the Overview',
+      items: [
+        'Every agent in “Right now” has a name, just like on the Agents page.',
+        'Clicking the logo in the Overview smoothly scrolls back to the top.',
+      ],
+    },
+  },
+  {
     version: '0.46.82',
     date: '2026-10-25',
     title: 'Klidné nabídky a pořadí agentů',
