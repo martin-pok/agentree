@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydané · Čitelné ruce robota v malých kartách
+
+- **Čekající robot má viditelné paže:** malé portréty už nevybírají knihu ani mobil, které paže zakrývaly. Paže se při žádné čekací póze neschovají a v kartách mají čitelnější obrys.
+
 ## 0.46.75 – 2026-10-25 · Loga služeb bez čekání
 
 - **Loga hned po otevření:** oficiální SVG se kreslí přímo v kartách bez načítání obrázků. Při živé aktualizaci zůstává znak služby vidět i při změně textu nebo stavu; prázdné kruhy při pomalém načítání už nevznikají.

@@ -259,6 +259,8 @@ ztlumené oči. Oči sledují kurzor nejvýš ±3 px vodorovně a ±2 px svisle;
 trvá 180 ms, po 8–14 sekundách mrkne jeden viditelný robot.
 Systémové omezení pohybu má přednost, ruční vypnutí se ukládá lokálně.
 Pohyb není jediným nositelem stavu a robot nevydává zvuky.
+V malém portrétu agenta musí být obě paže čitelné v každém okamžiku čekání. Kniha a mobil
+paže překrývaly, proto se mezi čekacími pózami nenabízejí; hra nikdy neskrývá základní paže.
 
 Ověření jednotlivých pravidel přístupnosti není certifikace celé aplikace:
 kontrolujeme reflow, text-spacing, kontrast textových tokenů, fokus a omezení pohybu.

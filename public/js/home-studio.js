@@ -90,8 +90,8 @@ export function dilnaAtributy(s) {
 // Jen to, co stav agenta opravdu ukáže (refinement.css): dílna při práci, hračky při čekání,
 // signál, když tě potřebuje. Při změně stavu živé sloučení chybějící části doplní.
 // Zhruba dva z pěti čekajících si nehrají vůbec (jen dýchají a rozhlížejí se), ostatní mají každý
-// svou zábavu z osmi – vedle sebe tak nevyhazují všichni míček.
-const HRY = ['micek', 'jojo', 'pisen', 'kava', 'kniha', 'bublina', 'mobil', 'protazeni'];
+// svou zábavu. Kniha a mobil v malém portrétu zakrývaly paže a četly se jako chybějící ruce.
+const HRY = ['micek', 'jojo', 'pisen', 'kava', 'bublina', 'protazeni'];
 export const ODDECH_MS = 15000;
 const hraAgenta = (id) => {
   const h = otisk(id) >>> 3;
