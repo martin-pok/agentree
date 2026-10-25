@@ -1,6 +1,6 @@
 # Roadmapa Agenteeq
 
-**P0 loga služeb na Macu (25. 10. 2026):** Na snímku karet agentů jsou místo znaků služeb prázdné tmavé kruhy. Kandidát `v0.46.75` Preview kreslí přibalené SVG přímo do karty, bez HTTP a obrázkového dekódování; CI WebKit odhalilo, že ani blob/data URL nedávaly spolehlivý výsledek. Před označením chyby za vyřešenou zbývá fyzicky ověřit nainstalovanou novou verzi v nativní aplikaci, rychlé živé aktualizace a chování bez serveru. Screenshot není důkazem konkrétní chyby odpovědi SVG.
+**P0 loga služeb na Macu (25. 10. 2026):** Na snímku karet agentů jsou místo znaků služeb prázdné tmavé kruhy. Veřejné Preview `v0.46.75` kreslí přibalené SVG přímo do karty, bez HTTP a obrázkového dekódování; CI WebKit odhalilo, že ani blob/data URL nedávaly spolehlivý výsledek. Před označením chyby za vyřešenou zbývá fyzicky ověřit nainstalovanou novou verzi v nativní aplikaci, rychlé živé aktualizace a chování bez serveru. Screenshot není důkazem konkrétní chyby odpovědi SVG.
 
 **Stav 24. 10. 2026:** připravuje se Preview `v0.46.72` (bubliny po větách); `v0.46.71` je Preview (cloudoví agenti Claude, aktualizace sama, barvy, přepis z pracovní kopie); `v0.46.70` je veřejné Preview (generátor nápadů, vyrovnaný layout); `v0.46.69` je veřejné Preview (chaty z aplikace ChatGPT pro Mac, Beta); `v0.46.68` je veřejné Preview (přepis cloudového běhu, mřížka, nabídky); `v0.46.67` je veřejné Preview (výchozí „V aplikaci“, oblečení zezadu); `v0.46.66` je veřejné Preview (pestřejší flákání, plynulé přesouvání karet); `v0.46.64` (tečka stavu na ikoně rozšíření) je veřejné Preview; `v0.46.63` (roboti v dílně a detekce cloudových běhů Codexu z v0.46.62) je veřejné Preview. Veřejné Preview `v0.46.61` tuto kritickou opravu neobsahuje. [`v0.46.60`](https://github.com/martin-pok/agentree/releases/tag/v0.46.60) je veřejné Preview ze SHA `90229c0` po 8/8 CI, auditu osmi příloh a úspěšném publikačním workflow. Na Macu vlastníka běží 0.46.60; předchozí 0.46.58 a data byla zálohována, projekty, upozornění, párování a nastavení zůstaly zachované. [`v0.46.58`](https://github.com/martin-pok/agentree/releases/tag/v0.46.58) zůstává Stable Latest. Úplné Mac/Chrome/Windows UAT zůstává otevřené; viz [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
@@ -18,7 +18,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-- **0.46.75 Preview:** dokončit sestavení a nezávislý SHA-256 audit opravy log služeb; pak zveřejnit Preview a ověřit aktualizaci, okamžité vykreslení a živé změny na fyzickém Macu (UAT). Tagy 0.46.73 a 0.46.74 mají neúspěšný build a zůstávají neveřejné.
+- **v0.46.76 Preview:** dokončit přesné skoky z hledání, úchyty karet, nabídku projektů, rychlé načtení vlastních obrázků a čitelné paže čekajících robotů; po zeleném CI sestavit balíčky, provést nezávislý SHA-256 audit a zveřejnit Preview. Ověřit výsledek a aktualizaci na fyzickém Macu (UAT). `v0.46.75` s opravou log je již veřejné Preview; tagy 0.46.73 a 0.46.74 mají neúspěšný build a zůstávají neveřejné.
 
 - Kritické: ověřit fyzicky živý stav Claude a Google AI Studio po aktualizaci. 0.46.65 zůstává nezveřejněný: selhalo CI.
 - Následně: sjednotit zavírání dialogů křížkem, Escape a kliknutím mimo; při neuložených změnách potvrdit jejich zahození.

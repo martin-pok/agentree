@@ -4,6 +4,26 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.76',
+    date: '2026-10-25',
+    title: 'Projekty a hledání vyladěné',
+    items: [
+      'Výsledek hledání tě posune přímo k sekci a jemný fialový obrys ukáže přesné místo.',
+      'Úchyty karet v detailu vypadají jako na Přehledu a fungují i z klávesnice.',
+      'Nabídka projektů už není úzká. Vlastní obrázky se načítají hned a karty mají jemnou fialovou záři.',
+      'Čekající roboti mají v malých kartách viditelné ruce i při odpočinku.',
+    ],
+    en: {
+      title: 'Projects and search refined',
+      items: [
+        'Search takes you straight to the section and a subtle purple outline marks the exact spot.',
+        'Card handles in detail views match the Overview and work with the keyboard.',
+        'The project menu is no longer narrow. Custom images load right away and cards gain a subtle purple glow.',
+        'Idle robots keep their arms visible even in compact cards.',
+      ],
+    },
+  },
+  {
     version: '0.46.75',
     date: '2026-10-25',
     title: 'Loga služeb hned',

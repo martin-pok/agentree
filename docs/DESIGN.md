@@ -8,6 +8,8 @@ zavést vlastní odstín, zaoblení, výšku ani stín, dokud je nepřidá do to
 Identita, barvy a písmo popisuje `AGENTS.md` (oddíl Design). Tady jsou pravidla tvaru a ovládacích
 prvků, která se nesmí rozjet mezi produkty.
 
+**Skok a přesouvání:** výsledek hledání zarovná cílovou sekci pod skutečnou horní lištu a krátce ji označí tenkým obrysem v barvě `--brand`. Úchyt přesouvání v detailu agenta a projektu má stejné rozměry, odstup nad kartou, šest teček a fialový lem jako widget na Přehledu. Obrázek projektu uložený uživatelem se načítá při vstupu na stránku bez lazy odkladu; podklad do načtení vychází z jeho vlastní barvy.
+
 **Jeden tvar pro všechny velikosti:** jediným schváleným masterem je
 `public/brand/agenteeq-dock.svg`. Jeho bílá hlava má poměr **78:53**,
 oči **8:16**, poloměr hlavy **20** a anténa leží na ose **x=54**. Ikona
