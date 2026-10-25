@@ -249,6 +249,14 @@ ve složce, o které Agenteeq neví. Proto:
   v paměti do vypršení, nikam se neukládá a jde jen na `api.anthropic.com`. **Nikdy se neobnovuje**
   (obnova by vyměnila refresh token a odhlásila Claude Code): vypršelé přihlášení je chyba zdroje
   s větou „Stačí spustit Claude Code“. Po chybě přihlášení se Klíčenka 10 minut nečte znovu.
+  **Od 0.46.83:** položka se hledá s účtem z `USER`, pak se systémovým jménem uživatele, pak bez
+  účtu (jen po „nenalezeno“, kód 44 – po odepření se dál nezkouší) a nakonec v
+  `~/.claude/.credentials.json`. Důvod selhání se rozlišuje („chybí přihlášení Claude Code“ vs.
+  „macOS nepovolil přístup ke Klíčence“) a hlásí se na Přehledu vždy, když cache Claude Desktopu
+  zná nějakého vzdáleného agenta – dřív se bez přihlášení nehlásilo nic a běžící relace, kterou
+  cache neměla čerstvou, na Přehledu chyběla bez vysvětlení (vlastník 25. 10. 2026; seznam z účtu
+  ji přitom vedl jako `RUNNING`). Bez cache i bez přihlášení aplikace dál mlčí. Na Macu vlastníka
+  zatím neověřené 🧪.
   Chyby (bez přihlášení, 401/403, síť, jiný tvar) jsou chybou zdroje v Nastavení, nikdy „nic neběží“.
   Zapnuté se síťovými funkcemi (`AGENTEEQ_CLOUD`), v testech vypnuté. Na skutečném účtu ověřeno
   zatím jen to, že tento tvar Claude Code sám čte; odpověď z Macu vlastníka ověřená není.

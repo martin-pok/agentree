@@ -1,4 +1,4 @@
-import { clip, MIN, DAY } from '../util.js';
+import { clip, cistyNazev, MIN, DAY } from '../util.js';
 import { touch, pushEntry, updateEntry, resetTranscript } from '../model.js';
 import { ui } from '../texty.js';
 
@@ -55,7 +55,10 @@ const MAX_POCET = 100000;
 const pocet = (n) => (Number.isInteger(n) && n >= 0 ? Math.min(n, MAX_POCET) : 0);
 const cleanWebTitle = (raw) => {
   if (typeof raw !== 'string') return '';
-  const title = clip(raw.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim(), 400);
+  // Jen první řádek: starší rozšíření posílalo celý řádek z bočního panelu claude.ai/code
+  // (název, stav, „Cloud • Merged • 2 pull requests“, ikona).
+  const prvni = raw.split(/[\r\n]+/).find((r) => r.trim()) || '';
+  const title = clip(cistyNazev(prvni.replace(/[\u0000-\u001f\u007f]/g, ' ')), 400);
   if (/^(?:chatgpt|codex|claude(?: code)?|gemini|new chat|nový chat|untitled)$/i.test(title) ||
       /^(?:session_[\w-]+|[0-9a-f-]{16,})$/i.test(title)) return '';
   return title;

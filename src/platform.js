@@ -11,6 +11,7 @@
 // prázdno a volající se podle toho zachová. Nikdy nevrátí vymyšlenou cestu.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { run, shellQuote } from './util.js';
 import { ui } from './texty.js';
@@ -480,8 +481,16 @@ export function slozkaSDotazySystemu(cwd, home, system = SYSTEM) {
  *   jinde    <domov Claude>/.credentials.json
  *
  * Vrací { accessToken, expiresAt } nebo null (nepřihlášeno / nečitelné) – nikdy vymyšlenou hodnotu.
+ * `prihlaseniClaudeCodeSDuvodem` vrací navíc důvod, proč přihlášení přečíst nešlo: „nenalezeno“
+ * (položka v Klíčence ani soubor nejsou), „pristup“ (macOS přístup ke Klíčence odepřel nebo na
+ * povolení čeká) nebo „vypnuto“. Bez důvodu by se selhání tvářilo jako „žádný účet Claude“ a Přehled
+ * mlčel, i když vzdálený agent právě pracuje (vlastník 25. 10. 2026).
+ *
+ * Na macOS se položka hledá nejdřív s účtem uživatele (tak ji zapisuje Claude Code), pak bez účtu
+ * (aplikace spuštěná bez proměnné USER nebo položka zapsaná pod jiným jménem) a nakonec v souboru
+ * .credentials.json, kam Claude Code ukládá přihlášení, když mu Klíčenka není k dispozici.
  */
-export async function prihlaseniClaudeCode({ sourceHome, claudeConfigDir = '', keychain = false, uzivatel = process.env.USER || '' } = {}, { runImpl = run, cti = fs.promises, jeMac = JE_MAC } = {}) {
+export async function prihlaseniClaudeCodeSDuvodem({ sourceHome, claudeConfigDir = '', keychain = false, uzivatel = process.env.USER || '' } = {}, { runImpl = run, cti = fs.promises, jeMac = JE_MAC, systemovyUzivatel = () => { try { return os.userInfo().username; } catch { return ''; } } } = {}) {
   const vyber = (text) => {
     try {
       const o = JSON.parse(text)?.claudeAiOauth;
@@ -499,14 +508,37 @@ export async function prihlaseniClaudeCode({ sourceHome, claudeConfigDir = '', k
     } catch { return ''; }
   };
   const sOrganizaci = async (p) => (p ? { ...p, orgUuid: await organizace() } : null);
+  const zeSouboru = async () => {
+    const slozka = claudeConfigDir || path.join(sourceHome, '.claude');
+    try { return await sOrganizaci(vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8'))); } catch { return null; }
+  };
   if (jeMac) {
-    if (!keychain || !/^[a-zA-Z0-9._-]+$/.test(uzivatel)) return null;
-    const pripona = claudeConfigDir ? `-${crypto.createHash('sha256').update(claudeConfigDir.normalize('NFC')).digest('hex').slice(0, 8)}` : '';
-    const r = await runImpl('/usr/bin/security', ['find-generic-password', '-a', uzivatel, '-w', '-s', `Claude Code-credentials${pripona}`], { timeout: 5000 });
-    return r?.ok ? sOrganizaci(vyber(r.stdout.trim())) : null;
+    let duvod = keychain ? 'nenalezeno' : 'vypnuto';
+    if (keychain) {
+      const pripona = claudeConfigDir ? `-${crypto.createHash('sha256').update(claudeConfigDir.normalize('NFC')).digest('hex').slice(0, 8)}` : '';
+      const sluzba = `Claude Code-credentials${pripona}`;
+      const jmena = [...new Set([uzivatel, systemovyUzivatel()])].filter((x) => /^[a-zA-Z0-9._-]+$/.test(x || ''));
+      // Bez účtu se hledá jen tehdy, když s ním položka nalezena nebyla (kód 44), ne po odepření.
+      const pokusy = [...jmena.map((u) => ['find-generic-password', '-a', u, '-w', '-s', sluzba]), ['find-generic-password', '-w', '-s', sluzba]];
+      for (const args of pokusy) {
+        const r = await runImpl('/usr/bin/security', args, { timeout: 5000 });
+        if (r?.ok) {
+          const p = await sOrganizaci(vyber(String(r.stdout || '').trim()));
+          if (p) return { p, duvod: '' };
+          continue;
+        }
+        // 44 = errSecItemNotFound; cokoli jiného (odepřeno, zamčeno, vypršel čas na povolení) je přístup.
+        if (r?.code !== 44) { duvod = 'pristup'; break; }
+      }
+    }
+    const p = await zeSouboru();
+    return p ? { p, duvod: '' } : { p: null, duvod };
   }
-  const slozka = claudeConfigDir || path.join(sourceHome, '.claude');
-  try { return await sOrganizaci(vyber(await cti.readFile(path.join(slozka, '.credentials.json'), 'utf8'))); } catch { return null; }
+  const p = await zeSouboru();
+  return p ? { p, duvod: '' } : { p: null, duvod: 'nenalezeno' };
+}
+export async function prihlaseniClaudeCode(volby, zavislosti) {
+  return (await prihlaseniClaudeCodeSDuvodem(volby, zavislosti)).p;
 }
 
 // Aplikace ChatGPT pro Mac (com.openai.chat) si chaty ukládá zašifrované, takže z disku nejde

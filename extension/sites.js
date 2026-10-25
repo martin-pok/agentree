@@ -34,7 +34,9 @@
       let href;
       try { href = new URL(a.getAttribute('href'), loc.href); } catch { continue; }
       if (href.origin !== loc.origin || href.pathname.replace(/\/$/, '') !== path) continue;
-      const label = cleanTitle(text(a) || a.getAttribute('aria-label'), patterns);
+      // Řádek v bočním panelu nese pod názvem i stav, repozitář a ikony – název je první řádek.
+      const prvni = (text(a) || a.getAttribute('aria-label') || '').split('\n').map((r) => r.trim()).find(Boolean) || '';
+      const label = cleanTitle(prvni.replace(/[-�]/g, ''), patterns);
       if (label && !genericTitle.test(label) && !/^(?:session_[\w-]+|[0-9a-f-]{16,})$/i.test(label)) return label;
     }
     return '';

@@ -92,6 +92,8 @@ test('ChatGPT and Claude Code read the actual selected conversation title', () =
   assert.equal(chat.title(doc('ChatGPT', [link('/c/another', 'Cizí konverzace')]), url), '', 'unrelated sidebar chat is not used');
   const code = SITES.find((s) => s.id === 'claude-code-web');
   assert.equal(code.title(doc('Claude Code', [link('/code/session_12345678', 'Vydat novou verzi')]), loc('https://claude.ai/code/session_12345678')), 'Vydat novou verzi', 'Claude Code uses selected session label');
+  // Vlastník 25. 10. 2026: řádek v bočním panelu nese pod názvem stav, repozitář a ikonu z písma.
+  assert.equal(code.title(doc('Claude Code', [link('/code/session_12345678', 'AGTQ - BUGS\nRunning\nCloud • Merged • 2 pull requests\n\uE0A1 2')]), loc('https://claude.ai/code/session_12345678')), 'AGTQ - BUGS');
 });
 
 test('každá služba v seznamu má vlastní rozpoznání adresy', () => {

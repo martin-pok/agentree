@@ -323,6 +323,15 @@ skupinu, robot se nejdřív otočí na místě (600 ms) a teprve pak karta klidn
 (560 ms, ostatní se rozestoupí současně). Kód: `public/js/prave-ted.js#poradiPraveTed`,
 test `test/prave-ted-poradi.test.mjs`.
 
+## Najetí a zvýraznění: fialová, ne žlutá (vlastník 25. 10. 2026, závazné)
+
+- Interaktivní název, odkaz nebo karta při najetí a klávesovém fokusu mění barvu na `--brand`
+  (světlý #6260d8, tmavý #8c88f4). Žlutá a zlatá (`--brass`, `--brass-ink`) patří starému
+  designu; v novém smí nést jen stavový význam (limit, čekání na tebe), nikdy hover ani akcent.
+- Karty v mřížce stejného druhu mají stejnou výšku, ne „poskakující noty“. Na Dovednostech má
+  název nejvýš dva řádky, popis tři, horní část má pro oba rezervované místo a štítky, cesta a
+  akce sedí na jedné lince. Celý název je v `title`, celý popis ve čtečce.
+
 ## Agenti: hromadný výběr konverzací
 
 Vstup do výběru je plné primární tlačítko oddělené od obrysových filtrů. Po vstupu je jeho stav

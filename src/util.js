@@ -25,6 +25,16 @@ export function clip(s, n = 180) {
 // Zkrácení textu, který se čte (název konverzace): na hranici slova a s „…“, ať je vidět, že
 // pokračuje. clip() řeže natvrdo a hodí se jen na údaje, u kterých na tom nesejde. Výsledek má
 // nejvýš `n` znaků i s výpustkou; slovo delší než třetina limitu (adresa, cesta) se usekne.
+// Název k zobrazení: jen znaky, které něco říkají. Pryč jde soukromá oblast Unicode (ikony webových
+// písem, v Satoshi prázdný čtvereček), braillovy a hvězdičkové znaky, kterými Claude Code a weby
+// v titulku animují „pracuje“, náhradní a neviditelné znaky. Vlastník 25. 10. 2026: názvy agentů
+// ukazovaly „▯ STUDIO MASTER SKILL“ a „AGTQ - BUGS Running Cloud • Merged • 2 pull requests ▯ 2“.
+const NEZOBRAZITELNE = /[​-‏⁠-⁤﻿�-⠀-⣿]|[\u{F0000}-\u{10FFFF}]/gu;
+const STAV_NA_ZACATKU = /^[\s✳✶✻✽✢✦✧·•⏺●○◉◐◑◒◓]+/u;
+export function cistyNazev(raw) {
+  return String(raw ?? '').replace(NEZOBRAZITELNE, '').replace(STAV_NA_ZACATKU, '').replace(/\s+/g, ' ').trim();
+}
+
 export function clipSlova(s, n = 100) {
   const t = clip(s, Infinity);
   if (t.length <= n) return t;

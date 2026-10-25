@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.84 – 2026-10-25 · Vzdálení agenti bez mlčení, čisté názvy, Dovednosti v rovné mřížce
+
+- **Vzdálený agent nezmizí beze slova:** běžící relace Claude Code v cloudu chyběla na Přehledu, protože se aplikaci nepodařilo přečíst přihlášení Claude Code z Klíčenky a stav brala jen ze staré cache Claude Desktopu – a nic neřekla. Teď přihlášení hledá i pod systémovým jménem, bez účtu a v souboru Claude Code. Když ho přesto nenajde, Přehled napíše proč (chybí přihlášení / macOS nepovolil Klíčenku) a co s tím, kdykoli o vzdálených agentech ví.
+- **Žádné čtverečky v názvech:** názvy agentů z Claude ukazovaly prázdné čtverečky („▯ STUDIO MASTER SKILL“) a u vzdáleného agenta z claude.ai/code celý řádek bočního panelu („AGTQ - BUGS Running Cloud • Merged • 2 pull requests ▯ 2“). Aplikace bere jen první řádek a vynechá znaky, které písmo neumí (ikony webových písem, animované hvězdičky „pracuje“, neviditelné znaky). Pomůže to i se stávajícím rozšířením; nové bere z panelu rovnou jen název.
+- **Výběr složky:** nedávné složky jsou řádky na jednu linku – jméno složky a tlumeně konec nadřazené cesty (…/Codex/2026-10-09), takže se dvě stejně pojmenované složky liší i na telefonu. Celá cesta je v bublině. Dočasné pracovní prostory Claude a vnitřek balíčku aplikace se nenabízejí (ani jako výchozí složka spouštěče).
+- **Stejně vysoké karty na Dovednostech:** název nejvýš dva řádky, popis tři (celý ve čtečce); štítky, cesta i tlačítka sedí v řádku na jedné lince.
+- **Fialová místo žluté:** název dovednosti při najetí zfialoví v barvě značky. Žlutá ze starého designu se na najetí nevrací; pravidlo je v docs/DESIGN.md a AGENTS.md a hlídá ho test.
+
 ## 0.46.83 – 2026-10-25 · Jména na Přehledu, logo nahoru
 
 - **Jméno u každého agenta na Přehledu:** karty v „Právě teď“ ukazují jméno robota stejně jako stránka Agenti – vlastní, jinak jméno postavy (Scout, Orbit…). Dřív ho měli jen ručně pojmenovaní. Na telefonu má jméno místo vedle těla robota a neusekne se.

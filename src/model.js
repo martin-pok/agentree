@@ -1,4 +1,4 @@
-import { hourKey, minuteKey, spansFromMinutes, clip, clipSlova, lastSegment, MIN, HOUR, DAY } from './util.js';
+import { hourKey, minuteKey, spansFromMinutes, clip, clipSlova, cistyNazev, lastSegment, MIN, HOUR, DAY } from './util.js';
 import { ui } from './texty.js';
 
 export const TRANSCRIPT_MAX = 400;
@@ -294,7 +294,7 @@ export function summarize(s, now, windowMs, hooky = null) {
   const working = status === 'working';
   // Název se zkracuje na hranici slova s „…“; celý (do rozumné délky) nese fullTitle, aby ho
   // rozhraní mohlo ukázat v bublině nad zkráceným textem. Nezkrácený název fullTitle neopakuje.
-  const nazev = clip(s.title || s.firstPrompt || fallbackTitle(s), 401);
+  const nazev = clip(cistyNazev(s.title) || cistyNazev(s.firstPrompt) || fallbackTitle(s), 401);
   const title = clipSlova(nazev, 100);
   return {
     id: s.id,
