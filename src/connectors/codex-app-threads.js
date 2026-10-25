@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { clip, DAY } from '../util.js';
 import { touch } from '../model.js';
@@ -6,6 +7,15 @@ import { codexAppName, readableCodexTitle } from './codex.js';
 import { ui } from '../texty.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function nativeCodexBinary(home) {
+  if (process.platform !== 'darwin') return null;
+  for (const app of ['/Applications/Codex.app', path.join(home, 'Applications/Codex.app')]) {
+    const bin = path.join(app, 'Contents/Resources/codex');
+    try { fs.accessSync(bin, fs.constants.X_OK); return bin; } catch { /* try next */ }
+  }
+  return null;
+}
 
 // Codex.app maintains thread metadata in its state DB even when it has not
 // written a local rollout. Ask the public app-server protocol for that index.
@@ -92,12 +102,20 @@ export function createCodexAppThreadsConnector({ store, config, codexCloudBin, c
   const scan = () => {
     if (pending) return pending;
     pending = (async () => {
-      const bin = codexCloudBin();
-      if (!bin) { lastError = ui('Spustitelný Codex není dostupný.'); return; }
+      // The bundled binary speaks the same app-server version as the running
+      // desktop app; a separately installed CLI may lag behind its state DB.
+      const nativeBin = nativeCodexBinary(config.sourceHome);
+      const cliBin = codexCloudBin();
+      if (!nativeBin && !cliBin) { lastError = ui('Spustitelný Codex není dostupný.'); return; }
       const now = Date.now();
-      const home = codexCloudHome() || path.join(config.sourceHome, '.codex');
-      const threads = await readThreads(bin, home);
-      if (!threads) { lastError = ui('Seznam vláken aplikace Codex není dostupný.'); return; }
+      const defaultHome = path.join(config.sourceHome, '.codex');
+      const cliHome = codexCloudHome() || defaultHome;
+      const sources = [];
+      if (nativeBin) sources.push([nativeBin, defaultHome]);
+      if (cliBin && (!nativeBin || cliHome !== defaultHome)) sources.push([cliBin, cliHome]);
+      const pages = await Promise.all(sources.map(([bin, home]) => readThreads(bin, home)));
+      if (pages.every((page) => !page)) { lastError = ui('Seznam vláken aplikace Codex není dostupný.'); return; }
+      const threads = [...new Map(pages.flatMap((page) => page || []).map((thread) => [thread.id, thread])).values()];
       lastError = '';
       lastEventAt = now;
       count = 0;
