@@ -307,6 +307,7 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 .robot-guide.is-quiet .guide-copy, .robot-guide.is-quiet .guide-robot { display: none; }
 .agent-portrait { display: block; width: 58px; height: 60px; }
 .agent-portrait .robot { width: 58px; height: 60px; }
+.agent-portrait .robot :is(.robot-arm-left, .robot-arm-right) { stroke-width: 5.5; }
 .agent-robot-tile { width: 58px; height: 60px; background: none; box-shadow: none; }
 .table .row { grid-template-columns: 62px minmax(0,2.4fr) minmax(0,1.2fr) 150px 88px 96px 16px; min-height: 90px; }
 .session-kicker .agent-portrait, .session-kicker .agent-robot-tile { width: 88px; height: 92px; }

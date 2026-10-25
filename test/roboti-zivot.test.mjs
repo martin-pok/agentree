@@ -82,18 +82,20 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
     for (const cast of ['robot-hra', 'hra-micek', 'hra-jojo', 'hra-noty', 'hra-kava', 'hra-kniha', 'hra-bublina', 'hra-mobil', 'robot-signal', 'signal-vlna', 'signal-zare']) assert.ok(svg.includes(cast), `${typ}: ${cast}`);
   }
   const { dilnaAtributy } = await import('../public/js/home-studio.js');
-  // Vlastník 24. 10. 2026 („bezruký robot“): paže se schovají / otočí jen tehdy, když v SVG opravdu je
-  // kniha s rukama / mobil. Když se hračka nenakreslí, robot má běžné paže.
+  // V malém portrétu zůstávají obě paže čitelné i během čekání.
   const cssHry = await zdroj('public/refinement.css');
-  assert.match(cssHry, /\[data-hra='kniha'\][^{]*:has\(\.hra-ruce\)[^{]*robot-arm-left[^{]*\{ opacity: 0; \}/);
+  assert.doesNotMatch(cssHry, /\[data-hra='kniha'\][^{]*robot-arm-left[^{]*\{ opacity: 0; \}/);
   assert.match(cssHry, /\[data-hra='mobil'\][^{]*:has\(\.hra-mobil\)[^{]*robot-arm-right \{ rotate: 115deg; \}/);
+  const cssPortrait = await zdroj('public/workbench.css');
+  assert.match(cssPortrait, /\.agent-portrait \.robot :is\(\.robot-arm-left, \.robot-arm-right\) \{ stroke-width: 5\.5; \}/);
   assert.match(dilnaAtributy({ id: 'a', status: 'waiting', connector: 'claude-desktop-code', stale: true }), /data-hra="klid"/, 'nejistý stav: žádná hra, paže zůstávají');
-  assert.match(dilnaAtributy({ id: 'a', status: 'waiting' }), /data-hra="(klid|micek|jojo|pisen|kava|kniha|bublina|mobil|protazeni)"/);
+  assert.match(dilnaAtributy({ id: 'a', status: 'waiting' }), /data-hra="(klid|micek|jojo|pisen|kava|bublina|protazeni)"/);
   // Ne všichni si hrají a ne všichni stejně: část čekajících je v klidu, hry se střídají.
   const hry = Array.from({ length: 200 }, (_, i) => dilnaAtributy({ id: `agent-${i}`, status: 'waiting' }).match(/data-hra="(\w+)"/)[1]);
   const pocty = hry.reduce((m, h) => ({ ...m, [h]: (m[h] || 0) + 1 }), {});
   assert.ok(pocty.klid > 50 && pocty.klid < 110, `klid ${pocty.klid}`);
-  assert.equal(Object.keys(pocty).length, 9);
+  assert.equal(Object.keys(pocty).length, 7);
+  assert.ok(!('kniha' in pocty) && !('mobil' in pocty), 'v malém portrétu se zakrývající rekvizity nenabízí');
   assert.ok(Math.max(...Object.entries(pocty).filter(([h]) => h !== 'klid').map(([, n]) => n)) < 35);
   const { agentRobot } = await import('../public/js/home-studio.js');
   const klidny = Array.from({ length: 50 }, (_, i) => ({ id: `agent-${i}`, status: 'waiting' })).find((s) => dilnaAtributy(s).includes('data-hra="klid"'));
