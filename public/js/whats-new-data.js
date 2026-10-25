@@ -4,7 +4,7 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.74',
+    version: '0.46.75',
     date: '2026-10-25',
     title: 'Loga služeb hned',
     items: ['Loga služeb se zobrazí hned po otevření aplikace a zůstávají viditelná při živé aktualizaci karet.'],

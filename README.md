@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.74** — neveřejný Draft Preview: loga služeb se zobrazí okamžitě a zůstávají viditelná při živých aktualizacích. Sestavení a audit vydání probíhají.
+> **0.46.75** — neveřejný Draft Preview: loga služeb se zobrazí okamžitě a zůstávají viditelná při živých aktualizacích. Sestavení a audit vydání probíhají.
 >
 > **0.46.66** — veřejné Preview: živý stav cloudových agentů Claude Code přímo z účtu (Beta), pestřejší flákání robotů (část čekajících je v klidu, osm různých zábav) a přesouvání karet v detailu stejně plynulé jako na Přehledu.
 >
