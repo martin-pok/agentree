@@ -1048,3 +1048,15 @@ img[data-media].is-nacteno { opacity: 1; }
 @media (hover: hover) {
   .skills > .skill:hover .skill-open { color: var(--brand); }
 }
+
+/* Výběr složky: nedávné složky jako řádky na jednu linku (dřív bubliny přetékající na dva řádky
+   dlouhou cestou). Jméno složky nese obsah, nadřazená cesta je tlumená a zkrátí se „…“. */
+.fb-recents { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
+.fb-recent { min-width: 0; height: 40px; padding: 0 16px 0 12px; display: flex; align-items: center; gap: 8px; border-radius: var(--r-full); border: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 14px/20px var(--f-body); text-align: left; transition: border-color var(--motion-response) var(--ease), background-color var(--motion-response) var(--ease); }
+.fb-recent > .icon { width: 16px; height: 16px; flex: none; color: var(--mute); }
+.fb-recent-jmeno { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fb-recent-cesta { flex: 0 1 auto; max-width: 55%; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mute); font-weight: 400; font-size: 13px; }
+@media (hover: hover) { .fb-recent:hover { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 6%, transparent); } }
+.fb-recent:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.fb-cesta-kratka { display: none; }
+@media (max-width: 560px) { .fb-recent-cesta { flex-shrink: 0; } .fb-cesta-plna { display: none; } .fb-cesta-kratka { display: inline; } }

@@ -65,11 +65,15 @@ export function projectStats(p, now = Date.now()) {
 
 export const logoStack = (sessions, max = 5) => `<span class="discs discs--sm">${sessions.slice(0, max).map((s) => `<span class="disc" title="${esc(s.app)}">${glyph(s)}</span>`).join('')}${sessions.length > max ? `<span class="disc disc--more">+${sessions.length - max}</span>` : ''}</span>`;
 
+// Složky, které agent použil, ale člověk v nich práci nezadává: dočasné pracovní prostory Claude
+// (scratch-workspaces) a vnitřek balíčku aplikace (.app/Contents). Ve výběru jen zabíraly místo
+// dlouhými nečitelnými cestami (vlastník 25. 10. 2026).
+const SYSTEMOVA_SLOZKA = /[\\/]scratch-workspaces[\\/]|\.app[\\/]Contents([\\/]|$)/i;
 export function recentFolders(limit = 6) {
   const seen = new Set();
   const out = [];
   for (const s of agentsList()) {
-    if (s.source === 'web' || typeof s.cwd !== 'string' || !jeAbsolutniCesta(s.cwd) || seen.has(s.cwd)) continue;
+    if (s.source === 'web' || typeof s.cwd !== 'string' || !jeAbsolutniCesta(s.cwd) || seen.has(s.cwd) || SYSTEMOVA_SLOZKA.test(s.cwd)) continue;
     seen.add(s.cwd);
     out.push(s.cwd);
     if (out.length >= limit) break;
@@ -147,6 +151,19 @@ export function folderBrowser(root, { onPick, start = '' }) {
   go(start);
 }
 
+// Nedávná složka na jeden řádek: jméno složky, vedle tlumeně nadřazená cesta zkrácená „…“.
+// Celá cesta je v title (a pro čtečku v aria-label).
+function radekSlozky(f) {
+  const cesta = shortPath(f).replace(/[\\/]+$/, '');
+  const i = Math.max(cesta.lastIndexOf('/'), cesta.lastIndexOf('\\'));
+  const jmeno = i >= 0 ? cesta.slice(i + 1) : cesta;
+  // Z nadřazené cesty rozhoduje konec (…/Codex/2026-10-09), ne začátek – dvě složky se stejným
+  // jménem se pak liší i v úzkém okně.
+  const casti = i > 0 ? cesta.slice(0, i).split(/[\\/]/) : [];
+  const rodic = casti.length > 3 ? `${casti[0]}/…/${casti.slice(-2).join('/')}` : casti.join('/');
+  return `<button type="button" class="fb-recent" data-fb-recent="${esc(f)}" title="${esc(f)}" aria-label="${esc(f)}">${ICON.folder}<span class="fb-recent-jmeno">${esc(jmeno || cesta)}</span>${rodic ? `<span class="fb-recent-cesta"><span class="fb-cesta-plna">${esc(rodic)}</span><span class="fb-cesta-kratka">${esc(casti.length > 1 ? `…/${casti.at(-1)}` : rodic)}</span></span>` : ''}</button>`;
+}
+
 export function pickFolder({ title = tr('Vybrat složku') } = {}) {
   let picked = null;
   const id = `fb${Math.random().toString(36).slice(2, 8)}`;
@@ -155,7 +172,7 @@ export function pickFolder({ title = tr('Vybrat složku') } = {}) {
     title,
     wide: true,
     submitLabel: tr('Zavřít'),
-    body: `${recents.length ? `<p class="form-sub">${tr('Nedávné složky agentů')}</p><div class="chips chips--wrap">${recents.map((f) => `<button type="button" class="chip" data-fb-recent="${esc(f)}">${ICON.folder}${esc(shortPath(f))}</button>`).join('')}</div><p class="form-sub">${tr('Procházet')}</p>` : ''}<div id="${id}"></div>`,
+    body: `${recents.length ? `<p class="form-sub">${tr('Nedávné složky agentů')}</p><div class="fb-recents">${recents.map(radekSlozky).join('')}</div><p class="form-sub">${tr('Procházet')}</p>` : ''}<div id="${id}"></div>`,
   });
   const root = document.getElementById(id);
   const scrim = root.closest('.modal-scrim');
