@@ -231,6 +231,7 @@ export function deriveStatus(s, now) {
     const maybePermission = ceka > 90e3 && !bezPtani && s.toolWaitKind !== 'cteni';
     return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
+  if (s.metadataOnly) return { status: 'observed', reason: ui('Vlákno nalezeno v aplikaci Codex · živý stav nepotvrzen'), stale: true };
   const stale = Boolean(s.running);
   if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };
   // „Hotovo“ jen když agent skutečně něco odpověděl nebo pracoval; jinak poctivě „bez odpovědi“.
@@ -301,6 +302,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    metadataOnly: Boolean(s.metadataOnly),
     accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,
     subagent: s.subagent || null,

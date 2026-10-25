@@ -85,7 +85,7 @@ test('aplikace Codex pro Mac a Windows se pozná a její vnitřní app-server ne
   assert.deepEqual(agentniProcesy([
     '800 1 01:00 0.1 100 /Applications/Codex.app/Contents/MacOS/Codex',
     '801 800 01:00 0.1 100 /Applications/Codex.app/Contents/Resources/codex app-server',
-  ].join('\n')), [], 'aplikace není „detekovaný proces bez přepisu“ – její vlákna čte konektor Codexu');
+  ].join('\n')).map((p) => p.runtime), ['codex-app'], 'hlavní proces aplikace je pojistka; pomocný app-server není další agent');
   const r = parsePs('800 1 01:00 0.1 100 /Applications/Codex.app/Contents/MacOS/Codex').find((x) => x.id === 'codex-app');
   assert.equal(r.running, true);
   assert.equal(r.name, 'Codex app');

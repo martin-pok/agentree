@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.79',
+    date: '2026-10-25',
+    title: 'Vlákna nativní aplikace Codex',
+    items: ['Nativní Codex se najde podle seznamu vláken aplikace i bez místního přepisu. Když přepis vznikne, doplní zprávy a přesný stav běhu.'],
+    en: {
+      title: 'Native Codex app threads',
+      items: ['Native Codex threads appear from the app thread list even without a local transcript. When a transcript becomes available, it adds messages and the exact run status.'],
+    },
+  },
+  {
     version: '0.46.78',
     date: '2026-10-25',
     title: 'Správný chat vzdáleného agenta',

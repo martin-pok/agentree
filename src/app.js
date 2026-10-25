@@ -23,6 +23,7 @@ import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWor
 import { pushEntry, touch } from './model.js';
 import { createClaudeCodeConnector, korenyClaudeCode } from './connectors/claude-code.js';
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
+import { createCodexAppThreadsConnector } from './connectors/codex-app-threads.js';
 import { createCodexCloudConnector } from './connectors/codex-cloud.js';
 import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
 import { createPomocnikAi } from './pomocnik-ai.js';
@@ -348,6 +349,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const list = [
     createClaudeCodeConnector(ctx),
     createCodexConnector(ctx),
+    createCodexAppThreadsConnector(ctx),
     createCodexCloudConnector({ ...ctx, bin: ctx.codexCloudBin, home: ctx.codexCloudHome }),
     createCursorConnector(ctx),
     createCopilotCliConnector(ctx),

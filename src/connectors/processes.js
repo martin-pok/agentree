@@ -268,7 +268,13 @@ export function agentniProcesy(out) {
   const kandidati = [];
   for (const p of radkyPs(out)) {
     const r = RUNTIMES.find((x) => x.test(p.args));
-    if (!r || !cli.includes(r.id) || !vedeKonverzaci(p.args, r.id)) continue;
+    // The desktop shell itself is the last-resort evidence when its thread DB
+    // and rollout are unavailable. Its helper app-server/renderer processes
+    // must never become separate agents.
+    const codexAppMain = r?.id === 'codex-app' && (
+      /[\\/]Codex\.app[\\/]Contents[\\/]MacOS[\\/]Codex(?:\s|$)/.test(p.args)
+      || /[\\/]WindowsApps[\\/]OpenAI\.Codex_[^\\/]*[\\/]app[\\/]Codex\.exe(?:\s|$)/i.test(p.args));
+    if (!r || (!codexAppMain && (!cli.includes(r.id) || !vedeKonverzaci(p.args, r.id)))) continue;
     kandidati.push({ pid: p.pid, ppid: p.ppid, runtime: r.id, uptimeSec: p.uptimeSec });
   }
   const podlePid = new Map(kandidati.map((p) => [p.pid, p]));

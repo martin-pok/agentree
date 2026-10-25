@@ -20,6 +20,7 @@ import { ui } from './texty.js';
 export const AGENTI = {
   'claude-code': { connector: 'claude-code', app: 'Claude Code', provider: 'anthropic', domov: 'CLAUDE_CONFIG_DIR' },
   codex: { connector: 'codex', app: 'Codex', provider: 'openai', domov: 'CODEX_HOME' },
+  'codex-app': { connector: 'codex', app: 'Codex · aplikace', provider: 'openai' },
   'gemini-cli': { connector: 'gemini-cli', app: 'Gemini CLI', provider: 'google' },
   'qwen-code': { connector: 'qwen-code', app: 'Qwen Code', provider: 'alibaba' },
   'copilot-cli': { connector: 'copilot-cli', app: 'Copilot CLI', provider: 'github' },
@@ -75,7 +76,8 @@ export function nesparovane(procesy, sessions) {
     const connector = AGENTI[p.runtime]?.connector;
     const zila = (s) => Math.max(s.lastAt || 0, s.hookAt || 0);
     const kandidat = volne
-      .filter((s) => s.connector === connector && zila(s) >= p.od - REZERVA_MS && stejnaSlozka(p.cwd, s.cwd))
+      .filter((s) => s.connector === connector && (p.runtime !== 'codex-app' || s.app === AGENTI['codex-app'].app)
+        && zila(s) >= p.od - REZERVA_MS && stejnaSlozka(p.cwd, s.cwd))
       .sort((a, b) => Number(!presne(p.cwd, a.cwd)) - Number(!presne(p.cwd, b.cwd)) || zila(a) - zila(b))[0];
     if (kandidat) volne.splice(volne.indexOf(kandidat), 1);
     else zbyva.push(p);
