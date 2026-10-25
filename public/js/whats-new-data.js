@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.81',
+    date: '2026-10-25',
+    title: 'Roboti s větší hloubkou',
+    items: ['Jemnější světlo, stín na boku a zapuštěný displej dávají robotům objem i v malých kartách.'],
+    en: {
+      title: 'Robots with more depth',
+      items: ['Softer light, side shading and a recessed display give robots volume even in small cards.'],
+    },
+  },
+  {
     version: '0.46.80',
     date: '2026-10-25',
     title: 'Přepis vzdáleného Claude agenta',
@@ -27,10 +37,10 @@ export const RELEASES = [
     version: '0.46.78',
     date: '2026-10-25',
     title: 'Správný chat vzdáleného agenta',
-    items: ['Claude už neotevře poslední cizí chat. Přesné otevření nabídne u ověřené webové relace; u samotné cache jasně označí chybějící přepis.', 'Roboti působí plastičtěji díky měkkému světlu, stínu na boku a jemně zapuštěnému displeji.'],
+    items: ['Claude už neotevře poslední cizí chat. Přesné otevření nabídne u ověřené webové relace; u samotné cache jasně označí chybějící přepis.'],
     en: {
       title: 'The right remote agent chat',
-      items: ['Claude no longer opens the last unrelated chat. Exact opening is offered for a verified web session; cache-only sessions clearly explain missing transcripts.', 'Robots have more depth through soft lighting, side shading and a subtly recessed display.'],
+      items: ['Claude no longer opens the last unrelated chat. Exact opening is offered for a verified web session; cache-only sessions clearly explain missing transcripts.'],
     },
   },
   {
