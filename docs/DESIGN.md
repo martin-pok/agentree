@@ -58,6 +58,11 @@ Výslovný požadavek vlastníka: nepoužívat jednostranné barevné okraje ani
 Pravidlo jednou větou: **všechno, na co se klepe a má jeden řádek, je kapsle.** Plochy mají
 zaoblení podle hloubky vnoření a nic nemá ostré rohy.
 
+**Loga služeb:** oficiální vektory v `public/logos/*.svg` jsou zdrojem pravdy. Skript
+`scripts/generate-logo-vectors.mjs` z nich připravuje modul rozhraní; při prvním zobrazení
+logo nečeká na samostatný HTTP požadavek. Adresa každého vektoru se vytvoří jednou pro celé okno
+a při živých změnách se už načítaný obrázek nevyměňuje.
+
 Výjimky, které jsou záměrné:
 
 - **Zaškrtávací políčko** je zaoblený čtverec (`--r-xs`). Kulaté políčko by se pletlo s přepínačem

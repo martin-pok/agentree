@@ -1,5 +1,9 @@
 # Changelog
 
+## Připravovaná oprava – 2026-10-25 · Loga služeb bez čekání
+
+- **Loga hned po otevření:** aplikace má oficiální SVG loga připravená v paměti a pro každou službu používá jednu krátkou adresu. Karty už nečekají na samostatné požadavky na obrázky; živé překreslení nepřeruší ani právě dekódované logo. Když WebView adresu odmítne, použije stejný vektor přímo z aplikace.
+
 ## 0.46.72 – 2026-10-24 · Cloudoví agenti poctivě, bubliny po větách
 
 - **Když agenty v cloudu nevidím, Přehled to řekne:** když čtení z účtu Claude selže (třeba vypršelé přihlášení Claude Code v Klíčence), Přehled už netvrdí „V pořádku, nikdo nepracuje“, ale „Agenty v cloudu teď nevidím“ s důvodem a tím, co s tím udělat. Bez Claude Code se nic nehlásí – aplikace funguje i bez něj.

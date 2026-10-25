@@ -34,18 +34,19 @@ export function fill(root, name, html, { sloucit: slouceni = false, presun = fal
     return true;
   }
   const fokus = klicFokusu(el);
-  // Živé přepisy mohou měnit text karty několikrát za sekundu. Již dekódované logo
-  // ponecháme jako stejný DOM uzel, aby mezi dvěma snímky nezmizelo při novém innerHTML.
+  // Živé přepisy mohou měnit text karty několikrát za sekundu. Zachováme i obrázky, které
+  // se ještě dekódují; jinak by se při každé změně načítání rušilo a logo mohlo zůstat prázdné.
   const obrazky = new Map();
   for (const img of el.querySelectorAll('img')) {
-    if (!img.complete || !img.naturalWidth) continue;
-    const key = img.outerHTML;
+    if (img.complete && !img.naturalWidth) continue;
+    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
     if (!obrazky.has(key)) obrazky.set(key, []);
     obrazky.get(key).push(img);
   }
   el.innerHTML = html;
   for (const img of el.querySelectorAll('img')) {
-    const old = obrazky.get(img.outerHTML)?.shift();
+    const key = img.dataset.logoKey ? `logo:${img.dataset.logoKey}:${img.className}` : img.outerHTML;
+    const old = obrazky.get(key)?.shift();
     if (old) img.replaceWith(old);
   }
   el._html = html;
@@ -196,13 +197,16 @@ function sloucitUzel(a, b) {
   }
   const detaily = a.tagName === 'DETAILS';
   const robot = a.classList.contains('robot');
+  const logoInline = a.tagName === 'IMG' && a.dataset.logoInline && a.dataset.logoKey === b.dataset.logoKey;
   for (const at of b.attributes) {
     if (detaily && at.name === 'open') continue;
+    if (logoInline && at.name === 'src') continue;
     const hodnota = robot && at.name === 'class' && a.classList.contains('is-zivy') ? `${at.value} is-zivy` : at.value;
     if (a.getAttributeNS(at.namespaceURI, at.localName) !== hodnota) a.setAttributeNS(at.namespaceURI, at.name, hodnota);
   }
   for (const at of [...a.attributes]) {
     if (detaily && at.name === 'open') continue;
+    if (logoInline && (at.name === 'src' || at.name === 'data-logo-inline')) continue;
     if (robot && BEHOVE_ROBOTA.has(at.name)) continue;
     if (!b.hasAttributeNS(at.namespaceURI, at.localName)) a.removeAttributeNS(at.namespaceURI, at.localName);
   }
