@@ -5,11 +5,12 @@ import { clip, DAY } from '../util.js';
 import { touch } from '../model.js';
 import { codexAppName, readableCodexTitle } from './codex.js';
 import { ui } from '../texty.js';
+import { JE_MAC } from '../platform.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function nativeCodexBinary(home) {
-  if (process.platform !== 'darwin') return null;
+  if (!JE_MAC) return null;
   for (const app of ['/Applications/Codex.app', path.join(home, 'Applications/Codex.app')]) {
     const bin = path.join(app, 'Contents/Resources/codex');
     try { fs.accessSync(bin, fs.constants.X_OK); return bin; } catch { /* try next */ }
