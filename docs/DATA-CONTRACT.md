@@ -207,6 +207,7 @@ interface SessionSummary {
   limit: { reached: boolean; text: string; label?: string; at: number; resetsAt: number | null } | null;  // text = surová hláška nástroje; label = rozpoznaný druh limitu (Claude Code), z něj a z resetsAt skládá deriveStatus důvod „{druh} vyčerpán · obnoví se {čas}“
   resume: string | null;      // příkaz pro Terminál
   url: string | null;         // webová konverzace
+  exactUrl?: string;          // vzdálený Claude Code: URL stejné relace ověřená párovaným rozšířením
   hooked: boolean;
   hookHealth: 'linked' | 'before' | 'silent' | 'unknown' | 'pending' | null; // jen aktivní konverzace Claude Code CLI se zapnutým propojením, jinak null; význam v docs/CONNECTORS.md (Zdraví propojení)
   observation?: { at: number; transcriptThrough: number; partial: true }; // remote Claude: query observation time, available cached transcript boundary; never complete usage

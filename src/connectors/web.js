@@ -166,6 +166,7 @@ export function applyKarta(s, v, now = Date.now()) {
   const k = s.karta;
   const changed = !k || k.counts?.user !== v.counts.user || k.counts?.assistant !== v.counts.assistant;
   s.karta = {
+    url: v.url,
     running: v.generating,
     at: now,
     since: v.generating ? (k?.running ? k.since : now) : k?.since || 0,
@@ -179,6 +180,7 @@ export function applyKarta(s, v, now = Date.now()) {
 // Webová konverzace vzniklá dřív, než relaci uložila cache Claude Desktopu, se převede na důkaz
 // u relace z cache (volá claude-desktop-code.js).
 export const kartaZWebu = (w) => ({
+  url: w.url,
   running: Boolean(w.running), at: w.runningAt || 0, since: w.turnStartedAt || 0, lastAt: w.lastAt || 0,
   counts: { ...(w.web?.counts || { user: 0, assistant: 0 }) }, staleMs: w.staleMs || KARTA_STALE_MS,
 });

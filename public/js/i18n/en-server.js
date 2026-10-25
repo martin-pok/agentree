@@ -3,7 +3,6 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
-  "Otevřít v Claude": "Open in Claude",
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",
   "Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.": "Could not read the Claude Code sign-in (not signed in, or Keychain access was not allowed) – cloud agent status cannot be read from the account.",
   "Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.": "The Claude Code sign-in has expired. Just start Claude Code and it will renew it.",
@@ -241,7 +240,7 @@ export default {
   "Pracuje podle stavu v Claude Desktopu": "Working, according to Claude Desktop",
   "Pracuje · podle otevřené karty v prohlížeči": "Working · according to the open browser tab",
   "Při posledním načtení pracoval · novější stav Claude Desktop neuložil": "Was working when last loaded · Claude Desktop has not saved a newer status",
-  "Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.": "The remote agent ended with an error. Open Claude for details.",
+  "Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.": "The remote agent ended with an error. Details are in the corresponding Claude chat.",
   "Vzdálený agent potřebuje rozhodnutí. Otevři Claude.": "The remote agent needs a decision. Open Claude.",
   "Cache neobsahuje seznam vzdálených agentů. Otevři v Claude kartu Code.": "The cache has no list of remote agents. Open the Code tab in Claude.",
   "Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.": "The Claude cache is being written or has an unknown format. The latest records are kept; loading will be retried.",
