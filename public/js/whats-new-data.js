@@ -4,13 +4,23 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.77',
+    date: '2026-10-25',
+    title: 'Nabídka projektu na celou šířku',
+    items: ['Nabídka projektu v zadání má šířku celé viditelné kapsle a šipka zůstává na jejím pravém kraji.'],
+    en: {
+      title: 'Full-width project picker',
+      items: ['The project menu in the task composer matches the full visible control, with its chevron at the right edge.'],
+    },
+  },
+  {
     version: '0.46.76',
     date: '2026-10-25',
     title: 'Projekty a hledání vyladěné',
     items: [
       'Výsledek hledání tě posune přímo k sekci a jemný fialový obrys ukáže přesné místo.',
       'Úchyty karet v detailu vypadají jako na Přehledu a fungují i z klávesnice.',
-      'Nabídka projektů už není úzká. Vlastní obrázky se načítají hned a karty mají jemnou fialovou záři.',
+      'Vlastní obrázky projektů se načítají přednostně a karty mají jemnou fialovou záři.',
       'Čekající roboti mají v malých kartách viditelné ruce i při odpočinku.',
     ],
     en: {
@@ -18,7 +28,7 @@ export const RELEASES = [
       items: [
         'Search takes you straight to the section and a subtle purple outline marks the exact spot.',
         'Card handles in detail views match the Overview and work with the keyboard.',
-        'The project menu is no longer narrow. Custom images load right away and cards gain a subtle purple glow.',
+        'Custom project images load eagerly and cards gain a subtle purple glow.',
         'Idle robots keep their arms visible even in compact cards.',
       ],
     },

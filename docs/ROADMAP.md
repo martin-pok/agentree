@@ -18,7 +18,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-- **v0.46.76 Preview:** dokončit přesné skoky z hledání, úchyty karet, nabídku projektů, rychlé načtení vlastních obrázků a čitelné paže čekajících robotů; po zeleném CI sestavit balíčky, provést nezávislý SHA-256 audit a zveřejnit Preview. Ověřit výsledek a aktualizaci na fyzickém Macu (UAT). `v0.46.75` s opravou log je již veřejné Preview; tagy 0.46.73 a 0.46.74 mají neúspěšný build a zůstávají neveřejné.
+- **v0.46.77 Preview:** opravit skutečnou šířku nabídky projektu v hlavním spouštěči a ověřit ji na vykreslené kapsli nad 240 px; po zeleném CI sestavit balíčky, provést nezávislý SHA-256 audit a zveřejnit Preview. Ověřit výsledek a aktualizaci na fyzickém Macu (UAT). `v0.46.76` je veřejné Preview, ale úzká nabídka v něm přetrvala.
 
 - Kritické: ověřit fyzicky živý stav Claude a Google AI Studio po aktualizaci. 0.46.65 zůstává nezveřejněný: selhalo CI.
 - Následně: sjednotit zavírání dialogů křížkem, Escape a kliknutím mimo; při neuložených změnách potvrdit jejich zahození.

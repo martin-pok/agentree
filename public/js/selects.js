@@ -66,9 +66,10 @@ function open(select, button) {
   // (popover), takže ji posouvání ani animace okna neoříznou.
   (button.closest('[aria-modal="true"]') || document.body).append(panel);
   panel.showPopover?.();
-  const rect = button.getBoundingClientRect();
-  // Nabídka nikdy nesmí být užší než spouštěč; na úzké obrazovce se vejde mezi okraje.
-  // Dlouhý název projektu smí panel rozšířit, ale nikdy ho neposune mimo okno.
+  // V launcheru kreslí viditelnou kapsli rodič .lselect (ikona + tlačítko).
+  // Měření samotného tlačítka dávalo 240 px i při kapsli široké téměř 500 px.
+  const rect = (button.closest('.lselect') || button).getBoundingClientRect();
+  // Nabídka má aspoň šířku celé viditelné kapsle a vejde se do okna.
   panel.style.width = 'max-content';
   const width = Math.min(Math.max(Math.ceil(rect.width), 240, Math.ceil(panel.getBoundingClientRect().width)), innerWidth - 24);
   panel.style.width = `${width}px`;

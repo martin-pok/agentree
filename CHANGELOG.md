@@ -1,10 +1,14 @@
 # Changelog
 
+## 0.46.77 – 2026-10-25 · Nabídka projektu přes celou kapsli
+
+- **Opravená šířka nabídky v hlavním spouštěči:** nabídka se otevírá pod celou viditelnou kapslí projektu, i když je široká přes 240 px. Šipka zůstává na pravém kraji; stejný princip funguje při zúžení okna. Předchozí oprava 0.46.76 měřila jen vnitřní tlačítko, proto na široké kapsli nestačila.
+
 ## 0.46.76 – 2026-10-25 · Přesné skoky a vyladěné projekty
 
 - **Hledání ukáže přesné místo:** vybranou sekci posune pod horní lištu i při živé změně obsahu a krátce ji označí jemným fialovým obrysem.
 - **Úchyty karet drží stejný styl:** v detailu agenta a projektu plavou nad kartou stejně jako widgety na Přehledu; lze je ovládat klávesnicí.
-- **Projekty bez úzké nabídky a přebliknutí:** nabídka má alespoň šířku tlačítka, vlastní bannery a loga se načítají hned a karty při najetí dostanou jemnou fialovou záři.
+- **Projekty bez společného výchozího gradientu:** vlastní bannery a loga se načítají přednostně a karty při najetí dostanou jemnou fialovou záři. Oprava šířky nabídky v hlavním spouštěči následuje v 0.46.77.
 - **Čekající robot má ruce vidět:** malé portréty nevolí pózy s knihou a mobilem, které paže zakrývaly; obrys paží je v kartách čitelnější.
 
 ## 0.46.75 – 2026-10-25 · Loga služeb bez čekání

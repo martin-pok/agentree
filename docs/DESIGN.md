@@ -88,8 +88,13 @@ jako tlačítko vedle nich.
 | základ | 40 px | 14 px | aplikace, rozšíření, pole a výběry |
 | počítač | 44 px | 14 px | na počítači (šířka nad 720 px) každá akce s vlastní plochou: tlačítka, segmentová volba (kapsle 44, tlačítka 40, rám 2), hledání, stav spojení, kulatá tlačítka lišty a pole hledání; prvky v jedné řadě jsou vždy stejně vysoké. platí i pro `.btn--sm` v kartách a seznamech, čipy, odkazy-kapsle, položky menu, pole a položky palety (rozhodnutí vlastníka podle Figmy, 18. 10. 2026); 32 px zůstává jen na telefonu |
 | hlavní řada | 44 px | 14 px | ovládání spouštěče na počítači (výběr agenta, režim, projekt, složka, „Spustit“): cíl pro klik podle WCAG 2.2 (2.5.8) s rezervou, všechny prvky v řadě stejně vysoké; segmentová volba je 44 px (kapsle 44, tlačítka 40, rám 2) |
+
 | velké | 48 px | 15 px | web (základ), hlavní akce v dialogu |
 | výzva | 56 px | 17 px | jen hlavní výzva na webu (`.btn--lg`) |
+
+Nabídka projektu ve spouštěči se zarovnává podle celé viditelné kapsle včetně ikony, ne podle
+vnitřního tlačítka. Tlačítko vyplňuje zbytek kapsle až k pravé šipce; nabídka není užší než kapsle
+a při úzkém okně se vejde mezi okraje obrazovky.
 
 Segmentová volba počítá výšku i s rámem: základní má 40 px (tlačítka 32 px a rám 4 px), v aplikaci
 na počítači 44 px (tlačítka 40 px a rám 2 px). Malá volba `.seg--sm` v aplikaci od 19. 10. 2026 drží
