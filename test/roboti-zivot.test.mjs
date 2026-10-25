@@ -105,7 +105,19 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
   assert.match(css, /@keyframes rz-vlna \{ 0% \{ opacity: \.9; scale: \.7; \} 100% \{ opacity: 0; scale: 3\.4; \} \}/);
   const js = await zdroj('public/js/mascot-motion.js');
   assert.match(js, /id="rb-objem"/);
+  assert.match(js, /id="rb-sklo"/);
   assert.match(js, /id="rb-zare"/);
+});
+
+test('všech devět postav má společné vrstvy objemu i zapuštěný displej', async () => {
+  const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
+  for (const type of ROBOT_TYPES) {
+    const svg = robot(type, { prace: false, hra: false, signal: false });
+    assert.equal((svg.match(/class="robot-objem"/g) || []).length, 2, `${type}: hlava a trup`);
+    for (const layer of ['robot-face-well', 'robot-face-glass', 'robot-face-glint']) {
+      assert.ok(svg.includes(`class="${layer}"`), `${type}: ${layer}`);
+    }
+  }
 });
 
 test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hlavou, oblečení s trupem', async () => {
@@ -117,7 +129,7 @@ test('oblečení drží i v otočce a při práci: brýle na čele, čepice s hl
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--hat, \.robot-wear--hood\) \{ animation: rz-otocka-hlava/);
   assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-wear--mid, \.robot-wear--body\) \{ animation: rz-otocka-trup/);
-  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face, \.wp, \.wpr\)/);
+  assert.match(css, /\.robot\[data-otocka='zada'\] :is\(\.robot-face, \.robot-face-well, \.robot-face-glass, \.robot-face-glint, \.robot-gaze, \.robot-cheek, \.robot-core, \.robot-wear--face, \.wp, \.wpr\)/);
 });
 
 test('flákání až po oddechu: 15 s po dokončení úlohy je robot v klidu, pak teprve hraje', async () => {

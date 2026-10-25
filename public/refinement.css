@@ -531,7 +531,7 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
    změna stavu: 200 ms ease-in z profilu, 200 ms ease-out do nového. Stav dál říká i štítek „Pracuje“. */
 .robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: none; }
 :is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-dilna, .robot-zada, .robot-prace) { display: inline; }
-:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp, .wpr) { display: none; }
+:is([data-status='working'], [data-state='working']:not([data-status])):not(.home-robot) .robot :is(.robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp, .wpr) { display: none; }
 /* Šatník zezadu: přední detaily (.wp) ani přilba s průhledem (.wpr) nejsou vidět; místo ní je plná
    přilba bez obrysu otvoru (.wpz). */
 .robot .wpz { display: none; }
@@ -845,11 +845,11 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-otocka-poskok { 0%, 100% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } 45% { translate: 0 -3px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } }
 /* Co je vidět: přední prvky do 90°, zadní od 90° (v profilu mají nulovou šířku, výměna je neviditelná).
    Paže z čelního pohledu se při otočce zády ztratí, pracovní paže s nástrojem se objeví až v zádech. */
-.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp, .wpr, .wpz) { display: inline !important; }
-.robot[data-otocka='zada'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr),
+.robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp, .wpr, .wpz) { display: inline !important; }
+.robot[data-otocka='zada'] :is(.robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr),
 .robot[data-otocka='predek'] :is(.robot-zada, .wpz) { opacity: 1; animation: rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] :is(.robot-zada, .wpz),
-.robot[data-otocka='predek'] :is(.robot-face, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr) { animation: rz-druha-pul 600ms both; }
+.robot[data-otocka='predek'] :is(.robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr) { animation: rz-druha-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-prvni-pul 600ms both; }
 .robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-druha-pul 600ms both; }
@@ -863,10 +863,14 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-dilna-sem { 0%, 50% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes rz-dilna-pryc { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
 
-/* Objem v klidu: jemné světlo zleva shora a stín vpravo dole přes hlavu i trup (přechod rb-objem
-   vkládá mascot-motion.js jednou do dokumentu; kde není, nekreslí se nic). */
+/* Keramický objem: vlevo nahoře měkké světlo, na pravém boku zřetelnější stín. Tmavý displej
+   sedí v mělké prohlubni a má vlastní nenápadný odlesk; vše drží proporce i v 58px portrétu. */
 .robot-objem { fill: url(#rb-objem) none; pointer-events: none; }
-html[data-theme='dark'] .robot-objem { opacity: .6; }
+html[data-theme='dark'] .robot-objem { opacity: .84; }
+.robot-face-well { fill: color-mix(in srgb, var(--persona) 38%, #080914); opacity: .72; pointer-events: none; }
+.robot-face-glass { fill: url(#rb-sklo) none; pointer-events: none; }
+.robot-face-glint { fill: none; stroke: #fff; stroke-opacity: .26; stroke-width: 1.1; stroke-linecap: round; pointer-events: none; }
+html[data-theme='dark'] .robot-face-glint { stroke-opacity: .19; }
 
 /* Čeká na zadání: flákání. Každý agent má svou zábavu (data-hra): vyhazuje míček, hraje si s jojem,
    nebo si hvízdá a pohupuje se. Funkce stejná jako u práce: jen u robota na obrazovce, jen

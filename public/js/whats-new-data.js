@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.81',
+    date: '2026-10-25',
+    title: 'Roboti s větší hloubkou',
+    items: ['Jemnější světlo, stín na boku a zapuštěný displej dávají robotům objem i v malých kartách.'],
+    en: {
+      title: 'Robots with more depth',
+      items: ['Softer light, side shading and a recessed display give robots volume even in small cards.'],
+    },
+  },
+  {
     version: '0.46.80',
     date: '2026-10-25',
     title: 'Přepis vzdáleného Claude agenta',

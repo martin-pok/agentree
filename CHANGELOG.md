@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.81 – 2026-10-25 · Jemnější hloubka robotů
+
+- **Roboti s větším objemem:** měkčí světlo na hlavě a těle, výraznější stín na boku a jemně zapuštěný displej jim dávají hloubku i v malých kartách. Postavy, barvy a gesta zůstávají stejné.
+
 ## 0.46.80 – 2026-10-25 · Přepis vzdáleného Claude agenta
 
 - **Zprávy z konkrétní relace:** Agenteeq pro načtení historie zachová původní ID `cse_…`, umí novější `code:session_…` klíče v místní cache a prochází starší stránky událostí, když poslední stránku vyplní nástroje. Při chybě či prázdné odpovědi zobrazí důvod a při dalším otevření zkusí přepis znovu.
