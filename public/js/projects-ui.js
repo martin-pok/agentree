@@ -179,7 +179,7 @@ export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeU
 // jen jako jemný pruh při spodní hraně, aby se karty dál rozlišily i bez obrázku.
 export const projectCover = (p, cls = '') => {
   const url = mediaUrl(p, 'cover');
-  return `<span class="pcover cover--${esc(p?.cover?.preset || 'aurora')}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false">` : ''}</span>`;
+  return `<span class="pcover ${url ? 'pcover--custom' : `cover--${esc(p?.cover?.preset || 'aurora')}`}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p?.color))}" aria-hidden="true">${url ? `<img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false">` : ''}</span>`;
 };
 
 // Logo klienta nahrazuje barevnou tečku. Logo s vlastním tvarem (neprůhledná ikona se zaoblenými
@@ -191,7 +191,7 @@ export const projectMark = (p, cls = '') => {
   const url = mediaUrl(p, 'logo');
   const druh = druhLoga.get(url);
   return url
-    ? `<span class="plogo${druh ? ` plogo--${druh}` : ''}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="lazy" decoding="async" draggable="false" data-plogo></span>`
+    ? `<span class="plogo${druh ? ` plogo--${druh}` : ''}${cls ? ` ${cls}` : ''}" style="--pc:${esc(barvaProjektu(p.color))}" aria-hidden="true"><img src="${esc(url)}" alt="" loading="eager" decoding="sync" draggable="false" data-plogo></span>`
     : pdot(p, cls);
 };
 
