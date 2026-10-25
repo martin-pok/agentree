@@ -2,7 +2,7 @@
 
 ## 0.46.79 – 2026-10-25 · Vlákna nativní aplikace Codex
 
-- **Codex.app i bez místního přepisu:** Agenteeq čte seznam vláken z Codex app-serveru a ukáže jejich skutečný název, složku a model. Když jiný proces app-serveru nevidí živý tah, stav zůstane poctivě „nalezeno“; dostupný místní přepis následně doplní přesný průběh a zprávy.
+- **Codex.app i bez místního přepisu:** Agenteeq čte seznam vláken z Codex app-serveru a ukáže jejich skutečný název, složku a model. Když tento seznam selže, ukáže aspoň otevřenou aplikaci jako nalezený proces. Když jiný proces app-serveru nevidí živý tah, stav zůstane poctivě „nalezeno“; dostupný místní přepis následně doplní přesný průběh a zprávy.
 
 ## 0.46.78 – 2026-10-25 · Správný chat vzdáleného agenta
 
