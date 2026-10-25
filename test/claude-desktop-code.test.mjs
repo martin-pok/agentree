@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import v8 from 'node:v8';
 import { maskedCrc, unsnappy, logRecords, tableEntries, readLevelSnapshot, readClaudeDesktopCache, decodeClone } from '../src/claude-desktop-cache.js';
-import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage, hlasenyStav } from '../src/connectors/claude-desktop-code.js';
+import { remoteSessions, applyRemoteSession, desktopUsage, applyDesktopUsage, hlasenyStav, cachedRemoteId } from '../src/connectors/claude-desktop-code.js';
 import { createSession, deriveStatus } from '../src/model.js';
 import { applyKarta } from '../src/connectors/web.js';
 import { appSupportDir } from '../src/platform.js';
@@ -102,6 +102,18 @@ test('Claude cache: supports compressed external IndexedDB blob; never scans orp
   assert.deepEqual(unsnappy(compressed.subarray(3)), d);
   assert.throws(() => unsnappy(Buffer.from([100, 1, 0])));
   assert.throws(() => decodeClone(Buffer.from([255, 22])));
+});
+
+test('Claude cache accepts conversation keys with both cse_ and session_ identifiers', async () => {
+  const home = await tempDir(), f = await fixture(home);
+  const conversation = { product: 'code', conversationUuid: `code:${id}`, tree: { kind: 'code_session', messages: [] } };
+  await fs.writeFile(path.join(f.dir, '000002.log'), record(batch(2, [
+    [key(`code:${id}`), Buffer.concat([vi(2), clone(conversation)])],
+  ])));
+  const records = await readClaudeDesktopCache(f.dir);
+  assert.equal(records[0].key, `code:${id}`);
+  assert.equal(cachedRemoteId(records[0].value.conversationUuid), id);
+  assert.equal(cachedRemoteId(`code:cse_${id.slice('session_'.length)}`), id);
 });
 
 function block(entries) {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.80 – 2026-10-25 · Přepis vzdáleného Claude agenta
+
+- **Zprávy z konkrétní relace:** Agenteeq pro načtení historie zachová původní ID `cse_…`, umí novější `code:session_…` klíče v místní cache a prochází starší stránky událostí, když poslední stránku vyplní nástroje. Při chybě či prázdné odpovědi zobrazí důvod a při dalším otevření zkusí přepis znovu.
+
 ## 0.46.79 – 2026-10-25 · Vlákna nativní aplikace Codex
 
 - **Codex.app i bez místního přepisu:** Agenteeq čte seznam vláken z Codex app-serveru a ukáže jejich skutečný název, složku a model. Když tento seznam selže, ukáže aspoň otevřenou aplikaci jako nalezený proces. Když jiný proces app-serveru nevidí živý tah, stav zůstane poctivě „nalezeno“; dostupný místní přepis následně doplní přesný průběh a zprávy.

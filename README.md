@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.79** — připravované Preview: nativní aplikace Codex dodává seznam vláken i bez místního přepisu; přesný běh se doplní po zápisu přepisu. Obsahuje opravy otevření Claude a šířky nabídky projektu z 0.46.78.
+> **0.46.80** — připravované Preview: vzdálený Claude chat načítá zprávy pod původním ID relace a podporuje novější formát místní cache. Navazuje na detekci Codexu v 0.46.79 a opravy nabídky projektu v 0.46.78.
 >
 > **0.46.76** — [veřejné Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.76): přesné skoky z hledání, sladěné úchyty karet, vlastní obrázky projektů a čitelné ruce robotů. Úzká nabídka projektu v hlavním spouštěči přetrvala; opravuje ji 0.46.77. Stable Latest zůstává `v0.46.58`.
 >

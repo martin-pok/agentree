@@ -220,7 +220,7 @@ export async function readClaudeDesktopCache(dir) {
   const selected = [];
   for (const { key, value } of entries) {
     const meta = indexedKey(key);
-    if (!meta || meta.index !== 1 || !(meta.name === 'react-query-cache' || /^code:cse_[A-Za-z0-9]+$/.test(meta.name))) continue;
+    if (!meta || meta.index !== 1 || !(meta.name === 'react-query-cache' || /^code:(?:cse|session)_[A-Za-z0-9]+$/.test(meta.name))) continue;
     const [, at] = varint(value);
     let raw = value.subarray(at);
     if (raw[0] === 255 && raw[1] === 17 && raw[2] === 1) {
