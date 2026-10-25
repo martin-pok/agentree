@@ -314,7 +314,14 @@ function callout(karta, prepinac = '') {
   if (prepinacEl) {
     vyvolejMisto(prepinacEl.closest('.set-row') || prepinacEl, prepinacEl);
     // Karta se může vzápětí překreslit (dočtený stav, živá data) – zvýraznění se pak obnoví.
-    v.zvyrazneni = { karta, prepinac, do: Date.now() + 2400 };
+    const zvyrazneni = { karta, prepinac, do: Date.now() + 2400 };
+    v.zvyrazneni = zvyrazneni;
+    setTimeout(() => {
+      if (v.zvyrazneni !== zvyrazneni) return;
+      v.zvyrazneni = null;
+      v.el?.querySelector(`[data-region="${karta}"] [data-setting="${CSS.escape(prepinac)}"]`)
+        ?.closest('.set-row')?.classList.remove('is-called-out');
+    }, 2400);
     return;
   }
   vyvolejMisto(card, card.querySelector('[data-action="extension-pair-code"], .ext-reinstall summary, [data-nastroj-akce], a.btn'));
