@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { appSupportDir, prihlaseniClaudeCode } from '../platform.js';
+import { appSupportDir, prihlaseniClaudeCodeSDuvodem } from '../platform.js';
 import { statSafe, toTs, clip, DAY, MIN } from '../util.js';
 import { createSession, touch } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
@@ -359,6 +359,8 @@ const kdy = (ts) => {
   const d = new Date(ts);
   return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
+const DUVOD_NENALEZENO = ui('Agenty v cloudu z účtu Claude nevidím: na tomto počítači chybí přihlášení Claude Code. Stačí se jednou přihlásit v Terminálu příkazem claude, pak se stav načte sám.');
+const DUVOD_PRISTUP = ui('Agenty v cloudu z účtu Claude nevidím: macOS nepovolil přístup ke Klíčence (položka „Claude Code-credentials“). Až se macOS zeptá, zvol Vždy povolit.');
 export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = {} }) {
   const root = path.join(appSupportDir(config.sourceHome), 'Claude', 'IndexedDB');
   const dir = path.join(root, 'https_claude.ai_0.indexeddb.leveldb');
@@ -372,8 +374,13 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   const api = { zapnuto: claudeCloud.enabled ?? config.cloudFetch, data: null, error: '', bezUctu: false, at: 0, pokusAt: 0, pauzaMs: 0, timer: null, bezi: null };
   // Přihlášení se čte jednou a drží v paměti do vypršení (Klíčenka se nečte každých 15 s). Po chybě
   // přihlášení se 10 minut znovu nečte – kdyby macOS na přístup ke Klíčence ptal, neptá se pořád.
-  const cist = claudeCloud.prihlaseni || (() => prihlaseniClaudeCode(config));
-  const tok = { p: null, chybaAt: 0 };
+  // Důvod, proč přihlášení přečíst nešlo (src/platform.js#prihlaseniClaudeCodeSDuvodem).
+  const tok = { p: null, chybaAt: 0, duvod: '' };
+  const cist = claudeCloud.prihlaseni || (async () => {
+    const r = await prihlaseniClaudeCodeSDuvodem(config);
+    tok.duvod = r.duvod;
+    return r.p;
+  });
   const prihlaseni = async () => {
     if (tok.p && !(tok.p.expiresAt && tok.p.expiresAt <= Date.now())) return tok.p;
     if (tok.chybaAt && Date.now() - tok.chybaAt < 10 * MIN) return null;
@@ -479,8 +486,10 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         await nactiPrepisy(data, opts);
         zpracuj();
       } catch (e) {
-        api.error = e.message;
         api.bezUctu = Boolean(e.bezUctu);
+        // Bez přihlášení se řekne přesně proč – „nenalezeno“ a „odepřený přístup“ se řeší jinak.
+        api.error = e.bezUctu && tok.duvod === 'pristup' ? DUVOD_PRISTUP
+          : e.bezUctu && tok.duvod === 'nenalezeno' ? DUVOD_NENALEZENO : e.message;
         api.pauzaMs = e.pauzaMs || 0;
         if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }
       }
@@ -548,8 +557,11 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       const ziveOk = api.zapnuto && !api.error && api.at > 0;
       const stav = ziveOk ? 'connected' : error ? 'error' : api.zapnuto && api.error && !exists ? 'error' : !exists && !ziveOk ? 'missing' : known.size ? 'connected' : 'idle';
       // Účet Claude je, ale stav cloudových agentů z něj teď nejde přečíst: Přehled to musí říct
-      // (nikdy „nikdo nepracuje“). Bez přihlášení Claude Code se nic nehlásí.
-      const cloudNevim = Boolean(api.zapnuto && api.error && !api.bezUctu);
+      // (nikdy „nikdo nepracuje“). Bez přihlášení Claude Code mlčí jen tehdy, když o žádném
+      // vzdáleném agentovi nevíme ani z cache Claude Desktopu. Kdo vzdálené agenty používá, musí
+      // poznat, že jejich stav je jen ze staré cache (vlastník 25. 10. 2026: běžící relace chyběla
+      // a Přehled o tom mlčel, protože se přihlášení z Klíčenky nepodařilo přečíst).
+      const cloudNevim = Boolean(api.zapnuto && api.error && (!api.bezUctu || known.size > 0 || zCache));
       return { state: cloudNevim ? 'error' : stav, cloudNevim, cloudChyba: cloudNevim ? api.error : '', detail: popis() || (known.size ? ui('Sleduji {0} vzdálených relací.', known.size) : ui('Zatím bez vzdálených agentů.')), count: known.size, seznamAt, zivyAt: api.at, watching: Boolean(watcher?.active), lastEventAt };
     },
   };

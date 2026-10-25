@@ -6,14 +6,16 @@ export const RELEASES = [
   {
     version: '0.46.83',
     date: '2026-10-25',
-    title: 'Dovednosti v rovné mřížce',
+    title: 'Vzdálení agenti a Dovednosti',
     items: [
+      'Když aplikace nemůže číst stav agentů v cloudu z účtu Claude, řekne proč a co s tím – a přihlášení hledá na více místech.',
       'Karty dovedností mají stejnou výšku a tlačítka na jedné lince.',
       'Název dovednosti při najetí zfialoví v barvě značky.',
     ],
     en: {
-      title: 'Skills in an even grid',
+      title: 'Remote agents and Skills',
       items: [
+        'When the app cannot read cloud agents from your Claude account, it says why and what to do – and it looks for the sign-in in more places.',
         'Skill cards share one height with their buttons on one line.',
         'A skill’s name turns brand violet on hover.',
       ],

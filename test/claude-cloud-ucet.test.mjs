@@ -96,7 +96,10 @@ test('přihlášení Claude Code: klíčenka jen když je povolená, se jménem 
   assert.deepEqual(volani[0], ['/usr/bin/security', ['find-generic-password', '-a', 'martin', '-w', '-s', 'Claude Code-credentials']]);
   await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'martin', claudeConfigDir: '/Users/martin/.claude-prace' }, { runImpl, jeMac: true });
   assert.equal(volani[1][1].at(-1), `Claude Code-credentials-${crypto.createHash('sha256').update('/Users/martin/.claude-prace').digest('hex').slice(0, 8)}`);
-  assert.equal(await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'a b' }, { runImpl, jeMac: true }), null);
+  // Nebezpečné jméno se do příkazu nikdy nedostane; hledá se pod systémovým jménem a bez účtu.
+  volani.length = 0;
+  await prihlaseniClaudeCode({ sourceHome: '/x', keychain: true, uzivatel: 'a b' }, { runImpl, jeMac: true, systemovyUzivatel: () => 'x;y' });
+  assert.deepEqual(volani.map(([, a]) => a), [['find-generic-password', '-w', '-s', 'Claude Code-credentials']]);
   const home = await tempDir('agenteeq-src-');
   assert.equal(await prihlaseniClaudeCode({ sourceHome: home }, { jeMac: false }), null);
   await fs.mkdir(path.join(home, '.claude'), { recursive: true });
@@ -267,4 +270,30 @@ test('účet Claude nejde přečíst: Přehled to řekne s důvodem, bez Claude 
   assert.equal(r.poznamka, vyprselo.message);
   assert.notEqual(stavAgentu({}).veta, 'Agenty v cloudu teď nevidím');
   assert.equal(stavAgentu({ cekaji: 1, cloudNevim: 'x' }).poznamka, 'x', 'důvod nezmizí, ani když má přednost jiná zpráva');
+});
+
+// Vlastník 25. 10. 2026: přihlášení se z Klíčenky nepodařilo přečíst a selhání se tvářilo jako
+// „žádný účet“. Hledá se i bez účtu a v souboru a důvod rozliší chybějící položku od odepření.
+test('přihlášení Claude Code: náhradní hledání a důvod, proč přečíst nešlo', async () => {
+  const { prihlaseniClaudeCodeSDuvodem } = await import('../src/platform.js');
+  const ok = { ok: true, stdout: JSON.stringify({ claudeAiOauth: { accessToken: 'z2', expiresAt: 5 } }) };
+  const home = await tempDir('agenteeq-src-');
+  // S účtem nenalezeno (44), bez účtu nalezeno.
+  let volani = [];
+  let r = await prihlaseniClaudeCodeSDuvodem({ sourceHome: home, keychain: true, uzivatel: '' }, { jeMac: true, systemovyUzivatel: () => 'martin', runImpl: async (cmd, args) => { volani.push(args); return args.includes('-a') ? { ok: false, code: 44 } : ok; } });
+  assert.equal(r.p.accessToken, 'z2');
+  assert.deepEqual(volani.map((a) => a.includes('-a') ? a[a.indexOf('-a') + 1] : '-'), ['martin', '-']);
+  // Odepřený přístup: dál se Klíčenka nezkouší a důvod je „pristup“.
+  volani = [];
+  r = await prihlaseniClaudeCodeSDuvodem({ sourceHome: home, keychain: true, uzivatel: 'martin' }, { jeMac: true, systemovyUzivatel: () => 'martin', runImpl: async (cmd, args) => { volani.push(args); return { ok: false, code: 51 }; } });
+  assert.deepEqual(r, { p: null, duvod: 'pristup' });
+  assert.equal(volani.length, 1);
+  // Nikde nic: „nenalezeno“.
+  r = await prihlaseniClaudeCodeSDuvodem({ sourceHome: home, keychain: true, uzivatel: 'martin' }, { jeMac: true, systemovyUzivatel: () => 'martin', runImpl: async () => ({ ok: false, code: 44 }) });
+  assert.deepEqual(r, { p: null, duvod: 'nenalezeno' });
+  // Klíčenka nic, soubor .credentials.json ano (Claude Code ho píše, když Klíčenku nemá).
+  await fs.mkdir(path.join(home, '.claude'), { recursive: true });
+  await fs.writeFile(path.join(home, '.claude', '.credentials.json'), JSON.stringify({ claudeAiOauth: { accessToken: 'f3', expiresAt: 7 } }));
+  r = await prihlaseniClaudeCodeSDuvodem({ sourceHome: home, keychain: true, uzivatel: 'martin' }, { jeMac: true, systemovyUzivatel: () => 'martin', runImpl: async () => ({ ok: false, code: 44 }) });
+  assert.equal(r.p.accessToken, 'f3');
 });

@@ -4,6 +4,8 @@
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",
+  "Agenty v cloudu z účtu Claude nevidím: na tomto počítači chybí přihlášení Claude Code. Stačí se jednou přihlásit v Terminálu příkazem claude, pak se stav načte sám.": "I can't see cloud agents from your Claude account: this computer has no Claude Code sign-in. Sign in once in Terminal with the claude command and the status will load on its own.",
+  "Agenty v cloudu z účtu Claude nevidím: macOS nepovolil přístup ke Klíčence (položka „Claude Code-credentials“). Až se macOS zeptá, zvol Vždy povolit.": "I can't see cloud agents from your Claude account: macOS did not allow Keychain access (item “Claude Code-credentials”). When macOS asks, choose Always Allow.",
   "Přihlášení Claude Code se nepodařilo přečíst (není přihlášený, nebo přístup ke Klíčence nebyl povolen) – stav cloudových agentů z účtu nejde zjistit.": "Could not read the Claude Code sign-in (not signed in, or Keychain access was not allowed) – cloud agent status cannot be read from the account.",
   "Přihlášení Claude Code vypršelo. Stačí spustit Claude Code, sám si ho obnoví.": "The Claude Code sign-in has expired. Just start Claude Code and it will renew it.",
   "Účet Claude neodpověděl (síť). Zkusí se to znovu.": "The Claude account did not respond (network). Will retry.",

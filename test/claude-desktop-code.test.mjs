@@ -331,3 +331,22 @@ test('Claude Code na webu: zavřená karta přestane platit a stav se vrátí k 
   applyKarta(s2, { generating: true, counts: { user: 1, assistant: 0 } }, now);
   assert.equal(deriveStatus(s2, now + 1000).status, 'needs_input');
 });
+
+// Vlastník 25. 10. 2026: běžící vzdálená relace na Přehledu chyběla a aplikace mlčela, protože se
+// přihlášení Claude Code z Klíčenky nepodařilo přečíst a stav byl jen ze staré cache Claude Desktopu.
+// Kdo vzdálené agenty používá (cache je zná), musí vidět, že živý stav z účtu chybí. Bez cache i bez
+// přihlášení aplikace mlčí – Claude není podmínkou (test/samostatnost.test.mjs).
+test('Claude remote: bez přihlášení k účtu, ale se známými vzdálenými agenty Přehled nemlčí', async (t) => {
+  const home = await tempDir(); await fixture(home);
+  const server = await startTestServer({ AGENTEEQ_SOURCE_HOME: home }, { claudeCloud: { enabled: true, intervalMs: 60e3, prihlaseni: async () => null } });
+  t.after(() => server.close());
+  const c = await waitFor(async () => (await api(server.url).get('/api/state')).body.connectors.find((x) => x.id === 'claude-desktop-code' && x.cloudNevim));
+  assert.ok(c, 'chybějící živý stav z účtu se hlásí');
+  assert.match(c.cloudChyba, /Přihlášení Claude Code se nepodařilo přečíst/);
+  const prazdny = await tempDir();
+  const bez = await startTestServer({ AGENTEEQ_SOURCE_HOME: prazdny }, { claudeCloud: { enabled: true, intervalMs: 60e3, prihlaseni: async () => null } });
+  t.after(() => bez.close());
+  await new Promise((r) => setTimeout(r, 300));
+  const c2 = (await api(bez.url).get('/api/state')).body.connectors.find((x) => x.id === 'claude-desktop-code');
+  assert.equal(c2.cloudNevim, false, 'bez Claude Desktopu i bez přihlášení aplikace nic nehlásí');
+});

@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.46.83 – 2026-10-25 · Dovednosti v rovné mřížce
+## 0.46.83 – 2026-10-25 · Vzdálení agenti bez mlčení, Dovednosti v rovné mřížce
 
+- **Vzdálený agent nezmizí beze slova:** běžící relace Claude Code v cloudu chyběla na Přehledu, protože se aplikaci nepodařilo přečíst přihlášení Claude Code z Klíčenky a stav brala jen ze staré cache Claude Desktopu – a nic neřekla. Teď přihlášení hledá i pod systémovým jménem, bez účtu a v souboru Claude Code. Když ho přesto nenajde, Přehled napíše proč (chybí přihlášení / macOS nepovolil Klíčenku) a co s tím, kdykoli o vzdálených agentech ví.
 - **Stejně vysoké karty:** karty na Dovednostech už neposkakují podle délky popisu. Název má nejvýš dva řádky, popis tři (celý text je ve čtečce), a štítky, cesta i tlačítka sedí ve všech kartách řádku na jedné lince.
 - **Fialová místo žluté:** název dovednosti při najetí (na název i na kartu) zfialoví v barvě značky. Žlutá ze starého designu se na najetí nevrací; pravidlo je zapsané v docs/DESIGN.md a AGENTS.md a hlídá ho test.
 
