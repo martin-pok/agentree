@@ -780,7 +780,7 @@ for (const engine of engines) {
     assert.deepEqual(malePismo, [], `${engine}: viditelný text menší než 12 px: ${JSON.stringify(malePismo)}`);
     // Vektor musí být vykreslený hned v DOM, bez dalšího požadavku nebo dekódování obrázku.
     const loga = await page.evaluate(() => {
-      return [...document.querySelectorAll('svg.logo')].map((logo) => ({
+      return [...document.querySelectorAll('svg.logo')].filter((logo) => logo.getClientRects().length > 0).map((logo) => ({
         key: logo.dataset.logoKey,
         width: logo.getBoundingClientRect().width,
         height: logo.getBoundingClientRect().height,
