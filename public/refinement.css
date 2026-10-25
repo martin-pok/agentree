@@ -1032,3 +1032,19 @@ html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill:
 img[data-media] { opacity: 0; transition: opacity var(--motion-response) var(--ease); }
 img[data-media].is-nacteno { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { img[data-media] { transition: none; } }
+
+/* Dovednosti: karty v mřížce mají všechny stejnou výšku (dřív „poskakovaly“ podle délky popisu).
+   Název má nejvýš dva řádky, popis tři (celý text je ve čtečce, celý název v title). Horní část
+   má rezervovanou výšku pro oba, takže je karta stejná i s krátkým popisem; štítky, cesta a akce
+   sedí dole na stejné lince ve všech kartách řádku. Barva názvu při najetí je fialová značky. */
+.skills { align-items: stretch; }
+.skills > .skill { grid-template-rows: 1fr auto auto auto; align-content: stretch; contain-intrinsic-size: auto 268px; }
+.skills > .skill .skill-main { align-content: start; min-height: 110px; }
+.skills > .skill .skill-name { line-height: 22px; }
+.skills > .skill .skill-open,
+.skills > .skill .skill-main p { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.skills > .skill .skill-open { -webkit-line-clamp: 2; line-clamp: 2; }
+.skills > .skill .skill-main p { -webkit-line-clamp: 3; line-clamp: 3; line-height: 20px; }
+@media (hover: hover) {
+  .skills > .skill:hover .skill-open { color: var(--brand); }
+}

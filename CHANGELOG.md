@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.83 – 2026-10-25 · Dovednosti v rovné mřížce
+
+- **Stejně vysoké karty:** karty na Dovednostech už neposkakují podle délky popisu. Název má nejvýš dva řádky, popis tři (celý text je ve čtečce), a štítky, cesta i tlačítka sedí ve všech kartách řádku na jedné lince.
+- **Fialová místo žluté:** název dovednosti při najetí (na název i na kartu) zfialoví v barvě značky. Žlutá ze starého designu se na najetí nevrací; pravidlo je zapsané v docs/DESIGN.md a AGENTS.md a hlídá ho test.
+
 ## 0.46.82 – 2026-10-25 · Nabídky drží na místě, agenti v pevném pořadí
 
 - **Nabídka projektu se už neodepne:** když se v nabídce výběru (projekt ve spouštěči na Přehledu) dorolovalo na konec, kolečko posunulo stránku pod ní a nabídka zůstala viset uprostřed obrazovky. Teď kolečko patří jen nabídce, a když se stránka posune jinak (dojezd, klávesnice), nabídka jede s kapslí; když kapsle z okna zmizí, zavře se. Totéž platí pro našeptávač štítků.

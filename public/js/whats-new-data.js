@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.83',
+    date: '2026-10-25',
+    title: 'Dovednosti v rovné mřížce',
+    items: [
+      'Karty dovedností mají stejnou výšku a tlačítka na jedné lince.',
+      'Název dovednosti při najetí zfialoví v barvě značky.',
+    ],
+    en: {
+      title: 'Skills in an even grid',
+      items: [
+        'Skill cards share one height with their buttons on one line.',
+        'A skill’s name turns brand violet on hover.',
+      ],
+    },
+  },
+  {
     version: '0.46.82',
     date: '2026-10-25',
     title: 'Klidné nabídky a pořadí agentů',

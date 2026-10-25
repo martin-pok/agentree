@@ -68,7 +68,7 @@ function souhrnHtml(items) {
 function cardHtml(s) {
   return `<article class="skill" data-skill="${esc(s.id)}">
     <div class="skill-main">
-      <h3 class="skill-name"><button type="button" class="skill-open" data-open-skill="${esc(s.id)}">${esc(s.name)}</button></h3>
+      <h3 class="skill-name"><button type="button" class="skill-open" data-open-skill="${esc(s.id)}" title="${esc(s.name)}">${esc(s.name)}</button></h3>
       ${s.description ? `<p>${esc(s.description)}</p>` : `<p class="muted">${tr('Bez popisu v hlavičce souboru.')}</p>`}
     </div>
     <div class="skill-meta">

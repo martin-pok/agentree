@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.82** — připravované Preview: nabídka projektu se při rolování neodepne, „Právě teď“ drží pevné pořadí (pracující → rozhodnutí → hotoví → neaktivní), obrázky projektů bez probliknutí a jména robotů na kartách agentů. Navazuje na 0.46.81 (hloubka robotů) a veřejné Preview 0.46.80.
+> **0.46.83** — připravované Preview: karty na Dovednostech mají stejnou výšku a název při najetí zfialoví. Navazuje na Preview 0.46.82 (nabídky drží na místě, pevné pořadí „Právě teď“, obrázky projektů bez probliknutí, jména robotů).
 >
 > **0.46.76** — [veřejné Preview](https://github.com/martin-pok/agentree/releases/tag/v0.46.76): přesné skoky z hledání, sladěné úchyty karet, vlastní obrázky projektů a čitelné ruce robotů. Úzká nabídka projektu v hlavním spouštěči přetrvala; opravuje ji 0.46.77. Stable Latest zůstává `v0.46.58`.
 >
