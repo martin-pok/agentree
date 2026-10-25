@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.78',
+    date: '2026-10-25',
+    title: 'Správný chat vzdáleného agenta',
+    items: ['Claude už neotevře poslední cizí chat. Přesné otevření nabídne u ověřené webové relace; u samotné cache jasně označí chybějící přepis.'],
+    en: {
+      title: 'The right remote agent chat',
+      items: ['Claude no longer opens the last unrelated chat. Exact opening is offered for a verified web session; cache-only sessions clearly explain missing transcripts.'],
+    },
+  },
+  {
     version: '0.46.77',
     date: '2026-10-25',
     title: 'Nabídka projektu na celou šířku',

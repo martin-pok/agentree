@@ -202,7 +202,7 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.runningAt = hlasenoAt;
   s.activity = '';
   if (hlaseno === 'failed') {
-    s.failure = { at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti otevři v Claude.') };
+    s.failure = { at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') };
   } else if (hlaseno === 'needs_input') {
     const otazka = metadata.post_turn_summary?.needs_action;
     s.pending = { kind: 'question', at: updated, observedAt: hlasenoAt, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };

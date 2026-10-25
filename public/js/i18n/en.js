@@ -810,6 +810,7 @@ export default {
     "Nové zprávy": "New messages",
     "Načítám přepis…": "Loading transcript…",
     "Přepis je zatím prázdný.": "The transcript is empty so far.",
+    "Přepis této relace není k dispozici. Cache Claude obsahuje jen její stav a metadata; otevři ji v Claude podle názvu nahoře.": "This session's transcript is unavailable. The Claude cache only contains its status and metadata; find it in Claude using the title above.",
     "Agent nenalezen": "Agent not found",
     "webová aplikace": "web app",
     "na {0}": "on {0}",

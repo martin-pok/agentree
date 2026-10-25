@@ -331,6 +331,9 @@ export function summarize(s, now, windowMs, hooky = null) {
     limit: s.limit,
     resume: s.resume,
     url: s.url,
+    // Jen adresa skutečně pozorované karty. URL odvozená z ID v cache není důkaz,
+    // že na webu existuje stejný chat.
+    ...(s.connector === 'claude-desktop-code' && s.karta?.url ? { exactUrl: s.karta.url } : {}),
     hooked: Boolean(s.hookAt),
     hookHealth: hookHealth(s, status, hooky, now),
     proces: s.proces ? { pid: s.proces.pid, od: s.proces.od } : null,

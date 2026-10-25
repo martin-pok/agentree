@@ -84,10 +84,15 @@ test('plán bez zadané schopnosti počítá s plnou podporou — o systému roz
   assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app', 'terminal', 'folder']);
 });
 
-test('vzdálený Code z Claude Desktopu: otevře se aplikace Claude, kde relace běží – web jen bez aplikace', () => {
+test('vzdálený Code z cache nesmí otevřít poslední cizí chat v Claude ani neověřenou URL', () => {
   const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache', url: 'https://claude.ai/code/session_01FixtureRemoteAgent123' };
-  const vApp = planOpen(s, 'app', { claude: true });
-  assert.deepEqual(vApp.args, ['-a', 'Claude']);
-  assert.ok(!vApp.args.some((a) => /^https:/.test(a)), 'nikdy web, když běží v aplikaci (claude.ai: session couldn\'t be found)');
-  assert.deepEqual(planOpen(s, 'app', {}).args, ['https://claude.ai/code/session_01FixtureRemoteAgent123']);
+  assert.equal(planOpen(s, 'app', { claude: true }), null);
+  assert.equal(planOpen(s, 'app', {}), null);
+  assert.deepEqual(openTargets(s, ALL_APPS), []);
+  const exactUrl = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
+  assert.deepEqual(planOpen({ ...s, exactUrl }, 'app', ALL_APPS).args, [exactUrl]);
+  assert.deepEqual(planOpen({ ...s, exactUrl }, 'app', ALL_APPS, BEZ_APLIKACI).args, [exactUrl]);
+  for (const wrong of ['https://claude.ai/code/session_01DifferentAgent123', 'https://evil.example/code/session_01FixtureRemoteAgent123', 'https://claude.ai/code/session_01FixtureRemoteAgent123?foo=bar']) {
+    assert.equal(planOpen({ ...s, exactUrl: wrong }, 'app', ALL_APPS), null);
+  }
 });

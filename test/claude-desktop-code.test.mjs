@@ -38,8 +38,9 @@ test('Claude remote: recovers missing morning agent and reported failure without
   assert.equal(s.repo, 'example/project'); assert.equal(s.cwd, ''); assert.equal(s.resume, null);
   assert.equal(s.tokens.input, 0); assert.equal(s.tokens.output, 0); assert.equal(s.observation.partial, true);
   assert.equal(s.spans.length, 1, 'one reported update, no invented whole-day working interval');
-  // Relace žije v aplikaci Claude: otevře se ona, ne web (claude.ai by ji nemusel najít).
-  assert.match(s.open.find((x) => x.id === 'app')?.label || '', /^Otevřít (v Claude|konverzaci)$/);
+  // Samotná cache nemá adresu ověřené karty a aktivace Claude by ukázala poslední cizí chat.
+  assert.equal(s.exactUrl, undefined);
+  assert.equal(s.open.some((x) => x.id === 'app'), false);
   assert.equal(JSON.stringify(s).includes('private fixture'), false);
 });
 
@@ -275,6 +276,8 @@ test('Claude Code na webu: otevřená karta a cache Claude Desktopu jsou jeden a
   assert.deepEqual(stejnyAgent(state).map((s) => s.id), [`claude-desktop-code:${id}`], 'jeden agent, ne dva');
   const s = stejnyAgent(state)[0];
   assert.equal(s.status, 'working');
+  assert.equal(s.exactUrl, `https://claude.ai/code/${id}`);
+  assert.deepEqual(s.open?.map((x) => x.id), ['app']);
   assert.match(s.reason, /karty/);
   assert.equal(s.title, 'Ranní práce na repozitáři', 'název a repozitář zůstávají z cache');
 
@@ -295,6 +298,7 @@ test('Claude Code na webu: karta otevřená dřív, než relaci uloží cache, s
   await waitFor(() => server.app.store.summary(`claude-desktop-code:${id}`), 1900);
   const state = (await api(server.url).get('/api/state')).body;
   assert.deepEqual(stejnyAgent(state).map((s) => s.id), [`claude-desktop-code:${id}`]);
+  assert.equal(stejnyAgent(state)[0].exactUrl, `https://claude.ai/code/${id}`);
   assert.equal(stejnyAgent(state)[0].status, 'working', 'živý stav z karty přežije převod');
 });
 

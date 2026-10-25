@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.78 – 2026-10-25 · Správný chat vzdáleného agenta
+
+- **Claude otevře správnou konverzaci:** u vzdáleného agenta se přesný odkaz nabízí jen po zachycení téhož chatu párovaným rozšířením. Samotná cache už nespouští Claude do posledního otevřeného, často cizího chatu. Pokud přepis chybí, detail řekne, že cache dodala jen stav a metadata, a pomůže chat dohledat podle názvu.
+
 ## 0.46.77 – 2026-10-25 · Nabídka projektu přes celou kapsli
 
 - **Opravená šířka nabídky v hlavním spouštěči:** nabídka se otevírá pod celou viditelnou kapslí projektu, i když je široká přes 240 px. Šipka zůstává na pravém kraji; stejný princip funguje při zúžení okna. Předchozí oprava 0.46.76 měřila jen vnitřní tlačítko, proto na široké kapsli nestačila.

@@ -18,6 +18,8 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
+- **v0.46.78 Preview:** opravit incident, kdy „Otevřít v Claude“ u vzdálené relace jen aktivovalo poslední vybraný, cizí chat. Přesné otevření nabídnout výhradně po potvrzení URL stejné relace párovaným rozšířením; u samotné cache přiznat chybějící přepis a dát název k ručnímu vyhledání. Vydat nový neměnný tag až po CI a auditu; Draft 0.46.77 s touto chybou nezveřejňovat. Na skutečném Macu potom ověřit správnou relaci a dostupnost přepisu.
+
 - **v0.46.77 Preview:** opravit skutečnou šířku nabídky projektu v hlavním spouštěči a ověřit ji na vykreslené kapsli nad 240 px; po zeleném CI sestavit balíčky, provést nezávislý SHA-256 audit a zveřejnit Preview. Ověřit výsledek a aktualizaci na fyzickém Macu (UAT). `v0.46.76` je veřejné Preview, ale úzká nabídka v něm přetrvala.
 
 - Kritické: ověřit fyzicky živý stav Claude a Google AI Studio po aktualizaci. 0.46.65 zůstává nezveřejněný: selhalo CI.

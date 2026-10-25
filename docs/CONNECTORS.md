@@ -292,7 +292,11 @@ ve složce, o které Agenteeq neví. Proto:
   `failed` přebíráme ze serverové kategorie, přesný důvod (např. limit) bez uložené chyby netvrdíme.
   Zdroj repozitáře se čte v REST tvaru `{ type: 'git_repository', url }` i ve výčtovém
   `{ git_repository: { url } }`; záznam bez pole `type` se nezahodí. Stav zdroje v Nastavení uvádí,
-  kdy Claude Desktop seznam relací naposledy uložil. Konverzace se otevírá na `https://claude.ai/code/session_…`.
+  kdy Claude Desktop seznam relací naposledy uložil. Od 0.46.78 se akce „Otevřít konverzaci“ nabízí
+  jen pro relaci, jejíž přesnou URL vidělo párované rozšíření v prohlížeči. Samotná cache vytváří
+  adresu `https://claude.ai/code/session_…` odhadem; v prohlížeči může skončit „session couldn't be found“.
+  Pouhé `open -a Claude` aktivuje poslední vybraný chat, a proto se u této relace nenabízí.
+  Pokud z účtu ani cache nepřijde přepis, detail to výslovně označí a ukáže název pro ruční výběr v Claude.
 - **Vytížení plánu z uložené stránky Usage 🧪 (neověřeno na skutečných datech):** stránka Usage
   na claude.ai načítá `five_hour` a `seven_day` s `utilization` (procenta) a `resets_at` (ISO čas
   obnovy od serveru) – stejná dvojice, jakou hlásí stavový řádek Claude Code. Pokud ji Desktop uloží
