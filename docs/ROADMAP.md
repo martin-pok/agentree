@@ -3,6 +3,7 @@
 ## Ověřený aktuální stav — 27. 10. 2026
 
 - `main` je `b09ced2`, veřejné Preview je [v0.46.84](https://github.com/martin-pok/agentree/releases/tag/v0.46.84); Stable Latest je stále v0.46.58. Starší datované přehledy níže jsou historie.
+- Lokální audit stejného kódu 27. 10.: `npm test` 1527 úspěšných, 13 přeskočených, 0 selhání; `npm run check` 445 souborů; `npm run smoke` úspěšná instalace a start 0.46.84. Nenahrazuje vizuální a živé UAT na Macu.
 - Požadavky z 25. 10. jsou v publikovaném kódu: inline loga služeb (.75), kotvy a gripy (.76), šířka nabídky a bezpečné otevření Claude (.78), nativní Codex (.79), obnova přepisů Claude (.80), hloubka robotů (.81, zahrnuta v .82), přednačtení projektových médií a fialový hover (.82), přihlášení vzdáleného Claude a diagnostika (.84). Nezaměňovat za fyzické ověření na zařízení.
 - P0: ověřit na Macu aktuální Preview: konkrétní Codex běh, správný Claude chat a jeho přepis, loga během SSE a projektové obrázky při prvním otevření. Tento cloudový workspace nemá přístup k nativním aplikacím uživatele.
 - P0 distribuce: upload .84 do Chrome Web Store selhal; [běh](https://github.com/martin-pok/agentree/actions/runs/40248557972). Ověřit přístup vydavatele a skutečnou verzi obchodu.
