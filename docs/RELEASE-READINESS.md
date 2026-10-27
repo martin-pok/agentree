@@ -1,13 +1,13 @@
 # Release readiness — Agenteeq
 
-**Aktualizováno 25. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.80 je poslední veřejné Preview, v0.46.58 zůstává Stable Latest. Instalace 0.46.80 na Macu vlastníka zatím není doložena; rozsah dřívějšího UAT je popsán níže.
+**Aktualizováno 27. 10. 2026.** Tento dokument odděluje zveřejnění od fyzického testování. v0.46.84 je poslední veřejné Preview, v0.46.58 zůstává Stable Latest. Instalace 0.46.84 na Macu vlastníka zatím není doložena; rozsah dřívějšího UAT je popsán níže.
 
 **P0 legal gate před komerčním/placeným vydáním:** [Pracovní právní sada](legal/README.md) je výslovně označená jako DRAFT, nikoli účinné Terms, legal opinion nebo certifikace. Je třeba dokončit identitu správce, GDPR Art. 13 v CZ/EN, neveřejný kanál žádostí namísto veřejných GitHub Issues, síťový/retention audit, vlastnictví IP a spotřebitelská pravidla; koordinační [issue #232](https://github.com/martin-pok/agentree/issues/232) a podrobný [GDPR audit #224](https://github.com/martin-pok/agentree/issues/224). **Neumisťovat na veřejný web nepodepsané šablony ani badge certifikací.**
 
 ## Zdroj pravdy
 
-- **v0.46.84: rozpracovaný Preview kandidát.** Vzdálení agenti bez mlčení, čisté názvy, výběr složky, Dovednosti. Obsahuje i 0.46.83.
-- **v0.46.83: Preview kandidát.** Jména u všech agentů na Přehledu, logo plynule nahoru. Obsahuje i 0.46.82.
+- **v0.46.84: veřejné Preview.** [Publikace](https://github.com/martin-pok/agentree/actions/runs/40248518291) uspěla 26. 10. 2026; vydání má osm příloh. [CI main](https://github.com/martin-pok/agentree/actions/runs/40246741059) nad `b09ced2` prošlo. [Chrome Web Store upload](https://github.com/martin-pok/agentree/actions/runs/40248557972) selhal: zveřejněný ZIP není důkazem aktualizace obchodu. Vzdálení agenti bez mlčení, čisté názvy, výběr složky, Dovednosti. Obsahuje i 0.46.83.
+- **v0.46.83: veřejné Preview.** Jména u všech agentů na Přehledu, logo plynule nahoru. Obsahuje i 0.46.82.
 - **v0.46.82: Preview.** Nabídky drží na místě, pevné pořadí „Právě teď“, obrázky projektů bez probliknutí, jména robotů. Obsahuje i 0.46.81.
 - **v0.46.81: Draft, překonaný 0.46.82.** Jemnější světlo, boční stín a zapuštěný displej robotů. Vydání vyžaduje zelené CI přesného `main`, osm příloh a nezávislý audit; vzhled na fyzickém Macu čeká na ověření.
 - **v0.46.80: veřejné Preview.** [Vydání](https://github.com/martin-pok/agentree/releases/tag/v0.46.80) opravuje načítání vzdáleného Claude přepisu pod původním ID relace, novější místní cache a stránkování událostí. CI přesného `main`, osm příloh a nezávislý audit prošly; živá relace „Brno app aktuální stav“ na Macu čeká na fyzické ověření.
