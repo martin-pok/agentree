@@ -1,5 +1,9 @@
 # Rozšíření v Chrome Web Store
 
+**Aktuální pokus 27. 10. 2026:** [upload v0.46.84](https://github.com/martin-pok/agentree/actions/runs/40497984720) ověřil ZIP vydání, ale selhal před přístupem ke Googlu: chybí alespoň jedna hodnota `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`. Doplnění přístupu v GitHub Settings → Secrets and variables → Actions musí provést správce; tento token nemá oprávnění secrets spravovat. Balíček se do obchodu nenahrál.
+
+**Nové podklady:** screenshoty 1280×800 a promo 440×280 / 1400×560 v obou jazycích byly znovu vyrenderované ze současného rozhraní. Sada obsahuje 12 souborů včetně ověřeného ZIPu, ikony, šesti screenshotů a čtyř promo obrázků. Listing obrázky je nutné nahrát přes Developer Dashboard; automatický workflow nahrává pouze ZIP rozšíření. Fyzické Mac/Chrome UAT a veřejná verze obchodu tím nejsou potvrzené.
+
 ## Aktuální distribuce — 23. 10. 2026
 
 **Veřejný Chrome Web Store nabízí 0.46.55.** Ověřeno na [veřejné kartě rozšíření](https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch) 23. 10. 2026; jde o samostatný stav vůči [desktopovému Preview v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60). Veřejný release obsahuje `agenteeq-extension-0.46.60.zip` (267 110 B, SHA-256 `0e6f312c4b909a5fa90219e70d6b050df31697d087ea001ef066f6e4ff0f2ab5`), jehož příloha prošla auditem vydání. Dostupnost ZIPu na GitHubu **neznamená zveřejnění v obchodě**.
