@@ -1,5 +1,9 @@
 # Changelog
 
+## Nevydáno
+
+- **Podklady Chrome Web Store:** obnovené screenshoty skutečného okna rozšíření a promo v češtině i angličtině. Upload sada nyní přibaluje také obě anglické promo dlaždice, které dříve chyběly. Snímek o soukromí nyní správně uvádí předávání názvů a viditelných zpráv pouze místní aplikaci; původní text tuto funkci chybně popíral. Samotná příprava sady neznamená publikaci v obchodě.
+
 ## 0.46.84 – 2026-10-25 · Vzdálení agenti bez mlčení, čisté názvy, Dovednosti v rovné mřížce
 
 - **Vzdálený agent nezmizí beze slova:** běžící relace Claude Code v cloudu chyběla na Přehledu, protože se aplikaci nepodařilo přečíst přihlášení Claude Code z Klíčenky a stav brala jen ze staré cache Claude Desktopu – a nic neřekla. Teď přihlášení hledá i pod systémovým jménem, bez účtu a v souboru Claude Code. Když ho přesto nenajde, Přehled napíše proč (chybí přihlášení / macOS nepovolil Klíčenku) a co s tím, kdykoli o vzdálených agentech ví.

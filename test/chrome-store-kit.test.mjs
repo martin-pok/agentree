@@ -13,6 +13,8 @@ const IMAGE_FILES = [
   ['icon-128.png', 128, 128],
   ['promo-small-440x280.png', 440, 280],
   ['marquee-1400x560.png', 1400, 560],
+  ['en/promo-small-440x280.png', 440, 280],
+  ['en/marquee-1400x560.png', 1400, 560],
   ...['', 'en/'].flatMap((locale) => [1, 2, 3].map((n) => [
     locale + 'snimek-' + n + '-1280x800.png', 1280, 800,
   ])),
@@ -57,14 +59,14 @@ async function useFixture(fn) {
   finally { await fs.rm(root, { recursive: true, force: true }); }
 }
 
-test('Chrome Store kit matches the packed manifest, version and exactly 10 SHA256-verified files', async () => {
+test('Chrome Store kit matches the packed manifest, version and exactly 12 SHA256-verified files', async () => {
   await useFixture(async (root, manifest) => {
     const out = path.join(root, 'kit');
     const result = await prepareChromeStoreKit({ root, output: out, sourceCommit: SHA });
     assert.equal(result.version, VERSION);
     assert.equal(result.state, 'REVIEW_REQUIRED_NOT_PUBLISHED');
     assert.equal(result.sourceCommit, SHA);
-    assert.equal(result.files.length, 10);
+    assert.equal(result.files.length, 12);
     assert.equal(result.uploadFile, 'package/agenteeq-extension-' + VERSION + '.zip');
     const zipData = await fs.readFile(path.join(out, result.uploadFile));
     assert.deepEqual(packagedManifest(zipData), manifest);
