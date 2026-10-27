@@ -62,6 +62,8 @@ const IMAGES = [
   ['icon-128.png', 128, 128],
   ['promo-small-440x280.png', 440, 280],
   ['marquee-1400x560.png', 1400, 560],
+  ['en/promo-small-440x280.png', 440, 280],
+  ['en/marquee-1400x560.png', 1400, 560],
   ...['', 'en/'].flatMap((locale) => [1, 2, 3].map((n) => [
     locale + 'snimek-' + n + '-1280x800.png', 1280, 800,
   ])),

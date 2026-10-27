@@ -122,3 +122,11 @@ test('Chrome Web Store: aplikace zná adresu obchodu a otevírá ho jen z tohoto
     await srv.close();
   }
 });
+
+
+test('Store privacy screenshot describes titles and visible messages sent to the local app', async () => {
+  const html = await cti('branding/chrome-web-store/source/snimek-3.html');
+  assert.match(html, /titles and visible messages only to your paired local/);
+  assert.match(html, /viditelné zprávy/);
+  assert.doesNotMatch(html, /Never sends message text or chat titles|Text zpráv ani názvy konverzací rozšíření neposílá/);
+});
