@@ -342,3 +342,6 @@ nejsou hromadně zařaditelné. Dialog potvrzení zopakuje počet vybraných kon
 tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukončí.
 
 **Hlavní tlačítko při najetí a fokusu:** každé `.btn--primary` (v aplikaci i v okně rozšíření) při hoveru a klávesovém fokusu zfialoví – `--brand-solid` (#6260d8) a bílý text, v obou vzhledech, kontrast 4,9 : 1. Výjimky: zakázané a nebezpečné (`.btn--danger`). Počty v menu (`.nav-badge`, Upozornění a Agenti) jsou fialové kolečko s bílým číslem. Rozhodnutí vlastníka 24. 10. 2026; pravidlo platí pro každé nové tlačítko, nikdo ho nenastavuje ručně.
+
+
+**Projektová média po výpadku:** přednačítání log a obálek má nejvýš tři automatické pokusy (první ihned, další po 1 a 2 s). Při trvalé chybě skončí; nový snímek stavu může načítání obnovit. Úspěšný pokus znovu načte také rozbitý `<img>` v otevřené kartě. Odstranění či výměna média ruší čekající opakování a uvolňuje cache. Test `test/project-media-retry.test.mjs`; cílený Chromium scénář s odpovědí 503 na 1440 a 375 px.

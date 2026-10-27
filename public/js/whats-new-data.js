@@ -4,6 +4,16 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.85',
+    date: '2026-10-27',
+    title: 'Obrázky projektů po výpadku',
+    items: ['Když načtení loga nebo obálky selže, aplikace ho omezeně zopakuje a obnoví i obrázek už otevřené karty.', 'Stav přihlášení Claude se doručí v pořadí změn; opožděný starší odečet nepřepíše nový.'],
+    en: {
+      title: 'Project images recover after an outage',
+      items: ['When a logo or cover fails to load, the app retries a limited number of times and restores the image on an already open card.', 'Claude sign-in updates arrive in order; a delayed old reading cannot replace a newer one.'],
+    },
+  },
+  {
     version: '0.46.84',
     date: '2026-10-25',
     title: 'Vzdálení agenti, čisté názvy, Dovednosti',

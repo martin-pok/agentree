@@ -225,13 +225,13 @@ test('změna přihlášení Claude se bez reloadu propíše do živého stavu', 
     t.app.store.on('integrations', (value) => events.push(value.claudeAuth.loggedIn));
     loggedIn = true;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.includes(true));
+    assert.equal(events.at(-1), true, 'refresh resolves after the updated auth event');
     loggedIn = false;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.at(-1) === false);
+    assert.equal(events.at(-1), false);
     loggedIn = null;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.at(-1) === null);
+    assert.equal(events.at(-1), null);
     assert.deepEqual(events.filter((value, index) => index === 0 || value !== events[index - 1]), [true, false, null]);
   } finally {
     await t.close();
@@ -421,3 +421,43 @@ test('ceník zjištěných plánů: úroveň a cena podle oficiálního ceníku,
   }
   assert.equal(c('claude', 'free').cena.mesicne, 0);
 });
+
+for (const finalAuth of [true, false]) {
+  test(`delayed Claude auth publication preserves the newest state (${finalAuth})`, { timeout: 5000 }, async (t) => {
+    let loggedIn = false;
+    const server = await startTestServer({}, {
+      napojeniRun: async () => ({ ok: true, stdout: JSON.stringify({ loggedIn }), stderr: '' }),
+    });
+    const originalRead = fs.readFile;
+    let unblock, entered;
+    const gate = new Promise((resolve) => { unblock = resolve; });
+    const blocked = new Promise((resolve) => { entered = resolve; });
+    let delay = true;
+    const read = t.mock.method(fs, 'readFile', async (...args) => {
+      if (delay && args[0] === path.join(server.sourceHome, '.claude', 'settings.json')) {
+        delay = false;
+        entered();
+        await gate;
+      }
+      return originalRead(...args);
+    });
+    let older;
+    try {
+      const events = [];
+      server.app.store.on('integrations', (value) => events.push(value.claudeAuth.loggedIn));
+      loggedIn = true;
+      older = server.app.refreshSubscriptions();
+      await blocked;
+      loggedIn = finalAuth;
+      await server.app.refreshSubscriptions();
+      unblock();
+      await older;
+      assert.deepEqual(events, [finalAuth], 'same-state refresh must preserve delivery; changed state must discard the stale publication');
+    } finally {
+      unblock();
+      await older;
+      read.mock.restore();
+      await server.close();
+    }
+  });
+}
