@@ -225,13 +225,13 @@ test('změna přihlášení Claude se bez reloadu propíše do živého stavu', 
     t.app.store.on('integrations', (value) => events.push(value.claudeAuth.loggedIn));
     loggedIn = true;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.includes(true));
+    assert.equal(events.at(-1), true, 'refresh resolves after the updated auth event');
     loggedIn = false;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.at(-1) === false);
+    assert.equal(events.at(-1), false);
     loggedIn = null;
     await t.app.refreshSubscriptions();
-    await waitFor(() => events.at(-1) === null);
+    assert.equal(events.at(-1), null);
     assert.deepEqual(events.filter((value, index) => index === 0 || value !== events[index - 1]), [true, false, null]);
   } finally {
     await t.close();

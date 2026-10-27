@@ -452,6 +452,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const codexAccountWatchers = new Map();
   let subscriptionJson = '';
   let subscriptionRefreshGeneration = 0;
+  let subscriptionAuthGeneration = 0;
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
   async function refreshSubscriptions() {
     const generation = ++subscriptionRefreshGeneration;
@@ -494,6 +495,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const loggedIn = claudeProfiles.some((profile) => profile.loggedIn === true) ? true
       : claudeProfiles.some((profile) => profile.loggedIn === false) ? false : null;
     const authChanged = claudeAuth.loggedIn !== loggedIn;
+    const authGeneration = authChanged ? ++subscriptionAuthGeneration : subscriptionAuthGeneration;
     claudeAuth = { loggedIn, checkedAt: Date.now() };
     const before = JSON.stringify([claudeAccounts, codexAccounts]);
     // Účet bez stabilního accountUuid nelze bezpečně odlišit od jiné licence.
@@ -527,7 +529,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       subscriptionJson = JSON.stringify(subscriptions());
       spendChanged();
     }
-    if (authChanged && store.ready) integrations().then((v) => store.emit('integrations', v)).catch(() => {});
+    if (authChanged && store.ready) {
+      // Obnovení končí až doručením stavu. Jinak po startu dobíhá staré „odhlášen“
+      // do nové změny přihlášení; pomalejší integrations() nesmí přepsat novější odečet.
+      try {
+        const value = await integrations();
+        if (authGeneration === subscriptionAuthGeneration) store.emit('integrations', value);
+      } catch {}
+    }
   }
   function subscriptions(now = Date.now()) {
     // Historický přepis Codexu nemá identitu účtu. Po přepnutí licence by mohl patřit jinému

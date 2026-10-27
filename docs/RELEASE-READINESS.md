@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.85: neveřejný kandidát.** Obnova projektových obrázků po dočasném výpadku, omezené opakování a úklid starých položek cache. Regresní testy a cílené Chromium ověření 1440/375 px prošly; fyzický Mac a WebKit ověření zůstávají otevřené. Nové CZ/EN podklady Chrome Store jsou zahrnuté, publikaci obchodu nadále blokují přístupy vydavatele.
+- **v0.46.85: neveřejný kandidát.** Doručení stavu přihlášení Claude před dokončením obnovy a ochrana před opožděným starším stavem (odhalené macOS CI). Obnova projektových obrázků po dočasném výpadku, omezené opakování a úklid starých položek cache. Regresní testy a cílené Chromium ověření 1440/375 px prošly; fyzický Mac a WebKit ověření zůstávají otevřené. Nové CZ/EN podklady Chrome Store jsou zahrnuté, publikaci obchodu nadále blokují přístupy vydavatele.
 
 - **v0.46.84: veřejné Preview.** [Publikace](https://github.com/martin-pok/agentree/actions/runs/40248518291) uspěla 26. 10. 2026; vydání má osm příloh. [CI main](https://github.com/martin-pok/agentree/actions/runs/40246741059) nad `b09ced2` prošlo. [Chrome Web Store upload](https://github.com/martin-pok/agentree/actions/runs/40248557972) selhal: zveřejněný ZIP není důkazem aktualizace obchodu. Vzdálení agenti bez mlčení, čisté názvy, výběr složky, Dovednosti. Obsahuje i 0.46.83.
 - **v0.46.83: veřejné Preview.** Jména u všech agentů na Přehledu, logo plynule nahoru. Obsahuje i 0.46.82.
