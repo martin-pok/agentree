@@ -1,6 +1,8 @@
 # Changelog
 
-## Nevydáno
+## 0.46.85 – 2026-10-27 · Obnova projektových obrázků po výpadku
+
+- **Loga a obálky po výpadku:** neúspěšný obrázek už nezůstane navždy v přednačítací cache. Aplikace ho zkusí znovu nejvýš třikrát, opraví i již vykreslený rozbitý obrázek a po dalším načtení stavu může zkusit nový pokus. Odstraněné obrázky ruší čekající načítání.
 
 - **Podklady Chrome Web Store:** obnovené screenshoty skutečného okna rozšíření a promo v češtině i angličtině. Upload sada nyní přibaluje také obě anglické promo dlaždice, které dříve chyběly. Snímek o soukromí nyní správně uvádí předávání názvů a viditelných zpráv pouze místní aplikaci; původní text tuto funkci chybně popíral. Samotná příprava sady neznamená publikaci v obchodě.
 

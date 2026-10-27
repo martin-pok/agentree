@@ -200,25 +200,46 @@ const nacteno = (url) => {
   const img = predem.get(url);
   return Boolean(img?.complete && img.naturalWidth > 0);
 };
-export function prednactiMedia(items = []) {
-  for (const p of items) {
-    for (const kind of ['cover', 'logo']) {
-      const url = mediaUrl(p, kind);
-      if (!url || predem.has(url)) continue;
-      const img = new Image();
-      img.decoding = 'async';
-      img.src = url;
-      predem.set(url, img);
-      const hotovo = () => {
-        if (img.naturalWidth > 0 && kind === 'logo') zaradLogo(img);
-        for (const el of document.querySelectorAll(`img[data-media][src="${CSS.escape(url)}"]`)) {
-          if (img.naturalWidth > 0) el.classList.add('is-nacteno');
-          if (kind === 'logo' && el.complete && el.naturalWidth > 0) zaradLogo(el);
-        }
-      };
-      (img.decode ? img.decode() : Promise.reject()).then(hotovo, () => img.addEventListener('load', hotovo, { once: true }));
+function nactiMedia(url, kind, pokus = 0) {
+  const img = new Image();
+  img.decoding = 'async';
+  predem.set(url, img);
+  const hotovo = () => {
+    if (predem.get(url) !== img || !img.naturalWidth) return;
+    if (kind === 'logo') zaradLogo(img);
+    for (const el of document.querySelectorAll(`img[data-media][src="${CSS.escape(url)}"]`)) {
+      // Po výpadku může být původní uzel rozbitý. Samotná změna opacity ho nenačte.
+      if (el.complete && !el.naturalWidth) el.src = url;
+      else if (el.naturalWidth > 0) el.classList.add('is-nacteno');
+      if (kind === 'logo' && el.complete && el.naturalWidth > 0) zaradLogo(el);
     }
+  };
+  // Posluchače patří před src: i odpověď z cache může přijít okamžitě.
+  img.addEventListener('load', () => {
+    if (img.decode) img.decode().then(hotovo, hotovo);
+    else hotovo();
+  }, { once: true });
+  img.addEventListener('error', () => {
+    if (predem.get(url) !== img) return;
+    if (pokus >= 2) { predem.delete(url); return; }
+    img._mediaRetry = setTimeout(() => {
+      if (predem.get(url) === img) nactiMedia(url, kind, pokus + 1);
+    }, 1000 * (pokus + 1));
+  }, { once: true });
+  img.src = url;
+}
+
+export function prednactiMedia(items = []) {
+  const media = items.flatMap((p) => ['cover', 'logo'].map((kind) => [mediaUrl(p, kind), kind]))
+    .filter(([url]) => url);
+  const aktualni = new Set(media.map(([url]) => url));
+  for (const [url, img] of predem) {
+    if (aktualni.has(url)) continue;
+    clearTimeout(img._mediaRetry);
+    predem.delete(url);
+    druhLoga.delete(url);
   }
+  for (const [url, kind] of media) if (!predem.has(url)) nactiMedia(url, kind);
 }
 
 export const mediaUrl = (p, kind) => (p?.[kind]?.file ? `/api/projects/${encodeURIComponent(p.id)}/media/${kind}?f=${encodeURIComponent(p[kind].file)}` : '');

@@ -2,6 +2,8 @@
 
 ## Ověřený aktuální stav — 27. 10. 2026
 
+**Aktivní kandidát v0.46.85:** oprava opakovaného načítání projektových obrázků po výpadku. Dvě regresní zkoušky a cílený Chromium scénář 1440/375 px potvrzují obnovu obrázku po HTTP 503. Před vydáním vyžaduje zelené PR, main CI, build a audit příloh.
+
 - Vydaný zdroj aplikace je `b09ced2`, veřejné Preview je [v0.46.84](https://github.com/martin-pok/agentree/releases/tag/v0.46.84); Stable Latest je stále v0.46.58. Starší datované přehledy níže jsou historie.
 - Lokální audit stejného kódu 27. 10.: `npm test` 1527 úspěšných, 13 přeskočených, 0 selhání; `npm run check` 445 souborů; `npm run smoke` úspěšná instalace a start 0.46.84. Nenahrazuje vizuální a živé UAT na Macu.
 - Požadavky z 25. 10. jsou v publikovaném kódu: inline loga služeb (.75), kotvy a gripy (.76), šířka nabídky a bezpečné otevření Claude (.78), nativní Codex (.79), obnova přepisů Claude (.80), hloubka robotů (.81, zahrnuta v .82), přednačtení projektových médií a fialový hover (.82), přihlášení vzdáleného Claude a diagnostika (.84). Nezaměňovat za fyzické ověření na zařízení.
@@ -28,6 +30,8 @@
 **Historický zablokovaný Draft v0.46.11 (nikoli nejnovější kandidát).** Anotovaný tag `v0.46.11` na `1e72a0057637ad249e70388444346a80526e7083`; přesné [CI 8/8](https://github.com/martin-pok/agentree/actions/runs/38430918556); úspěšný [release build + nezávislý byte audit](https://github.com/martin-pok/agentree/actions/runs/38432569881): soukromý Draft ID `411899483` s 8 přílohami, SHA-256 skutečně stažených bajtů **8/8 vůči GitHub API a 7/7 vůči manifestu** (report ID `11831787377`). [PR #216](https://github.com/martin-pok/agentree/pull/216) opravila ruční publishing REST workflow a byla sloučena v `af3c1fa`, [8/8 main CI](https://github.com/martin-pok/agentree/actions/runs/38440054592). **Dílčí fyzické Mac UAT 13. 10. proběhlo:** instalace z ověřeného DMG, start/restart, stávající účet, upozornění a projekty obstály; přesný rozsah a Gatekeeper `rejected` jsou v [RELEASE-READINESS.md](RELEASE-READINESS.md). Čistý Finder/Gatekeeper onboarding, nové Google OAuth, Chrome/Windows a úplné UAT jsou stále otevřené. PWA/Apple PNG v tomto neměnném Draftu mají staré proporce a fialovou anténu; [oprava #231](https://github.com/martin-pok/agentree/pull/231) vyžaduje nový binární kandidát. `v0.46.11` nezveřejňovat. Veřejné Preview je od 14. 10. `v0.46.12` (viz níže; předtím `v0.46.6`), Stable Latest `v0.46.0`, veřejný Chrome Store `0.31.4`.
 
 ## Právě teď — oprava release blockerů a fyzické UAT
+
+**Kandidát 0.46.85 Preview:** obnova log a obálek po výpadku; připravit vydání až po zeleném PR a main CI, auditu příloh a zachovat otevřené fyzické UAT. Veřejné Preview je 0.46.84.
 
 - **v0.46.84 Preview:** vzdálení agenti bez mlčení (přihlášení Claude Code z více míst, důvod na Přehledu), čisté názvy (`src/util.js#cistyNazev`), výběr složky na jeden řádek, Dovednosti ve stejně vysokých kartách a fialové najetí (docs/DESIGN.md).
 - **v0.46.83 Preview:** jméno u každého agenta v „Právě teď“ (jako stránka Agenti), klik na logo na Přehledu plynule nahoru.
