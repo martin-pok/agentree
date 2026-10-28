@@ -345,3 +345,6 @@ tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukon�
 
 
 **Projektová média po výpadku:** přednačítání log a obálek má nejvýš tři automatické pokusy (první ihned, další po 1 a 2 s). Při trvalé chybě skončí; nový snímek stavu může načítání obnovit. Úspěšný pokus znovu načte také rozbitý `<img>` v otevřené kartě. Odstranění či výměna média ruší čekající opakování a uvolňuje cache. Test `test/project-media-retry.test.mjs`; cílený Chromium scénář s odpovědí 503 na 1440 a 375 px.
+
+
+**Neověřený stav vzdáleného agenta (0.46.86):** historická chyba bez čerstvého potvrzení má neutrální informační panel (`banner--unverified`, tokeny `--paper`/`--line`/`--mute`) a čas posledního hlášení. Červená znamená aktuálně potvrzené selhání; zelená se pro neznámý stav nepoužívá.

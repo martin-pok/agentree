@@ -401,7 +401,7 @@ function update() {
       : s.status === 'failed'
         ? `<div class="banner banner--action" role="alert">${ICON.alert}<div><strong>${s.observation ? tr('Vzdálený agent selhal') : tr('Spuštění selhalo')}</strong><p>${esc(s.failure?.text || s.reason)}</p>${s.observation ? `<p class="small muted">${s.observation?.source === 'claude-account' ? tr('Stav hlásí účet Claude.') : tr('Stav hlásí Claude Desktop.')}</p>${s.open?.length ? `<div class="banner-actions">${openButtons(s, { small: true })}</div>` : ''}` : `<div class="banner-actions"><button class="btn btn--sm btn--primary" type="button" data-nav-action="launch">${ICON.spark}${tr('Spustit agenta')}</button></div>`}</div></div>`
         : s.observation && s.stale && s.status === 'observed'
-          ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Stav neověřen')}</strong><p>${esc(s.reason)}</p></div></div>`
+          ? `<div class="banner banner--unverified" role="status">${ICON.info}<div><strong>${tr('Stav neověřen')}</strong><p>${esc(s.reason)}</p></div></div>`
           : s.proces
           ? `<div class="banner banner--info" role="status">${ICON.info}<div><strong>${tr('Detekovaný proces bez přepisu')}</strong><p>${sTipem(esc(tr('Běží od {0}, zatím bez přepisu.', timeHM(s.proces.od))), tr('PID {0}. Z procesu nelze ověřit, zda jde o hlavního nebo pomocného agenta. Jakmile se objeví přepis, Agenteeq ho nahradí ověřenou konverzací.', s.proces.pid))}</p></div></div>`
           : '');

@@ -2,6 +2,8 @@
 
 ## Ověřený aktuální stav — 28. 10. 2026
 
+**Blokace distribuce 0.46.86:** CI testy na Linuxu, Macu a Windows prošly, ale ukládání důkazů/buildů odmítá GitHub kvůli storage quota (65 GB starších artefaktů). Připravený konkrétní úklid čeká na potvrzení vlastníka; bez úspěšného kompletního CI se kandidát neslučuje ani nevydává.
+
 **Aktivní kandidát v0.46.86:** pravdivost stavu vzdáleného Claude: historické selhání → nepotvrzený stav, limit není selhání, novější tah/odpověď překoná starou chybu, starší síťový požadavek nepřepíše novější pozorování. Ověřování relací mimo první stránku se střídá a izoluje chyby jednotlivých dotazů. Regresní scénáře zahrnují HTTP/SSE a falešná upozornění. Fyzické ověření konkrétního běhu na Macu zůstává otevřené.
 
 Repozitář je podle GitHub API soukromý. Vydané Preview v0.46.85 existuje s osmi přílohami, ale veřejný updater a anonymní odkazy do soukromého repozitáře nejsou distribuční cesta. Distribuci binárek je třeba vyřešit samostatně při zachování soukromých zdrojů.

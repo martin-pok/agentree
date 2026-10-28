@@ -26,6 +26,7 @@ jobs:
     permissions:
       contents: read
       security-events: write # jen nahrání výsledků do code scanning
+      actions: read # soukromý repozitář: čtení metadat vlastního CI běhu
     steps:
       - name: Checkout repository without persisting token
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

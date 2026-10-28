@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.86: neveřejný kandidát.** Oprava nepravdivého selhání z cache, omezení starších výsledků, rozlišení limitu a obnovování detailu relace. Vyžaduje CI, build a audit. Soukromý repozitář vyžaduje přihlášení ke stažení; anonymní updater tím není opraven.
+- **v0.46.86: neveřejný kandidát.** Lokální plná sada 1547 úspěšných, 13 přeskočených, 0 selhání; syntax 447 souborů; instalační smoke prošel. Cílené Chromium QA 1440/375 px ověřilo historickou chybu, skutečné selhání a limit. CI blokuje kvóta artefaktů (inventář 65 GB); úklid 4369 dočasných výstupů starších než 24 h má připravený seznam a čeká na souhlas vlastníka. CodeQL po přepnutí repozitáře na private potřebuje `actions: read` pro vlastní metadata běhu; oprava oprávnění je v kandidátovi. Oprava nepravdivého selhání z cache, omezení starších výsledků, rozlišení limitu a obnovování detailu relace. Vyžaduje CI, build a audit. Soukromý repozitář vyžaduje přihlášení ke stažení; anonymní updater tím není opraven.
 
 - **v0.46.85: vydané Preview.** [Publikace](https://github.com/martin-pok/agentree/actions/runs/40541237577) a audit osmi příloh uspěly; aktuálně vyžaduje přístup do soukromého repozitáře. Doručení stavu přihlášení Claude před dokončením obnovy a ochrana před opožděným starším stavem (odhalené macOS CI). Obnova projektových obrázků po dočasném výpadku, omezené opakování a úklid starých položek cache. Regresní testy a cílené Chromium ověření 1440/375 px prošly; fyzický Mac a WebKit ověření zůstávají otevřené. Nové CZ/EN podklady Chrome Store jsou zahrnuté, publikaci obchodu nadále blokují přístupy vydavatele.
 
