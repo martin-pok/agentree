@@ -1,5 +1,13 @@
 # Roadmapa Agenteeq
 
+## Nasazení webu — 28. 10. 2026
+
+Produkce `https://agentree-fawn.vercel.app/` je z commitu `b2fe0d6`, deployment `dpl_23qiPrEamNErC73VDQP6XBMj8WCf` (READY). Obsahuje aktuální sdílené roboty a materiály, osm obnovených snímků produktu, systémové ikony, obrys přepínače 50 % a ukotvení robota u nadpisu. Ověřeno přímo na produkci CZ/EN × Mac/Windows × 375/1440 px. CI qa:site, qa:extension, qa:contrast a testy všech tří OS prošly; ukládání jejich artefaktů stále odmítá kvóta GitHubu. CodeQL konfigurace soukromého repozitáře je nevyřešená, vlastník výslovně požádal neblokovat jí web.
+
+**PR #385 ještě není sloučený. Před dalším nasazením main přenést tuto opravu, aby ji novější main deployment nepřepsal starým webem. PR s touto evidencí navazuje na #385.**
+
+Schválené čištění CI: smazáno všech přesně 4 369 povolených artefaktů (62,51 GiB). Nezávislý seznam potvrzuje 0 z těchto ID na GitHubu; zbývá 357 zachovaných artefaktů (1,39 GiB). Releases zůstaly zachované. Automatický přepočet kvóty provozuje GitHub.
+
 ## Chrome Web Store — nepublikováno, 28. 10. 2026
 
 Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload 0.46.85 skončil před Googlem kvůli prázdným třem CWS přístupům. Připravený ověřený ZIP a CZ/EN sada nestačí: balíček vyžaduje oprávněného vydavatele/OAuth; listingové obrázky a popis vyžadují Developer Dashboard. Podrobný stav a důkazy v `docs/CHROME-WEB-STORE.md`, úkol #172 zůstává otevřený.

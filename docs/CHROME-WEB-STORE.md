@@ -3,7 +3,7 @@
 ## Ověřený stav — 28. 10. 2026
 
 - Veřejná karta stále nabízí **0.46.55** (ověřeno z veřejného HTML 28. 10.); screenshoty a popis jsou staré. Nové podklady připravené v PR #382 nebyly publikovány.
-- Poslední pokus o **0.46.85** [40541331183](https://github.com/martin-pok/agentree/actions/runs/40541331183) stáhl a ověřil ZIP, ale krok pro Google dostal prázdné `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` i `CWS_REFRESH_TOKEN`. Google balíček nepřijal; nejde o čekání na review.
+- Nový pokus 28. 10. o **0.46.85** [40668049868](https://github.com/martin-pok/agentree/actions/runs/40668049868) stáhl a ověřil ZIP, ale krok pro Google dostal prázdné `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` i `CWS_REFRESH_TOKEN`. Google balíček nepřijal; nejde o čekání na review. Stejně skončil i předchozí pokus 40541331183 z 27. 10.
 - Automatický workflow mění **jen ZIP a odesílá jej ke kontrole**. Obrázky a popis musí vydavatel změnit v existující položce Developer Dashboardu, pro CZ i EN. Úspěch uploadu ZIPu neznamená aktualizovaný listing.
 - Tento pracovní přístup nedokáže číst ani spravovat GitHub Secrets (HTTP 403) a nemá připojený přihlášený prohlížeč vydavatele Googlu. Hodnoty se nikdy neposílají do chatu.
 - Připravená sada pro vydavatele obsahuje přesný ZIP zveřejněné 0.46.85, ikonu, šest snímků, čtyři promo podklady, oba opravené popisy a postup. SHA-256 balíčku `740f04b4c241ff9bb10e676fa8843230579dd73d622da45dc3b8a839bed82d41` souhlasí se zveřejněným `SHA256SUMS.txt`; zdroj `3aebf3d`. Příprava sady neznamená publikaci ani fyzické UAT.
