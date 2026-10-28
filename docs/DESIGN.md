@@ -345,3 +345,7 @@ tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukon�
 
 
 **Projektová média po výpadku:** přednačítání log a obálek má nejvýš tři automatické pokusy (první ihned, další po 1 a 2 s). Při trvalé chybě skončí; nový snímek stavu může načítání obnovit. Úspěšný pokus znovu načte také rozbitý `<img>` v otevřené kartě. Odstranění či výměna média ruší čekající opakování a uvolňuje cache. Test `test/project-media-retry.test.mjs`; cílený Chromium scénář s odpovědí 503 na 1440 a 375 px.
+
+## Web — roboti a systémové výzvy (28. 10. 2026)
+
+Web i aplikace sdílejí geometrii `robot-svg.js`, materiály `robot-materials.css` a instalaci světelných přechodů `robot-materials.js`. Dekorativní portréty webu nemají pracovní ani herní rekvizity a nezobrazují zadní vrstvy. Nespoléhat na výchozí černou výplň SVG ani kopie starých barev. Stahovací tlačítka na homepage nesou ikonu cílového systému; obrys přepínače má 50% krytí. Robot v závěrečné výzvě je ukotven k pravému hornímu rohu skutečné šířky nadpisu, včetně mobilní a anglické varianty.

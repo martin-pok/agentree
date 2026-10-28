@@ -1,5 +1,10 @@
 # Roadmapa Agenteeq
 
+## Web — rozpracovaná oprava 28. 10. 2026
+
+- Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění až po zelených kontrolách a kontrole konkrétního deploymentu.
+- Samostatná oprava nepravdivých selhání a regrese stavu zůstává v PR #384; není součástí této webové změny.
+
 ## Ověřený aktuální stav — 27. 10. 2026
 
 **Aktivní kandidát v0.46.85:** oprava opakovaného načítání projektových obrázků po výpadku. Dvě regresní zkoušky a cílený Chromium scénář 1440/375 px potvrzují obnovu obrázku po HTTP 503. Před vydáním vyžaduje zelené PR, main CI, build a audit příloh.

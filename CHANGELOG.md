@@ -1,5 +1,10 @@
 # Changelog
 
+## Připravované — web
+
+- Roboti webu sdílejí aktuální materiály a hloubku s aplikací. Opravené černé siluety a překryté rekvizity.
+- Ikony Mac/Windows v hlavních tlačítkách, jemnější obrys přepínače a robot ukotvený přímo u závěrečného nadpisu.
+
 ## 0.46.85 – 2026-10-27 · Obnova projektových obrázků po výpadku
 
 - **Živý stav přihlášení Claude:** obnovení účtu nyní počká na doručení aktualizovaného stavu; opožděný výsledek staršího odečtu nepřepíše novější přihlášení.

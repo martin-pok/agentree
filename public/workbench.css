@@ -279,15 +279,6 @@ html[data-theme] .home-live .pulse-bar { gap: 0; margin: 0; }
 /* Expressive but quiet robot companions; state remains explicit in the text. */
 .studio-avatar, .home-live .pb-agent-logo.studio-avatar { width: 108px; height: 112px; background: transparent; border-radius: 0; }
 .robot { width: 108px; height: 112px; overflow: visible; color: var(--persona); }
-.robot-shadow { fill: var(--ink); opacity: .07; }
-.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 26%, var(--card)); }
-.robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
-.robot-torso { stroke: color-mix(in srgb, var(--persona) 44%, var(--card)); stroke-width: .8; }
-.robot-face { fill: #242632; }
-.robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
-.robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
-.robot-aerial, .robot-limbs { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; }
-.robot-core { fill: currentColor; }
 .pb-agent[data-state='working'] .robot-body { animation: robot-float 3.6s ease-in-out infinite; animation-delay: var(--robot-delay, 0s); }
 .pb-agent[data-state='alert'] .robot-head { transform: rotate(-8deg); transform-origin: 54px 65px; }
 .pb-agent[data-state='waiting'] .robot-eyes { opacity: .65; }
@@ -518,9 +509,6 @@ body:has(> .pomocnik:not([hidden])) .main { padding-bottom: calc(var(--pm-spodek
 .launch .launch-bar .launch-go { flex: none; margin-left: auto; }
 @media (max-width: 560px) { .launch .launch-bar { flex-wrap: wrap; } .launch .launch-controls { order: 3; flex-basis: 100%; } }
 /* V tmavém vzhledu by robot splýval s kartou: tělo světlejší, obrys zřetelnější. */
-html[data-theme='dark'] .robot-shell, html[data-theme='dark'] .robot-torso { fill: color-mix(in srgb, var(--persona) 42%, var(--card)); }
-html[data-theme='dark'] .robot-shell { stroke: color-mix(in srgb, var(--persona) 60%, var(--card)); }
-html[data-theme='dark'] .robot-face { fill: #101016; }
 .pm-msg:has(.pm-vysledky, .pm-cile) { width: 92%; }
 
 /* Bubliny robotů (public/js/robot-bubliny.js): světlé sklo nad plochou, ocásek míří na robota.
@@ -945,11 +933,6 @@ html.look-open { overflow: hidden; }
 @media (max-width: 720px) { .pm-glyph { width: 33px; height: 30px; } }
 
 /* Postavy: části, které má jen některá stavba (pásy Rovera, kostičkové nohy Pixela, tváře Mochi a Sprouta). */
-.robot-foot, .robot-tread { fill: color-mix(in srgb, var(--persona) 55%, var(--card)); }
-.robot-wheel { fill: var(--card); opacity: .85; }
-.robot-limbs--stout { stroke-width: 7; }
-.robot-cheek { fill: #ff8fb0; opacity: .55; }
-html[data-theme='dark'] .robot-foot, html[data-theme='dark'] .robot-tread { fill: color-mix(in srgb, var(--persona) 70%, var(--card)); }
 
 /* Vzhled agenta: devět postav ve třech řadách a šestnáct barev ve dvou. */
 .look-row--robots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -1082,7 +1065,6 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 
 /* Postavy: šťastné oči ^^ (Mochi) jsou čára v barvě očí, pixelová ústa (Pixel) jsou o stupeň tlumenější. */
 .robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }
-.robot-mouth { fill: #ecf7f6; opacity: .7; }
 
 /* Šatník bez výrazných obrysů: robot sám obrys nemá, takže čáry kolem čepic, brýlí a oblečení jsou jen
    jemné dotažení hrany ve stejném odstínu, ne kresba fixou. */

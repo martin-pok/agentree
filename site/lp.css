@@ -116,7 +116,7 @@ section[id], details[id] { scroll-margin-top: 96px; }\n#obsah { scroll-margin-to
 html[data-os="mac"] [data-os-only="windows"],
 html[data-os="windows"] [data-os-only="mac"] { display:none!important; }
 [data-os-switcher] { display:none; }
-html[data-os-ready] [data-os-switcher] { display:inline-flex; align-items:center; gap:3px; padding:4px; border:1px solid currentColor; border-radius:999px; }
+html[data-os-ready] [data-os-switcher] { display:inline-flex; align-items:center; gap:3px; padding:4px; border:1px solid color-mix(in srgb,currentColor 50%,transparent); border-radius:999px; }
 [data-os-choice] { min-width:76px; min-height:48px; padding:5px 14px; border:0; border-radius:999px; background:transparent; color:inherit; font:inherit; cursor:pointer; }
 [data-os-choice][aria-pressed="true"] { background:var(--on-stage); color:var(--backdrop); }
 [data-os-choice]:focus-visible { outline:2px solid var(--accent-violet); outline-offset:3px; }
@@ -533,13 +533,6 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 #vyzkouset .unit-head { position:relative; }
 .hr { color:var(--persona); }
 .hr .robot { overflow:visible; }
-.hr .robot-shadow { fill:rgba(0,0,0,.18); }
-.hr .robot-limbs { stroke:var(--persona); stroke-width:6; stroke-linecap:round; fill:none; }
-.hr .robot-torso,.hr .robot-shell,.hr .robot-ear { fill:var(--persona); }
-.hr .robot-core { fill:rgba(255,255,255,.7); }
-.hr .robot-aerial { stroke:var(--persona); stroke-width:5; stroke-linecap:round; fill:none; }
-.hr .robot-face { fill:#181722; }
-.hr .robot-eyes { fill:#f4f3f7; }
 /* Oči a hlava robotů v hero sledují kurzor (site/lp.js); bez pohybu zůstanou v klidu. */
 .hr .robot-gaze { transform:translate(var(--gx,0px),var(--gy,0px)); }
 .hr .robot-head { transform:rotate(var(--tilt,0deg)); }
@@ -588,13 +581,6 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 .privacy-card--3 .privacy-orb { background:radial-gradient(circle at 27% 24%,#DDD3FF,#BDB0FC 37%,#54449E 76%,#292244); box-shadow:inset -12px -16px 22px rgba(56,29,0,.4),inset 5px 8px 16px rgba(255,255,255,.24),0 20px 35px rgba(145,87,24,.3); }
 .privacy-peek { position:absolute; z-index:3; width:144px; right:5%; top:-101px; color:#6260d8; transform:rotate(19deg); pointer-events:none; }
 .privacy-peek .robot { width:100%; filter:drop-shadow(0 15px 18px rgba(0,0,0,.33)); }
-.privacy-peek .robot-shadow { fill:transparent; }
-.privacy-peek .robot-limbs { stroke:currentColor; stroke-width:6; fill:none; stroke-linecap:round; }
-.privacy-peek .robot-torso,.privacy-peek .robot-shell,.privacy-peek .robot-ear { fill:currentColor; }
-.privacy-peek .robot-core { fill:#eeeaff; }
-.privacy-peek .robot-aerial { stroke:currentColor; stroke-width:5; stroke-linecap:round; fill:none; }
-.privacy-peek .robot-face { fill:#181722; }
-.privacy-peek .robot-eyes { fill:#f4f3f7; }
 .privacy-peek .robot-gaze { transform:translate(var(--gaze-x,0px),var(--gaze-y,0px)); transition:transform 180ms cubic-bezier(.2,.7,.3,1); }
 @media(prefers-reduced-motion:reduce) { .privacy-peek .robot-gaze { transform:none; transition:none; } }
 @media(hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
@@ -628,15 +614,9 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 .footer-sub { color:#b4adbf; margin:26px auto 34px; font-size:19px; }
 .footer-download { color:#17131f; background:#f4f2f9; gap:26px; }
 .footer-download:hover { color:#17131f; background:#e0dcef; }
-.footer-orbit { position:absolute; z-index:1; right:1%; top:10%; width:135px; transform:rotate(20deg); color:#6260d8; pointer-events:none; opacity:.84; }
+.footer-heading { position:relative; display:inline-block; }
+.footer-orbit { position:absolute; z-index:1; right:-25px; bottom:calc(100% - 24px); width:112px; line-height:0; pointer-events:none; --persona:#7266e3; }
 .footer-orbit .robot { width:100%; filter:drop-shadow(0 18px 24px #0009); }
-.footer-orbit .robot-shadow { fill:transparent; }
-.footer-orbit .robot-limbs { stroke:currentColor; stroke-width:6; stroke-linecap:round; fill:none; }
-.footer-orbit .robot-torso,.footer-orbit .robot-shell,.footer-orbit .robot-ear { fill:currentColor; }
-.footer-orbit .robot-core { fill:#eeeaff; }
-.footer-orbit .robot-aerial { stroke:currentColor; stroke-width:5; stroke-linecap:round; fill:none; }
-.footer-orbit .robot-face { fill:#181722; }
-.footer-orbit .robot-eyes { fill:#f4f3f7; }
 .footer-bottom { border-top:1px solid rgba(255,255,255,.12); padding-block:30px; color:#b3adbd; }
 .footer-bottom a { color:inherit; }
 .footer-bottom .brand { color:#f4f2f9; }
@@ -646,7 +626,7 @@ footer { padding-block: 40px 56px; background: var(--paper-2); border-top: 1px s
 @media(max-width:620px) { .privacy-stage { margin-top:82px; } #soukromi .facts article { min-height:340px; }
  .privacy-peek { width:85px; top:-25px; right:9%; } .privacy-art { min-height:132px; }
  #otazky .faq-list summary { min-height:75px; font-size:18px; } .footer-main { padding-block:100px 70px; }
- .footer-stage { min-height:520px; } .footer-orbit { width:72px; top:7%; right:3%; }
+ .footer-stage { min-height:520px; } .footer-orbit { width:72px; right:-10px; bottom:calc(100% - 14px); }
  .footer-main h2 { font-size:clamp(43px,11vw,64px); } .footer-bottom { gap:20px; } }
 @media(prefers-reduced-motion:reduce) { .privacy-orb,#otazky .faq-list summary,#otazky .faq-list summary::after { transition:none; } }
 
@@ -1106,15 +1086,15 @@ footer.site-footer { padding:0; border-color:rgba(255,255,255,.08); }
 .install-page .extension-store-card .extension-cta { display:inline-flex; align-items:center; justify-content:center; width:max-content; max-width:100%; }
 .install-page .extension-store-card > p { line-height:1.65; margin:0; }
 /* Filled platform marks use local SVG masks so their violet stays legible on both button surfaces. */
-#vyzkouset [data-stahnout]::before,.install-page [data-stahnout]::before {
+.hero .btn[data-stahnout]::before,.footer-download[data-stahnout]::before,#vyzkouset [data-stahnout]::before,.install-page [data-stahnout]::before {
   content:"";display:block;flex:none;width:20px;height:20px;background-color:#6255C9;
   -webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain;
   mask-position:center;mask-repeat:no-repeat;mask-size:contain;
 }
-#vyzkouset [data-stahnout="mac-arm64"]::before,.install-page [data-stahnout="mac-arm64"]::before {
+.hero .btn[data-stahnout="mac-arm64"]::before,.footer-download[data-stahnout="mac-arm64"]::before,#vyzkouset [data-stahnout="mac-arm64"]::before,.install-page [data-stahnout="mac-arm64"]::before {
   -webkit-mask-image:url('/platform-apple.svg');mask-image:url('/platform-apple.svg');
 }
-#vyzkouset [data-stahnout="windows-x64"]::before,.install-page [data-stahnout="windows-x64"]::before {
+.hero .btn[data-stahnout="windows-x64"]::before,.footer-download[data-stahnout="windows-x64"]::before,#vyzkouset [data-stahnout="windows-x64"]::before,.install-page [data-stahnout="windows-x64"]::before {
   -webkit-mask-image:url('/platform-windows.svg');mask-image:url('/platform-windows.svg');
 }
 /* Značka systému má barvu podle role tlačítka, ne podle systému: na bílé hlavní výzvě sytá
@@ -1857,12 +1837,7 @@ html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!i
 @media(hover:hover) and (pointer:fine) {
  #vyzkouset .prikaz .btn:hover {background:#6255C9!important;color:white!important;border-color:#6255C9!important;}
 }
-/* Body uses explicit solid hues: prevent black-silhouette robots in offline previews. */
-.site-footer .footer-orbit .robot-shell,
-.site-footer .footer-orbit .robot-torso,
-.site-footer .footer-orbit .robot-ear {fill:#7266E3!important;}
-.site-footer .footer-orbit .robot-face {fill:#171525!important;}
-.site-footer .footer-orbit .robot-eyes {fill:#F7F6FF!important;}
+
 
 
 /* Editorial spacing v0.46: intentional 64–96px section rhythm, no empty chasms. */
@@ -1935,15 +1910,7 @@ html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!i
 /* Chrome extension mascot: explicit SVG fills, no inherited black silhouette. */
 #vyzkouset #rozsireni .extension-peek-robot {color:#7164df;}
 #vyzkouset #rozsireni .extension-peek-robot .robot {width:100%;height:100%;overflow:visible;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-torso,
-#vyzkouset #rozsireni .extension-peek-robot .robot-shell,
-#vyzkouset #rozsireni .extension-peek-robot .robot-ear {fill:#7164df;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-limbs {stroke:#7164df;fill:none;stroke-width:6;stroke-linecap:round;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-aerial {stroke:#7164df;fill:none;stroke-width:5;stroke-linecap:round;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-face {fill:#171523;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-eyes {fill:#f8f7ff;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-core {fill:#dad5ff;}
-#vyzkouset #rozsireni .extension-peek-robot .robot-shadow {fill:transparent;}
+
 
 
 /* Chrome extension accordion: preserve the rounded illuminated perimeter. */
@@ -2124,3 +2091,16 @@ html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!i
   .nav .lang a { min-width:44px; min-height:44px; height:44px; }
   .nav .nav-links a { min-height:44px; }
 }
+
+/* Shared application surfaces, with only sizing and palette scoped to the marketing scene. */
+:is(.hr,.privacy-peek,.footer-orbit,.extension-peek-robot,.ext-okno-robot) { --card:#171b25; --ink:#f4f3f7; }
+.privacy-peek { --persona:#7164df; }
+.extension-peek-robot { --persona:#7164df; }
+:is(.hr,.privacy-peek,.footer-orbit,.extension-peek-robot,.ext-okno-robot) .robot { width:100%; height:auto; overflow:visible; color:var(--persona); }
+:is(.hr,.privacy-peek,.footer-orbit,.extension-peek-robot,.ext-okno-robot) :is(.robot-zada,.robot-ucho-pres) { display:none; }
+
+.ext-okno-robot { display:inline-block; width:42px; height:44px; --persona:#8270e0; }
+.platform-download::before { content:""; flex:none; width:18px; height:18px; background:currentColor; mask:url('/platform-apple.svg') center/contain no-repeat; }
+html[data-os='windows'] .platform-download::before { mask-image:url('/platform-windows.svg'); }
+@media (prefers-reduced-motion:reduce) { .robot-eyes { animation:none; } }
+.platform-download { gap:8px; }
