@@ -2,7 +2,7 @@
 
 ## Web — rozpracovaná oprava 28. 10. 2026
 
-- Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění až po zelených kontrolách a kontrole konkrétního deploymentu.
+- Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění po funkčních kontrolách webu a kontrole konkrétního deploymentu. Vlastník 28. 10. výslovně požádal neblokovat tuto webovou opravu chybou konfigurace CodeQL po přepnutí repozitáře na private. CodeQL zůstává zapnuté a jeho červená kontrola není vydávána za úspěch; žádné placené služby se neaktivují.
 - Samostatná oprava nepravdivých selhání a regrese stavu zůstává v PR #384; není součástí této webové změny.
 
 ## Ověřený aktuální stav — 27. 10. 2026
