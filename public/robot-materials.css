@@ -28,3 +28,4 @@
 :is(html[data-theme='dark'], html[data-site-robots]) .robot-shoe, :is(html[data-theme='dark'], html[data-site-robots]) .robot-sole { fill: var(--persona); }
 .robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
 .robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
+.robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }

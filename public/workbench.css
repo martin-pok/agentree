@@ -1064,7 +1064,6 @@ html[data-theme='dark'] .pomocnik { --pm-vio-ink: #c4c2ff; }
 .table.table--roboti .agent-robot-tile .env-badge .icon, .session-kicker .agent-robot-tile .env-badge .icon { width: 16px; height: 16px; }
 
 /* Postavy: šťastné oči ^^ (Mochi) jsou čára v barvě očí, pixelová ústa (Pixel) jsou o stupeň tlumenější. */
-.robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }
 
 /* Šatník bez výrazných obrysů: robot sám obrys nemá, takže čáry kolem čepic, brýlí a oblečení jsou jen
    jemné dotažení hrany ve stejném odstínu, ne kresba fixou. */

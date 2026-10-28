@@ -199,7 +199,7 @@ test('workflowy: kód ze spuštěného běhu (workflow_run.head_sha) se nikdy ne
 test('CodeQL: JavaScript, práva jen čtení + security-events u úlohy, bez uloženého tokenu', () => {
   const codeql = workflowy.find(({ f }) => f === 'codeql.yml')?.yml || '';
   assert.match(codeql, /^permissions:\n  contents: read\n/m);
-  assert.match(codeql, /^    permissions:\n      contents: read\n      security-events: write/m);
+  assert.match(codeql, /^    permissions:\n      contents: read\n      security-events: write[^\n]*\n      actions: read/m, 'CodeQL needs Actions metadata read access in a private repository');
   assert.match(codeql, /languages: javascript-typescript/);
   assert.match(codeql, /\n  push:\n    branches: \[main\]/);
   assert.match(codeql, /\n  pull_request:\n    branches: \[main\]/);
