@@ -111,20 +111,20 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: qa-native-windows
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-qa-native-windows
           path: dist/qa-native/
-          retention-days: 14
 
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
-          name: Agenteeq-Windows
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-Agenteeq-Windows
           path: dist/Agenteeq-*-Windows-x64.zip
-          retention-days: 14
 
   # Aplikace pro Mac se dřív sestavovala jen při vydání a nikdo ji v CI nespustil. Tady se
   # sestaví stejně jako pro vydání (ad-hoc podpis), rozbalí z archivu a spustí.
@@ -167,23 +167,23 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: qa-native-macos
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-qa-native-macos
           path: dist/qa-native/
-          retention-days: 14
 
       # Aktualizace naostro: výměna aplikace, restart a ukončení i se zaseknutým serverem.
       - name: Aktualizace z aplikace a ukončení nikdy nezaseknou
         run: npm run qa:update
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: qa-update-macos
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-qa-update-macos
           path: dist/qa-update/
-          retention-days: 14
 
   browser-qa:
     name: rozhraní a přístupnost
@@ -225,13 +225,13 @@ jobs:
       - run: npm run qa:refresh
       - run: npm run qa:tvary
       - run: npm run qa:studio
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: browser-qa
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-browser-qa
           path: |
             dist/qa/
-          retention-days: 14
 
   browser-web-qa:
     name: Web, rozšíření a kontrast
@@ -268,15 +268,15 @@ jobs:
       - run: npm run qa:site
       - run: npm run qa:extension
       - run: npm run qa:contrast
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: browser-web-qa
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-browser-web-qa
           path: |
             dist/qa-site/
             dist/qa-extension/
             dist/qa-contrast/
-          retention-days: 14
 
   chrome-store:
     name: Chrome Web Store branding a screenshoty
@@ -323,32 +323,31 @@ jobs:
       - name: Sestavit instalační ZIP rozšíření pro Chrome Web Store
         run: npm run build:extension
       - name: Uložit ZIP připravený k nahrání do Chrome Web Store
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
-          name: agenteeq-extension-store-upload
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-agenteeq-extension-store-upload
           path: dist/agenteeq-extension-*.zip
-          if-no-files-found: error
-          retention-days: 14
       - name: Uložit skutečné snímky pro Chrome Web Store
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: chrome-store-screenshots
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-chrome-store-screenshots
           path: |
             branding/chrome-web-store/export/snimek-*.png
             branding/chrome-web-store/export/en/snimek-*.png
-          retention-days: 14
       - name: Uložit skutečně vyrenderované brand assety
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         if: always()
         with:
-          name: chrome-store-branding
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-chrome-store-branding
           path: |
             branding/chrome-web-store/export/icon-128.png
             branding/chrome-web-store/export/promo-small-440x280.png
             branding/chrome-web-store/export/marquee-1400x560.png
             extension/icons/icon-*.png
-          retention-days: 14
 
       # A release candidate is a single reviewable, content-addressed upload set.
       # Only main receives this artifact: PR builds are not publisher candidates.
@@ -358,9 +357,8 @@ jobs:
         run: node scripts/prepare-chrome-store-kit.mjs
       - name: Uložit kompletní balíček obchodu s otisky souborů
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
-          name: chrome-store-review-kit
+          enableCrossOsArchive: true
+          key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-chrome-store-review-kit
           path: dist/chrome-store-kit/
-          if-no-files-found: error
-          retention-days: 14

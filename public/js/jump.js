@@ -113,5 +113,9 @@ export function vyvolejMisto(misto, fokus = null) {
 /** Píše teď člověk do pole mimo `oblast`? Pak mu fokus nikdo nebere (přechod stránky, zvýraznění). */
 export function pisePrave(oblast = null) {
   const a = document.activeElement;
-  return Boolean(a && !oblast?.contains(a) && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)));
+  // WebKit may retain focus in a palette input after its root becomes hidden.
+  // A hidden or inert input cannot represent ongoing typing and must not block the destination.
+  if (!a || a.closest?.('[hidden], [inert]')) return false;
+  const textovePole = a.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|reset|range|color|file|hidden)$/i.test(a.type || 'text');
+  return Boolean(!oblast?.contains(a) && (a.isContentEditable || textovePole || /^(TEXTAREA|SELECT)$/.test(a.tagName)));
 }

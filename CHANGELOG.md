@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.46.86 – 2026-10-28 · Historická chyba není aktuální selhání
+## 0.46.86 – 2026-10-28 · Pravdivější detekce a obnovené Preview
 
+- **Hledání ve WebKitu:** skrytý vstup zavřeného vyhledávání už neblokuje přesun fokusu na nalezené nastavení.
 - **Pravdivý stav vzdáleného agenta:** stará chyba bez čerstvého potvrzení znamená neověřený stav. Novější odpověď nebo nový tah ji překoná; dokončení nového tahu ji znovu nevrátí. Čerstvě potvrzené skutečné selhání zůstává viditelné.
 - **Limit není selhání:** rozpoznané oznámení poskytovatele o vyčerpaném limitu se zachová i při načtení metadat. Samotné vypršení limitu se nevydává za úspěšné dokončení.
 - **Obnova příčiny:** otevřený detail obnovuje stav i zprávy. Dřívější odpověď seznamu nepřepíše novější detail; i chybové relace mimo první stránku se postupně znovu ověřují a jednotlivé selhání dotazu nezastaví ostatní. Detail správně označuje původ stavu: účet Claude nebo místní cache.
