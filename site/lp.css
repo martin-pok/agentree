@@ -2104,3 +2104,5 @@ html[data-os="mac"] #vyzkouset ol.steps[data-os-only="windows"] { display:none!i
 html[data-os='windows'] .platform-download::before { mask-image:url('/platform-windows.svg'); }
 @media (prefers-reduced-motion:reduce) { .robot-eyes { animation:none; } }
 .platform-download { gap:8px; }
+/* The navigation label is split across text and OS spans, so only the icon gets spacing. */
+.nav .platform-download::before { margin-right:8px; }
