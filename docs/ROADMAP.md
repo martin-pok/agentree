@@ -2,16 +2,16 @@
 
 ## Ověřený aktuální stav — 28. 10. 2026
 
-**Blokace distribuce 0.46.86:** CI testy na Linuxu, Macu a Windows prošly, ale ukládání důkazů/buildů odmítá GitHub kvůli storage quota (65 GB starších artefaktů). Připravený konkrétní úklid čeká na potvrzení vlastníka; bez úspěšného kompletního CI se kandidát neslučuje ani nevydává.
+**Vydání 0.46.86:** vlastník 28. 10. vrátil repozitář na veřejný a požádal okamžité Preview pro Mac. Schválený úklid 4369 CI artefaktů / 62,51 GiB je dokončený. GitHub kvótu nadále odmítá; dočasné QA výstupy a přenos buildů používají oddělenou Actions cache s přesnými klíči, vydání při chybějícím buildu skončí. Povinné testy a nezávislý audit skutečných instalačních souborů jsou zachované.
 
 **Aktivní kandidát v0.46.86:** pravdivost stavu vzdáleného Claude: historické selhání → nepotvrzený stav, limit není selhání, novější tah/odpověď překoná starou chybu, starší síťový požadavek nepřepíše novější pozorování. Ověřování relací mimo první stránku se střídá a izoluje chyby jednotlivých dotazů. Regresní scénáře zahrnují HTTP/SSE a falešná upozornění. Fyzické ověření konkrétního běhu na Macu zůstává otevřené.
 
-Repozitář je podle GitHub API soukromý. Vydané Preview v0.46.85 existuje s osmi přílohami, ale veřejný updater a anonymní odkazy do soukromého repozitáře nejsou distribuční cesta. Distribuci binárek je třeba vyřešit samostatně při zachování soukromých zdrojů.
+Repozitář je podle GitHub API znovu veřejný. Vydané Preview v0.46.85 existuje s osmi přílohami; kandidát 0.46.86 čeká na dokončení CI a vydání.
 
 ## Web — rozpracovaná oprava 28. 10. 2026
 
 - Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění po funkčních kontrolách webu a kontrole konkrétního deploymentu. Vlastník 28. 10. výslovně požádal neblokovat tuto webovou opravu chybou konfigurace CodeQL po přepnutí repozitáře na private. CodeQL zůstává zapnuté a jeho červená kontrola není vydávána za úspěch; žádné placené služby se neaktivují.
-- Samostatná oprava nepravdivých selhání a regrese stavu zůstává v PR #384; není součástí této webové změny.
+- Oprava webu #385 i stavu Claude #384 jsou integrované v release kandidátovi #387.
 
 ## Ověřený aktuální stav — 27. 10. 2026
 

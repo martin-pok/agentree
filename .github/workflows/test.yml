@@ -111,7 +111,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -120,7 +120,7 @@ jobs:
 
       # Balíček si může stáhnout kdokoli z běhu a spustit ho na skutečném Windows.
       # Dokud to někdo neudělá, zůstává vzhled a chování okna neověřené.
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-Agenteeq-Windows
@@ -167,7 +167,7 @@ jobs:
       - name: Aplikace ze zipu nastartuje
         run: npm run qa:native
 
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -178,7 +178,7 @@ jobs:
       - name: Aktualizace z aplikace a ukončení nikdy nezaseknou
         run: npm run qa:update
 
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -225,7 +225,7 @@ jobs:
       - run: npm run qa:refresh
       - run: npm run qa:tvary
       - run: npm run qa:studio
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -268,7 +268,8 @@ jobs:
       - run: npm run qa:site
       - run: npm run qa:extension
       - run: npm run qa:contrast
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - name: browser-web-qa
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -323,13 +324,13 @@ jobs:
       - name: Sestavit instalační ZIP rozšíření pro Chrome Web Store
         run: npm run build:extension
       - name: Uložit ZIP připravený k nahrání do Chrome Web Store
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-agenteeq-extension-store-upload
           path: dist/agenteeq-extension-*.zip
       - name: Uložit skutečné snímky pro Chrome Web Store
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -338,7 +339,7 @@ jobs:
             branding/chrome-web-store/export/snimek-*.png
             branding/chrome-web-store/export/en/snimek-*.png
       - name: Uložit skutečně vyrenderované brand assety
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         if: always()
         with:
           enableCrossOsArchive: true
@@ -357,7 +358,7 @@ jobs:
         run: node scripts/prepare-chrome-store-kit.mjs
       - name: Uložit kompletní balíček obchodu s otisky souborů
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: ci-evidence-${{ github.run_id }}-${{ github.run_attempt }}-chrome-store-review-kit

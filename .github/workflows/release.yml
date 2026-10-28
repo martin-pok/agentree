@@ -143,7 +143,7 @@ jobs:
           AGENTEEQ_NOTARY_PROFILE: ${{ secrets.AGENTEEQ_NOTARY_PROFILE }}
         run: npm run build:dmg
 
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: release-transfer-${{ github.run_id }}-mac-arm64
@@ -167,7 +167,7 @@ jobs:
         run: ./scripts/msvc-prostredi.ps1
       - name: Sestavit plášť
         run: npm run build:windows
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: release-transfer-${{ github.run_id }}-windows
@@ -185,7 +185,7 @@ jobs:
         with: { node-version: '22' }
       - name: Sestavit rozšíření
         run: npm run build:extension
-      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5
+      - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           enableCrossOsArchive: true
           key: release-transfer-${{ github.run_id }}-rozsireni
@@ -210,7 +210,7 @@ jobs:
         with: { node-version: '22' }
 
       - name: Obnovit ověřovaný build mac-arm64
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           key: release-transfer-${{ github.run_id }}-mac-arm64
           path: |
@@ -221,7 +221,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Obnovit ověřovaný build windows
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           key: release-transfer-${{ github.run_id }}-windows
           path: |
@@ -230,7 +230,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Obnovit ověřovaný build rozsireni
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           key: release-transfer-${{ github.run_id }}-rozsireni
           path: |
