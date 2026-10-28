@@ -1,0 +1,31 @@
+/* Shared robot materials for the desktop app and marketing site. Geometry: js/robot-svg.js. */
+.robot-shadow { fill: var(--ink); opacity: .07; }
+.robot-shell, .robot-torso { fill: color-mix(in srgb, var(--persona) 26%, var(--card)); }
+.robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
+.robot-torso { stroke: color-mix(in srgb, var(--persona) 44%, var(--card)); stroke-width: .8; }
+.robot-face { fill: #242632; }
+.robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
+.robot-aerial, .robot-limbs { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; }
+.robot-core { fill: currentColor; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-shell, :is(html[data-theme='dark'], html[data-site-robots]) .robot-torso { fill: color-mix(in srgb, var(--persona) 42%, var(--card)); }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-shell { stroke: color-mix(in srgb, var(--persona) 60%, var(--card)); }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-face { fill: #101016; }
+.robot-foot, .robot-tread { fill: color-mix(in srgb, var(--persona) 55%, var(--card)); }
+.robot-wheel { fill: var(--card); opacity: .85; }
+.robot-limbs--stout { stroke-width: 7; }
+.robot-cheek { fill: #ff8fb0; opacity: .55; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-foot, :is(html[data-theme='dark'], html[data-site-robots]) .robot-tread { fill: color-mix(in srgb, var(--persona) 70%, var(--card)); }
+.robot-mouth { fill: #ecf7f6; opacity: .7; }
+.robot-objem { fill: url(#rb-objem) none; pointer-events: none; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-objem { opacity: .84; }
+.robot-face-well { fill: color-mix(in srgb, var(--persona) 38%, #080914); opacity: .72; pointer-events: none; }
+.robot-face-glass { fill: url(#rb-sklo) none; pointer-events: none; }
+.robot-face-glint { fill: none; stroke: #fff; stroke-opacity: .26; stroke-width: 1.1; stroke-linecap: round; pointer-events: none; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-face-glint { stroke-opacity: .19; }
+.robot-leg { fill: color-mix(in srgb, var(--persona) 82%, var(--card)); }
+.robot-shoe, .robot-sole { fill: color-mix(in srgb, var(--persona) 70%, var(--ink)); }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-leg { fill: color-mix(in srgb, var(--persona) 72%, var(--card)); }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-shoe, :is(html[data-theme='dark'], html[data-site-robots]) .robot-sole { fill: var(--persona); }
+.robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
+.robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
+.robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }

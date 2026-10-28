@@ -6,6 +6,9 @@
 - **Limit není selhání:** rozpoznané oznámení poskytovatele o vyčerpaném limitu se zachová i při načtení metadat. Samotné vypršení limitu se nevydává za úspěšné dokončení.
 - **Obnova příčiny:** otevřený detail obnovuje stav i zprávy. Dřívější odpověď seznamu nepřepíše novější detail; i chybové relace mimo první stránku se postupně znovu ověřují a jednotlivé selhání dotazu nezastaví ostatní. Detail správně označuje původ stavu: účet Claude nebo místní cache.
 
+- Roboti webu sdílejí aktuální materiály a hloubku s aplikací. Opravené černé siluety a překryté rekvizity.
+- Ikony Mac/Windows v hlavních tlačítkách, jemnější obrys přepínače a robot ukotvený přímo u závěrečného nadpisu.
+
 ## 0.46.85 – 2026-10-27 · Obnova projektových obrázků po výpadku
 
 - **Živý stav přihlášení Claude:** obnovení účtu nyní počká na doručení aktualizovaného stavu; opožděný výsledek staršího odečtu nepřepíše novější přihlášení.

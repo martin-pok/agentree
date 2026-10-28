@@ -863,14 +863,7 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-dilna-sem { 0%, 50% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes rz-dilna-pryc { 0% { opacity: 1; } 50%, 100% { opacity: 0; } }
 
-/* Keramický objem: vlevo nahoře měkké světlo, na pravém boku zřetelnější stín. Tmavý displej
-   sedí v mělké prohlubni a má vlastní nenápadný odlesk; vše drží proporce i v 58px portrétu. */
-.robot-objem { fill: url(#rb-objem) none; pointer-events: none; }
-html[data-theme='dark'] .robot-objem { opacity: .84; }
-.robot-face-well { fill: color-mix(in srgb, var(--persona) 38%, #080914); opacity: .72; pointer-events: none; }
-.robot-face-glass { fill: url(#rb-sklo) none; pointer-events: none; }
-.robot-face-glint { fill: none; stroke: #fff; stroke-opacity: .26; stroke-width: 1.1; stroke-linecap: round; pointer-events: none; }
-html[data-theme='dark'] .robot-face-glint { stroke-opacity: .19; }
+/* Materiály a světlo robotů: robot-materials.css. */
 
 /* Čeká na zadání: flákání. Každý agent má svou zábavu (data-hra): vyhazuje míček, hraje si s jojem,
    nebo si hvízdá a pohupuje se. Funkce stejná jako u práce: jen u robota na obrazovce, jen
@@ -973,12 +966,7 @@ html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 @keyframes rz-vlna { 0% { opacity: .9; scale: .7; } 100% { opacity: 0; scale: 3.4; } }
 @keyframes rz-volani { 0%, 100% { transform: rotate(-52deg); } 25% { transform: rotate(-38deg); } 50% { transform: rotate(-60deg); } 75% { transform: rotate(-40deg); } }
 
-/* Nohy (robot-svg.js#legs): kapsle v barvě postavy a tmavší bota – pevný postoj hračky, ne drátky. */
-.robot-leg { fill: color-mix(in srgb, var(--persona) 82%, var(--card)); }
-.robot-shoe, .robot-sole { fill: color-mix(in srgb, var(--persona) 70%, var(--ink)); }
-html[data-theme='dark'] .robot-leg { fill: color-mix(in srgb, var(--persona) 72%, var(--card)); }
-html[data-theme='dark'] .robot-shoe, html[data-theme='dark'] .robot-sole { fill: var(--persona); }
-.robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
+
 
 /* Přehled: widgety v jedné řadě jsou stejně vysoké (vlastník 24. 10. 2026: „Kam šly tokeny“ kratší než
    „Náklady z API“ vedle). Poslední sekce widgetu vyplní výšku řady a karta v ní se protáhne. */

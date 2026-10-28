@@ -103,7 +103,7 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\[data-status='needs_input'\][^{]*\.robot \.robot-signal \{ display: inline; \}/);
   assert.match(css, /@keyframes rz-vlna \{ 0% \{ opacity: \.9; scale: \.7; \} 100% \{ opacity: 0; scale: 3\.4; \} \}/);
-  const js = await zdroj('public/js/mascot-motion.js');
+  const js = await zdroj('public/js/robot-materials.js');
   assert.match(js, /id="rb-objem"/);
   assert.match(js, /id="rb-sklo"/);
   assert.match(js, /id="rb-zare"/);

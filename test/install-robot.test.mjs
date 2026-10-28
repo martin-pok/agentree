@@ -25,9 +25,9 @@ test('extension section shows the real rendered popup, sized, lazy and described
     assert.ok(stat.size <= 90_000, `${soubor} exceeds transfer-size budget: ${stat.size}`);
   }
   for (const path of ['site/instalace/index.html', 'site/en/install/index.html']) {
-    assert.ok((await read(path)).includes('<img class="ext-okno-robot" src="/robot-scout.svg"'), path);
+    assert.ok((await read(path)).includes('<span class="ext-okno-robot" data-install-robot'), path);
   }
-  const asset = await read('site/robot-scout.svg');
+  const asset = await read('public/js/robot-svg.js');
   for (const key of ['robot-torso', 'robot-limbs', 'robot-head', 'robot-eyes', 'robot-aerial']) assert.ok(asset.includes(key), key);
 });
 

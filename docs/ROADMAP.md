@@ -8,6 +8,13 @@
 
 Repozitář je podle GitHub API soukromý. Vydané Preview v0.46.85 existuje s osmi přílohami, ale veřejný updater a anonymní odkazy do soukromého repozitáře nejsou distribuční cesta. Distribuci binárek je třeba vyřešit samostatně při zachování soukromých zdrojů.
 
+## Web — rozpracovaná oprava 28. 10. 2026
+
+- Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění po funkčních kontrolách webu a kontrole konkrétního deploymentu. Vlastník 28. 10. výslovně požádal neblokovat tuto webovou opravu chybou konfigurace CodeQL po přepnutí repozitáře na private. CodeQL zůstává zapnuté a jeho červená kontrola není vydávána za úspěch; žádné placené služby se neaktivují.
+- Samostatná oprava nepravdivých selhání a regrese stavu zůstává v PR #384; není součástí této webové změny.
+
+## Ověřený aktuální stav — 27. 10. 2026
+
 **Aktivní kandidát v0.46.85:** oprava opakovaného načítání projektových obrázků po výpadku. Dvě regresní zkoušky a cílený Chromium scénář 1440/375 px potvrzují obnovu obrázku po HTTP 503. Před vydáním vyžaduje zelené PR, main CI, build a audit příloh.
 
 - Vydaný zdroj aplikace je `b09ced2`, veřejné Preview je [v0.46.84](https://github.com/martin-pok/agentree/releases/tag/v0.46.84); Stable Latest je stále v0.46.58. Starší datované přehledy níže jsou historie.

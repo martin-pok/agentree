@@ -7,6 +7,10 @@
 // takže se modul z public/js jen načte – žádná druhá kopie.
 import { plynulePosouvani } from '/js/plynule-posouvani.js';
 import { robot } from '/js/robot-svg.js';
+import { vlozPrechody } from '/js/robot-materials.js';
+document.documentElement.setAttribute('data-site-robots', '');
+vlozPrechody();
+const portret = (type) => robot(type, { prace: false, hra: false, signal: false });
 import { enableLivePreview } from '/preview-release.js';
 
 const anglicky = document.documentElement.lang === 'en';
@@ -160,7 +164,7 @@ if (scena) {
   const NAKLONY = [-38, 0, 24, -58, 0, -42];
   scena.querySelector('[data-hero-roboti]').innerHTML = ROBOTI.map(([x, y, sz, hloubka, barva, typ, bublina], i) =>
     `<span class="hr hr--${hloubka}${hloubka === 'blizko' ? ' hr--skryt-mobil' : ''}" style="--x:${x};--y:${y};--s:${sz};--par:${PARALAXA[hloubka]};--i:${i};--persona:${barva};--naklon:${bublina ? 0 : NAKLONY[i]}deg">`
-    + `<span class="hr-telo">${robot(typ)}</span>`
+    + `<span class="hr-telo">${portret(typ)}</span>`
     + (bublina ? `<span class="hr-bublina${bublina[2] ? ' hr-bublina--vlevo' : ''}" style="--ton:${bublina[1]}"><i></i>${t[bublina[0]]}</span>` : '')
     + '</span>').join('');
 
@@ -253,8 +257,8 @@ if (scena) {
 }
 
 // Stejná kresba robota jako v desktopové aplikaci, bez duplicitního SVG na webu.
-for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-robot], [data-extension-robot]')) {
-  el.innerHTML = robot(el.hasAttribute('data-footer-robot') ? 'Nova' : 'Orbit');
+for (const el of document.querySelectorAll('[data-privacy-robot], [data-footer-robot], [data-extension-robot], [data-install-robot]')) {
+  el.innerHTML = portret(el.hasAttribute('data-install-robot') ? 'Scout' : el.hasAttribute('data-footer-robot') ? 'Nova' : 'Orbit');
 }
 
 // Robot u karet soukromí se podívá za kurzorem stejně jako roboti v aplikaci.

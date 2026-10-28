@@ -1,3 +1,4 @@
+import { vlozPrechody } from './robot-materials.js';
 import { tr } from './i18n.js';
 import { stavRobota } from './robot-bubliny.js';
 import { postupPrace } from './home-studio.js';
@@ -5,21 +6,6 @@ import { postupPrace } from './home-studio.js';
 // Pohyb robotů: oči sledují kurzor a občas mrknou; stavové pohyby (pracuje, čeká na tebe, hotovo,
 // selhalo) kreslí CSS podle data-state (public/workbench.css). Systémové omezení pohybu má přednost,
 // ruční vypnutí se pamatuje jen v tomto prohlížeči. Poloha kurzoru se nikam neukládá.
-// Přechody pro objem robotů (světlo/stín přes hlavu a trup) a záři antény. Jednou do dokumentu;
-// robot-svg.js na ně odkazuje přes url(#…) s náhradou „none“, takže bez nich se jen nic nekreslí.
-function vlozPrechody() {
- if (document.getElementById('rb-objem')) return;
- const ns = 'http://www.w3.org/2000/svg';
- const svg = document.createElementNS(ns, 'svg');
- svg.setAttribute('aria-hidden', 'true');
- svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
- svg.style.position = 'absolute';
- svg.innerHTML = '<defs><linearGradient id="rb-objem" x1="0" y1="0" x2="1" y2=".8"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset=".25" stop-color="#fff" stop-opacity=".16"/><stop offset=".48" stop-color="#fff" stop-opacity="0"/><stop offset=".74" stop-color="#000" stop-opacity=".09"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>'
-  + '<linearGradient id="rb-sklo" x1="0" y1="0" x2=".18" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".38" stop-color="#fff" stop-opacity=".035"/><stop offset="1" stop-color="#000" stop-opacity=".23"/></linearGradient>'
-  + '<radialGradient id="rb-zare"><stop offset="0" stop-color="#ff7aa8" stop-opacity=".95"/><stop offset=".45" stop-color="#e0457b" stop-opacity=".45"/><stop offset="1" stop-color="#e0457b" stop-opacity="0"/></radialGradient></defs>';
- document.body.prepend(svg);
-}
-
 export function initMascotMotion() {
   // Flákání začne až po oddechu (home-studio.js#dilnaAtributy: data-hra-od). Kontrola stačí jednou
   // za sekundu a sahá jen na prvky, které na svou zábavu ještě čekají.

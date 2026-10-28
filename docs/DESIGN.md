@@ -348,3 +348,7 @@ tlačítku; zavření dialogu výběr zachová, úspěšné zařazení jej ukon�
 
 
 **Neověřený stav vzdáleného agenta (0.46.86):** historická chyba bez čerstvého potvrzení má neutrální informační panel (`banner--unverified`, tokeny `--paper`/`--line`/`--mute`) a čas posledního hlášení. Červená znamená aktuálně potvrzené selhání; zelená se pro neznámý stav nepoužívá.
+
+## Web — roboti a systémové výzvy (28. 10. 2026)
+
+Web i aplikace sdílejí geometrii `robot-svg.js`, materiály `robot-materials.css` a instalaci světelných přechodů `robot-materials.js`. Dekorativní portréty webu nemají pracovní ani herní rekvizity a nezobrazují zadní vrstvy. Nespoléhat na výchozí černou výplň SVG ani kopie starých barev. Stahovací tlačítka na homepage nesou ikonu cílového systému; obrys přepínače má 50% krytí. Robot v závěrečné výzvě je ukotven k pravému hornímu rohu skutečné šířky nadpisu, včetně mobilní a anglické varianty.
