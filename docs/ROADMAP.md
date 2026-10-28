@@ -1,5 +1,9 @@
 # Roadmapa Agenteeq
 
+## Chrome Web Store — nepublikováno, 28. 10. 2026
+
+Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload 0.46.85 skončil před Googlem kvůli prázdným třem CWS přístupům. Připravený ověřený ZIP a CZ/EN sada nestačí: balíček vyžaduje oprávněného vydavatele/OAuth; listingové obrázky a popis vyžadují Developer Dashboard. Podrobný stav a důkazy v `docs/CHROME-WEB-STORE.md`, úkol #172 zůstává otevřený.
+
 ## Ověřený aktuální stav — 27. 10. 2026
 
 **Aktivní kandidát v0.46.85:** oprava opakovaného načítání projektových obrázků po výpadku. Dvě regresní zkoušky a cílený Chromium scénář 1440/375 px potvrzují obnovu obrázku po HTTP 503. Před vydáním vyžaduje zelené PR, main CI, build a audit příloh.
