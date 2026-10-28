@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { appSupportDir, prihlaseniClaudeCodeSDuvodem } from '../platform.js';
-import { statSafe, toTs, clip, DAY, MIN } from '../util.js';
+import { statSafe, toTs, clip, textOf, DAY, MIN } from '../util.js';
 import { createSession, touch } from '../model.js';
 import { watchTree, createFileQueue } from '../watch.js';
 import { readClaudeDesktopCache } from '../claude-desktop-cache.js';
@@ -53,7 +53,7 @@ export function remoteSessions(records) {
       const old = sessions.get(s.id);
       const novejsi = !old || Date.parse(s.updated_at) > Date.parse(old.updated_at)
         || (Date.parse(s.updated_at) === Date.parse(old.updated_at) && at > old._observedAt);
-      if (novejsi) sessions.set(s.id, { ...s, _observedAt: at });
+      if (novejsi) sessions.set(s.id, { ...s, _observedAt: at, _statusSource: 'desktop-cache' });
     }
   }
   if (!seznam && !sessions.size) return null;
@@ -103,6 +103,7 @@ export function applyDesktopUsage(store, usage) {
 
 export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.now()) {
   const st = newFileState(), seen = new Set();
+  let transcriptAt = 0;
   const messages = cached?.tree?.kind === 'code_session' && Array.isArray(cached.tree.messages) ? cached.tree.messages : [];
   const ordered = messages.filter((m) => m && ['user', 'assistant', 'result'].includes(m.type))
     .sort((a, b) => toTs(a.created_at || a.timestamp) - toTs(b.created_at || b.timestamp));
@@ -114,12 +115,26 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
     if (id) seen.add(id);
     const ts = toTs(m.created_at || m.timestamp);
     if (!ts || ts > now) continue;
-    if (m.type === 'result') { s.running = false; s.toolWaitSince = 0; continue; }
-    applyClaudeLine(st, s, { ...m, timestamp: new Date(ts).toISOString() });
+    if (m.type === 'result') {
+      if (m.is_error === true) {
+        const detail = Array.isArray(m.errors) ? m.errors.filter((x) => typeof x === 'string').join(' · ') : typeof m.result === 'string' ? m.result : '';
+        applyClaudeLine(st, s, { type: 'assistant', isApiErrorMessage: true, timestamp: new Date(ts).toISOString(), message: { content: [{ type: 'text', text: clip(detail, 240) || ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') }] } });
+        transcriptAt = Math.max(transcriptAt, ts);
+      } else if (m.is_error === false && m.subtype === 'success') {
+        s.failure = null; s.limit = null;
+        transcriptAt = Math.max(transcriptAt, ts);
+      }
+      s.running = false; s.toolWaitSince = 0;
+      continue;
+    }
+    transcriptAt = Math.max(transcriptAt, ts);
+    // Remote events can omit the SDK error flag on the provider's quota notice.
+    const quotaNotice = m.type === 'assistant' && /^you['’]ve hit your (?:(?:session|weekly|usage) )?limit\s*[·•|,;—–-]\s*resets?\s+[^\r\n]{1,100}$/i.test(textOf(m.message?.content).trim());
+    applyClaudeLine(st, s, { ...m, ...(quotaNotice ? { isApiErrorMessage: true } : {}), timestamp: new Date(ts).toISOString() });
   }
   // Co o běhu říká uložený přepis: tah bez odpovědi a čas poslední zprávy. Seznam relací ho
   // přebije, jen když je novější (applyReportedStatus).
-  s.remotePrepis = { running: Boolean(s.running), at: s.running ? s.runningAt : 0, activity: s.running ? s.activity : '' };
+  s.remotePrepis = { running: Boolean(s.running), at: transcriptAt, activity: s.running ? s.activity : '', limit: s.limit && !(s.failure?.at > s.limit.at) ? s.limit : null, failure: s.failure };
   const updated = Math.min(Date.parse(metadata.updated_at), now);
   const created = Date.parse(metadata.created_at);
   if (Number.isFinite(created) && created > 0 && created <= updated) s.startedAt = created;
@@ -143,7 +158,7 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   }
   applyReportedStatus(s, metadata, observedAt, now);
   s.observation = {
-    at: observedAt, transcriptThrough: messages.reduce((at, m) => Math.max(at, toTs(m.created_at || m.timestamp) || 0), 0),
+    at: observedAt, source: metadata._statusSource || 'desktop-cache', transcriptThrough: messages.reduce((at, m) => Math.max(at, toTs(m.created_at || m.timestamp) || 0), 0),
     partial: true, // Cache is never an authoritative complete transcript.
   };
   return s;
@@ -167,17 +182,20 @@ export function hlasenyStav(metadata) {
   const kategorie = hodnota(metadata?.post_turn_summary?.status_category, '');
   // Souhrn po tahu zůstává z minulého tahu i během nového, proto má běh přednost.
   if (STAV_PRACUJE.has(stav) || STAV_PRACUJE.has(skupina)) return 'working';
-  if (STAV_CEKA.has(stav) || STAV_CEKA.has(skupina) || STAV_CEKA.has(kategorie)) return 'needs_input';
-  if (STAV_SELHAL.has(stav) || STAV_SELHAL.has(skupina) || STAV_SELHAL.has(kategorie)) return 'failed';
+  if (STAV_CEKA.has(stav) || STAV_CEKA.has(skupina)) return 'needs_input';
+  if (['completed', 'review_ready'].includes(skupina) || stav === 'archived') return '';
+  if (STAV_SELHAL.has(stav) || STAV_SELHAL.has(skupina)) return 'failed';
+  if (STAV_CEKA.has(kategorie)) return 'needs_input';
+  if (STAV_SELHAL.has(kategorie)) return 'failed';
   return '';
 }
 
 // Hlášený stav platí k okamžiku, kdy Claude Desktop seznam načetl (`observedAt`), ne k „teď“.
 // „Pracuje“ drží deriveStatus 2 minuty od načtení; starší hlášení je nečerstvé („stale“) se
 // vlastním důvodem. Dřív se nečerstvé „pracuje“ zahodilo a relace se ukázala jako „Hotovo, čeká
-// na další zadání“ – o agentovi, který podle posledních známých dat pracoval. Čekání na rozhodnutí
-// a selhání se samy nezmění: zůstávají vidět od `updated_at` (změna na serveru), ale se starší cache
-// je deriveStatus hlásí jako nečerstvé s časem načtení („· stav z 18. 10. 14:05“).
+// na další zadání“ – o agentovi, který podle posledních známých dat pracoval. Staré rozhodnutí
+// zůstává označené časem. Historická chyba bez čerstvého potvrzení přejde v modelu na nepotvrzený
+// stav, nikoli na aktuální selhání ani na úspěšné dokončení.
 function applyReportedStatus(s, metadata, observedAt, now) {
   const updated = Math.min(Date.parse(metadata.updated_at), now);
   const observed = observedAt > 0 && observedAt <= now + 1000 ? Math.min(observedAt, now) : 0;
@@ -188,6 +206,23 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.toolWaitSince = 0;
   s.pending = null; s.limit = null; s.failure = null;
   s.staleReason = ui('Při posledním načtení pracoval · novější stav Claude Desktop neuložil');
+  // A later transcript records what happened after the failed turn. Re-reading an
+  // unchanged list today does not make its old failure newer than those messages.
+  if (prepis.at > updated && hlaseno === 'failed') {
+    s.running = prepis.running;
+    s.runningAt = prepis.at;
+    s.activity = prepis.activity;
+    s.limit = prepis.limit || null;
+    s.failure = prepis.failure ? { ...prepis.failure, observedAt: prepis.at } : null;
+    return;
+  }
+  const ukonceno = ['completed', 'review_ready'].includes(hodnota(metadata.status_bucket, /^session_status_bucket_/));
+  if (prepis.limit && !(hlaseno === 'working' && hlasenoAt >= prepis.at) && !(ukonceno && updated >= prepis.at)) {
+    s.limit = prepis.limit;
+    s.running = false;
+    s.activity = '';
+    return;
+  }
   if (hlaseno === 'working') {
     s.running = true;
     s.runningAt = Math.max(hlasenoAt, prepis.running ? prepis.at : 0);
@@ -225,12 +260,13 @@ export function relaceZApi(raw) {
   const id = remoteId(apiId.replace(/^cse_/, 'session_'));
   const updated = [raw.last_event_at, raw.updated_at, raw.created_at].find((t) => typeof t === 'string' && Number.isFinite(Date.parse(t)));
   if (!id || !updated) return null;
-  const stav = raw.status === 'archived' ? 'archived' : raw.status === 'failed' ? 'failed' : typeof raw.worker_status === 'string' ? raw.worker_status : 'idle';
+  const worker = typeof raw.worker_status === 'string' ? raw.worker_status : '';
+  const stav = raw.status === 'archived' ? 'archived' : ['running', 'requires_action'].includes(worker) ? worker : raw.status === 'failed' ? 'failed' : worker || 'idle';
   // Čekání na schválení nese `external_metadata.pending_action.tool_name` (jako v Claude Code); jiný
   // text o čekání API neposílá, takže se nic nedomýšlí.
   const nastroj = stav === 'requires_action' ? raw.external_metadata?.pending_action?.tool_name : undefined;
   return {
-    type: 'session', id, apiId, title: typeof raw.title === 'string' ? raw.title : '',
+    type: 'session', id, apiId, _statusSource: 'claude-account', title: typeof raw.title === 'string' ? raw.title : '',
     created_at: typeof raw.created_at === 'string' ? raw.created_at : updated, updated_at: updated, session_status: stav,
     ...(typeof nastroj === 'string' && NASTROJ.test(nastroj) ? { post_turn_summary: { needs_action: ui('Čeká na tvé schválení nástroje {0}. Otevři Claude.', nastroj) } } : {}),
     session_context: { sources: Array.isArray(raw.config?.sources) ? raw.config.sources : [], model: typeof raw.config?.model === 'string' ? raw.config.model : null },
@@ -366,6 +402,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   const dir = path.join(root, 'https_claude.ai_0.indexeddb.leveldb');
   let watcher, exists = false, lastEventAt = 0, error = '', stopped = false, seznamAt = 0;
   const known = new Set(), fingerprints = new Map();
+  let detailOffset = 0;
   // Poslední přečtená cache Desktopu a poslední seznam z účtu; každý zdroj se obnovuje sám.
   let zCache = null, prepisy = new Map();
   // Přepisy z účtu: relace, které běží, čekají, nebo je má uživatel právě otevřené (zajem).
@@ -429,6 +466,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         if (existing && existing.observation.at !== _observedAt) {
           applyReportedStatus(existing, metadata, _observedAt, Date.now());
           existing.observation.at = _observedAt;
+          existing.observation.source = metadata._statusSource || 'desktop-cache';
           store.commit(existing); // Refresh reported status, preserve transcript and open UI.
         }
         continue;
@@ -444,6 +482,10 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       // a webová konverzace, která vznikla dřív než záznam v cache, se do ní převede – agent je jeden.
       const web = store.get(webIdClaudeCode(metadata.id));
       s.karta = web ? kartaZWebu(web) : previous?.karta || null;
+      // A completed newer turn remains evidence even after the tab's heartbeat expires.
+      s.turnStartedAt = Math.max(s.turnStartedAt || 0, s.karta?.since || 0);
+      if (s.pending && s.karta?.since > s.pending.at) s.pending = null;
+      if (s.limit && s.karta?.since > s.limit.at) s.limit = null;
       if (s.karta?.lastAt) touch(s, s.karta.lastAt);
       if (web) store.remove(web.id);
       store.sessions.set(id, s);
@@ -473,11 +515,17 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         // Relace, kterou známe jako běžící nebo čekající a v první stránce seznamu už není, se
         // dotáže zvlášť (nanejvýš 5) – jinak by zůstala viset na starém stavu.
         const vSeznamu = new Set(data.sessions.map((x) => x.id));
-        const dohledat = [...known].map((id) => store.get(id)).filter((x) => x && (x.running || x.pending) && !vSeznamu.has(x.localId)).slice(0, 5);
-        for (const x of dohledat) {
-          const d = await nactiCloudovouRelaci(x.apiId || x.localId, opts);
-          if (d) data.sessions.push(d);
-        }
+        const chybi = [...known].map((id) => store.get(id)).filter((x) => x && (x.running || x.pending || x.failure) && !vSeznamu.has(x.localId));
+        const start = chybi.length ? detailOffset % chybi.length : 0;
+        const dohledat = [...chybi.slice(start), ...chybi.slice(0, start)].slice(0, 5);
+        detailOffset = chybi.length ? (start + dohledat.length) % chybi.length : 0;
+        // Rotate the bounded queue; one inaccessible session must not discard the list
+        // or prevent every later session from ever being checked.
+        const detaily = await Promise.allSettled(dohledat.map((x) => nactiCloudovouRelaci(x.apiId || x.localId, opts)));
+        for (const d of detaily) if (d.status === 'fulfilled' && d.value) data.sessions.push(d.value);
+        // A slow list request must not overwrite a newer detail observation.
+        const newer = (api.data?.sessions || []).filter((x) => (x._observedAt ?? api.data.observedAt) > data.observedAt);
+        data.sessions = slucRelace(data, { sessions: newer, observedAt: api.data?.observedAt || 0 });
         api.data = data;
         api.at = data.observedAt;
         api.error = '';
@@ -519,13 +567,23 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     const prvni = !zajem.has(localId);
     const now = Date.now();
     zajem.set(localId, now);
-    const hasMessages = Boolean(prepisyZUctu.get(localId)?.messages.length || prepisy.get(localId)?.tree?.messages?.length);
-    if (!prvni && (hasMessages || now - (pokusDetailu.get(localId) || 0) < 5000)) return;
+    if (!prvni && now - (pokusDetailu.get(localId) || 0) < 8000) return;
     pokusDetailu.set(localId, now);
     const nacti = (async () => {
       try {
         const apiId = api.data?.sessions.find((x) => x.id === localId)?.apiId || store.get(`claude-desktop-code:${localId}`)?.apiId || localId;
-        const z = await nactiUdalostiRelace(apiId, { prihlaseni, fetchImpl: claudeCloud.fetchImpl });
+        const opts = { prihlaseni, fetchImpl: claudeCloud.fetchImpl };
+        // Opening a transcript must refresh the session status too, including failures
+        // which have fallen outside the account's first list page.
+        const [detail, events] = await Promise.allSettled([
+          nactiCloudovouRelaci(apiId, opts), nactiUdalostiRelace(apiId, opts),
+        ]);
+        if (detail.status === 'fulfilled' && detail.value) {
+          api.data ||= { sessions: [], observedAt: 0 };
+          api.data.sessions = slucRelace(api.data, { sessions: [detail.value], observedAt: detail.value._observedAt });
+        }
+        if (events.status === 'rejected') throw events.reason;
+        const z = events.value;
         if (z?.messages.length) { prepisyZUctu.set(localId, z); prepisChyby.delete(localId); }
         else prepisChyby.set(localId, ui('Účet Claude pro tuto relaci nevrátil zprávy. Načtení se zopakuje; může jít o jiný přihlášený účet.'));
       } catch (e) { prepisChyby.set(localId, e.message); }

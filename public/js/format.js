@@ -185,7 +185,7 @@ export function resetsLabel(ts, now = Date.now()) {
 
 // Starý vzdálený běh není potvrzené čekání na zadání. Kanonický stav a příznak stale
 // necháváme pro kompatibilitu API, zobrazení používá poctivý samostatný stav.
-export const displayStatus = (s) => s?.connector === 'claude-desktop-code' && s.stale && ['waiting', 'idle', 'archived'].includes(s.status) ? 'unknown' : s?.status;
+export const displayStatus = (s) => s?.connector === 'claude-desktop-code' && s.stale && ['waiting', 'idle', 'archived', 'observed'].includes(s.status) ? 'unknown' : s?.status;
 
 export const STATUS = {
   unknown: { label: tr('Stav neověřen') },

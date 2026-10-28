@@ -156,9 +156,8 @@ export function vetaLimitu(limit) {
   return ui('{0} vyčerpán', limit.label);
 }
 
-// Čekání a selhání, které zdroj jen převzal z cache (vzdálený Claude Code, `observedAt` = kdy ji
-// Claude Desktop uložil), platí k tomu okamžiku. Starší než `staleMs` se neschovává – rozhodnutí
-// i chyba se samy nevyřeší –, ale hlásí se jako nečerstvé a s časem, ke kterému platí.
+// Záznam převzatý z cache platí k observedAt, nikoli automaticky teď. Staré čekání
+// zůstává označené časem; historická chyba bez nového potvrzení není aktuální selhání.
 const zastarale = (x, s, now) => Boolean(x.observedAt && now - x.observedAt > s.staleMs);
 const hlaseniZ = (x, text, s, now) => (zastarale(x, s, now) ? ui('{0} · stav z {1}', text, CAS_OBNOVY(x.observedAt)) : text);
 
@@ -188,17 +187,24 @@ export function deriveStatus(s, now) {
       lastAt: Math.max(s.lastAt || 0, karta.lastAt || 0),
       toolWaitSince: 0,
       procesSkoncil: 0,
-      pending: karta.running && s.pending && karta.since > s.pending.at ? null : s.pending,
+      pending: s.pending && karta.since > s.pending.at ? null : s.pending,
+      limit: s.limit && karta.since > s.limit.at ? null : s.limit,
+      turnStartedAt: Math.max(s.turnStartedAt || 0, karta.since || 0),
     };
   }
   const age = now - (s.lastAt || 0);
+  let expiredLimit = false;
   if (s.limit?.reached) {
     const active = s.limit.resetsAt ? now < s.limit.resetsAt : now - s.limit.at < 5 * HOUR;
     if (active) return { status: 'limited', reason: vetaLimitu(s.limit), stale: false };
+    expiredLimit = true;
   }
   // Selhání spuštění (proces agenta skončil chybou). Platí, dokud agent znovu nezačne pracovat
   // nebo nezačne nový tah (zadání po selhání) – doběhlý tah po obnovení selhání překrývá.
   const prekonano = (s.running && (s.runningAt || 0) > s.failure?.at) || (s.turnStartedAt || 0) > s.failure?.at;
+  if (s.failure && !prekonano && zastarale(s.failure, s, now)) {
+    return { status: 'observed', reason: ui('Aktuální stav nepotvrzen · poslední hlášení chyby z {0}', CAS_OBNOVY(s.failure.observedAt)), stale: true, done: false };
+  }
   if (s.failure && now - s.failure.at < DAY && !prekonano) {
     return { status: 'failed', reason: hlaseniZ(s.failure, s.failure.text || ui('Spuštění selhalo'), s, now), stale: zastarale(s.failure, s, now) };
   }
@@ -231,6 +237,7 @@ export function deriveStatus(s, now) {
     const maybePermission = ceka > 90e3 && !bezPtani && s.toolWaitKind !== 'cteni';
     return { status: 'working', reason: maybePermission ? ui('{0} · možná čeká na tvé povolení', activity) : activity, stale: false };
   }
+  if (expiredLimit) return { status: 'waiting', reason: ui('Limit se od posledního měření obnovil, nový stav zatím nepřišel'), stale: true, done: false };
   if (s.metadataOnly) return { status: 'observed', reason: ui('Vlákno nalezeno v aplikaci Codex · živý stav nepotvrzen'), stale: true };
   const stale = Boolean(s.running);
   if (s.ended) return { status: age < DAY ? 'idle' : 'archived', reason: ui('Konverzace ukončena'), stale: false, done: false };

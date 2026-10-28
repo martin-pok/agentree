@@ -4,6 +4,19 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.86', date: '2026-10-28', title: 'Historická chyba není aktuální selhání',
+    items: [
+      'Stará chyba bez nového potvrzení se zobrazí jako neověřený stav. Novější odpověď nebo nový tah ji překoná.',
+      'Vyčerpaný limit se nezamění za selhání; jeho vypršení samo o sobě neznamená hotovou práci.',
+      'Detail znovu ověří stav agenta. Opožděný starší seznam nepřepíše novější výsledek a původ stavu je správně označený.',
+    ],
+    en: { title: 'A historical error is not a current failure', items: [
+      'An old error without fresh confirmation is shown as unverified. A newer response or turn supersedes it.',
+      'An exhausted quota is not a failure; its expiry alone does not mean the work is done.',
+      'Opening the detail checks the agent status again. A delayed older list cannot replace a newer result, and the status source is labelled correctly.',
+    ] },
+  },
+  {
     version: '0.46.85',
     date: '2026-10-27',
     title: 'Obrázky projektů po výpadku',

@@ -7,6 +7,8 @@ import server from './en-server.js';
 export default {
   server,
   texty: {
+    "vzdálený agent · účet Claude": "remote agent · Claude account",
+    "Stav hlásí účet Claude.": "Status reported by the Claude account.",
   "Stav neověřen": "Status unverified",
 
     "jen v této konverzaci": "only in this conversation",

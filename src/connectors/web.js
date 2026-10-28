@@ -177,6 +177,11 @@ export function applyKarta(s, v, now = Date.now()) {
     counts: { ...v.counts },
     staleMs: KARTA_STALE_MS,
   };
+  if (v.generating) {
+    s.turnStartedAt = Math.max(s.turnStartedAt || 0, s.karta.since);
+    if (s.pending && s.karta.since > s.pending.at) s.pending = null;
+    if (s.limit && s.karta.since > s.limit.at) s.limit = null;
+  }
   if (v.generating || changed) touch(s, now);
 }
 

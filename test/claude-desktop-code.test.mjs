@@ -215,7 +215,7 @@ test('Claude remote: běžící relace ve výčtovém tvaru pracuje, čekající
   const cerstva = deriveStatus(applyRemoteSession(newSession(), ceka, null, now - 30e3, now), now);
   assert.equal(cerstva.reason, 'Mám nasadit na produkci?'); assert.equal(cerstva.stale, false);
   const selhal = deriveStatus(applyRemoteSession(newSession(), { ...ceka, status_bucket: 'SESSION_STATUS_BUCKET_FAILED', post_turn_summary: null }, null, now - 20 * 60e3, now), now);
-  assert.equal(selhal.status, 'failed'); assert.equal(selhal.stale, true); assert.match(selhal.reason, / · stav z /);
+  assert.equal(selhal.status, 'observed'); assert.equal(selhal.stale, true); assert.equal(selhal.done, false); assert.match(selhal.reason, /Aktuální stav nepotvrzen/);
   // Čekání staré přes 12 h už do rozhodnutí nepatří (deriveStatus).
   const stara = applyRemoteSession(newSession(), { ...ceka, updated_at: new Date(now - 13 * 3600e3).toISOString() }, null, now - 60e3, now);
   assert.notEqual(deriveStatus(stara, now).status, 'needs_input');
@@ -349,4 +349,27 @@ test('Claude remote: bez přihlášení k účtu, ale se známými vzdálenými 
   await new Promise((r) => setTimeout(r, 300));
   const c2 = (await api(bez.url).get('/api/state')).body.connectors.find((x) => x.id === 'claude-desktop-code');
   assert.equal(c2.cloudNevim, false, 'bez Claude Desktopu i bez přihlášení aplikace nic nehlásí');
+});
+
+test('historical cache failure does not raise a current failure alert; live recovery survives cache refresh over HTTP/SSE', async (t) => {
+  const home = await tempDir(), now = Date.now(), old = now - 14 * 3600000;
+  const f = await fixture(home, []);
+  await fs.writeFile(path.join(f.dir, '000002.log'), record(batch(2, [[key('react-query-cache'), Buffer.concat([vi(2), clone(cache([metadata(old)], old))])]])));
+  const server = await startTestServer({ AGENTEEQ_SOURCE_HOME: home });
+  t.after(() => server.close());
+  const stream = await openStream(server.url); t.after(() => stream.close());
+  const sid = `claude-desktop-code:${id}`;
+  let state = (await api(server.url).get('/api/state')).body;
+  assert.equal(state.sessions.find((x) => x.id === sid).status, 'observed');
+  assert.equal(state.alerts.items.some((x) => x.sessionId === sid && x.kind === 'failed'), false);
+  const started = Date.now();
+  server.app.connectors.web.ingest(karta(true));
+  await waitFor(() => stream.events.some((e) => e.event === 'session' && e.data.id === sid && e.data.status === 'working'), 1900);
+  assert.ok(Date.now() - started < 2000);
+  server.app.connectors.web.ingest(karta(false));
+  await f.write([metadata(old)], 3);
+  await server.app.connectors['claude-desktop-code'].scan();
+  state = (await api(server.url).get('/api/state')).body;
+  assert.notEqual(state.sessions.find((x) => x.id === sid).status, 'failed');
+  assert.equal(state.alerts.items.some((x) => x.sessionId === sid && x.kind === 'failed'), false);
 });

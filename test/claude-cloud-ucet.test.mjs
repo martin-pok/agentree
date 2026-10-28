@@ -297,3 +297,104 @@ test('přihlášení Claude Code: náhradní hledání a důvod, proč přečís
   r = await prihlaseniClaudeCodeSDuvodem({ sourceHome: home, keychain: true, uzivatel: 'martin' }, { jeMac: true, systemovyUzivatel: () => 'martin', runImpl: async () => ({ ok: false, code: 44 }) });
   assert.equal(r.p.accessToken, 'f3');
 });
+
+test('opening an already populated remote transcript also refreshes a recovered failure state', async (t) => {
+  const actualNow = Date.now;
+  let clock = actualNow(), worker = 'failed', detailCalls = 0;
+  const record = () => surova({ status: worker === 'failed' ? 'failed' : 'active', worker_status: worker === 'failed' ? 'idle' : worker, last_event_at: new Date(clock - 1000).toISOString() });
+  const sid = record().id;
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60000,
+    prihlaseni: async () => ({ accessToken: 'fixture', expiresAt: clock + 3600000 }),
+    fetchImpl: async (url) => {
+      if (url.includes('/events?')) return odpoved(200, { data: [{ type: 'assistant', uuid: 'old-answer', created_at: new Date(clock - 120000).toISOString(), message: { content: [{ type: 'text', text: 'Previous response.' }], stop_reason: 'end_turn' } }] });
+      if (url.includes('?limit=')) return odpoved(200, { data: [record()] });
+      detailCalls++;
+      return odpoved(200, { session: record() });
+    } } });
+  try {
+    const connector = server.app.connectors['claude-desktop-code'];
+    assert.equal(server.app.store.summary(`claude-desktop-code:${sid}`).status, 'failed');
+    await connector.sledujDetail(sid);
+    assert.ok(server.app.store.get(`claude-desktop-code:${sid}`).transcript.length);
+    t.mock.method(Date, 'now', () => clock);
+    clock += 9000;
+    worker = 'running';
+    const response = await fetch(`${server.url}/api/sessions/${encodeURIComponent(`claude-desktop-code:${sid}`)}`);
+    const detail = await response.json();
+    assert.equal(detail.session.status, 'working');
+    assert.ok(detailCalls >= 2, 'known transcript does not prevent refreshing session metadata');
+  } finally { t.mock.restoreAll(); await server.close(); }
+});
+
+test('a known failed session outside the first API page is checked for recovery', async () => {
+  let listed = true, worker = 'failed', queried = false;
+  const record = () => surova({ status: worker === 'failed' ? 'failed' : 'active', worker_status: worker === 'failed' ? 'idle' : worker, last_event_at: new Date(Date.now() - 1000).toISOString() });
+  const sid = record().id;
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60000,
+    prihlaseni: async () => ({ accessToken: 'fixture', expiresAt: Date.now() + 3600000 }),
+    fetchImpl: async (url) => {
+      if (url.includes('/events?')) return odpoved(200, { data: [] });
+      if (url.includes('?limit=')) return odpoved(200, { data: listed ? [record()] : [] });
+      queried = true;
+      return odpoved(200, { session: record() });
+    } } });
+  try {
+    assert.equal(server.app.store.summary(`claude-desktop-code:${sid}`).status, 'failed');
+    listed = false; worker = 'running';
+    await server.app.connectors['claude-desktop-code'].scan(true);
+    assert.equal(queried, true);
+    assert.equal(server.app.store.summary(`claude-desktop-code:${sid}`).status, 'working');
+  } finally { await server.close(); }
+});
+
+test('an older in-flight list cannot resurrect failure after a newer detail confirms recovery', { timeout: 6000 }, async (t) => {
+  let clock = Date.now(), block = false, release, entered;
+  const blocked = new Promise((resolve) => { entered = resolve; });
+  const gate = new Promise((resolve) => { release = resolve; });
+  const failure = surova({ status: 'failed', worker_status: 'idle', last_event_at: new Date(clock - 1000).toISOString() });
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60000,
+    prihlaseni: async () => ({ accessToken: 'fixture', expiresAt: clock + 3600000 }),
+    fetchImpl: async (url) => {
+      if (url.includes('/events?')) return odpoved(200, { data: [] });
+      if (url.includes('?limit=')) {
+        if (block) { entered(); await gate; }
+        return odpoved(200, { data: [failure] });
+      }
+      return odpoved(200, { session: { ...failure, status: 'active', worker_status: 'running', last_event_at: new Date(clock).toISOString() } });
+    } } });
+  let older;
+  try {
+    t.mock.method(Date, 'now', () => clock);
+    block = true;
+    const connector = server.app.connectors['claude-desktop-code'];
+    older = connector.scan(true);
+    await blocked;
+    clock += 1000;
+    await connector.sledujDetail(failure.id);
+    assert.equal(server.app.store.summary(`claude-desktop-code:${failure.id}`).status, 'working');
+    release(); await older;
+    assert.equal(server.app.store.summary(`claude-desktop-code:${failure.id}`).status, 'working');
+  } finally { release(); await older; t.mock.restoreAll(); await server.close(); }
+});
+
+test('off-page verification rotates past five sessions and isolates a single detail failure', async () => {
+  let listed = true;
+  const rows = Array.from({ length: 7 }, (_, i) => surova({ id: `session_RotateFixture${i}123`, status: 'failed', worker_status: 'idle', last_event_at: new Date(Date.now() - 1000).toISOString() }));
+  const queried = new Set();
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60000,
+    prihlaseni: async () => ({ accessToken: 'fixture', expiresAt: Date.now() + 3600000 }),
+    fetchImpl: async (url) => {
+      if (url.includes('/events?')) return odpoved(200, { data: [] });
+      if (url.includes('?limit=')) return odpoved(200, { data: listed ? rows : [] });
+      const id = url.split('/').at(-1); queried.add(id);
+      if (id === rows[0].id) return odpoved(500, {});
+      return odpoved(200, { session: { ...rows.find((x) => x.id === id), status: 'active', worker_status: 'running', last_event_at: new Date().toISOString() } });
+    } } });
+  try {
+    listed = false;
+    const connector = server.app.connectors['claude-desktop-code'];
+    await connector.scan(true); await connector.scan(true);
+    assert.equal(queried.size, 7, 'every missing session gets a turn');
+    for (const row of rows.slice(1)) assert.equal(server.app.store.summary(`claude-desktop-code:${row.id}`).status, 'working');
+  } finally { await server.close(); }
+});

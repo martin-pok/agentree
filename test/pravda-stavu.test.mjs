@@ -193,7 +193,7 @@ test('procesy: pomocný agent si nevezme volný proces Claude Code', () => {
   assert.deepEqual(nesparovane(procesy, sessions).map((p) => p.pid), [2]);
 });
 
-test('vzdálený Claude Code: rozhodnutí a selhání ze staré cache zůstávají vidět jako nečerstvé', () => {
+test('vzdálený Claude Code: staré rozhodnutí zůstává vidět, historická chyba není aktuální selhání', () => {
   const now = Date.now();
   const s = createSession({ connector: 'claude-desktop-code', localId: 'session_abcdefgh12', provider: 'anthropic', app: 'x' });
   applyRemoteSession(s, { id: 'session_abcdefgh12', updated_at: iso(now - 6 * HOUR), created_at: iso(now - 7 * HOUR), session_status: 'idle', status_bucket: 'SESSION_STATUS_BUCKET_BLOCKED', title: 't' }, null, now - 6 * HOUR, now);
@@ -204,7 +204,8 @@ test('vzdálený Claude Code: rozhodnutí a selhání ze staré cache zůstávaj
   const s2 = createSession({ connector: 'claude-desktop-code', localId: 'session_abcdefgh13', provider: 'anthropic', app: 'x' });
   applyRemoteSession(s2, { id: 'session_abcdefgh13', updated_at: iso(now - 20 * HOUR), created_at: iso(now - 21 * HOUR), session_status: 'SESSION_STATUS_IDLE', status_bucket: 'SESSION_STATUS_BUCKET_FAILED' }, null, now - 20 * HOUR, now);
   const d2 = deriveStatus(s2, now);
-  assert.equal(d2.status, 'failed');
+  assert.equal(d2.status, 'observed');
+  assert.equal(d2.done, false);
   assert.equal(d2.stale, true);
 });
 

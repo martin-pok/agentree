@@ -1,6 +1,10 @@
 # Roadmapa Agenteeq
 
-## Ověřený aktuální stav — 27. 10. 2026
+## Ověřený aktuální stav — 28. 10. 2026
+
+**Aktivní kandidát v0.46.86:** pravdivost stavu vzdáleného Claude: historické selhání → nepotvrzený stav, limit není selhání, novější tah/odpověď překoná starou chybu, starší síťový požadavek nepřepíše novější pozorování. Ověřování relací mimo první stránku se střídá a izoluje chyby jednotlivých dotazů. Regresní scénáře zahrnují HTTP/SSE a falešná upozornění. Fyzické ověření konkrétního běhu na Macu zůstává otevřené.
+
+Repozitář je podle GitHub API soukromý. Vydané Preview v0.46.85 existuje s osmi přílohami, ale veřejný updater a anonymní odkazy do soukromého repozitáře nejsou distribuční cesta. Distribuci binárek je třeba vyřešit samostatně při zachování soukromých zdrojů.
 
 **Aktivní kandidát v0.46.85:** oprava opakovaného načítání projektových obrázků po výpadku. Dvě regresní zkoušky a cílený Chromium scénář 1440/375 px potvrzují obnovu obrázku po HTTP 503. Před vydáním vyžaduje zelené PR, main CI, build a audit příloh.
 
@@ -31,7 +35,7 @@
 
 ## Právě teď — oprava release blockerů a fyzické UAT
 
-**Kandidát 0.46.85 Preview:** obnova log a obálek po výpadku; připravit vydání až po zeleném PR a main CI, auditu příloh a zachovat otevřené fyzické UAT. Veřejné Preview je 0.46.84.
+**Kandidát 0.46.86 Preview:** aktuální oprava pravdivosti stavu; po zeleném PR, main CI, buildu a auditu příloh. Předchozí **0.46.85 Preview:** obnova log a obálek po výpadku; připravit vydání až po zeleném PR a main CI, auditu příloh a zachovat otevřené fyzické UAT. Veřejné Preview je 0.46.84.
 
 - **v0.46.84 Preview:** vzdálení agenti bez mlčení (přihlášení Claude Code z více míst, důvod na Přehledu), čisté názvy (`src/util.js#cistyNazev`), výběr složky na jeden řádek, Dovednosti ve stejně vysokých kartách a fialové najetí (docs/DESIGN.md).
 - **v0.46.83 Preview:** jméno u každého agenta v „Právě teď“ (jako stránka Agenti), klik na logo na Přehledu plynule nahoru.

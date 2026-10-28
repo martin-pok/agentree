@@ -120,7 +120,7 @@ export function applyEvent(name, data) {
     case 'session': {
       const prev = state.sessions.get(data.id);
       if (prev && prev.transcriptSeq > data.transcriptSeq) return null;
-      // Keep optional source-quality facts (e.g. remote Claude observation) with the whole
+      // Keep observation.source (account vs cache) and other source-quality facts with the whole
       // summary. Cache connectors preserve monotonically increasing transcriptSeq on rebuild.
       state.sessions.set(data.id, data);
       emit('sessions', `session:${data.id}`);

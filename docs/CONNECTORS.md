@@ -298,10 +298,9 @@ ve složce, o které Agenteeq neví. Proto:
   je práce; později je tah nečerstvý (`stale`) s důvodem „Při posledním načtení pracoval · novější
   stav Claude Desktop neuložil“ – nikdy „hotovo“. Uložený přepis `code:cse_…` s rozběhnutým tahem,
   jehož poslední zpráva je novější než načtení seznamu, má přednost (i jeho popis činnosti).
-  Čekání na rozhodnutí (`requires_action`, skupina `blocked`, kategorie `need_input`) a selhání se
-  samy nezmění: zůstávají vidět od `updated_at` (čekání 12 h, selhání 24 h, `deriveStatus`), ale se
-  seznamem načteným před víc než 2 minutami jsou nečerstvé (`stale`) a důvod končí „· stav z <čas
-  načtení>“ – neplatí za „teď“.
+  Čekání na rozhodnutí (`requires_action`, skupina `blocked`, kategorie `need_input`) zůstává
+  až 12 h vidět s časem načtení. Selhání ze seznamu načteného před více než 2 minutami už od
+  0.46.86 není aktuálně potvrzená chyba: stav je neověřený (`observed`, `stale: true`, `done: false`).
   `failed` přebíráme ze serverové kategorie, přesný důvod (např. limit) bez uložené chyby netvrdíme.
   Zdroj repozitáře se čte v REST tvaru `{ type: 'git_repository', url }` i ve výčtovém
   `{ git_repository: { url } }`; záznam bez pole `type` se nezahodí. Stav zdroje v Nastavení uvádí,
@@ -603,3 +602,12 @@ Přihlášení Claude Desktopu nenahrazuje přihlášení Claude Code. Dokud př
 nevrátí čerstvý stav, nelze tvrdit, že je detekce této vzdálené relace opravena.
 
 AI Studio Build (24. 10. 2026): na skutečné přihlášené stránce `/apps/<id>` ověřeno tlačítko `button.send-button.running` při generování; běžný Send bez této třídy práci nedokazuje. Podpora přepisu zůstává Beta.
+
+
+### Pravdivost vzdáleného stavu — oprava 0.46.86
+
+Historická chyba z cache starší než čerstvost zdroje (2 minuty) není aktuálně potvrzené selhání: `deriveStatus` vrací `observed`, `stale: true`, `done: false`; rozhraní ji ukazuje jako neověřenou. Skutečná čerstvě potvrzená chyba se dál hlásí jako `failed`. Přepis se zpracuje před metadaty: novější odpověď/tah překonává starou chybu; známá limitní hláška poskytovatele (přesný jednořádkový tvar „You've hit your … limit · resets …“, i bez SDK příznaku) je rozpoznání podle textu, nikoli dohled účtu. Nepoužívá se obecné slovo „limit“ v běžné odpovědi. Po vypršení kvóty bez dalšího důkazu se nehlásí úspěšné dokončení.
+
+Otevření detailu obnoví metadata i zprávy, znovu nejdříve po 8 s. Požadavky se slučují podle času pozorování, takže pomalejší starší seznam nesmí přepsat novější detail. Známé chybové relace mimo první stránku účtu se také ověřují; nejvýš pět za kolo, střídavě, paralelně a s oddělenými chybami. `observation.source` označuje účet nebo cache; původní `source: desktop-cache` zůstává kvůli bezpečné kompatibilitě otevírání relací. Nový tah z živé karty zůstává důkazem i po expiraci heartbeat, takže starší selhání nepřivolá zpět.
+
+Scénáře: `test/remote-state-truth.test.mjs`, `test/claude-desktop-code.test.mjs`, `test/claude-cloud-ucet.test.mjs`. Jde o fixtures a simulované API; konkrétní relace na Macu vlastníka nebyla v cloudovém workspace ověřená.

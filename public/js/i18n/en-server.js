@@ -3,6 +3,8 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Aktuální stav nepotvrzen · poslední hlášení chyby z {0}": "Current status unconfirmed · last error report at {0}",
+  "Limit se od posledního měření obnovil, nový stav zatím nepřišel": "The limit has reset since the last reading; no new status yet",
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",
   "Agenty v cloudu z účtu Claude nevidím: na tomto počítači chybí přihlášení Claude Code. Stačí se jednou přihlásit v Terminálu příkazem claude, pak se stav načte sám.": "I can't see cloud agents from your Claude account: this computer has no Claude Code sign-in. Sign in once in Terminal with the claude command and the status will load on its own.",
   "Agenty v cloudu z účtu Claude nevidím: macOS nepovolil přístup ke Klíčence (položka „Claude Code-credentials“). Až se macOS zeptá, zvol Vždy povolit.": "I can't see cloud agents from your Claude account: macOS did not allow Keychain access (item “Claude Code-credentials”). When macOS asks, choose Always Allow.",
