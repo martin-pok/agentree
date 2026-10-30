@@ -611,3 +611,11 @@ Historická chyba z cache starší než čerstvost zdroje (2 minuty) není aktu�
 Otevření detailu obnoví metadata i zprávy, znovu nejdříve po 8 s. Požadavky se slučují podle času pozorování, takže pomalejší starší seznam nesmí přepsat novější detail. Známé chybové relace mimo první stránku účtu se také ověřují; nejvýš pět za kolo, střídavě, paralelně a s oddělenými chybami. `observation.source` označuje účet nebo cache; původní `source: desktop-cache` zůstává kvůli bezpečné kompatibilitě otevírání relací. Nový tah z živé karty zůstává důkazem i po expiraci heartbeat, takže starší selhání nepřivolá zpět.
 
 Scénáře: `test/remote-state-truth.test.mjs`, `test/claude-desktop-code.test.mjs`, `test/claude-cloud-ucet.test.mjs`. Jde o fixtures a simulované API; konkrétní relace na Macu vlastníka nebyla v cloudovém workspace ověřená.
+
+## Automatická kontrola zdrojů — 30. 10. 2026
+
+`npm run qa:detectors` ověřuje skutečné MV3 rozšíření, Chrome API, background párování, content scripts a lokální server pro všech 11 webových adaptérů, přenos obou zpráv, pracovní/dokončený/limitní stav a restart aplikace. Vyžaduje plný Playwright Chromium a volný port 4620; nikdy neukončuje cizí appku. Poskytovatelské DOM je řízené syntetické, nikoli zástupné tvrzení o živých přihlášených službách.
+
+`npm run qa:live-codex` je explicitně zapínaný canary s vyhrazeným QA profilem. Chybějící či neplatné přihlášení vrátí blokaci (exit 2), ne úspěšný test. Běžné CI se kvůli tomuto chybějícímu externímu účtu netváří jako plně živě ověřené. Nikdy nekopírovat/symlinkovat osobní auth.json kvůli izolaci testu; obnovování OAuth má používat vlastní přihlášený testovací profil.
+
+Audit našel a opravuje stránkování `thread/list` za první stovkou a autoritativní `task_complete.error` nového SDK. Podrobná před/po evidence a hranice ověření: `PRODUCT-AUDIT-2026-10-30.md`.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.87 – 2026-10-30 · Codex bez ztracených vláken a falešného dokončení
+
+- **Vlákna za první stovkou:** index aplikace Codex načítá další stránky; opakovaný kurzor nebo chyba další stránky se hlásí jako neúplný odečet. Zachovaná kompatibilita se starším app-serverem.
+- **Chyba není hotová práce:** moderní Codex SDK ukládá i neúspěšný tah jako `task_complete` s polem `error`. Aplikace tuto chybu zobrazí, nový tah ji odstraní a explicitní vyčerpaný limit odliší od selhání.
+- **Samostatná kontrola detekce:** skutečné MV3 rozšíření a izolovaná aplikace ověřují 11 služeb, oba přenesené příspěvky, stavy a obnovu po restartu. Stránky poskytovatelů mají řízený syntetický obsah; tento test nepředstírá ověření současného přihlášeného rozhraní poskytovatelů. Volitelný živý Codex canary používá samostatný QA účet a nepovažuje neplatné přihlášení za úspěch.
+
 ## 0.46.86 – 2026-10-28 · Pravdivější detekce a obnovené Preview
 
 - **Hledání ve WebKitu:** skrytý vstup zavřeného vyhledávání už neblokuje přesun fokusu na nalezené nastavení.

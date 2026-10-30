@@ -119,7 +119,12 @@ try {
   server = await startTestServer(env);
   await listenOnExtensionPort(server);
   await page.evaluate(() => document.querySelector('[data-message-author-role="assistant"]').textContent = 'Synthetic response after restart');
-  await waitFor(async () => (await session('chatgpt'))?.status === 'working');
+  await waitFor(async () => {
+    const s = await session('chatgpt');
+    if (s?.status !== 'working') return false;
+    const detail = (await a.get(`/api/sessions/${encodeURIComponent(s.id)}`)).body;
+    return detail.transcript.some(entry => entry.role === 'assistant' && entry.text === 'Synthetic response after restart');
+  });
   restartRecovery = true;
   await page.close();
   assert.equal(results.length, sites.length);
