@@ -3,6 +3,7 @@
 // celý, nebo ho pozná podle vzoru (public/js/texty-serveru.js). Úplnost hlídá test/i18n.test.mjs.
 // Titulky upozornění z src/alerts.js jsou tu jako vzory odvozené z jeho šablon.
 export default {
+  "Codex skončil chybou": "Codex ended with an error",
   "Aktuální stav nepotvrzen · poslední hlášení chyby z {0}": "Current status unconfirmed · last error report at {0}",
   "Limit se od posledního měření obnovil, nový stav zatím nepřišel": "The limit has reset since the last reading; no new status yet",
   "Čeká na tvé schválení nástroje {0}. Otevři Claude.": "Waiting for your approval of the {0} tool. Open Claude.",

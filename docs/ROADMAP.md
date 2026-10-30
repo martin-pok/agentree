@@ -1,5 +1,17 @@
 # Roadmapa Agenteeq
 
+## Aktuální fronta — audit 30. 10. 2026
+
+Zdroj pravdy: [plný audit appky, rozšíření a webu](PRODUCT-AUDIT-2026-10-30.md). Vydané Preview je **0.46.86** (publikace 41084284085, 8 příloh), Stable Latest **0.46.58**, veřejný Chrome Store stále **0.46.55**. Repozitář je veřejný. Produkční web odpovídá main `95093a1`.
+
+**Kandidát 0.46.87:** oprava ztracených Codex vláken za první stovkou a ignorovaného `task_complete.error`, skutečné MV3 QA pro 11 služeb včetně obnovy po restartu. Před vydáním vyžaduje čerstvé CI a audit příloh. Opravy mají reprodukci před změnou; nejsou zatím součástí instalované .86.
+
+Čerstvé CI vydané .86: 41092831090, 8/8 po opakování nativní Mac úlohy kvůli nedostupnosti runneru. Lokálně baseline 1547 pass / 13 skip; finální kandidát .87 má 1553 pass / 13 skip / 0 fail a úspěšný balíčkový smoke. Úspěšný živý modelový běh blokuje neobnovitelné přihlášení QA Codexu; reálná chyba byla využita jako reprodukce nesprávného „hotovo“. `qa:live-codex` pro další běhy používá vyhrazený profil, nikoli osobní credentials.
+
+Pořadí: P0 obě opravy .87 → P0 skutečná publikace Chrome Store #172 → testovací účty/canary → device lab #174/#208 → průběžné UX/a11y/performance #217/#218/#213 → právní/brandové vstupy před placeným launchem #232/#229. #255 obsahuje převážně staré implementované body a nesjednocenou evidenci, ne šestnáct současně potvrzených neopravených chyb. Vše se má ověřovat automaticky v QA; nepřenášet rutinní testy na vlastníka.
+
+### Starší stavové zápisy níže jsou historie
+
 ## Ověřený aktuální stav — 28. 10. 2026
 
 **Vydání 0.46.86:** vlastník 28. 10. vrátil repozitář na veřejný a požádal okamžité Preview pro Mac. Schválený úklid 4369 CI artefaktů / 62,51 GiB je dokončený. GitHub kvótu nadále odmítá; dočasné QA výstupy a přenos buildů používají oddělenou Actions cache s přesnými klíči, vydání při chybějícím buildu skončí. Povinné testy a nezávislý audit skutečných instalačních souborů jsou zachované.
@@ -12,6 +24,18 @@ Repozitář je podle GitHub API znovu veřejný. Vydané Preview v0.46.85 existu
 
 - Sdílené materiály a světlo robotů s aplikací, dekorace bez překrytých rekvizit, obnovené skutečné CZ/EN snímky produktu, systémové ikony a ukotvení robota k závěrečnému nadpisu. Větev `fix/site-current-robots`; zveřejnění po funkčních kontrolách webu a kontrole konkrétního deploymentu. Vlastník 28. 10. výslovně požádal neblokovat tuto webovou opravu chybou konfigurace CodeQL po přepnutí repozitáře na private. CodeQL zůstává zapnuté a jeho červená kontrola není vydávána za úspěch; žádné placené služby se neaktivují.
 - Oprava webu #385 i stavu Claude #384 jsou integrované v release kandidátovi #387.
+
+## Nasazení webu — 28. 10. 2026
+
+Produkce `https://agentree-fawn.vercel.app/` je z commitu `b2fe0d6`, deployment `dpl_23qiPrEamNErC73VDQP6XBMj8WCf` (READY). Obsahuje aktuální sdílené roboty a materiály, osm obnovených snímků produktu, systémové ikony, obrys přepínače 50 % a ukotvení robota u nadpisu. Ověřeno přímo na produkci CZ/EN × Mac/Windows × 375/1440 px. CI qa:site, qa:extension, qa:contrast a testy všech tří OS prošly; ukládání jejich artefaktů stále odmítá kvóta GitHubu. CodeQL konfigurace soukromého repozitáře je nevyřešená, vlastník výslovně požádal neblokovat jí web.
+
+**PR #385 ještě není sloučený. Před dalším nasazením main přenést tuto opravu, aby ji novější main deployment nepřepsal starým webem. PR s touto evidencí navazuje na #385.**
+
+Schválené čištění CI: smazáno všech přesně 4 369 povolených artefaktů (62,51 GiB). Nezávislý seznam potvrzuje 0 z těchto ID na GitHubu; zbývá 357 zachovaných artefaktů (1,39 GiB). Releases zůstaly zachované. Automatický přepočet kvóty provozuje GitHub.
+
+## Chrome Web Store — nepublikováno, 28. 10. 2026
+
+Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload 0.46.85 skončil před Googlem kvůli prázdným třem CWS přístupům. Připravený ověřený ZIP a CZ/EN sada nestačí: balíček vyžaduje oprávněného vydavatele/OAuth; listingové obrázky a popis vyžadují Developer Dashboard. Podrobný stav a důkazy v `docs/CHROME-WEB-STORE.md`, úkol #172 zůstává otevřený.
 
 ## Ověřený aktuální stav — 27. 10. 2026
 
@@ -42,41 +66,19 @@ Repozitář je podle GitHub API znovu veřejný. Vydané Preview v0.46.85 existu
 
 **Historický zablokovaný Draft v0.46.11 (nikoli nejnovější kandidát).** Anotovaný tag `v0.46.11` na `1e72a0057637ad249e70388444346a80526e7083`; přesné [CI 8/8](https://github.com/martin-pok/agentree/actions/runs/38430918556); úspěšný [release build + nezávislý byte audit](https://github.com/martin-pok/agentree/actions/runs/38432569881): soukromý Draft ID `411899483` s 8 přílohami, SHA-256 skutečně stažených bajtů **8/8 vůči GitHub API a 7/7 vůči manifestu** (report ID `11831787377`). [PR #216](https://github.com/martin-pok/agentree/pull/216) opravila ruční publishing REST workflow a byla sloučena v `af3c1fa`, [8/8 main CI](https://github.com/martin-pok/agentree/actions/runs/38440054592). **Dílčí fyzické Mac UAT 13. 10. proběhlo:** instalace z ověřeného DMG, start/restart, stávající účet, upozornění a projekty obstály; přesný rozsah a Gatekeeper `rejected` jsou v [RELEASE-READINESS.md](RELEASE-READINESS.md). Čistý Finder/Gatekeeper onboarding, nové Google OAuth, Chrome/Windows a úplné UAT jsou stále otevřené. PWA/Apple PNG v tomto neměnném Draftu mají staré proporce a fialovou anténu; [oprava #231](https://github.com/martin-pok/agentree/pull/231) vyžaduje nový binární kandidát. `v0.46.11` nezveřejňovat. Veřejné Preview je od 14. 10. `v0.46.12` (viz níže; předtím `v0.46.6`), Stable Latest `v0.46.0`, veřejný Chrome Store `0.31.4`.
 
-## Právě teď — oprava release blockerů a fyzické UAT
+## Právě teď — 0.46.87 Preview a spolehlivost detekce
 
-**Kandidát 0.46.86 Preview:** aktuální oprava pravdivosti stavu; po zeleném PR, main CI, buildu a auditu příloh. Předchozí **0.46.85 Preview:** obnova log a obálek po výpadku; připravit vydání až po zeleném PR a main CI, auditu příloh a zachovat otevřené fyzické UAT. Veřejné Preview je 0.46.84.
+**Kandidát v0.46.87 Preview:** opravené stránkování vláken Codexu a terminální SDK chyby. Před publikací musí projít čerstvé kompletní CI a nezávislý SHA-256 audit osmi skutečných příloh. Veřejné Preview je v0.46.86, Stable Latest v0.46.58; žádný starý Draft není paralelní release úkol.
 
-- **v0.46.84 Preview:** vzdálení agenti bez mlčení (přihlášení Claude Code z více míst, důvod na Přehledu), čisté názvy (`src/util.js#cistyNazev`), výběr složky na jeden řádek, Dovednosti ve stejně vysokých kartách a fialové najetí (docs/DESIGN.md).
-- **v0.46.83 Preview:** jméno u každého agenta v „Právě teď“ (jako stránka Agenti), klik na logo na Přehledu plynule nahoru.
-- **v0.46.82 Preview:** nabídka výběru drží u kapsle při posunu stránky, pevné pořadí v „Právě teď“ (docs/DESIGN.md), obrázky projektů předem načtené, jména robotů na kartách. Na fyzickém Macu ověřit rolování v nabídce projektu a přechod agenta mezi skupinami.
-- **v0.46.81 Preview:** doladit objem robotů měkkým světlem, bočním stínem a zapuštěným displejem. Před vydáním ověřit konzistentní vzhled malých i velkých karet, přesné CI a audit příloh.
-- **v0.46.80 Preview:** vrátit přepis vzdálených Claude chatů: zachovat původní API ID `cse_`, podporovat `code:session_` v cache a načíst starší stránky událostí. Na fyzickém Macu ověřit relaci „Brno app aktuální stav“ a konkrétní zprávy; pokud účet vrátí 404 nebo prázdno, detail musí ukázat důvod a při dalším otevření zkusit znovu. Vydání až po přesném CI a auditu.
-- **v0.46.79 Preview:** doplnit detekci nativních vláken Codex.app přes místní app-server `thread/list`, když chybí JSONL přepis. Na skutečném Macu ověřit konkrétní běžící vlákno „LATEST AG“ a zda app-server potvrzuje jeho živý stav; samostatný app-server může hlásit jen `notLoaded`, který se musí poctivě ukázat jako nalezené vlákno. Vydání až po přesném CI a auditu.
-- **v0.46.78 Preview:** opravit incident, kdy „Otevřít v Claude“ u vzdálené relace jen aktivovalo poslední vybraný, cizí chat. Přesné otevření nabídnout výhradně po potvrzení URL stejné relace párovaným rozšířením; u samotné cache přiznat chybějící přepis a dát název k ručnímu vyhledání. Vydat nový neměnný tag až po CI a auditu; Draft 0.46.77 s touto chybou nezveřejňovat. Na skutečném Macu potom ověřit správnou relaci a dostupnost přepisu.
+| Priorita | Výsledek | Dokončení |
+|---|---|---|
+| P0 | Vydat obě prokázané opravy detekce | Přesný commit, CI, build, nezávislý byte audit, publikace Preview a anonymní feed. |
+| P0 | Chrome Store #172 | Veřejná .55 je zastaralá. Publikace balíčku i nových obrázků/textů vyžaduje přístup vydavatele; GitHub ZIP není Store update. |
+| P0 | Živá provider QA | Vyhrazené testovací profily a skutečné canary. Nové MV3 QA už samostatně ověřuje 11 služeb × 3 stavy a restart; poskytovatelské DOM je syntetické. |
+| P1 | Device UAT #174/#208 | Automatizovaný device lab: action-popup → běžící Mac okno, upgrade/rollback a Safari/iPhone. Nepřenášet rutinní ověřování na vlastníka. |
+| P1 | UX, přístupnost, výkon a brand | #217/#218/#213; aktuální důkazy a mezery viz [audit](PRODUCT-AUDIT-2026-10-30.md). |
 
-- **v0.46.77 Preview:** opravit skutečnou šířku nabídky projektu v hlavním spouštěči a ověřit ji na vykreslené kapsli nad 240 px; po zeleném CI sestavit balíčky, provést nezávislý SHA-256 audit a zveřejnit Preview. Ověřit výsledek a aktualizaci na fyzickém Macu (UAT). `v0.46.76` je veřejné Preview, ale úzká nabídka v něm přetrvala.
-
-- Kritické: ověřit fyzicky živý stav Claude a Google AI Studio po aktualizaci. 0.46.65 zůstává nezveřejněný: selhalo CI.
-- Následně: sjednotit zavírání dialogů křížkem, Escape a kliknutím mimo; při neuložených změnách potvrdit jejich zahození.
-
-**Release vlak 23. 10. 2026:** **Připravuje se v0.46.72 Preview** (bubliny po větách). **v0.46.71 Preview** (cloudoví agenti Claude, aktualizace sama, barvy, přepis z pracovní kopie). **v0.46.70 Preview je zveřejněné** (generátor nápadů, vyrovnaný layout). **v0.46.69 Preview je zveřejněné** (chaty z aplikace ChatGPT pro Mac, Beta). **v0.46.68 Preview je zveřejněné** (přepis cloudového běhu, mřížka, nabídky). **v0.46.67 Preview je zveřejněné** (výchozí „V aplikaci“, oblečení zezadu). **v0.46.66 Preview je zveřejněné** (pestřejší flákání, plynulé přesouvání karet). **v0.46.64 Preview je zveřejněné** (tečka stavu na ikoně rozšíření). **v0.46.63 Preview je zveřejněné** (roboti v dílně; obsahuje i detekci cloudových běhů Codexu z v0.46.62). **v0.46.61 Preview je zveřejněné, ale cloudové běhy Codexu nezachytí.** **v0.46.60 Preview bylo zveřejněné** z přesně otestovaného commitu `90229c0`, všechny přílohy prošly auditem a publikací, a na Macu vlastníka běží 0.46.60. **v0.46.58 Stable Latest** zůstává výchozí. Nové funkce webových chatů, dva skutečné Claude účty, QR s telefonem, Chrome rozšíření 0.46.60 a Windows beta potřebují samostatné fyzické UAT. [Release readiness](RELEASE-READINESS.md) uvádí přesné důkazy a hranice.
-
-**Web již na produkci:** Windows/Mac adaptivní CZ/EN úvodní i instalační cesta z PR #263 je sloučená. Vercel projekt `agentree` potvrdil READY pro `c344211` na produkční větvi; reálné Windows UAT a produkční dostupnost jednotlivých downloadů se ověřují samostatně. Zelený deployment není důkazem publikace desktopových binárek.
-
-**Stav vydávání 20. 10. 2026:** Preview vychází průběžně přes automatický Draft s auditem příloh a ruční zveřejnění (`publish.yml`); poslední veřejné je [`v0.46.43`](https://github.com/martin-pok/agentree/releases/tag/v0.46.43) (20. 10., osm příloh včetně `SHA256SUMS.txt`, otisky ověřené při zveřejnění). Starší kandidáti 0.46.11–0.46.14 jsou historie (podrobnosti v [RELEASE-READINESS.md](RELEASE-READINESS.md)). **Zdokumentované fyzické UAT na Macu, v Chromu ani na Windows zatím neproběhlo** – to zůstává první P0.
-
-| Priorita | Výsledek | Důkaz a stav | Dokončení |
-|---|---|---|---|
-| **P0** | **UAT zveřejněného Preview** | Poslední veřejné [v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60), Stable Latest `v0.46.58`. Na Macu vlastníka je ověřená nainstalovaná verze, podpis, spuštění, účet a zachování uložených dat; Chrome rozšíření tam stále hlásí 0.46.58. Windows a úplné fyzické UAT nejsou hotové. [#208](https://github.com/martin-pok/agentree/issues/208) | Ověřit nový Chrome ZIP se skutečnými chaty, Windows beta, Finder/Gatekeeper, nové Google SSO, živé Claude profily, QR telefon a případný rollback; nalezená závada = nová verze |
-| **P0** | **Aktualizovat skutečný Chrome Web Store** | Veřejná karta 23. 10. 2026 ukazuje **0.46.55**; GitHub Preview obsahuje `agenteeq-extension-0.46.60.zip`, ale [workflow po vydání](https://github.com/martin-pok/agentree/actions/runs/39906389905) kvůli chybějícím `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` a `CWS_REFRESH_TOKEN` upload výslovně přeskočilo. Zelený workflow není publikace. [#172](https://github.com/martin-pok/agentree/issues/172) | Po fyzickém Chrome/Mac UAT vlastník doplní přístup pro upload nebo nahraje ověřený 0.46.60 ZIP a odpovídající listing v Developer Console; pak ověřit veřejnou verzi a párování |
-| **P0** | **Bezpečný nativní focus agenta a autentizace** | Zdrojový 403 bug již opraven. `POST /api/extension/focus-agent` validuje token, origin, viditelné ID a existující okno; testy prochází. [#174](https://github.com/martin-pok/agentree/issues/174) | Reálný párovaný Mac+Chrome, čekající/běžící agent kliknutím otevře původní session bez duplikace, offline/unpair/focus je přístupný |
-| **P0** | **Brand na každé platformě, bez trojzubce** | Staré tracked PNG/ICO/ICNS odstraněny, web/404 favicon a Windows ZIP QA hotovy; Mac Dock z 0.46.11 vizuálně ověřen; PWA/Apple PNG v Draftu **prokazatelně staré**, zdroj opravuje PR #231; Explorer a dashboard Vercel avatar neověřeny. [#213](https://github.com/martin-pok/agentree/issues/213) | Pixelová shoda zdrojů, malých ikon, promo i skutečně nainstalovaných UI a avataru |
-| **P0** | **Pravdivé live stavy a první Claude event** | V CI historický timing fail 2s, teď 8/8 na vydávaném SHA; falešně potvrzenou práci nelze tolerovat. [#180](https://github.com/martin-pok/agentree/issues/180) | Reálné Claude/Codex/Chrome statusy, restart/offline, provenance a nejistoty doložené live UAT |
-| **P1** | **WCAG 2.2 AA pro web, app a Chrome rozšíření** | Kontrast/ovládací prvky, axe WCAG 2.2 A/AA na 8 obrazovkách (světlý/tmavý, 1440/375 px) přeskládání na 320 × 256 CSS px (400 %) a průchod Tabem s viditelným fokusem bez pasti v CI; **čtečky (VoiceOver/NVDA) na zařízení nedoložené**. [#217](https://github.com/martin-pok/agentree/issues/217) | Keyboard, VoiceOver/NVDA, reflow 320 CSS px/400% zoom, fokus, cíle 24×24, live announcements, CZ/EN chyby; 0 kritických/serious nálezů |
-| **P1** | **Responzivita, typografie a produkční PSI** | V CI Chromium/WebKit viewporty a design tokeny; iPhone Safari, p75 CWV, 400% zoom, skutečný PSI nejsou doloženy. [#218](https://github.com/martin-pok/agentree/issues/218) | Real-device 320–1920px CZ/EN světlý/tmavý/reduced-motion; LCP ≤2,5 s, INP ≤200 ms, CLS ≤0,1 (p75) s doloženým měřením |
-| **P1** | **Agents UI bez >50ms dlouhých renderů a s 20+ agenty** | **Opraveno v kódu ([PR #249](https://github.com/martin-pok/agentree/pull/249)), v `v0.46.13`.** Příčiny změřené v trase Chromia: `:has()` přepočítával styly všech karet, dávka znovu slučovala celou tabulku, pohyb robotů měřil i roboty mimo okno. Se 140 agenty 0 dlouhých úloh v `qa:desktop` na všech 8 obrazovkách, regresní test `test/plynulost.test.mjs`. WebKit ověřilo jen CI. [#209](https://github.com/martin-pok/agentree/issues/209) | Reprodukovat profil na shodném SHA, optimalizovat skutečný bottleneck, doložit p50/p95/p99 i 20–50 session + Chromium/WebKit |
-| **P1** | **Native/signing, cloud/account a bezpečnost pro světový trh** | DMG funguje na CI, Developer ID/notarizace není hotová; DPA/privacy review a reálné OAuth/live konektory nedokončeny. | Developer ID, notarizace, real-device Gatekeeper/UAT, právní review, origin/permission threat model |
-| **P2** | **Power-user value — attention inbox, saved views, source confidence, Git review** | Existují Upozornění, command palette, projekty a worktree helpers; další návrhy jsou **hypotézy, nikoli hotové funkce**. [#219](https://github.com/martin-pok/agentree/issues/219) | 5–10 rozhovorů, měřený time-to-unblock/time-to-first-value, UX prototyp, bezpečnost, CZ/EN, pilotní UAT a jen ověřená feature do releasu |
+Čerstvé CI vydané .86: 41092831090, 8/8. Původní historické záznamy výše nepopisují současnou frontu. #255 obsahuje 16 původních požadavků; mapování implementací a zbylých kontrol je v auditu.
 
 ## Backlog — podle dopadu na uživatele
 
