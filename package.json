@@ -47,6 +47,7 @@
     "qa:site": "node scripts/qa-site.mjs",
     "qa:loader": "node scripts/qa-loader.mjs",
     "qa:extension": "node scripts/qa-extension.mjs",
+    "qa:detectors": "node scripts/qa-service-detection.mjs",
     "qa:icons": "node scripts/verify-product-icons.mjs",
     "qa:native": "node scripts/qa-native.mjs",
     "qa:update": "node scripts/qa-update.mjs",

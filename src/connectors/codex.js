@@ -359,13 +359,28 @@ export function createCodexConnector(ctx) {
             s.turnSteps = 0;
             s.activity = ui('Přemýšlí…');
             s.pending = null;
+            s.failure = null;
             touch(s, ts);
             return;
-          case 'task_complete':
+          case 'task_complete': {
             s.running = false;
             s.activity = '';
+            // Current Codex persists unsuccessful turns as task_complete with an
+            // error. The event name alone is not proof of a successful answer.
+            if (p.error) {
+              const message = typeof p.error === 'string' ? p.error : p.error.message;
+              const text = typeof message === 'string' && message.trim() ? clip(message, 300) : ui('Codex skončil chybou');
+              const info = p.error?.codex_error_info || p.error?.codexErrorInfo;
+              if (typeof info === 'string' && /usage[_-]?limit[_-]?exceeded|rate[_-]?limit[_-]?reached/i.test(info)) {
+                s.limit = { reached: true, text, at: ts, source: 'transcript' };
+                s.failure = null;
+              } else {
+                s.failure = { kind: 'chyba', text, at: ts, source: 'transcript' };
+              }
+            }
             touch(s, ts);
             return;
+          }
           // Přerušený tah (Esc, nové zadání místo běžícího, konec revize) končí jako task_complete,
           // jen se nehlásí jako „hotovo“. Název a důvody (`interrupted`, `replaced`, `review_ended`)
           // podle zdroje openai/codex (protocol.rs, rollout/policy.rs – událost se do přepisu ukládá).
