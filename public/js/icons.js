@@ -80,11 +80,35 @@ const GLYPHS = {
   other: '<path class="g" d="M4 16c3-7 5-9 8-9s5 2 8 9"/><circle class="gf" cx="12" cy="7" r="2.2"/>',
 };
 
+// Přechody v logu (Codex, Antigravity…) mají pevné id. Když je na stránce logo víckrát a první
+// kopie leží ve skrytém prvku, prohlížeč přechod z ní nevykreslí a logo zůstane bílým čtvercem
+// (Codex na Přehledu). Definice se proto vloží jednou do neviditelného, ale vykresleného SVG a
+// z jednotlivých kopií se vynechají.
+const DEFS_VLOZENE = new Set();
+function bezDefs(key, svg) {
+  const defs = svg.match(/<defs>[\s\S]*?<\/defs>/);
+  if (!defs || typeof document === 'undefined' || !document.body) return svg;
+  if (!DEFS_VLOZENE.has(key)) {
+    let zasobnik = document.getElementById('logo-defs');
+    if (!zasobnik) {
+      zasobnik = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      zasobnik.id = 'logo-defs';
+      zasobnik.setAttribute('aria-hidden', 'true');
+      zasobnik.setAttribute('focusable', 'false');
+      zasobnik.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden;pointer-events:none';
+      document.body.prepend(zasobnik);
+    }
+    zasobnik.insertAdjacentHTML('beforeend', defs[0]);
+    DEFS_VLOZENE.add(key);
+  }
+  return svg.replace(defs[0], '');
+}
+
 export function glyph(x, { onDark = false } = {}) {
   const key = logoKey(x);
   if (key && LOGO_VECTORS[key]) {
     const l = LOGOS[key];
-    return LOGO_VECTORS[key].replace('<svg ', `<svg class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" data-logo-key="${key}" aria-hidden="true" focusable="false" `);
+    return bezDefs(key, LOGO_VECTORS[key]).replace('<svg ', `<svg class="logo${l.mono ? ' logo--mono' : ''}${onDark && l.mono ? ' logo--invert' : ''}" data-logo-key="${key}" aria-hidden="true" focusable="false" `);
   }
   const p = pkey(typeof x === 'string' ? x : x?.provider);
   return `<svg viewBox="0 0 24 24" class="glyph" style="color:${onDark ? '#FFFFFF' : PROVIDERS[p].ink}" aria-hidden="true" focusable="false">${GLYPHS[p] || GLYPHS.other}</svg>`;
