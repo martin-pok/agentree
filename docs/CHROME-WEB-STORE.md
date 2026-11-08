@@ -1,10 +1,17 @@
 # Rozšíření v Chrome Web Store
 
-**Aktuální pokus 27. 10. 2026:** [upload v0.46.84](https://github.com/martin-pok/agentree/actions/runs/40497984720) ověřil ZIP vydání, ale selhal před přístupem ke Googlu: chybí alespoň jedna hodnota `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`. Doplnění přístupu v GitHub Settings → Secrets and variables → Actions musí provést správce; tento token nemá oprávnění secrets spravovat. Balíček se do obchodu nenahrál.
+## Ověřený stav — 28. 10. 2026
+
+- Veřejná karta stále nabízí **0.46.55** (ověřeno z veřejného HTML 28. 10.); screenshoty a popis jsou staré. Nové podklady připravené v PR #382 nebyly publikovány.
+- Nový pokus 28. 10. o **0.46.85** [40668049868](https://github.com/martin-pok/agentree/actions/runs/40668049868) stáhl a ověřil ZIP, ale krok pro Google dostal prázdné `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` i `CWS_REFRESH_TOKEN`. Google balíček nepřijal; nejde o čekání na review. Stejně skončil i předchozí pokus 40541331183 z 27. 10.
+- Automatický workflow mění **jen ZIP a odesílá jej ke kontrole**. Obrázky a popis musí vydavatel změnit v existující položce Developer Dashboardu, pro CZ i EN. Úspěch uploadu ZIPu neznamená aktualizovaný listing.
+- Tento pracovní přístup nedokáže číst ani spravovat GitHub Secrets (HTTP 403) a nemá připojený přihlášený prohlížeč vydavatele Googlu. Hodnoty se nikdy neposílají do chatu.
+- Připravená sada pro vydavatele obsahuje přesný ZIP zveřejněné 0.46.85, ikonu, šest snímků, čtyři promo podklady, oba opravené popisy a postup. SHA-256 balíčku `740f04b4c241ff9bb10e676fa8843230579dd73d622da45dc3b8a839bed82d41` souhlasí se zveřejněným `SHA256SUMS.txt`; zdroj `3aebf3d`. Příprava sady neznamená publikaci ani fyzické UAT.
+- Publikační úkol zůstává otevřený, dokud veřejná karta nepotvrdí schválenou novou verzi, všechny nové obrázky a opravený popis. Tvrzení „Text zpráv neposílá“ nesmí doprovázet novou verzi, která předává viditelné zprávy pouze spárované místní aplikaci.
 
 **Nové podklady:** screenshoty 1280×800 a promo 440×280 / 1400×560 v obou jazycích byly znovu vyrenderované ze současného rozhraní. Sada obsahuje 12 souborů včetně ověřeného ZIPu, ikony, šesti screenshotů a čtyř promo obrázků. Listing obrázky je nutné nahrát přes Developer Dashboard; automatický workflow nahrává pouze ZIP rozšíření. Fyzické Mac/Chrome UAT a veřejná verze obchodu tím nejsou potvrzené.
 
-## Aktuální distribuce — 23. 10. 2026
+## Historie distribuce — 23. 10. 2026
 
 **Veřejný Chrome Web Store nabízí 0.46.55.** Ověřeno na [veřejné kartě rozšíření](https://chromewebstore.google.com/detail/agenteeq/hocghhpigfilngdajmafkdcljdedanch) 23. 10. 2026; jde o samostatný stav vůči [desktopovému Preview v0.46.60](https://github.com/martin-pok/agentree/releases/tag/v0.46.60). Veřejný release obsahuje `agenteeq-extension-0.46.60.zip` (267 110 B, SHA-256 `0e6f312c4b909a5fa90219e70d6b050df31697d087ea001ef066f6e4ff0f2ab5`), jehož příloha prošla auditem vydání. Dostupnost ZIPu na GitHubu **neznamená zveřejnění v obchodě**.
 

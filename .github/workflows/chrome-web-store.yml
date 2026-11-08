@@ -68,6 +68,7 @@ jobs:
           echo "ZIP=$ZIP" >> "$GITHUB_ENV"
 
       - name: Nahrát do Chrome Web Store a odeslat ke kontrole
+        id: publish
         env:
           CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
           CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
@@ -94,3 +95,17 @@ jobs:
           jq -e '.status | index("OK") or index("ITEM_PENDING_REVIEW")' zverejneni.json > /dev/null \
             || { echo "::error::Odeslání ke kontrole selhalo"; exit 1; }
           echo "::notice::$ZIP je nahraný a odeslaný ke kontrole Chrome Web Store."
+
+      - name: Jasný stav publikace a listingových podkladů
+        if: always()
+        env:
+          UPLOAD_OUTCOME: ${{ steps.publish.outcome }}
+        run: |
+          {
+            echo '## Chrome Web Store: stav doručení'
+            echo "- Balíček / odeslání ke kontrole: **$UPLOAD_OUTCOME**."
+            echo '- Obrázky a text karty: tento workflow je neaktualizuje; vyžadují Developer Dashboard, CZ i EN.'
+            echo '- Veřejná publikace: musí být ověřena na veřejné kartě po schválení Googlu.'
+            echo '- Při chybě přístupu nebyl balíček nahrán. Připravená sada ani GitHub release nejsou aktualizací obchodu.'
+            echo '- Postup a aktuální blokace: docs/CHROME-WEB-STORE.md; sledování #172.'
+          } >> "$GITHUB_STEP_SUMMARY"

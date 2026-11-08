@@ -4,6 +4,19 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.87', date: '2026-10-30', title: 'Codex bez ztracených vláken a falešného dokončení',
+    items: [
+      'Seznam vláken Codexu načítá i další stránky. Konverzace za první stovkou už nepropadnou.',
+      'Chyba zapsaná novým Codex SDK na konci tahu se nezamění za dokončenou práci. Nový tah předchozí chybu zruší a vyčerpaný limit zůstává samostatný stav.',
+      'Automatická kontrola skutečného rozšíření ověřuje 11 webových služeb, přenos zpráv, změny stavu a obnovu po restartu aplikace.',
+    ],
+    en: { title: 'Codex threads stay visible and failed turns are not reported as done', items: [
+      'The Codex thread index follows subsequent pages, so conversations beyond the first hundred are not omitted.',
+      'An error recorded by the new Codex SDK at the end of a turn is not mistaken for completed work. A new turn clears the previous failure, and exhausted quota remains a separate state.',
+      'An automated check uses the actual extension to verify 11 web services, message transport, state changes and recovery after an app restart.',
+    ] },
+  },
+  {
     version: '0.46.86', date: '2026-10-28', title: 'Historická chyba není aktuální selhání',
     items: [
       'Stará chyba bez nového potvrzení se zobrazí jako neověřený stav. Novější odpověď nebo nový tah ji překoná.',

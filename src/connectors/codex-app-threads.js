@@ -32,6 +32,19 @@ export function readCodexAppThreads(bin, home, { spawnFn = spawn, timeoutMs = 10
     } catch { resolve(null); return; }
     let settled = false;
     let buffer = '';
+    const threads = [];
+    const cursors = new Set();
+    let requestId = 1;
+    let pages = 0;
+    let stateDbOnly = true;
+    let cursor = null;
+    const requestPage = () => {
+      requestId++;
+      child.stdin.write(`${JSON.stringify({ id: requestId, method: 'thread/list', params: {
+        limit: 100, sortKey: 'updated_at', sortDirection: 'desc',
+        ...(stateDbOnly ? { useStateDbOnly: true } : {}), ...(cursor ? { cursor } : {}),
+      } })}\n`);
+    };
     const finish = (result) => {
       if (settled) return;
       settled = true;
@@ -54,17 +67,27 @@ export function readCodexAppThreads(bin, home, { spawnFn = spawn, timeoutMs = 10
         try { message = JSON.parse(line); } catch { continue; }
         if (message.id === 1 && message.result) {
           child.stdin.write(`${JSON.stringify({ method: 'initialized' })}\n`);
-          child.stdin.write(`${JSON.stringify({ id: 2, method: 'thread/list', params: {
-            limit: 100, sortKey: 'updated_at', sortDirection: 'desc', useStateDbOnly: true,
-          } })}\n`);
+          requestPage();
         } else if (message.id === 1 && message.error) finish(null);
-        else if (message.id === 2 && message.error) {
-          // Older bundled Codex binaries do not know useStateDbOnly.
-          child.stdin.write(`${JSON.stringify({ id: 3, method: 'thread/list', params: {
-            limit: 100, sortKey: 'updated_at', sortDirection: 'desc',
-          } })}\n`);
-        } else if (message.id === 2 || message.id === 3) {
-          finish(Array.isArray(message.result?.data) ? message.result.data : null);
+        else if (message.id === requestId) {
+          if (message.error) {
+            // Older binaries may reject useStateDbOnly. Retry only the first page,
+            // then retain that compatible parameter set for every following page.
+            if (stateDbOnly && pages === 0) { stateDbOnly = false; requestPage(); }
+            else finish(null);
+            continue;
+          }
+          if (!Array.isArray(message.result?.data)) { finish(null); continue; }
+          threads.push(...message.result.data);
+          pages++;
+          const next = message.result.nextCursor;
+          if (next == null || next === '') { finish(threads); continue; }
+          // A repeated cursor, malformed page or exceeded bound is an incomplete
+          // index, never a successful truncated list that silently hides agents.
+          if (typeof next !== 'string' || next.length > 4096 || cursors.has(next) || pages >= 100 || threads.length >= 10000) {
+            finish(null); continue;
+          }
+          cursors.add(next); cursor = next; requestPage();
         }
       }
     });
