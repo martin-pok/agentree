@@ -309,6 +309,7 @@ export function summarize(s, now, windowMs, hooky = null) {
     provider: s.provider,
     app: s.app,
     source: s.source,
+    bridge: s.bridge || undefined,
     metadataOnly: Boolean(s.metadataOnly),
     accountBinding: s.accountBinding?.confidence === 'verified' ? { ...s.accountBinding } : null,
     parentId: s.parentId || null,

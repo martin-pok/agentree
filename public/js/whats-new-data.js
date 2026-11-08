@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.91', date: '2026-11-08', title: 'Rychlý start a žádné dvojité karty',
+    items: [
+      'Aplikace se otevře výrazně rychleji – starší konverzace se dočtou na pozadí.',
+      'Konverzace ze záložky Code v Claude Desktopu už nejsou vidět dvakrát.',
+    ],
+    en: {
+      title: 'Fast start and no duplicate cards',
+      items: [
+        'The app opens much faster – older conversations load in the background.',
+        'Conversations from the Code tab in Claude Desktop no longer appear twice.',
+      ],
+    },
+  },
+  {
     version: '0.46.90', date: '2026-11-08', title: 'Signál robota drží na anténě',
     items: [
       'Záře a vlnky, kterými robot volá „Potřebuje tebe“, už neujíždějí od špičky antény, když se robot nakloní.',

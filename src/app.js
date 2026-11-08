@@ -1457,6 +1457,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const bindLan = (handler, portFn) => { lanHandler = handler; if (portFn) lanPort = portFn; };
   let restoringRemote = null;
   let stoppingRemote = false;
+  let dokonceniStartu = Promise.resolve();
+  let prvniStav = () => {};
   function restoreRemoteAccess() {
     if (stoppingRemote || !lanHandler || (!datastore.data.settings.lanAccess && !datastore.data.settings.tailscaleAccess)) return Promise.resolve();
     if (restoringRemote) return restoringRemote;
@@ -1671,6 +1673,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   async function state({ local = true } = {}) {
+    // První stažení stavu oknem: teprve teď se rozběhne dočítání starších konverzací (start()).
+    // Okno po stavu ještě načítá písma, obrázky a další data: dočítání začne až po krátké pauze.
+    setTimeout(() => prvniStav(), 1200).unref?.();
     return {
       version: VERSION,
       now: Date.now(),
@@ -1727,22 +1732,42 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     apps = dry ? ALL_APPS : config.openApps && config.openMode === 'exec' ? await detectApps() : {};
     const results = await Promise.allSettled(list.map((c) => c.start()));
     results.forEach((r, i) => { if (r.status === 'rejected') console.error(`Agenteeq: konektor ${list[i].id} selhal:`, r.reason?.message || r.reason); });
-    await Promise.all([whoami, launchReady]);
+    // Okno se otevře hned, jakmile konektory načtou nedávné konverzace. Hledání nainstalovaných
+    // agentů (přihlašovací shell zsh -lc, na Macu i několik sekund) a jméno uživatele dorazí do
+    // okna živě (launch, me) – start na ně nečeká (vlastník 8. 11. 2026: „žádné zdržovačky“).
+    whoami.catch(() => {});
     let hookyJson = JSON.stringify(await claudeHooks().catch(() => null));
     store.reevaluate();
     store.ready = true;
-    historie.aktualizuj(store.list());
-    syncSnapshots();
-    alerts.start();
+    // Starší konverzace (plný průchod sledovaného období) se dočítají na pozadí a do okna přibývají
+    // průběžně. Upozornění, souhrny projektů, historie Statistik a ohlášení nových nástrojů se
+    // zapnou až po dočtení: jinak by se každá dočtená stará chyba nebo limit ohlásily jako nové.
+    // Dočítání začne, jakmile okno stáhne první stav (nejpozději za 3 s): první vykreslení tak
+    // nesoupeří s parsováním starších přepisů o jediné vlákno serveru.
+    let startDocteni;
+    const doctiPozadi = new Promise((resolve) => { startDocteni = resolve; });
+    prvniStav = () => startDocteni();
+    setTimeout(() => startDocteni(), 3000).unref?.();
+    const dokonceno = doctiPozadi.then(() => { store.dociteni = true; return Promise.allSettled([launchReady, ...list.map((c) => c.dokoncit?.())]); }).then(() => {
+      store.dociteni = false;
+      if (stoppingRemote) return;
+      // Okna si stáhnou úplný stav jednou (místo stovek jednotlivých zpráv během dočítání).
+      store.emit('resync', { at: Date.now() });
+      store.reevaluate();
+      historie.aktualizuj(store.list());
+      syncSnapshots();
+      alerts.start();
+      detekce.start();
+      alerts.checkBudgets(spend());
+      connectorsJson = JSON.stringify(connectorList());
+      store.emit('connectors', JSON.parse(connectorsJson));
+      log(`Agenteeq: dočteno ${store.list().length} konverzací za ${Date.now() - t0} ms.`);
+    });
     // Výsledek aktualizace se promítne přes SSE hned po startu. Síť nesmí brzdit načtení lokálních dat.
     checkForUpdates().catch(() => {});
     // Ověření uloženého přihlášení jde po síti – start aplikace na něj nečeká.
     ucet.start().then(() => cloudSync.nactiVolbu()).then(() => cloudSync.synchronizuj()).catch(() => {});
     cloudSync.start();
-    // Až po úvodním načtení konektorů – jinak by se Claude Code oznámil jako nový jen proto, že se
-    // jeho přepisy ještě načítají.
-    detekce.start();
-    alerts.checkBudgets(spend());
     connectorsJson = JSON.stringify(connectorList());
 
     // Chyba pravidelné úlohy se zapíše jednou (stejná hláška se neopakuje) – tiše spolknutá by
@@ -1788,8 +1813,12 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       if (next !== connectorsJson) { connectorsJson = next; store.emit('connectors', JSON.parse(next)); }
     }, 5000);
     every(() => spendChanged(), HOUR);
-    await refreshSubscriptions().catch(() => {});
+    // Ověření přihlášení (`claude auth status`, Codex) spouští samostatné procesy – okno na ně nečeká,
+    // plán a limity se do Útraty promítnou, jakmile doběhnou.
     subscriptionJson = JSON.stringify(subscriptions());
+    const predplatne = refreshSubscriptions().catch(() => {}).then(() => subscriptionsChanged());
+    // Celé dočtení startu (testy, diagnostika): konverzace na pozadí i ověření předplatného.
+    dokonceniStartu = Promise.allSettled([dokonceno, predplatne]);
     // Časem může zestárnout poslední pozorování plánu Codexu i bez nového souboru.
     every(() => subscriptionsChanged(), 60_000);
     every(() => refreshSubscriptions(), 2 * 60e3);
@@ -1830,6 +1859,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   }
 
   return {
+    dokonceno: () => { prvniStav(); return dokonceniStartu; },
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
     connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,

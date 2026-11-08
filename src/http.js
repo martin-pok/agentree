@@ -231,6 +231,7 @@ export function createHttpServer(app, existingServer = null) {
   const listeners = {
     session: (s) => broadcast('session', s),
     'session:remove': (id) => broadcast('session:remove', { id }),
+    resync: (d) => broadcast('resync', d),
     transcript: (t) => broadcast('transcript', t),
     runtimes: (l) => broadcast('runtimes', l),
     localAgents: (l) => broadcast('localAgents', l),

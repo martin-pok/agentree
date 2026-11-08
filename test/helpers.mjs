@@ -90,6 +90,8 @@ export async function startTestServer(env = {}, appOptions = {}) {
   }
   const app = await createApp(config, appOptions);
   await app.start();
+  // Testy pracují s úplnými daty: počkat i na dočtení starších konverzací a ověření předplatného.
+  await app.dokonceno();
   const server = createHttpServer(app);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const url = `http://127.0.0.1:${server.address().port}`;

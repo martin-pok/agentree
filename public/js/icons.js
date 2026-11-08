@@ -162,10 +162,12 @@ export const ICON = {
 // serverech Anthropicu nad repozitářem, ne na tomto počítači. Ostatní konektory čtou přepis
 // a procesy z tohoto počítače, takže agent běží tady – kromě přepisu vzdálené relace Claude Code
 // (source 'remote', entrypoint „remote…“ v přepisu; src/connectors/claude-code.js).
-export const jeCloud = (s) => s?.source === 'web' || s?.source === 'desktop-cache' || s?.source === 'remote' || s?.connector === 'claude-desktop-code';
+export const jeCloud = (s) => !s?.bridge && (s?.source === 'web' || s?.source === 'desktop-cache' || s?.source === 'remote' || s?.connector === 'claude-desktop-code');
 export const ENV = {
   cloud: { icon: ICON.cloud, label: tr('Běží v cloudu'), short: tr('Cloud') },
   local: { icon: ICON.mac, label: tr('Běží na {0}', tomtoPocitaci()), short: tr('Na {0}', tomtoPocitaci()) },
+  // Remote Control: konverzace běží na počítači (jiném, než kde je přepis vidět), ne v cloudu.
+  pocitac: { icon: ICON.mac, label: tr('Běží na počítači přes Remote Control'), short: tr('Remote Control') },
 };
 
-export const envOf = (s) => (jeCloud(s) ? ENV.cloud : ENV.local);
+export const envOf = (s) => (s?.bridge ? ENV.pocitac : jeCloud(s) ? ENV.cloud : ENV.local);

@@ -144,7 +144,10 @@ export function applyRemoteSession(s, metadata, cached, observedAt, now = Date.n
   s.title = clip(typeof metadata.title === 'string' ? metadata.title : '', 400);
   s.source = 'desktop-cache';
   if (metadata.apiId) s.apiId = metadata.apiId;
-  s.app = ui('Claude Desktop · vzdálený Code');
+  // Bridge relace běží na počítači (tady ji vidí claude-code a tato karta se vůbec nevytvoří, jinak na
+  // jiném počítači), ne v cloudu – ikona a popisek to nesmí zaměnit.
+  s.bridge = metadata.environment_kind === 'bridge';
+  s.app = s.bridge ? ui('Claude Code · Remote Control') : ui('Claude Desktop · vzdálený Code');
   s.url = `https://claude.ai/code/${metadata.id}`;
   s.resume = null; s.cwd = ''; // Remote VM paths are never local folders/resume commands.
   s.model = clip(typeof metadata.session_context?.model === 'string' ? metadata.session_context.model : s.model, 80);
@@ -267,6 +270,8 @@ export function relaceZApi(raw) {
   const nastroj = stav === 'requires_action' ? raw.external_metadata?.pending_action?.tool_name : undefined;
   return {
     type: 'session', id, apiId, _statusSource: 'claude-account', title: typeof raw.title === 'string' ? raw.title : '',
+    // Kde relace běží (podle Claude Code): bridge = Remote Control / záložka Code v Claude Desktopu na počítači.
+    ...(['bridge', 'anthropic_cloud', 'byoc', 'snap'].includes(raw.environment_kind) ? { environment_kind: raw.environment_kind } : {}),
     created_at: typeof raw.created_at === 'string' ? raw.created_at : updated, updated_at: updated, session_status: stav,
     ...(typeof nastroj === 'string' && NASTROJ.test(nastroj) ? { post_turn_summary: { needs_action: ui('Čeká na tvé schválení nástroje {0}. Otevři Claude.', nastroj) } } : {}),
     session_context: { sources: Array.isArray(raw.config?.sources) ? raw.config.sources : [], model: typeof raw.config?.model === 'string' ? raw.config.model : null },
@@ -451,11 +456,30 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       error = ui('Cache Claude se právě zapisuje nebo má neznámý formát. Poslední záznamy zůstávají zachované; načtení se zopakuje.');
     }
   }
+  // Vzdálené relace, které jsou ve skutečnosti místní konverzací Claude Code na tomto Macu (bridge
+  // z Claude Desktopu nebo Remote Control): přepis Claude Code nese jejich ID (claude-code.js,
+  // řádek bridge-session). Ukáže se jen místní karta s přepisem a tokeny, nikdy dvě.
+  const mistniBridge = () => new Set([...store.sessions.values()].filter((x) => x.connector === 'claude-code' && x.bridgeId).map((x) => x.bridgeId));
+  const odeberDuplikat = (remote) => {
+    const id = `claude-desktop-code:${remote}`;
+    known.delete(id);
+    fingerprints.delete(id);
+    if (store.get(id)) store.remove(id);
+  };
+  // Po dočtení starších přepisů (události během něj jdou tiše) se duplicity zkontrolují znovu.
+  store.on?.('resync', () => zpracuj());
+  store.on?.('session', (v) => {
+    const s = v?.connector === 'claude-code' ? store.get(v.id) : null;
+    if (s?.bridgeId && store.get(`claude-desktop-code:${s.bridgeId}`)) odeberDuplikat(s.bridgeId);
+  });
+
   function zpracuj() {
+    const mistni = mistniBridge();
     const cache = new Map(prepisy);
     for (const [id, z] of prepisyZUctu) cache.set(id, slucPrepis(cache.get(id), z));
     for (const metadata of slucRelace(zCache, api.data)) {
       if (Date.now() - Date.parse(metadata.updated_at) > config.windowDays * DAY) continue;
+      if (mistni.has(metadata.id)) { odeberDuplikat(metadata.id); continue; }
       const id = `claude-desktop-code:${metadata.id}`;
       const { _observedAt, ...facts } = metadata;
       const zpravy = cache.get(metadata.id)?.tree?.messages;
@@ -549,7 +573,8 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   async function nactiPrepisy(data, opts) {
     const ted = Date.now();
     for (const [id, at] of zajem) if (ted - at > 10 * MIN) zajem.delete(id);
-    const aktivni = data.sessions.filter((x) => AKTIVNI.has(x.session_status)).map((x) => x.id);
+    const mistni = mistniBridge();
+    const aktivni = data.sessions.filter((x) => AKTIVNI.has(x.session_status) && !mistni.has(x.id)).map((x) => x.id);
     const ids = [...new Set([...zajem.keys(), ...aktivni])].slice(0, 4);
     await Promise.all(ids.map(async (id) => {
       try {

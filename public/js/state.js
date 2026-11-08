@@ -117,6 +117,9 @@ export function applySnapshot(s) {
 
 export function applyEvent(name, data) {
   switch (name) {
+    // Server dočetl starší konverzace (po startu jdou tiše, src/store.js): okno si stáhne úplný stav.
+    case 'resync':
+      return { resync: true };
     case 'session': {
       const prev = state.sessions.get(data.id);
       if (prev && prev.transcriptSeq > data.transcriptSeq) return null;
