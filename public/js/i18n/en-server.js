@@ -247,6 +247,7 @@ export default {
   "Na {0} nejsou žádné konverzace Claude Code.": "No Claude Code conversations on {0}.",
 
   // src/connectors/claude-desktop-code.js
+  "Claude Code · Remote Control": "Claude Code · Remote Control",
   "Claude Desktop · vzdálený Code": "Claude Desktop · remote Code",
   "Claude Code · vzdálený": "Claude Code · remote",
   "Pracuje podle stavu v Claude Desktopu": "Working, according to Claude Desktop",

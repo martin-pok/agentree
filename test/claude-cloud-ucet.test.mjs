@@ -398,3 +398,42 @@ test('off-page verification rotates past five sessions and isolates a single det
     for (const row of rows.slice(1)) assert.equal(server.app.store.summary(`claude-desktop-code:${row.id}`).status, 'working');
   } finally { await server.close(); }
 });
+
+// Vlastník 8. 11. 2026: „FOCAL APP | MACOS“ byl v Agentech dvakrát – jednou z přepisu Claude Code
+// (záložka Code v Claude Desktopu běží na tomto Macu), podruhé z účtu jako „vzdálený“. Účet takovou
+// relaci vede jako bridge; přepis nese její ID v řádku bridge-session. Agent je jeden.
+test('místní relace z Claude Desktopu (bridge) se z účtu neukáže podruhé jako vzdálená', async () => {
+  const home = await tempDir('agenteeq-bridge-');
+  const lokal = '7d2c4a10-1111-4222-8333-444455556666';
+  const remote = 'session_019pjCMAW6NZjG9fzTfPLyCe';
+  const t = (ms) => new Date(Date.now() - ms).toISOString();
+  await fs.mkdir(path.join(home, '.claude', 'projects', '-Users-m-focal'), { recursive: true });
+  const radky = [
+    { type: 'user', timestamp: t(60e3), cwd: '/Users/m/focal', message: { role: 'user', content: 'Zkontroluj Gatekeeper' } },
+    { type: 'bridge-session', sessionId: lokal, bridgeSessionId: remote.replace('session_', 'cse_'), lastSequenceNum: 3 },
+    { type: 'assistant', timestamp: t(50e3), message: { id: 'm1', model: 'claude-opus-5-5', stop_reason: 'end_turn', content: [{ type: 'text', text: 'Hotovo.' }], usage: { input_tokens: 10, output_tokens: 5 } } },
+  ];
+  await fs.writeFile(path.join(home, '.claude', 'projects', '-Users-m-focal', `${lokal}.jsonl`), radky.map((r) => JSON.stringify(r)).join('\n') + '\n');
+  const server = await startTestServer({ AGENTEEQ_SOURCE_HOME: home }, { claudeCloud: { enabled: true, intervalMs: 60e3,
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async () => odpoved(200, { data: [surova({ environment_kind: 'bridge', title: 'FOCAL APP | MACOS' })] }) } });
+  try {
+    await server.app.connectors['claude-desktop-code'].scan(true);
+    assert.ok(server.app.store.get(`claude-code:${lokal}`), 'místní karta s přepisem zůstává');
+    assert.equal(server.app.store.get(`claude-code:${lokal}`).bridgeId, remote);
+    assert.equal(server.app.store.get(`claude-desktop-code:${remote}`), undefined, 'žádná druhá „vzdálená“ karta');
+  } finally { await server.close(); }
+  // Odpojení (prázdné ID) vazbu zruší: relace z účtu se pak ukáže.
+  const { applyClaudeLine, newFileState } = await import('../src/connectors/claude-code.js');
+  const s = { bridgeId: remote };
+  applyClaudeLine(newFileState(), s, { type: 'bridge-session', bridgeSessionId: '' });
+  assert.equal(s.bridgeId, '');
+});
+
+test('bridge relace bez místního přepisu: Remote Control, nikdy „Běží v cloudu“', async () => {
+  assert.equal(relaceZApi(surova({ environment_kind: 'bridge' })).environment_kind, 'bridge');
+  assert.equal(relaceZApi(surova({ environment_kind: 'cokoli' })).environment_kind, undefined);
+  const { envOf, ENV } = await import('../public/js/icons.js');
+  assert.equal(envOf({ connector: 'claude-desktop-code', source: 'desktop-cache', bridge: true }), ENV.pocitac);
+  assert.equal(envOf({ connector: 'claude-desktop-code', source: 'desktop-cache' }), ENV.cloud);
+});

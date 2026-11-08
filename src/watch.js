@@ -289,6 +289,13 @@ export async function listFiles(root, depth, filter = () => true) {
   return out;
 }
 
+// Soubory zapsané od `od` (ms), nejnovější první. Start aplikace jimi začíná: okno se otevře, jakmile
+// jsou načtené nedávné konverzace, a starší se dočtou na pozadí (src/app.js#start).
+export async function nedavnePrvni(soubory, od) {
+  const casy = await Promise.all(soubory.map(async (f) => [f, (await fs.promises.stat(f).catch(() => null))?.mtimeMs || 0]));
+  return casy.filter(([, m]) => m >= od).sort((a, b) => b[1] - a[1]).map(([f]) => f);
+}
+
 export function depthOf(root, file) {
   const rel = path.relative(root, file);
   if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) return -1;

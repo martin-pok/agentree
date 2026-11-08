@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, MIN, HOUR, DAY } from '../util.js';
 import { touch, addTokens, pushEntry } from '../model.js';
-import { createFileQueue, listFiles } from '../watch.js';
+import { createFileQueue, listFiles, nedavnePrvni } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
 import { verifiedProfileForTranscript } from '../provider-accounts.js';
 import { ui } from '../texty.js';
@@ -461,6 +461,13 @@ export function applyClaudeLine(st, s, o, hooks = {}) {
     case 'summary':
       if (o.summary && !s.title) s.title = o.summary;
       return;
+    // Relace spuštěná z Claude Desktopu (záložka Code) nebo s Remote Control se registruje i na účtu
+    // Claude jako „bridge“ relace. Přepis si ukládá její ID; podle něj konektor Claude Desktopu
+    // tutéž konverzaci neukáže podruhé jako vzdálenou (vlastník 8. 11. 2026: žádné duplikáty).
+    // Prázdné ID znamená odpojení. Tvar řádku podle Claude Code (type "bridge-session").
+    case 'bridge-session':
+      if (typeof o.bridgeSessionId === 'string') s.bridgeId = /^(?:session|cse)_[A-Za-z0-9]{8,80}$/.test(o.bridgeSessionId) ? o.bridgeSessionId.replace(/^cse_/, 'session_') : '';
+      return;
     case 'user':
       onUser(st, s, o, ts);
       return;
@@ -683,6 +690,8 @@ export function createClaudeCodeConnector(ctx) {
   // Pravidelný průchod je pojistka za sledování souborů. Soubor, do kterého se hodinu nezapsalo,
   // stačí zkontrolovat při každém šestém průchodu (jednou za minutu) – změnu v něm stejně okamžitě
   // ohlásí sledování. Nové soubory a ty, do kterých se nedávno psalo, se kontrolují pokaždé.
+  const NEDAVNO_MS = 2 * DAY;
+  let dokonceni = null;
   let pruchod = 0;
   const mimoObdobi = new Map(); // soubory starší než sledované období: cesta → mtime
   const klidny = (f) => {
@@ -690,14 +699,26 @@ export function createClaudeCodeConnector(ctx) {
     return m !== undefined && Date.now() - m > HOUR;
   };
 
-  async function scanKoren(koren, plny = true) {
+  const souboryKorene = async (koren) => {
     const jsonl = (x) => x.endsWith('.jsonl');
-    const soubory = [
+    return [
       ...await listFiles(koren, 1, jsonl),
       ...await listFiles(koren, 3, (x) => jsonl(x) && path.basename(path.dirname(x)) === 'subagents'),
     ];
+  };
+
+  async function scanKoren(koren, plny = true) {
+    const soubory = await souboryKorene(koren);
     for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
     return soubory;
+  }
+
+  // Start: nejdřív konverzace z posledních dvou dnů (nejnovější první) – s nimi se otevře okno.
+  // Zbytek sledovaného období dočte plný průchod na pozadí (dokonceno()).
+  async function scanNedavne() {
+    exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
+    for (const koren of koreny.seznam()) for (const f of await nedavnePrvni(await souboryKorene(koren), Date.now() - NEDAVNO_MS)) await queue.run(f);
   }
 
   async function scan() {
@@ -885,9 +906,13 @@ export function createClaudeCodeConnector(ctx) {
     source: '~/.claude/projects (a CLAUDE_CONFIG_DIR)',
     description: ui('Přepis v reálném čase, nástroje, plán úkolů, dotazy na tebe, limity a tokeny.'),
     async start() {
-      await scan();
+      await scanNedavne();
       koreny.start();
     },
+    // Plný průchod sledovaného období (starší konverzace). Spouští ho aplikace, až okno dostane první
+    // data (src/app.js#start) – parsování stovek MB jinak brzdí první vykreslení.
+    dokoncit: () => (dokonceni ||= scan()),
+    dokonceno: () => (dokonceni ||= scan()),
     scan,
     pridejKoren,
     // Verified account IDs come from the auth status of the *same* CLI profile.

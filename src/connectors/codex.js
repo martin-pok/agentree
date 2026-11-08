@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { JsonlTail, statSafe, toTs, textOf, isInjectedPrompt, clip, clipBlock, lastSegment, hourKey, MIN, DAY } from '../util.js';
 import { touch, pushEntry, resetTranscript } from '../model.js';
-import { createFileQueue, listFiles } from '../watch.js';
+import { createFileQueue, listFiles, nedavnePrvni } from '../watch.js';
 import { createKorenyPrepisu, rozbalCestu } from '../koreny-prepisu.js';
 import { ui } from '../texty.js';
 import { POCITAC } from '../platform.js';
@@ -556,6 +556,7 @@ export function createCodexConnector(ctx) {
 
   // Pravidelný průchod je pojistka za sledování souborů: soubor, do kterého se hodinu nezapsalo,
   // se kontroluje při každém šestém průchodu, nové a nedávno psané pokaždé (viz claude-code.js).
+  let dokonceni = null;
   let pruchod = 0;
   const mimoObdobi = new Map();
   const klidny = (f) => {
@@ -568,6 +569,15 @@ export function createCodexConnector(ctx) {
     const soubory = await listFiles(koren, 3, (x) => x.endsWith('.jsonl'));
     for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
     return soubory;
+  }
+
+  // Start: nejdřív vlákna z posledních dvou dnů (nejnovější první), zbytek dočte plný průchod
+  // na pozadí (viz claude-code.js#scanNedavne).
+  async function scanNedavne() {
+    exists = (await koreny.existujici()).length > 0;
+    necitelne = await koreny.necitelne();
+    await syncIndex();
+    for (const koren of koreny.seznam()) for (const f of await nedavnePrvni(await listFiles(koren, 3, (x) => x.endsWith('.jsonl')), Date.now() - 2 * DAY)) await queue.run(f);
   }
 
   async function scan() {
@@ -607,11 +617,15 @@ export function createCodexConnector(ctx) {
       }
     },
     async start() {
-      await scan();
+      await scanNedavne();
       koreny.start();
       // Historie nákupů kreditů doběhne na pozadí; případná chyba nesmí shodit konektor.
       setTimeout(() => { scanCreditHistory().catch(() => {}); }, 2000).unref?.();
     },
+    // Plný průchod sledovaného období (starší konverzace). Spouští ho aplikace, až okno dostane první
+    // data (src/app.js#start) – parsování stovek MB jinak brzdí první vykreslení.
+    dokoncit: () => (dokonceni ||= scan()),
+    dokonceno: () => (dokonceni ||= scan()),
     scan,
     scanCreditHistory,
     pridejDomov,

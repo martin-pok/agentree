@@ -323,6 +323,8 @@ export default {
     "Nečinný": "Idle",
     "Archiv": "Archive",
     "Lokální": "Local",
+    "Běží na počítači přes Remote Control": "Runs on a computer via Remote Control",
+    "Remote Control": "Remote Control",
     "Běží v cloudu": "Runs in the cloud",
     "Cloud": "Cloud",
     "Běží na {0}": "Runs on {0}",

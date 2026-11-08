@@ -1088,18 +1088,24 @@ let kodZQr = '';
   }
 }
 
-const autorizace = api.state().then((snap) => {
-  // Stav z prvního dotazu se rovnou použije. Dřív se zahodil a aplikace čekala na pozdrav živého
-  // proudu – když nedorazil (zaseknuté spojení), zůstala na „Načítám agenty“ navždy.
-  if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
-  return true;
-}).catch((err) => {
-  if (err.status === 401) {
-    parovaciObrazovka();
-    return false;
-  }
-  return true;
-});
+// Záložní první načtení: když se živý proud do 1,2 s neozve (zaseknuté spojení, nespárovaný telefon
+// s odpovědí 401), stáhne se stav přímo – aplikace nikdy nezůstane na „Načítám agenty“. Při běžném
+// startu proud odpoví dřív a stav se stáhne jen jednou (dřív dvakrát souběžně, stovky kB navíc).
+let potvrdAutorizaci;
+const autorizace = new Promise((resolve) => { potvrdAutorizaci = resolve; });
+const zalozniNacteni = setTimeout(() => {
+  api.state().then((snap) => {
+    if (!state.loaded && !loadingSnapshot) prijmiSnimek(snap);
+    potvrdAutorizaci(true);
+  }).catch((err) => {
+    if (err.status === 401) {
+      parovaciObrazovka();
+      potvrdAutorizaci(false);
+      return;
+    }
+    potvrdAutorizaci(true);
+  });
+}, 1200);
 
 let generaceSnimek = 0;
 
@@ -1135,6 +1141,8 @@ hlidejNacteni();
 const proud = connectStream({
   onStatus: (stav) => { autorizace.then((ok) => { if (ok) onConnection(stav); }); },
   onHello: () => {
+    clearTimeout(zalozniNacteni);
+    potvrdAutorizaci(true);
     // The preceding stream's undelivered events must not be replayed over a
     // fresh state snapshot. Events from this handshake will be queued afresh.
     queued.begin();
