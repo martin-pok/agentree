@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.90 Preview:** rychlý start (nedávné konverzace hned, starší na pozadí, jeden resync), bridge relace Claude Desktopu bez duplicit, kontrolka na anténě v hlavě.
+**Kandidát v0.46.91 Preview:** rychlý start (nedávné konverzace hned, starší na pozadí, jeden resync), bridge relace Claude Desktopu bez duplicit; obsahuje i 0.46.90.
+
+**Kandidát v0.46.90 Preview:** signál volání robota drží na špičce antény (dřív ujížděl při naklonění hlavy).
 
 **v0.46.89 Preview (zveřejněno 8. 11. 2026, build 42479209645, 8 příloh se SHA-256 ověřením):** návrhy složek na mřížce projektů, skloňovaný popisek hodin ve Statistikách.
 

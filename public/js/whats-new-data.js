@@ -4,18 +4,30 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.90', date: '2026-11-08', title: 'Rychlý start a žádné dvojité karty',
+    version: '0.46.91', date: '2026-11-08', title: 'Rychlý start a žádné dvojité karty',
     items: [
       'Aplikace se otevře výrazně rychleji – starší konverzace se dočtou na pozadí.',
       'Konverzace ze záložky Code v Claude Desktopu už nejsou vidět dvakrát.',
-      'Kontrolka „potřebuje tebe“ sedí na špičce antény i při mávání.',
     ],
     en: {
       title: 'Fast start and no duplicate cards',
       items: [
         'The app opens much faster – older conversations load in the background.',
         'Conversations from the Code tab in Claude Desktop no longer appear twice.',
-        'The “needs you” light stays on the antenna tip even while waving.',
+      ],
+    },
+  },
+  {
+    version: '0.46.90', date: '2026-11-08', title: 'Signál robota drží na anténě',
+    items: [
+      'Záře a vlnky, kterými robot volá „Potřebuje tebe“, už neujíždějí od špičky antény, když se robot nakloní.',
+      'Robot s čepicí o volání nepřijde: schová se jen anténa, signál zůstane.',
+    ],
+    en: {
+      title: 'The signal stays on the antenna',
+      items: [
+        'The glow and rings a robot uses to call "Needs you" no longer drift away from the antenna tip when the robot tilts.',
+        'A robot wearing a hat keeps its call: only the antenna is hidden, the signal stays.',
       ],
     },
   },

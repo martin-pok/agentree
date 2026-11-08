@@ -181,18 +181,27 @@ test('šatník zezadu: žádný kus na žádném robotovi nemá neoznačený pr�
   assert.deepEqual([...chyby], []);
 });
 
-test('kontrolka na anténě je součástí hlavy (s náklonem a kmitáním sedí na špičce antény)', async () => {
+// Chyba 8. 11. 2026 („anténa křivě a mimo bliká“): signál stál vedle hlavy, takže při naklonění hlavy
+// a kývání antény záře utekla od špičky. Musí ležet uvnitř skupiny antény, kterou nese hlava.
+test('signál volání leží uvnitř antény, ne vedle hlavy', async () => {
   const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
-  const { renderWardrobe } = await import('../public/js/robot-wardrobe.js');
-  for (const t of ROBOT_TYPES) {
-    for (const svg of [robot(t, { signal: true }), renderWardrobe(robot(t, { signal: true, hra: 'kniha', prace: true }), { hat: 'tophat', outfit: 'tee' })]) {
-      const hlava = svg.indexOf('<g class="robot-head"');
-      const kontrolka = svg.indexOf('<g class="robot-signal-osa"');
-      assert.ok(hlava > 0 && kontrolka > hlava, `${t}: kontrolka uvnitř hlavy`);
-      // Hlava se uzavírá až za kontrolkou: všechny skupiny <g> jsou spárované.
-      assert.equal((svg.match(/<g[\s>]/g) || []).length, (svg.match(/<\/g>/g) || []).length, `${t}: SVG je celé`);
-    }
+  for (const typ of ROBOT_TYPES) {
+    const svg = robot(typ);
+    const zacatek = svg.indexOf('<g class="robot-aerial"');
+    const signal = svg.indexOf('<g class="robot-signal"');
+    const konecHlavy = svg.indexOf('<g class="robot-zada-hlavy"');
+    assert.ok(zacatek >= 0 && signal > zacatek, `${typ}: signál musí následovat až za začátkem antény`);
+    assert.ok(signal < konecHlavy, `${typ}: signál musí ležet uvnitř hlavy (před zády hlavy), ne za ní`);
+    assert.ok(svg.slice(signal).indexOf('<g class="robot-ucho-zadni"') > 0, `${typ}: za signálem následuje zbytek hlavy`);
+    assert.doesNotMatch(robot(typ, { prace: false, hra: false, signal: false }), /robot-signal/, `${typ}: bez signálu se nekreslí`);
   }
-  const css = await zdroj('public/refinement.css');
-  assert.match(css, /:is\(\.robot-aerial, \.robot-signal-osa\) \{ animation: rz-antena/);
+  // Šatník vrstvy odkládá podle začátku dílny a her; signál v anténě tu nesmí rozbít skládání ani
+  // zmizet pod čepicí (anténa se pod pokrývkou hlavy skrývá, signál ne).
+  const { robotInWardrobe, WARDROBE } = await import('../public/js/robot-wardrobe.js');
+  const klobouk = Object.keys(WARDROBE.hat)[0];
+  const oblecen = robotInWardrobe('Scout', { hat: klobouk });
+  assert.ok(oblecen.includes('robot--worn'), 'robot má čepici');
+  assert.ok(oblecen.includes('robot-signal') && oblecen.includes('robot-shell') && oblecen.endsWith('</svg>'), 'šatník nesmí ztratit signál ani hlavu');
+  const css = await zdroj('public/workbench.css');
+  assert.match(css, /\.robot--worn \.robot-aerial > :not\(\.robot-signal\) \{ display: none; \}/);
 });

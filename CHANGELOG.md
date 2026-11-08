@@ -1,12 +1,15 @@
 # Changelog
 
-## 0.46.90 – 2026-11-08 · Rychlý start a žádné dvojité karty
+## 0.46.91 – 2026-11-08 · Rychlý start a žádné dvojité karty
 
 - **Rychlejší start:** okno se otevře, jakmile jsou načtené konverzace z posledních dvou dnů; starší se dočtou na pozadí a přibudou samy. Hledání nainstalovaných agentů (přihlašovací shell) a ověření přihlášení Claude/Codex už start nebrzdí – výsledek dorazí do okna živě. Změřeno na 358 MB přepisů (700 konverzací): okno připravené za 0,4 s místo 1,9 s; od spuštění po vykreslený Přehled ~1,4 s místo ~2,6 s. Na Macu odpadá i čekání na zsh a `claude auth status`.
 - **Stav se při startu stahuje jednou:** dřív dvakrát souběžně (stovky kB navíc). Dočtené starší konverzace jdou do okna jedním obnovením stavu, ne stovkami zpráv – ty dřív přetekly limit živého proudu a okno se odpojilo.
 - **Žádné dvojité karty z Claude Desktopu:** konverzace ze záložky Code v Claude Desktopu (i Remote Control) se na účtu Claude vede jako „bridge“ relace a byla vidět dvakrát – jednou s přepisem a podruhé jako „vzdálená“ bez tokenů. Přepis Claude Code nese ID té relace, takže se teď spárují přesně a zůstane jedna karta. Bridge relace bez místního přepisu (jiný počítač) má popisek Remote Control, ne „Běží v cloudu“.
-- **Kontrolka na anténě sedí:** světlo a vlnky „potřebuje tebe“ jsou součástí hlavy a kmitají s anténou, takže při náklonu a mávání zůstávají na její špičce.
 - **Upozornění po startu bez falešných poplachů:** zapnou se až po dočtení všech konverzací, stará chyba se neohlásí jako nová.
+
+## 0.46.90 – 2026-11-08 · Signál robota drží na anténě
+
+- **Roboti:** když robot volá „Potřebuje tebe“, záře a vlnky signálu už neujíždějí od špičky antény, když se robot nakloní nebo anténa kývne. Záře teď leží přímo v anténě a pohybuje se s hlavou. Platí pro všech devět postav; robot s čepicí o volání nepřijde, schová se jen anténa.
 
 ## 0.46.89 – 2026-11-08 · Doladění Projektů a Statistik
 
