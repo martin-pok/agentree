@@ -1048,3 +1048,8 @@ img[data-media].is-nacteno { opacity: 1; }
 .fb-recent:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .fb-cesta-kratka { display: none; }
 @media (max-width: 560px) { .fb-recent-cesta { flex-shrink: 0; } .fb-cesta-plna { display: none; } .fb-cesta-kratka { display: inline; } }
+/* Neuložené změny při zavírání okna: dotaz přímo v okně nad patičkou (ui.js#potvrdZahozeni). */
+.zahodit { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 0 24px 4px; padding: 12px 12px 12px 16px; border-radius: var(--r-lg); background: var(--brass-tint); color: var(--ink); animation: pop .2s var(--ease) both; }
+.zahodit p { margin: 0; font: 500 14px/20px var(--f-body); color: var(--ink); }
+.zahodit-akce { display: flex; gap: 8px; margin-left: auto; }
+.look-form .zahodit { margin: 0 16px 8px; }

@@ -965,3 +965,14 @@ test('chybějící fotka z Googlu: nabídne nové načtení, ne radu „nastav s
   assert.match(vetev, /data-action="ucet-prihlasit"/);
   assert.doesNotMatch(src, /Fotku nastavíš v účtu Google/);
 });
+
+test('okna se zavírají jednotně a neuložené změny se bez potvrzení neztratí', async () => {
+  const ui = await fs.readFile(new URL('../public/js/ui.js', import.meta.url), 'utf8');
+  // Křížek, Zrušit, Escape i klik vedle jdou přes jedno místo, které se u změněného formuláře zeptá.
+  assert.match(ui, /if \(e\.target === scrim\) zrus\(\)/);
+  assert.match(ui, /if \(e\.key === 'Escape'\) \{\s*e\.preventDefault\(\);\s*e\.stopPropagation\(\);\s*zrus\(\);/);
+  assert.match(ui, /otiskFormulare\(form\) !== otisk && !\(await potvrdZahozeni/);
+  const vzhled = await fs.readFile(new URL('../public/js/agent-appearance.js', import.meta.url), 'utf8');
+  assert.match(vzhled, /addEventListener\('cancel', \(e\) => \{ e\.preventDefault\(\); zavrit\(\); \}\)/);
+  assert.doesNotMatch(vzhled, /\[data-close\]'\)\.addEventListener\('click', \(\) => dialog\.close\(\)\)/);
+});
