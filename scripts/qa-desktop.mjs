@@ -1066,7 +1066,10 @@ for (const engine of engines) {
     await page.locator('.palette input').pressSequentially('nocni ticho');
     await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.activeElement?.dataset?.setting === 'quietHours');
-    assert.equal(await page.evaluate(() => document.activeElement.closest('.set-row').classList.contains('is-called-out')), true, `${engine} nastavení z hledání zvýrazní přepínač`);
+    // Karta Nastavení se po skoku může jednou překreslit (dočtený stav); zvýraznění se pak obnoví
+    // v dalším snímku (settings.js#v.zvyrazneni). WebKit v CI to občas zachytil právě mezi snímky.
+    const zvyrazneno = await page.waitForFunction(() => document.activeElement?.closest('.set-row')?.classList.contains('is-called-out'), null, { timeout: 1500 }).then(() => true, () => false);
+    assert.equal(zvyrazneno, true, `${engine} nastavení z hledání zvýrazní přepínač`);
     await page.goto(`${server.url}/#/utrata`);
     await page.locator('.toolbar').waitFor();
     assert.match(await page.locator('.spend-hero').textContent(), /Náklady za API nejsou připojené/);
