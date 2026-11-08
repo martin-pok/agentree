@@ -950,7 +950,7 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 /* Potřebuje tebe: volá tě anténou. Špička jemně dýchá světlem (přechod rb-zare), odcházejí z ní tři
    vlnky signálu po sobě a robot přitom souvisle mává. */
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot .robot-signal { display: inline; }
-.signal-zare { fill: url(#rb-zare) none; transform-box: view-box; }
+.signal-zare { fill: url(#rb-zare) none; stroke: none; transform-box: view-box; }
 .signal-vlna { fill: none; stroke: var(--signal, #e0457b); stroke-width: 1.4; opacity: 0; transform-box: view-box; }
 html[data-theme='dark'] .robot-signal { --signal: #ff7aa8; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-otocka]) .signal-zare { animation: rz-zare 1.8s ease-in-out var(--robot-delay, 0s) infinite; }
