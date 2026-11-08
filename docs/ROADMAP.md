@@ -66,9 +66,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 **Historický zablokovaný Draft v0.46.11 (nikoli nejnovější kandidát).** Anotovaný tag `v0.46.11` na `1e72a0057637ad249e70388444346a80526e7083`; přesné [CI 8/8](https://github.com/martin-pok/agentree/actions/runs/38430918556); úspěšný [release build + nezávislý byte audit](https://github.com/martin-pok/agentree/actions/runs/38432569881): soukromý Draft ID `411899483` s 8 přílohami, SHA-256 skutečně stažených bajtů **8/8 vůči GitHub API a 7/7 vůči manifestu** (report ID `11831787377`). [PR #216](https://github.com/martin-pok/agentree/pull/216) opravila ruční publishing REST workflow a byla sloučena v `af3c1fa`, [8/8 main CI](https://github.com/martin-pok/agentree/actions/runs/38440054592). **Dílčí fyzické Mac UAT 13. 10. proběhlo:** instalace z ověřeného DMG, start/restart, stávající účet, upozornění a projekty obstály; přesný rozsah a Gatekeeper `rejected` jsou v [RELEASE-READINESS.md](RELEASE-READINESS.md). Čistý Finder/Gatekeeper onboarding, nové Google OAuth, Chrome/Windows a úplné UAT jsou stále otevřené. PWA/Apple PNG v tomto neměnném Draftu mají staré proporce a fialovou anténu; [oprava #231](https://github.com/martin-pok/agentree/pull/231) vyžaduje nový binární kandidát. `v0.46.11` nezveřejňovat. Veřejné Preview je od 14. 10. `v0.46.12` (viz níže; předtím `v0.46.6`), Stable Latest `v0.46.0`, veřejný Chrome Store `0.31.4`.
 
-## Právě teď — 0.46.88 Preview vydané, dál spolehlivost detekce
+## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.89 Preview:** návrhy složek na mřížce projektů, skloňovaný popisek hodin ve Statistikách.
+**v0.46.89 Preview (zveřejněno 8. 11. 2026, build 42479209645, 8 příloh se SHA-256 ověřením):** návrhy složek na mřížce projektů, skloňovaný popisek hodin ve Statistikách.
 
 **v0.46.88 Preview (zveřejněno 8. 11. 2026):** jednotné zavírání oken (křížek, Escape, klik vedle, Zrušit) s dotazem na neuložené změny, logo Codexu odolné proti výměně obsahu stránky.
 
