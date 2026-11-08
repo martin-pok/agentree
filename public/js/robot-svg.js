@@ -250,7 +250,9 @@ function zabava(g, druh = true) {
       // nevypadá, že ruce nemá (vlastník 24. 10. 2026). Běžné paže se při čtení schovají.
       + `<path class="robot-limbs hra-ruce" d="M${n(lsx)} ${n(lsy)}Q${n(lsx - 3)} ${n(ky + 15)} ${n(54 - 13)} ${n(ky + 11)}M${n(sx)} ${n(sy)}Q${n(sx + 3)} ${n(ky + 15)} ${n(54 + 13)} ${n(ky + 11)}"/></g>` : '')
     + (ma('bublina') ? `<circle class="hra-bublina" style="transform-origin:${n(56)}px ${n(pusa + 1)}px" cx="${n(59.5)}" cy="${n(pusa + 1)}" r="6"/>` : '')
-    + (ma('mobil') ? `<g class="hra-mobil"><rect class="hra-mobil-telo" x="${n(mx - 4.5)}" y="${n(my - 10)}" width="9" height="14" rx="2.2"/><rect class="hra-mobil-displej" x="${n(mx - 3.2)}" y="${n(my - 8.6)}" width="6.4" height="10.8" rx="1"/></g>` : '')
+    // Ruka s telefonem: od pravého ramene oblouk před hrudí k telefonu, kreslená přes trup. Otočená
+    // běžná paže zajížděla za trup a telefon pak visel ve vzduchu bez ruky (kontrola animací 8. 11. 2026).
+    + (ma('mobil') ? `<g class="hra-mobil"><path class="robot-limbs hra-ruka-mobil" d="M${n(sx)} ${n(sy)}Q${n(sx + 2)} ${n(my + 9)} ${n(mx + 2)} ${n(my + 2)}"/><rect class="hra-mobil-telo" x="${n(mx - 4.5)}" y="${n(my - 10)}" width="9" height="14" rx="2.2"/><rect class="hra-mobil-displej" x="${n(mx - 3.2)}" y="${n(my - 8.6)}" width="6.4" height="10.8" rx="1"/></g>` : '')
     + `</g>`;
 }
 

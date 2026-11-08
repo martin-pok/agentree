@@ -935,7 +935,7 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 /* Mobil: telefon v ruce před hrudí, hlava skloněná k displeji, palec občas posune obsah. */
 .hra-mobil-telo { fill: color-mix(in srgb, var(--ink) 85%, var(--card)); }
 .hra-mobil-displej { fill: #7cc4ff; transform-box: view-box; }
-:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]):has(.hra-mobil) .robot-arm-right { rotate: 115deg; }
+:is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]):has(.hra-ruka-mobil) .robot-arm-right { opacity: 0; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: none; rotate: 3deg; translate: 0 2.5px; }
 :is([data-status='waiting'], [data-status='idle'], [data-state='waiting']:not([data-status]), [data-state='idle']:not([data-status]))[data-hra='mobil'] .robot.is-zivy:not([data-gesto], [data-otocka]) .hra-mobil-displej { animation: rz-displej 3.4s steps(1) var(--robot-delay, 0s) infinite; }
 @keyframes rz-displej { 0%, 100% { opacity: 1; } 40% { opacity: .7; } 46% { opacity: 1; } 78% { opacity: .8; } 82% { opacity: 1; } }

@@ -79,13 +79,14 @@ test('flákání a volání anténou: hračky u čekajících, signál u těch, 
   const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
   for (const typ of ROBOT_TYPES) {
     const svg = robot(typ);
-    for (const cast of ['robot-hra', 'hra-micek', 'hra-jojo', 'hra-noty', 'hra-kava', 'hra-kniha', 'hra-bublina', 'hra-mobil', 'robot-signal', 'signal-vlna', 'signal-zare']) assert.ok(svg.includes(cast), `${typ}: ${cast}`);
+    for (const cast of ['robot-hra', 'hra-micek', 'hra-jojo', 'hra-noty', 'hra-kava', 'hra-kniha', 'hra-bublina', 'hra-mobil', 'hra-ruka-mobil', 'robot-signal', 'signal-vlna', 'signal-zare']) assert.ok(svg.includes(cast), `${typ}: ${cast}`);
   }
   const { dilnaAtributy } = await import('../public/js/home-studio.js');
   // V malém portrétu zůstávají obě paže čitelné i během čekání.
   const cssHry = await zdroj('public/refinement.css');
   assert.doesNotMatch(cssHry, /\[data-hra='kniha'\][^{]*robot-arm-left[^{]*\{ opacity: 0; \}/);
-  assert.match(cssHry, /\[data-hra='mobil'\][^{]*:has\(\.hra-mobil\)[^{]*robot-arm-right \{ rotate: 115deg; \}/);
+  // Telefon drží vlastní ruka přes trup; běžná pravá paže se schová jen tehdy, když ta ruka v SVG je.
+  assert.match(cssHry, /\[data-hra='mobil'\][^{]*:has\(\.hra-ruka-mobil\)[^{]*robot-arm-right \{ opacity: 0; \}/);
   const cssPortrait = await zdroj('public/workbench.css');
   assert.match(cssPortrait, /\.agent-portrait \.robot :is\(\.robot-arm-left, \.robot-arm-right\) \{ stroke-width: 5\.5; \}/);
   assert.match(dilnaAtributy({ id: 'a', status: 'waiting', connector: 'claude-desktop-code', stale: true }), /data-hra="klid"/, 'nejistý stav: žádná hra, paže zůstávají');
