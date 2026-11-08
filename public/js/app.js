@@ -1052,7 +1052,9 @@ const queued = createLiveEventBacklog();
 
 function handle(name, data) {
   const vysledek = applyEvent(name, data);
-  if (vysledek?.ucet) udalostUctu(vysledek.ucet);
+  // Server dočetl starší konverzace (po startu jdou tiše): stáhnout úplný stav jednou.
+  if (vysledek?.resync) obnovStav('resync', { force: true }).catch(() => {});
+  else if (vysledek?.ucet) udalostUctu(vysledek.ucet);
   else if (vysledek?.napojeni) udalostNapojeni(vysledek.napojeni);
   else if (vysledek) onAlert(vysledek);
 }

@@ -466,6 +466,8 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     fingerprints.delete(id);
     if (store.get(id)) store.remove(id);
   };
+  // Po dočtení starších přepisů (události během něj jdou tiše) se duplicity zkontrolují znovu.
+  store.on?.('resync', () => zpracuj());
   store.on?.('session', (v) => {
     const s = v?.connector === 'claude-code' ? store.get(v.id) : null;
     if (s?.bridgeId && store.get(`claude-desktop-code:${s.bridgeId}`)) odeberDuplikat(s.bridgeId);

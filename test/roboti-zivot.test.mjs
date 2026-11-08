@@ -180,3 +180,19 @@ test('šatník zezadu: žádný kus na žádném robotovi nemá neoznačený pr�
   }
   assert.deepEqual([...chyby], []);
 });
+
+test('kontrolka na anténě je součástí hlavy (s náklonem a kmitáním sedí na špičce antény)', async () => {
+  const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
+  const { renderWardrobe } = await import('../public/js/robot-wardrobe.js');
+  for (const t of ROBOT_TYPES) {
+    for (const svg of [robot(t, { signal: true }), renderWardrobe(robot(t, { signal: true, hra: 'kniha', prace: true }), { hat: 'tophat', outfit: 'tee' })]) {
+      const hlava = svg.indexOf('<g class="robot-head"');
+      const kontrolka = svg.indexOf('<g class="robot-signal-osa"');
+      assert.ok(hlava > 0 && kontrolka > hlava, `${t}: kontrolka uvnitř hlavy`);
+      // Hlava se uzavírá až za kontrolkou: všechny skupiny <g> jsou spárované.
+      assert.equal((svg.match(/<g[\s>]/g) || []).length, (svg.match(/<\/g>/g) || []).length, `${t}: SVG je celé`);
+    }
+  }
+  const css = await zdroj('public/refinement.css');
+  assert.match(css, /:is\(\.robot-aerial, \.robot-signal-osa\) \{ animation: rz-antena/);
+});

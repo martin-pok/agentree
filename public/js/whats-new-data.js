@@ -4,6 +4,22 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.90', date: '2026-11-08', title: 'Rychlý start a žádné dvojité karty',
+    items: [
+      'Aplikace se otevře výrazně rychleji – starší konverzace se dočtou na pozadí.',
+      'Konverzace ze záložky Code v Claude Desktopu už nejsou vidět dvakrát.',
+      'Kontrolka „potřebuje tebe“ sedí na špičce antény i při mávání.',
+    ],
+    en: {
+      title: 'Fast start and no duplicate cards',
+      items: [
+        'The app opens much faster – older conversations load in the background.',
+        'Conversations from the Code tab in Claude Desktop no longer appear twice.',
+        'The “needs you” light stays on the antenna tip even while waving.',
+      ],
+    },
+  },
+  {
     version: '0.46.89', date: '2026-11-08', title: 'Doladění Projektů a Statistik',
     items: [
       'Návrhy složek v Projektech se vejdou celé, na stejné mřížce jako projekty.',

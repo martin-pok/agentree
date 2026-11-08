@@ -709,7 +709,8 @@ export function createClaudeCodeConnector(ctx) {
 
   async function scanKoren(koren, plny = true) {
     const soubory = await souboryKorene(koren);
-    for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
+    // Mezi soubory se uvolní vlákno: požadavky okna (stav, detail) nečekají na dočtení všeho.
+    for (const f of soubory) if (plny || !klidny(f)) { await queue.run(f); await new Promise((r) => setImmediate(r)); }
     return soubory;
   }
 

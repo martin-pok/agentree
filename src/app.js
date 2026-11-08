@@ -1674,7 +1674,8 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
 
   async function state({ local = true } = {}) {
     // První stažení stavu oknem: teprve teď se rozběhne dočítání starších konverzací (start()).
-    setTimeout(() => prvniStav(), 50).unref?.();
+    // Okno po stavu ještě načítá písma, obrázky a další data: dočítání začne až po krátké pauze.
+    setTimeout(() => prvniStav(), 1200).unref?.();
     return {
       version: VERSION,
       now: Date.now(),
@@ -1741,14 +1742,17 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Starší konverzace (plný průchod sledovaného období) se dočítají na pozadí a do okna přibývají
     // průběžně. Upozornění, souhrny projektů, historie Statistik a ohlášení nových nástrojů se
     // zapnou až po dočtení: jinak by se každá dočtená stará chyba nebo limit ohlásily jako nové.
-    // Dočítání začne, jakmile okno stáhne první stav (nejpozději za 1,5 s): první vykreslení tak
+    // Dočítání začne, jakmile okno stáhne první stav (nejpozději za 3 s): první vykreslení tak
     // nesoupeří s parsováním starších přepisů o jediné vlákno serveru.
     let startDocteni;
     const doctiPozadi = new Promise((resolve) => { startDocteni = resolve; });
     prvniStav = () => startDocteni();
-    setTimeout(() => startDocteni(), 1500).unref?.();
-    const dokonceno = doctiPozadi.then(() => Promise.allSettled([launchReady, ...list.map((c) => c.dokoncit?.())])).then(() => {
+    setTimeout(() => startDocteni(), 3000).unref?.();
+    const dokonceno = doctiPozadi.then(() => { store.dociteni = true; return Promise.allSettled([launchReady, ...list.map((c) => c.dokoncit?.())]); }).then(() => {
+      store.dociteni = false;
       if (stoppingRemote) return;
+      // Okna si stáhnou úplný stav jednou (místo stovek jednotlivých zpráv během dočítání).
+      store.emit('resync', { at: Date.now() });
       store.reevaluate();
       historie.aktualizuj(store.list());
       syncSnapshots();

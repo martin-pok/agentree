@@ -335,6 +335,10 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + `<path class="robot-face-glint" d="M${n(f.x + Math.max(4, f.r * .48))} ${n(f.top + 2.4)}H${n(f.x + f.w * .54)}"/>`
     + cheeks
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
-    + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`
-    + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + (kusy.signal ? signal(g) : '') + '</svg>';
+    + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g>`
+    // Kontrolka na špičce antény je součástí hlavy a kmitá jako anténa (stejný střed otáčení): při
+    // náklonu hlavy nebo mávání sedí pořád na konci antény (vlastník 8. 11. 2026: „bliká křivo“).
+    + (kusy.signal ? `<g class="robot-signal-osa" style="transform-origin:54px ${n(h.top)}px">${signal(g)}</g>` : '')
+    + '</g></g>'
+    + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + '</svg>';
 }

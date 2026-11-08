@@ -567,7 +567,8 @@ export function createCodexConnector(ctx) {
   async function scanKoren(koren, plny = true) {
     await syncIndex();
     const soubory = await listFiles(koren, 3, (x) => x.endsWith('.jsonl'));
-    for (const f of soubory) if (plny || !klidny(f)) await queue.run(f);
+    // Mezi soubory se uvolní vlákno: požadavky okna (stav, detail) nečekají na dočtení všeho.
+    for (const f of soubory) if (plny || !klidny(f)) { await queue.run(f); await new Promise((r) => setImmediate(r)); }
     return soubory;
   }
 

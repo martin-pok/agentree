@@ -619,3 +619,8 @@ Scénáře: `test/remote-state-truth.test.mjs`, `test/claude-desktop-code.test.m
 `npm run qa:live-codex` je explicitně zapínaný canary s vyhrazeným QA profilem. Chybějící či neplatné přihlášení vrátí blokaci (exit 2), ne úspěšný test. Běžné CI se kvůli tomuto chybějícímu externímu účtu netváří jako plně živě ověřené. Nikdy nekopírovat/symlinkovat osobní auth.json kvůli izolaci testu; obnovování OAuth má používat vlastní přihlášený testovací profil.
 
 Audit našel a opravuje stránkování `thread/list` za první stovkou a autoritativní `task_complete.error` nového SDK. Podrobná před/po evidence a hranice ověření: `PRODUCT-AUDIT-2026-10-30.md`.
+
+
+## Bridge relace Claude (Remote Control, záložka Code v Claude Desktopu)
+
+Seznam relací z účtu (`/v1/code/sessions`) nese `environment_kind` (`bridge`, `anthropic_cloud`, `byoc`, `snap`) – podle kódu Claude Code. Místní přepis Claude Code ukládá řádek `{type: "bridge-session", bridgeSessionId}`; podle něj se relace z účtu spáruje s místní konverzací a podruhé se neukáže. 🧪 Beta: tvar ověřen ve zdrojovém kódu Claude Code, na skutečném Macu vlastníka zatím ne.

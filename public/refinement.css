@@ -451,7 +451,8 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
    - Omezení pohybu (systém nebo „Omezit pohyb“) vše vypne pravidly výše (.mascot-motion-off, reduce). */
 .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { transform-box: view-box; transform-origin: 54px 103px; animation: rz-dech 4.6s ease-in-out var(--robot-delay, 0s) infinite; }
 .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { transform-box: view-box; animation: rz-rozhled 11s ease-in-out var(--robot-delay, 0s) infinite; }
-.robot.is-zivy:not([data-gesto], [data-otocka]) .robot-aerial { animation: rz-antena 3.4s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot.is-zivy:not([data-gesto], [data-otocka]) :is(.robot-aerial, .robot-signal-osa) { animation: rz-antena 3.4s ease-in-out var(--robot-delay, 0s) infinite; }
+.robot .robot-signal-osa { transform-box: view-box; }
 @keyframes rz-dech { 0%, 100% { scale: 1 1; } 45% { scale: 1.012 1.03; } }
 @keyframes rz-rozhled {
   0%, 100% { rotate: 0deg; translate: 0 0; }
@@ -478,6 +479,7 @@ html[data-theme] .palette-list li:has(.pl-text small) { height: auto; min-height
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-body { animation: rz-netrpelivost 3.2s cubic-bezier(.45, 0, .3, 1) var(--robot-delay, 0s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy:not([data-gesto], [data-otocka]) .robot-head { animation: rz-otazka 3.2s ease-in-out var(--robot-delay, 0s) infinite; }
 :is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy .robot-aerial { animation: robot-signal .8s ease-in-out infinite, rz-antena 1.6s ease-in-out infinite; }
+:is([data-status='needs_input'], [data-state='needs_input']:not([data-status])) .robot.is-zivy .robot-signal-osa { animation: rz-antena 1.6s ease-in-out infinite; }
 @keyframes rz-netrpelivost {
   0%, 62%, 100% { translate: 0 0; scale: 1 1; }
   68% { translate: 0 0; scale: 1.03 .96; }

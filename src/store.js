@@ -77,11 +77,15 @@ export class Store extends EventEmitter {
     const value = summarize(s, now, this.windowMs, this.hooky);
     if (this.decorate) this.decorate(value);
     const json = JSON.stringify(value);
+    // Dočítání starších konverzací po startu (src/app.js#start): nově načtená konverzace se do okna
+    // neposílá po jedné i s celým přepisem – stovky takových zpráv přetekly limit živého proudu
+    // a server spojení s oknem přerušil. Okno si po dočtení stáhne stav jednou (událost resync).
+    const tise = this.dociteni && !prev;
     if (!prev || prev.json !== json) {
       this.summaries.set(s.id, { json, value });
-      if (this.ready) this.emit('session', value, prev?.value || null);
+      if (this.ready && !tise) this.emit('session', value, prev?.value || null);
     }
-    if (this.ready && (entries.length || reset)) {
+    if (this.ready && !tise && (entries.length || reset)) {
       this.emit('transcript', { id: s.id, reset, entries: entries.map((e) => ({ ...e })) });
     }
   }

@@ -620,7 +620,7 @@ export function renderWardrobe(svg, source) {
   if (!hat && !face && !outfit && !costume) return svg;
   // Paže s nástrojem (robot při práci) leží nad tělem až za ním; vrstvy šatníku se kotví ke konci
   // hlavy a těla, proto se na chvíli odloží a vrátí se nakonec.
-  const nadIndex = Math.min(...['<g class="robot-prace">', '<g class="robot-hra">', '<g class="robot-signal"'].map((z) => svg.indexOf(z)).filter((i) => i >= 0), Infinity);
+  const nadIndex = Math.min(...['<g class="robot-prace">', '<g class="robot-hra">'].map((z) => svg.indexOf(z)).filter((i) => i >= 0), Infinity);
   const nad = nadIndex === Infinity ? '' : svg.slice(nadIndex, -'</svg>'.length);
   if (nad) svg = svg.slice(0, nadIndex) + '</svg>';
   const body = costume || outfit;
@@ -647,7 +647,8 @@ export function renderWardrobe(svg, source) {
   if (back) out = out.replace('<g class="robot-body">', back + '<g class="robot-body">');
   if (mid) out = out.replace(/<g class="robot-head"/, mid + '<g class="robot-head"');
   if (obliceje) out = out.replace('</g><g class="robot-zada-hlavy"', obliceje + '</g><g class="robot-zada-hlavy"');
-  if (head) out = out.replace('</g></g></svg>', head + '</g></g></svg>');
+  // Pokrývka hlavy patří pod kontrolku na anténě (ta svítí i nad čepicí).
+  if (head) out = out.includes('<g class="robot-signal-osa"') ? out.replace('<g class="robot-signal-osa"', head + '<g class="robot-signal-osa"') : out.replace('</g></g></svg>', head + '</g></g></svg>');
   if (bodyFront) out = out.replace('</g></svg>', bodyFront + '</g></svg>');
   // Čepice a převlek s pokrývkou hlavy zakrývají anténu; kdyby trčela skrz ně, vypadalo by to jako chyba.
   if (hat || (costume && (costume.hood || costume.top))) out = out.replace(/class="robot( |")/, 'class="robot robot--worn$1');
