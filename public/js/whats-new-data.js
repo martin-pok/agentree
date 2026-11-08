@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.89', date: '2026-11-08', title: 'Doladění Projektů a Statistik',
+    items: [
+      'Návrhy složek v Projektech se vejdou celé, na stejné mřížce jako projekty.',
+      'Ve Statistikách se popisek hodin skloňuje podle čísla.',
+    ],
+    en: {
+      title: 'Projects and Statistics polish',
+      items: [
+        'Folder suggestions in Projects fit in full, on the same grid as projects.',
+        'The hours caption in Statistics now agrees with the number.',
+      ],
+    },
+  },
+  {
     version: '0.46.88', date: '2026-11-08', title: 'Neuložené změny se neztratí',
     items: [
       'Okna se zavírají stejně – křížkem, Zrušit, Escapem i klepnutím vedle. S neuloženými změnami se nejdřív zeptají.',

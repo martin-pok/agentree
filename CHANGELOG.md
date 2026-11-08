@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.89 – 2026-11-08 · Doladění Projektů a Statistik
+
+- **Návrhy složek v Projektech:** stojí na stejné mřížce jako karty projektů, takže se cesta a počet konverzací vejdou celé (dřív „~/Projekty/agentree · 2 ko…“ vedle prázdného místa).
+- **Statistiky:** popisek pod počtem hodin se skloňuje podle čísla – „1 hodina, kdy aspoň jeden agent pracoval“, „5 hodin…“.
+
 ## 0.46.88 – 2026-11-08 · Neuložené změny se neztratí
 
 - **Jednotné zavírání oken:** všechna okna (projekt, vzhled agenta, nastavení, dovednosti…) se zavírají stejně – křížkem, tlačítkem Zrušit, Escapem i klepnutím vedle okna. Když v okně jsou neuložené změny, okno se nejdřív zeptá přímo v sobě: „Máš neuložené změny.“ s volbami Upravovat dál (výchozí) a Zahodit změny. Bez změn se zavře hned.

@@ -2,9 +2,9 @@
 
 ## Aktuální fronta — audit 30. 10. 2026
 
-Zdroj pravdy: [plný audit appky, rozšíření a webu](PRODUCT-AUDIT-2026-10-30.md). Vydané Preview je **0.46.86** (publikace 41084284085, 8 příloh), Stable Latest **0.46.58**, veřejný Chrome Store stále **0.46.55**. Repozitář je veřejný. Produkční web odpovídá main `95093a1`.
+Zdroj pravdy: [plný audit appky, rozšíření a webu](PRODUCT-AUDIT-2026-10-30.md). Vydané Preview je **0.46.88** (8. 11. 2026, 8 příloh, SHA-256 ověřeno proti otiskům GitHubu; obsahuje i 0.46.87), předchozí **0.46.86** (publikace 41084284085), Stable Latest **0.46.58**, veřejný Chrome Store stále **0.46.55**. Repozitář je veřejný. Produkční web odpovídá main `95093a1`.
 
-**Kandidát 0.46.87:** oprava ztracených Codex vláken za první stovkou a ignorovaného `task_complete.error`, skutečné MV3 QA pro 11 služeb včetně obnovy po restartu. Před vydáním vyžaduje čerstvé CI a audit příloh. Opravy mají reprodukci před změnou; nejsou zatím součástí instalované .86.
+**0.46.87 (součást vydaného 0.46.88):** oprava ztracených Codex vláken za první stovkou a ignorovaného `task_complete.error`, skutečné MV3 QA pro 11 služeb včetně obnovy po restartu. Vydáno 8. 11. v 0.46.88 po zeleném CI přesného commitu a auditu příloh.
 
 Čerstvé CI vydané .86: 41092831090, 8/8 po opakování nativní Mac úlohy kvůli nedostupnosti runneru. Lokálně baseline 1547 pass / 13 skip; finální kandidát .87 má 1553 pass / 13 skip / 0 fail a úspěšný balíčkový smoke. Úspěšný živý modelový běh blokuje neobnovitelné přihlášení QA Codexu; reálná chyba byla využita jako reprodukce nesprávného „hotovo“. `qa:live-codex` pro další běhy používá vyhrazený profil, nikoli osobní credentials.
 
@@ -66,15 +66,17 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 **Historický zablokovaný Draft v0.46.11 (nikoli nejnovější kandidát).** Anotovaný tag `v0.46.11` na `1e72a0057637ad249e70388444346a80526e7083`; přesné [CI 8/8](https://github.com/martin-pok/agentree/actions/runs/38430918556); úspěšný [release build + nezávislý byte audit](https://github.com/martin-pok/agentree/actions/runs/38432569881): soukromý Draft ID `411899483` s 8 přílohami, SHA-256 skutečně stažených bajtů **8/8 vůči GitHub API a 7/7 vůči manifestu** (report ID `11831787377`). [PR #216](https://github.com/martin-pok/agentree/pull/216) opravila ruční publishing REST workflow a byla sloučena v `af3c1fa`, [8/8 main CI](https://github.com/martin-pok/agentree/actions/runs/38440054592). **Dílčí fyzické Mac UAT 13. 10. proběhlo:** instalace z ověřeného DMG, start/restart, stávající účet, upozornění a projekty obstály; přesný rozsah a Gatekeeper `rejected` jsou v [RELEASE-READINESS.md](RELEASE-READINESS.md). Čistý Finder/Gatekeeper onboarding, nové Google OAuth, Chrome/Windows a úplné UAT jsou stále otevřené. PWA/Apple PNG v tomto neměnném Draftu mají staré proporce a fialovou anténu; [oprava #231](https://github.com/martin-pok/agentree/pull/231) vyžaduje nový binární kandidát. `v0.46.11` nezveřejňovat. Veřejné Preview je od 14. 10. `v0.46.12` (viz níže; předtím `v0.46.6`), Stable Latest `v0.46.0`, veřejný Chrome Store `0.31.4`.
 
-## Právě teď — 0.46.87 Preview a spolehlivost detekce
+## Právě teď — 0.46.88 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.88 Preview:** jednotné zavírání oken (křížek, Escape, klik vedle, Zrušit) s dotazem na neuložené změny, logo Codexu odolné proti výměně obsahu stránky.
+**Kandidát v0.46.89 Preview:** návrhy složek na mřížce projektů, skloňovaný popisek hodin ve Statistikách.
 
-**Kandidát v0.46.87 Preview:** opravené stránkování vláken Codexu a terminální SDK chyby. Před publikací musí projít čerstvé kompletní CI a nezávislý SHA-256 audit osmi skutečných příloh. Veřejné Preview je v0.46.86, Stable Latest v0.46.58; žádný starý Draft není paralelní release úkol.
+**v0.46.88 Preview (zveřejněno 8. 11. 2026):** jednotné zavírání oken (křížek, Escape, klik vedle, Zrušit) s dotazem na neuložené změny, logo Codexu odolné proti výměně obsahu stránky.
+
+**v0.46.87 (součást 0.46.88):** opravené stránkování vláken Codexu a terminální SDK chyby; vydáno po čerstvém CI a nezávislém SHA-256 auditu osmi příloh. Veřejné Preview je v0.46.86, Stable Latest v0.46.58; žádný starý Draft není paralelní release úkol.
 
 | Priorita | Výsledek | Dokončení |
 |---|---|---|
-| P0 | Vydat obě prokázané opravy detekce | Přesný commit, CI, build, nezávislý byte audit, publikace Preview a anonymní feed. |
+| ✓ | Vydat obě prokázané opravy detekce | Hotovo v 0.46.88 (8. 11.): přesný commit, CI, build, byte audit, publikace Preview. |
 | P0 | Chrome Store #172 | Veřejná .55 je zastaralá. Publikace balíčku i nových obrázků/textů vyžaduje přístup vydavatele; GitHub ZIP není Store update. |
 | P0 | Živá provider QA | Vyhrazené testovací profily a skutečné canary. Nové MV3 QA už samostatně ověřuje 11 služeb × 3 stavy a restart; poskytovatelské DOM je syntetické. |
 | P1 | Device UAT #174/#208 | Automatizovaný device lab: action-popup → běžící Mac okno, upgrade/rollback a Safari/iPhone. Nepřenášet rutinní ověřování na vlastníka. |
