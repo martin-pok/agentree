@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.90 – 2026-11-08 · Signál robota drží na anténě
+
+- **Roboti:** když robot volá „Potřebuje tebe“, záře a vlnky signálu už neujíždějí od špičky antény, když se robot nakloní nebo anténa kývne. Záře teď leží přímo v anténě a pohybuje se s hlavou. Platí pro všech devět postav; robot s čepicí o volání nepřijde, schová se jen anténa.
+
 ## 0.46.89 – 2026-11-08 · Doladění Projektů a Statistik
 
 - **Návrhy složek v Projektech:** stojí na stejné mřížce jako karty projektů, takže se cesta a počet konverzací vejdou celé (dřív „~/Projekty/agentree · 2 ko…“ vedle prázdného místa).

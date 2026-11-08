@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.90', date: '2026-11-08', title: 'Signál robota drží na anténě',
+    items: [
+      'Záře a vlnky, kterými robot volá „Potřebuje tebe“, už neujíždějí od špičky antény, když se robot nakloní.',
+      'Robot s čepicí o volání nepřijde: schová se jen anténa, signál zůstane.',
+    ],
+    en: {
+      title: 'The signal stays on the antenna',
+      items: [
+        'The glow and rings a robot uses to call "Needs you" no longer drift away from the antenna tip when the robot tilts.',
+        'A robot wearing a hat keeps its call: only the antenna is hidden, the signal stays.',
+      ],
+    },
+  },
+  {
     version: '0.46.89', date: '2026-11-08', title: 'Doladění Projektů a Statistik',
     items: [
       'Návrhy složek v Projektech se vejdou celé, na stejné mřížce jako projekty.',
