@@ -864,7 +864,7 @@ html.look-open { overflow: hidden; }
 .rok { stroke: #aab4d8; stroke-width: 1.400; }
 .rh { fill: #fff; fill-opacity: .32; }
 .rs { fill: #05070d; fill-opacity: .2; }
-.robot--worn .robot-aerial { display: none; }
+.robot--worn .robot-aerial > :not(.robot-signal) { display: none; }
 .look-tile .studio-avatar { width: 64px; height: 66px; background: none; border-radius: 0; }
 .look-row--robots .look-tile .studio-avatar { width: 42px; height: 44px; }
 

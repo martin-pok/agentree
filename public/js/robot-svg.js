@@ -257,7 +257,9 @@ function zabava(g, druh = true) {
 }
 
 // Volá tě (potřebuje tvé rozhodnutí): špička antény svítí a pulzuje a odchází z ní vlnky signálu.
-const SPICKA = { ball: [54, -13], square: [54, -12], bolt: [54, -12], planet: [54, -12], stars: [54, -12], tuft: [57, -6], sprig: [58, -10], ring: [54, -12], periscope: [49, -11.5], leaf: [57, -15] };
+// Signál leží UVNITŘ skupiny antény: nese ho naklonění hlavy i kývání antény, takže záře nikdy neuteče
+// od špičky (vlastník 8. 11. 2026: „křivě a mimo bliká ta anténa“).
+const SPICKA = { ball: [54, -13], square: [54, -12], bolt: [54, -12], planet: [54, -12], stars: [54, -12], tuft: [55, -4], sprig: [58, -10], ring: [54, -12], periscope: [49, -11.5], leaf: [57, -15] };
 function signal(g) {
   const [x, dy] = SPICKA[g.aerial] || SPICKA.ball;
   const y = g.head.top + dy;
@@ -323,7 +325,7 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + (g.core === 'star' ? `<g class="robot-core">${hvezda(54, t.top + t.h / 2 - 1, 4.4)}</g>` : `<circle class="robot-core" cx="54" cy="${n(t.top + t.h / 2 - 1)}" r="3"/>`)
     + '</g>'
     + `<g class="robot-zada-trupu" style="--fd:${n(posunPovrchu(t.w, t.w * 0.5, HLOUBKA_TRUPU))}px">${zadaTrup(t)}</g>`
-    + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}</g>`
+    + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}${kusy.signal ? signal(g) : ''}</g>`
     + `<g class="robot-ucho-zadni" style="--hw:${n(h.w)}px">${usi[1] || ''}</g><g class="robot-ucho-predni" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
     + `<g class="robot-hlava-telo"><rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
     + `<rect class="robot-objem" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/></g>`
@@ -336,5 +338,5 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + cheeks
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
     + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`
-    + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + (kusy.signal ? signal(g) : '') + '</svg>';
+    + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + '</svg>';
 }
