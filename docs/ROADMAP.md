@@ -68,6 +68,8 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.88 Preview vydané, dál spolehlivost detekce
 
+**Kandidát v0.46.89 Preview:** návrhy složek na mřížce projektů, skloňovaný popisek hodin ve Statistikách.
+
 **v0.46.88 Preview (zveřejněno 8. 11. 2026):** jednotné zavírání oken (křížek, Escape, klik vedle, Zrušit) s dotazem na neuložené změny, logo Codexu odolné proti výměně obsahu stránky.
 
 **v0.46.87 (součást 0.46.88):** opravené stránkování vláken Codexu a terminální SDK chyby; vydáno po čerstvém CI a nezávislém SHA-256 auditu osmi příloh. Veřejné Preview je v0.46.86, Stable Latest v0.46.58; žádný starý Draft není paralelní release úkol.

@@ -2539,7 +2539,7 @@ html[data-theme='dark'] .avatar-pick[aria-pressed='true'] { box-shadow: 0 0 0 3p
 body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--line); }
 
 .psuggest:not(:empty) { margin-top: 40px; }
-.psuggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.psuggest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px 24px; }
 .psuggest-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) 18px; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border: 0; border-radius: var(--r-md); background: var(--card); box-shadow: var(--shadow-sm); text-align: left; transition: box-shadow var(--motion-response) var(--ease); }
 :where(html:not(.is-scrolling)) .psuggest-item:hover { box-shadow: var(--shadow-sm), 0 0 0 1px var(--ink); }
 .psuggest-text { display: grid; min-width: 0; }

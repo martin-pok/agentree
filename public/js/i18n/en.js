@@ -902,7 +902,6 @@ export default {
     "vstup + výstup": "input + output",
     "Aktivní konverzace": "Active conversations",
     "Hodiny s aktivitou": "Active hours",
-    "hodiny, kdy aspoň jeden agent pracoval": "hours when at least one agent was working",
     "V tomto období žádné tokeny": "No tokens in this period",
     "zůstatek": "balance",
     "Tvůj nový pracovní prostor": "Your new workspace",
@@ -1874,6 +1873,7 @@ export default {
     "Roboti ukazují stav agentů pohybem. Omezení pohybu v systému má vždy přednost.": "Robots show agent status through motion. Your system’s reduced-motion setting always takes priority.",
   },
   mnozne: {
+    'hodina, kdy aspoň jeden agent pracoval|hodiny, kdy aspoň jeden agent pracoval|hodin, kdy aspoň jeden agent pracoval': ['hour when at least one agent was working', 'hours when at least one agent was working'],
     '{0} agent bez čerstvého stavu|{0} agenti bez čerstvého stavu|{0} agentů bez čerstvého stavu': ['{0} agent without fresh status', '{0} agents without fresh status'],
     "AI nástroj|AI nástroje|AI nástrojů": ["AI tool","AI tools"],
     "Nejdřív rozhodni, ať agent může pokračovat.|Nejdřív rozhodni, ať agenti můžou pokračovat.|Nejdřív rozhodni, ať agenti můžou pokračovat.": ["Decide first so the agent can carry on.", "Decide first so the agents can carry on."],
