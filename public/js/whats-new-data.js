@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.88', date: '2026-11-08', title: 'Neuložené změny se neztratí',
+    items: [
+      'Okna se zavírají stejně – křížkem, Zrušit, Escapem i klepnutím vedle. S neuloženými změnami se nejdřív zeptají.',
+      'Robot s telefonem ho drží viditelnou rukou.',
+    ],
+    en: {
+      title: 'Unsaved changes are never lost',
+      items: [
+        'Dialogs close the same way – the ×, Cancel, Escape or a click outside. With unsaved changes they ask first.',
+        'A robot on its phone now holds it with a visible hand.',
+      ],
+    },
+  },
+  {
     version: '0.46.87', date: '2026-10-30', title: 'Codex bez ztracených vláken a falešného dokončení',
     items: [
       'Seznam vláken Codexu načítá i další stránky. Konverzace za první stovkou už nepropadnou.',

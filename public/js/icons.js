@@ -88,6 +88,8 @@ const DEFS_VLOZENE = new Set();
 function bezDefs(key, svg) {
   const defs = svg.match(/<defs>[\s\S]*?<\/defs>/);
   if (!defs || typeof document === 'undefined' || !document.body) return svg;
+  // Zásobník mohl zmizet (výměna obsahu stránky): přechody se pak vloží znovu.
+  if (!document.getElementById('logo-defs')) DEFS_VLOZENE.clear();
   if (!DEFS_VLOZENE.has(key)) {
     let zasobnik = document.getElementById('logo-defs');
     if (!zasobnik) {

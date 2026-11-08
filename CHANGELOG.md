@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.46.88 – 2026-11-08 · Neuložené změny se neztratí
+
+- **Jednotné zavírání oken:** všechna okna (projekt, vzhled agenta, nastavení, dovednosti…) se zavírají stejně – křížkem, tlačítkem Zrušit, Escapem i klepnutím vedle okna. Když v okně jsou neuložené změny, okno se nejdřív zeptá přímo v sobě: „Máš neuložené změny.“ s volbami Upravovat dál (výchozí) a Zahodit změny. Bez změn se zavře hned.
+- **Robot s telefonem má ruku:** v póze „mobil“ se pravá paže otáčela za trup a telefon visel ve vzduchu. Teď ho drží vlastní ruka přes hruď, u všech devíti postav.
+- **Logo Codexu odolnější:** kdyby se skrytý zásobník přechodů z log ztratil, vloží se znovu – logo nezbělá.
+
 ## 0.46.87 – 2026-10-30 · Codex bez ztracených vláken a falešného dokončení
 
 - **Vlákna za první stovkou:** index aplikace Codex načítá další stránky; opakovaný kurzor nebo chyba další stránky se hlásí jako neúplný odečet. Zachovaná kompatibilita se starším app-serverem.

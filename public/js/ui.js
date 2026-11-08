@@ -817,6 +817,42 @@ export function limitGauges(limits, now, { size = 'md', provider } = {}) {
 
 /* ---------- Modální dialog ---------- */
 
+// Otisk vyplněného formuláře: podle něj okno pozná, že v něm jsou neuložené změny.
+export function otiskFormulare(form) {
+  return JSON.stringify([...form.querySelectorAll('input, textarea, select')]
+    .filter((x) => x.type !== 'file' && x.type !== 'submit' && x.type !== 'button')
+    .map((x) => (x.type === 'checkbox' || x.type === 'radio' ? x.checked : x.value)));
+}
+
+// Neuložené změny se nikdy neztratí jedním klepnutím vedle okna nebo Escapem: okno se zeptá přímo
+// v sobě (nad patičkou), jestli je zahodit. Výchozí volba je pokračovat v úpravách.
+export function potvrdZahozeni(okno) {
+  const stary = okno.querySelector('.zahodit');
+  if (stary) { stary.querySelector('[data-zahodit="ne"]')?.focus(); return Promise.resolve(false); }
+  return new Promise((resolve) => {
+    const pruh = document.createElement('div');
+    pruh.className = 'zahodit';
+    pruh.setAttribute('role', 'alertdialog');
+    pruh.setAttribute('aria-label', tr('Neuložené změny'));
+    pruh.innerHTML = `<p>${esc(tr('Máš neuložené změny.'))}</p><span class="zahodit-akce"><button type="button" class="btn btn--sm" data-zahodit="ne">${esc(tr('Upravovat dál'))}</button><button type="button" class="btn btn--sm btn--danger" data-zahodit="ano">${esc(tr('Zahodit změny'))}</button></span>`;
+    const hotovo = (ano) => {
+      document.removeEventListener('keydown', klavesa, true);
+      pruh.remove();
+      resolve(ano);
+    };
+    const klavesa = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); hotovo(false); } };
+    pruh.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-zahodit]');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
+      hotovo(b.dataset.zahodit === 'ano');
+    });
+    document.addEventListener('keydown', klavesa, true);
+    (okno.querySelector('.modal-foot, footer') || okno).before(pruh);
+    pruh.querySelector('[data-zahodit="ne"]').focus();
+  });
+}
+
 function clearErrors(form) {
   for (const el of form.querySelectorAll('.field-error')) el.remove();
   for (const el of form.querySelectorAll('[aria-invalid]')) {
@@ -935,6 +971,13 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
     const form = scrim.querySelector('form');
     const submit = form.querySelector('[type="submit"]');
     let closed = false;
+    let otisk = null;
+    // Zavření bez uložení (křížek, Zrušit, Escape, klik vedle): změněný formulář se nejdřív zeptá.
+    const zrus = async () => {
+      if (closed) return;
+      if (otisk !== null && otiskFormulare(form) !== otisk && !(await potvrdZahozeni(scrim.querySelector('.modal')))) return;
+      close(false);
+    };
 
     const close = (result) => {
       if (closed) return;
@@ -966,7 +1009,7 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        close(false);
+        zrus();
       } else if (e.key === 'Tab') {
         const f = [...scrim.querySelectorAll('button, input, select, textarea, a[href]')].filter((x) => !x.disabled && x.offsetParent !== null);
         if (!f.length) return;
@@ -978,11 +1021,11 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
     onOpen?.(scrim, close);
     // Zavření až po clicku brání tomu, aby se po mousedown overlay odstranil a
     // zbytek gesta propadl na tlačítko pod ním.
-    scrim.addEventListener('click', (e) => { if (e.target === scrim) close(false); });
+    scrim.addEventListener('click', (e) => { if (e.target === scrim) zrus(); });
     for (const b of scrim.querySelectorAll('[data-close]')) b.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      close(false);
+      zrus();
     });
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -1006,7 +1049,11 @@ export function modal({ title, body, submitLabel = tr('Uložit'), cancelLabel = 
     // Nevratná akce (smazat účet, projekt…) nedostane fokus sama: Enter hned po otevření by ji
     // potvrdil. Fokus má „Zrušit“, potvrzení je vědomý krok (WAI-ARIA APG, alertdialog).
     const bezpecne = danger ? form.querySelector('.modal-foot [data-close]') : null;
-    requestAnimationFrame(() => (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || bezpecne || submit || scrim.querySelector('button')).focus());
+    requestAnimationFrame(() => {
+      (form.querySelector('.modal-body input, .modal-body .picker-trigger, .modal-body textarea') || bezpecne || submit || scrim.querySelector('button')).focus();
+      // Výchozí stav až po onOpen a prvním snímku (výběry a předvyplnění doplňují hodnoty skriptem).
+      otisk = otiskFormulare(form);
+    });
   });
 }
 

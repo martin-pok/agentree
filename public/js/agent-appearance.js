@@ -2,6 +2,7 @@ import { esc } from './format.js';
 import { tr } from './i18n.js';
 import { state } from './state.js';
 import { ICON } from './icons.js';
+import { potvrdZahozeni } from './ui.js';
 import { robot, ROBOT_TYPES } from './robot-svg.js';
 import { WARDROBE, SLOTS, normalizeLook, pickLook, renderWardrobe } from './robot-wardrobe.js';
 
@@ -168,7 +169,15 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     dialog.querySelector('#look-tab-' + tab).focus();
   });
   nickname.addEventListener('input', () => redraw({ grid: false }));
-  dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+  // Zavření bez uložení (křížek, Esc, klik vedle, tah dolů): změněný vzhled se nejdřív zeptá.
+  const stav = () => JSON.stringify([nickname.value.trim(), choice.avatar, choice.color, choice.look]);
+  const vychozi = stav();
+  const zavrit = async () => {
+    if (stav() !== vychozi && !(await potvrdZahozeni(form))) return;
+    dialog.close();
+  };
+  dialog.addEventListener('cancel', (e) => { e.preventDefault(); zavrit(); });
+  dialog.querySelector('[data-close]').addEventListener('click', zavrit);
   // Kliknutí mimo okno ho zavře. Počítá se jen, když stisk i uvolnění myši proběhly venku: výběr textu
   // v poli jména, který skončí za okrajem, ho zavřít nesmí.
   const uvnitr = (e) => {
@@ -177,7 +186,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
   };
   let stiskVenku = false;
   dialog.addEventListener('pointerdown', (e) => { stiskVenku = !uvnitr(e); });
-  dialog.addEventListener('click', (e) => { if (stiskVenku && !uvnitr(e)) dialog.close(); stiskVenku = false; });
+  dialog.addEventListener('click', (e) => { if (stiskVenku && !uvnitr(e)) zavrit(); stiskVenku = false; });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     saved[id] = { name: nickname.value.trim(), avatar: choice.avatar, color: choice.color, ...choice.look };
@@ -204,7 +213,7 @@ export function editAgentAppearance(id, { onSaved = () => {} } = {}) {
     if (tahY == null) return;
     const dy = e.clientY - tahY;
     pust();
-    if (dy > 90) dialog.close();
+    if (dy > 90) zavrit();
   });
   grip.addEventListener('pointercancel', pust);
   // Stránka pod oknem se nesmí hýbat (iOS ji jinak roluje i za modálním oknem).
