@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.93 – 2026-11-10 · Popisky se zalomí, nic se neutne
+
+- **Přístupnost (WCAG 1.4.12):** pevné popisky se při zvětšeném řádkování a mezerách zalomí na další řádek místo useknutí trojtečkou – verze a „Co je nového?“ v postranním panelu, nadpis stránky na telefonu, dlouhé odkazové kapsle v kartách (citace ceníku v detailu projektu už nepřetéká) a stav agenta v okně rozšíření. S běžným písmem se vzhled nemění.
+- **Kontrola přístupnosti:** `qa:axe` nově hlídá, že zaostřený prvek není schovaný pod lištou nebo plovoucím tlačítkem (WCAG 2.4.11), a prochází dialogy z klávesnice – fokus jde dovnitř, Tab z modálního okna neuteče, Escape zavře a vrátí fokus.
+
 ## 0.46.92 – 2026-11-09 · Bez záseků s běžícím Claude Desktopem
 
 - **Cache Claude Desktopu bez opakovaného čtení:** Claude Desktop za běhu zapisuje do své cache pořád a Agenteeq při každé změně znovu četl a rozbaloval všechny její tabulky – na Macu stálá zátěž a možné záseky. Hotové tabulky se nemění, takže se teď pamatují (podle cesty, velikosti a času) a čte se jen to, co přibylo. Tabulky odstraněné kompakcí se z paměti uvolní.

@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.92 Preview:** cache Claude Desktopu bez opakovaného čtení hotových tabulek LevelDB, katalog „Co je nového“ až na požádání.
+**Kandidát v0.46.93 Preview:** přístupnost (#217) – pevné popisky se zalomí místo zkrácení (WCAG 1.4.12), qa:axe hlídá zakrytý fokus (2.4.11) a dialogy z klávesnice.
+
+**v0.46.92 Preview (zveřejněno 9. 11. 2026, build 42583356651, 8 příloh se SHA-256 ověřením):** cache Claude Desktopu bez opakovaného čtení hotových tabulek LevelDB, katalog „Co je nového“ až na požádání.
 
 **v0.46.91 Preview (zveřejněno 8. 11. 2026, build 42511446296, 8 příloh se SHA-256 ověřením):** rychlý start (nedávné konverzace hned, starší na pozadí, jeden resync), bridge relace Claude Desktopu bez duplicit; obsahuje i 0.46.90.
 
