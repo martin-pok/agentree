@@ -281,7 +281,8 @@
     .row-meta { display: flex; align-items: center; gap: 4px; min-width: 0; color: var(--mute); font-size: 13px; line-height: 20px; }
     .row-meta .druh { width: 14px; height: 14px; stroke-width: 1.6; }
     .row-meta .src { flex: none; max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .row-meta .act { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Stav agenta se nikdy neukrojí trojtečkou – při nedostatku místa se zalomí (WCAG 1.4.12). */
+    .row-meta .act { min-width: 0; overflow-wrap: anywhere; }
     .t-work { color: var(--teal-ink); }
     .t-wait { color: var(--brass-ink); }
     .t-need { color: var(--velvet-ink); }
