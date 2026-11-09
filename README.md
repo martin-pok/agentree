@@ -4,11 +4,13 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.91** — připravované Preview (neveřejné vydání): rychlý start, žádné dvojité karty z Claude Desktopu. Obsahuje i 0.46.90.
+> **0.46.92** — připravované Preview (neveřejné vydání): bez záseků při běžícím Claude Desktopu, „Co je nového“ se při startu nestahuje.
 >
-> **0.46.90** — připravované Preview: signál, kterým robot volá „Potřebuje tebe“, drží na špičce antény a při naklonění hlavy neujíždí. Nevydané (neveřejné vydání); veřejné je 0.46.89.
+> **0.46.91** — aktuální [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.91): rychlý start, žádné dvojité karty z Claude Desktopu, signál robota na anténě (obsahuje 0.46.90). Stable Latest zůstává 0.46.58.
 >
-> **0.46.89** — aktuální [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.89): návrhy složek v Projektech se vejdou celé, popisek hodin ve Statistikách se skloňuje. Stable Latest zůstává 0.46.58.
+> **0.46.90** — součást 0.46.91: signál, kterým robot volá „Potřebuje tebe“, drží na špičce antény a při naklonění hlavy neujíždí. Nevydané (neveřejné vydání); veřejné je 0.46.89.
+>
+> **0.46.89** — [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.89): návrhy složek v Projektech se vejdou celé, popisek hodin ve Statistikách se skloňuje. Stable Latest zůstává 0.46.58.
 >
 > **0.46.88** — [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.88): okna se zavírají jednotně a neuložené změny se bez potvrzení neztratí, robot s telefonem má ruku. Obsahuje i 0.46.87: vlákna Codexu za první stovkou a chyby moderního SDK hlášené jako chyba, ne „hotovo“; logo Codexu na Přehledu bez bílého čtverce. Stable Latest zůstává 0.46.58.
 >

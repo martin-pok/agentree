@@ -66,7 +66,7 @@ test('CHANGELOG.md má záznam pro aktuální verzi', async () => {
 });
 
 test('installed release history never advertises changes from a newer draft build', () => {
-  const code = "globalThis.document = { documentElement: { lang: 'cs', dataset: {} } }; const { installedReleaseHistory } = await import('./public/js/whats-new.js'); console.log(JSON.stringify(installedReleaseHistory('0.46.6').map((r) => r.version).slice(0, 3)));";
+  const code = "globalThis.document = { documentElement: { lang: 'cs', dataset: {} } }; const { installedReleaseHistory } = await import('./public/js/whats-new.js'); console.log(JSON.stringify((await installedReleaseHistory('0.46.6')).map((r) => r.version).slice(0, 3)));";
   const actual = JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', code], {
     cwd: new URL('..', import.meta.url), encoding: 'utf8',
   }));

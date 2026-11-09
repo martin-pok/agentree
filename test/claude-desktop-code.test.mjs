@@ -373,3 +373,26 @@ test('historical cache failure does not raise a current failure alert; live reco
   assert.notEqual(state.sessions.find((x) => x.id === sid).status, 'failed');
   assert.equal(state.alerts.items.some((x) => x.sessionId === sid && x.kind === 'failed'), false);
 });
+
+// Výkon (vlastník 8. 11. 2026: „žádné záseky“): hotová tabulka LevelDB se nemění, takže se při další
+// změně cache nečte znovu; nová tabulka (jiná velikost/čas) se přečte. Výsledek je stejný jako dřív.
+test('Claude cache: nezměněná tabulka se při dalším čtení nerozbaluje znovu, změněná ano', async () => {
+  const home = await tempDir(), f = await fixture(home), k = key('react-query-cache');
+  const radek = (seq, hodnota) => { const i = Buffer.concat([k, Buffer.alloc(8)]); i.writeBigUInt64LE((BigInt(seq) << 8n) | 1n, i.length - 8); return table([{ key: i, value: Buffer.from(hodnota) }]); };
+  const tab = radek(1, 'prvni');
+  await fs.writeFile(path.join(f.dir, '000003.ldb'), tab);
+  await fs.writeFile(path.join(f.dir, 'MANIFEST-000001'), record(Buffer.concat([Buffer.from([2, 2, 7, 0, 3]), vi(tab.length), vi(0), vi(0)])));
+  await fs.writeFile(path.join(f.dir, '000002.log'), Buffer.alloc(0));
+  assert.equal((await readLevelSnapshot(f.dir))[0].value.toString(), 'prvni');
+  const cteni = [];
+  const puvodni = fs.readFile;
+  fs.readFile = async (...a) => { cteni.push(String(a[0])); return puvodni(...a); };
+  try {
+    assert.equal((await readLevelSnapshot(f.dir))[0].value.toString(), 'prvni');
+    assert.equal(cteni.filter((x) => x.endsWith('.ldb')).length, 0, 'tabulka se podruhé nečte');
+  } finally { fs.readFile = puvodni; }
+  const nova = radek(1, 'druha-delsi');
+  await fs.writeFile(path.join(f.dir, '000003.ldb'), nova);
+  await fs.writeFile(path.join(f.dir, 'MANIFEST-000001'), record(Buffer.concat([Buffer.from([2, 2, 7, 0, 3]), vi(nova.length), vi(0), vi(0)])));
+  assert.equal((await readLevelSnapshot(f.dir))[0].value.toString(), 'druha-delsi', 'změněná tabulka se přečte');
+});

@@ -2,7 +2,9 @@ import { api } from './api.js';
 import { state, subscribe } from './state.js';
 import { esc } from './format.js';
 import { modal } from './ui.js';
-import { RELEASES, unseenReleases, compareVersions } from './whats-new-data.js';
+// Katalog vydání (~180 kB) se načte až když je potřeba (otevření okna, nová verze) – start aplikace
+// ho nestahuje ani neparsuje (vlastník 8. 11. 2026: „žádné zdržovačky“).
+const katalog = () => import('./whats-new-data.js');
 import { goToExtension } from './jump.js';
 import { tr, LOCALE, podleJazyka } from './i18n.js';
 
@@ -29,14 +31,16 @@ async function markSeen() {
 
 // The bundled catalogue may include a future/draft version. The installed app must
 // never describe that entry as already received or display it in older release history.
-export const installedReleaseHistory = (version, entries = RELEASES) =>
-  entries.filter((entry) => compareVersions(entry.version, version) <= 0);
+export async function installedReleaseHistory(version, entries) {
+  const { RELEASES, compareVersions } = await katalog();
+  return (entries || RELEASES).filter((entry) => compareVersions(entry.version, version) <= 0);
+}
 
 let open = false;
 export async function showWhatsNew({ releases } = {}) {
   if (open) return;
   open = true;
-  const installed = installedReleaseHistory(state.version);
+  const installed = await installedReleaseHistory(state.version);
   const list = releases?.length ? releases.filter((r) => installed.includes(r)) : installed.slice(0, 1);
   const older = installed.filter((r) => !list.includes(r));
   const ext = state.integrations?.extension;
@@ -66,8 +70,12 @@ export function initWhatsNew() {
     // Nový uživatel má průvodce; novinky se mu ukážou až po další aktualizaci.
     if (!state.settings.welcomeCompleted) return;
     checked = true;
-    const unseen = unseenReleases(state.settings.lastSeenVersion, state.version);
-    if (unseen.length) showWhatsNew({ releases: unseen });
+    // Už viděná verze: katalog se vůbec nestahuje.
+    if (state.settings.lastSeenVersion === state.version) return;
+    katalog().then(({ unseenReleases }) => {
+      const unseen = unseenReleases(state.settings.lastSeenVersion, state.version);
+      if (unseen.length) showWhatsNew({ releases: unseen });
+    });
   });
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-whats-new]')) { e.preventDefault(); showWhatsNew(); }
