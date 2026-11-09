@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.93', date: '2026-11-10', title: 'Popisky se zalomí, nic se neutne',
+    items: [
+      'Při zvětšeném písmu nebo řádkování se popisky zalomí na další řádek – nic se neschová za trojtečku.',
+      'Citace ceníku v detailu projektu už nepřetéká z karty.',
+    ],
+    en: {
+      title: 'Labels wrap instead of being cut',
+      items: [
+        'With larger text or line spacing, labels wrap to the next line – nothing hides behind an ellipsis.',
+        'The pricing quote in project details no longer overflows its card.',
+      ],
+    },
+  },
+  {
     version: '0.46.92', date: '2026-11-09', title: 'Bez záseků s Claude Desktopem',
     items: [
       'Když běží Claude Desktop, Agenteeq už nečte celou jeho cache při každé změně – žádná zbytečná zátěž.',

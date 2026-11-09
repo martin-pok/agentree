@@ -4,9 +4,11 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.92** — připravované Preview (neveřejné vydání): bez záseků při běžícím Claude Desktopu, „Co je nového“ se při startu nestahuje.
+> **0.46.93** — připravované Preview (neveřejné vydání): popisky se při zvětšeném řádkování zalomí místo useknutí (WCAG 1.4.12), přísnější kontrola fokusu a dialogů z klávesnice.
 >
-> **0.46.91** — aktuální [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.91): rychlý start, žádné dvojité karty z Claude Desktopu, signál robota na anténě (obsahuje 0.46.90). Stable Latest zůstává 0.46.58.
+> **0.46.92** — [veřejné Preview z 9. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.92): bez záseků při běžícím Claude Desktopu, „Co je nového“ se při startu nestahuje. Stable Latest zůstává 0.46.58.
+>
+> **0.46.91** — [veřejné Preview z 8. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.91): rychlý start, žádné dvojité karty z Claude Desktopu, signál robota na anténě (obsahuje 0.46.90). Stable Latest zůstává 0.46.58.
 >
 > **0.46.90** — součást 0.46.91: signál, kterým robot volá „Potřebuje tebe“, drží na špičce antény a při naklonění hlavy neujíždí. Nevydané (neveřejné vydání); veřejné je 0.46.89.
 >
