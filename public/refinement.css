@@ -1053,3 +1053,13 @@ img[data-media].is-nacteno { opacity: 1; }
 .zahodit p { margin: 0; font: 500 14px/20px var(--f-body); color: var(--ink); }
 .zahodit-akce { display: flex; gap: 8px; margin-left: auto; }
 .look-form .zahodit { margin: 0 16px 8px; }
+
+/* WCAG 1.4.12 Mezery v textu (rozhodnutí vlastníka 9. 11. 2026: „zalomit, plné WCAG“). Pevné popisky
+   se při nedostatku místa zalomí na další řádek; trojtečka je nikdy neukrojí. S běžným písmem vypadá
+   všechno stejně – rozdíl je jen u velmi dlouhého textu a u uživatelsky zvětšených mezer a řádkování.
+   Zkrácený zůstává jen proměnlivý obsah karet (činnost, model, název konverzace), celý je v detailu. */
+.source-version { flex-wrap: wrap; row-gap: 2px; white-space: normal; overflow: visible; text-overflow: clip; }
+.link:not(.btn--lg) { max-width: 100%; height: auto; white-space: normal; overflow-wrap: anywhere; text-wrap: balance; text-align: left; }
+@media (max-width: 560px) {
+  .page-title { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+}
