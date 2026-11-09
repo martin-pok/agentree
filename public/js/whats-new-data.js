@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.92', date: '2026-11-09', title: 'Bez záseků s Claude Desktopem',
+    items: [
+      'Když běží Claude Desktop, Agenteeq už nečte celou jeho cache při každé změně – žádná zbytečná zátěž.',
+      'Aplikace při startu nestahuje přehled novinek, načte ho až když je potřeba.',
+    ],
+    en: {
+      title: 'No stutter with Claude Desktop',
+      items: [
+        'While Claude Desktop runs, Agenteeq no longer re-reads its whole cache on every change – no needless load.',
+        'The app no longer downloads the release notes at start; it loads them only when needed.',
+      ],
+    },
+  },
+  {
     version: '0.46.91', date: '2026-11-08', title: 'Rychlý start a žádné dvojité karty',
     items: [
       'Aplikace se otevře výrazně rychleji – starší konverzace se dočtou na pozadí.',

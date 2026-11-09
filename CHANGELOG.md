@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.92 – 2026-11-09 · Bez záseků s běžícím Claude Desktopem
+
+- **Cache Claude Desktopu bez opakovaného čtení:** Claude Desktop za běhu zapisuje do své cache pořád a Agenteeq při každé změně znovu četl a rozbaloval všechny její tabulky – na Macu stálá zátěž a možné záseky. Hotové tabulky se nemění, takže se teď pamatují (podle cesty, velikosti a času) a čte se jen to, co přibylo. Tabulky odstraněné kompakcí se z paměti uvolní.
+- **„Co je nového“ až na požádání:** katalog vydání (~180 kB) se při startu nestahuje ani nezpracovává; načte se, až když je nová verze k ukázání nebo ho otevřeš.
+
 ## 0.46.91 – 2026-11-08 · Rychlý start a žádné dvojité karty
 
 - **Rychlejší start:** okno se otevře, jakmile jsou načtené konverzace z posledních dvou dnů; starší se dočtou na pozadí a přibudou samy. Hledání nainstalovaných agentů (přihlašovací shell) a ověření přihlášení Claude/Codex už start nebrzdí – výsledek dorazí do okna živě. Změřeno na 358 MB přepisů (700 konverzací): okno připravené za 0,4 s místo 1,9 s; od spuštění po vykreslený Přehled ~1,4 s místo ~2,6 s. Na Macu odpadá i čekání na zsh a `claude auth status`.

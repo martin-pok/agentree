@@ -143,6 +143,25 @@ async function boundedRead(file) {
   if (!stat.isFile() || stat.size > MAX) throw Error('Invalid cache file');
   return fs.readFile(file);
 }
+// Hotové tabulky LevelDB (.ldb/.sst) se po zapsání nemění – mění se jen deník (.log). Claude Desktop
+// za běhu zapisuje pořád a dřív se při každé změně znovu četly a rozbalovaly všechny tabulky (na Macu
+// stálá zátěž a záseky). Rozparsované záznamy tabulky se proto drží podle cesty, velikosti a času.
+const TABULKY = new Map();
+async function zaznamyTabulky(soubor) {
+  const st = await fs.stat(soubor);
+  const otisk = `${st.size}:${st.mtimeMs}`;
+  const drive = TABULKY.get(soubor);
+  if (drive?.otisk === otisk) return drive.zaznamy;
+  const zaznamy = [];
+  for (const { key, value } of tableEntries(await boundedRead(soubor))) {
+    if (key.length < 8) throw Error('Invalid internal key');
+    const tag = key.readBigUInt64LE(key.length - 8);
+    zaznamy.push([key.subarray(0, -8), value, tag >> 8n, Number(tag & 255n)]);
+  }
+  TABULKY.set(soubor, { otisk, zaznamy });
+  return zaznamy;
+}
+
 export async function readLevelSnapshot(dir) {
   const current = (await boundedRead(path.join(dir, 'CURRENT'))).toString().trim();
   if (!/^MANIFEST-\d+$/.test(current)) throw Error('Invalid manifest name');
@@ -159,11 +178,7 @@ export async function readLevelSnapshot(dir) {
     const number = Number(match[1]);
     if (match[2] !== 'log') {
       if (!tables.has(number)) continue; // Do not resurrect obsolete compacted tables.
-      for (const { key, value } of tableEntries(await boundedRead(path.join(dir, name)))) {
-        if (key.length < 8) throw Error('Invalid internal key');
-        const tag = key.readBigUInt64LE(key.length - 8);
-        put(key.subarray(0, -8), value, tag >> 8n, Number(tag & 255n));
-      }
+      for (const [key, value, sequence, type] of await zaznamyTabulky(path.join(dir, name))) put(key, value, sequence, type);
     } else if (number >= log || number === previousLog) {
       for (const batch of logRecords(await boundedRead(path.join(dir, name)))) {
         if (batch.length < 12) throw Error('Invalid write batch');
@@ -186,6 +201,9 @@ export async function readLevelSnapshot(dir) {
       }
     }
   }
+  // Tabulky, které kompakce odstranila, z paměti pryč.
+  const ziva = new Set(names.filter((x) => /^\d+\.(ldb|sst)$/.test(x)).map((x) => path.join(dir, x)));
+  for (const soubor of TABULKY.keys()) if (path.dirname(soubor) === dir && !ziva.has(soubor)) TABULKY.delete(soubor);
   return [...records.values()].filter((x) => x.type === 1);
 }
 export function indexedKey(key) {
