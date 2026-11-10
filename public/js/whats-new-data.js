@@ -4,6 +4,18 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.95', date: '2026-11-10', title: 'Živé limity každého účtu Claude',
+    items: [
+      'Útrata ukáže u každého účtu Claude jeho aktuální 5h a týdenní limit – přímo ze serveru Anthropicu, i když zrovna žádný agent neběží.',
+    ],
+    en: {
+      title: 'Live limits for every Claude account',
+      items: [
+        'Spend shows each Claude account’s current 5-hour and weekly limit – straight from Anthropic’s server, even when no agent is running.',
+      ],
+    },
+  },
+  {
     version: '0.46.94', date: '2026-11-10', title: 'Plány všech účtů Claude',
     items: [
       'Útrata zná plán každého přihlášeného účtu Claude – načte ho živě ze serveru Anthropicu, i když používáš Claude Code jen v aplikaci Claude.',

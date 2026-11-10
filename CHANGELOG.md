@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.95 – 2026-11-10 · Živé limity každého účtu Claude
+
+- **Vytížení 5 h a týdne přímo ze serveru:** každý přihlášený profil Claude Code (výchozí i každý `CLAUDE_CONFIG_DIR`) si při obnovení (každé 2 minuty) přečte své vytížení stejným dotazem, ze kterého Claude Code kreslí `/usage` (`api.anthropic.com/api/oauth/usage`, procenta 0–100 a čas obnovy). Útrata → Účty nástrojů ukáže u každého účtu jeho vlastní 5h a týdenní limit; Přehled je bere jako přesné měření serveru. Dřív byla čísla jen ze stavového řádku běžícího Claude Code nebo z uložené stránky Usage v Claude Desktopu – bez běžícího agenta chyběla. Okno, které server nevrátí, se nedosadí nulou; když server požádá o pauzu (429), Agenteeq se do té doby neptá (nejméně 5 minut).
+- **Popisek limitu bez zdvojení:** „Limit 5 h · obnova …“ místo „Limit 5 h · limit 5 h · obnova …“.
+
 ## 0.46.94 – 2026-11-10 · Plány všech účtů Claude a otevření vzdálené relace
 
 - **Plán Claude přímo ze serveru Anthropicu:** Útrata → Účty nástrojů a Zjištěné plány čtou účet a plán každého profilu Claude Code (výchozí i každý `CLAUDE_CONFIG_DIR`) živě ze serveru Anthropicu – stejným dotazem jako Claude Code, při každém obnovení (každé 2 minuty). Dva přihlášené účty = dva aktivní účty, každý se svým plánem (Pro, Max 5×/20×, Team, Enterprise). Dřív plán vyžadoval samostatně nainstalované CLI `claude`; kdo používá Claude Code jen v Claude Desktopu, viděl „Nelze ověřit“ a své účty jen jako „Dříve rozpoznané“. Bez sítě a bez CLI dál platí „Nelze ověřit“, nikdy vymyšlený plán; krátký výpadek sítě (do 15 minut) účet neshodí. Přihlášení se jen čte (Klíčenka / `.credentials.json`), nikdy neobnovuje ani neukládá, jde jen na api.anthropic.com bez přesměrování; z odpovědi se bere jen UUID účtu a plán.

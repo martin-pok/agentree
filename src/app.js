@@ -22,7 +22,7 @@ import { claudeSettingsPath, hookHeadersPath, hooksStatus } from './hooks-instal
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
 import { pushEntry, touch } from './model.js';
-import { createClaudeCodeConnector, korenyClaudeCode } from './connectors/claude-code.js';
+import { createClaudeCodeConnector, korenyClaudeCode, STATUS_WINDOWS } from './connectors/claude-code.js';
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
 import { createCodexAppThreadsConnector } from './connectors/codex-app-threads.js';
 import { createCodexCloudConnector } from './connectors/codex-cloud.js';
@@ -485,7 +485,9 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
           if (zivy?.stav === 'ok') {
             const mistni = await readClaudeAccount(home).catch(() => null);
             const stejny = mistni?.accountUuid === zivy.ucet.accountUuid;
-            return { home, loggedIn: true, account: { ...zivy.ucet, overenoNaServeru: true,
+            // Vytížení 5 h / týden téhož účtu: přesné měření serveru, i když žádný agent neběží.
+            const vyuziti = zivy.zCache ? null : await profilyClaude.vyuziti?.(vychozi ? '' : home).catch(() => null);
+            return { home, loggedIn: true, vyuziti, account: { ...zivy.ucet, overenoNaServeru: true,
               ...(stejny && mistni.subscriptionCreatedAt ? { subscriptionCreatedAt: mistni.subscriptionCreatedAt } : {}) } };
           }
         }
@@ -521,6 +523,19 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const authenticatedClaudeProfiles = claudeProfiles.filter((item) => item?.account)
       .map(({ home, account }) => ({ home, accountId: claudeIdentity(account), plan: claudePlanFromAccount(account) }))
       .filter((item) => item.accountId);
+    const mereno = Date.now();
+    for (const { account, vyuziti } of claudeProfiles) {
+      const accountId = vyuziti && claudeIdentity(account);
+      if (!accountId) continue;
+      for (const key of ['five_hour', 'seven_day']) {
+        const w = vyuziti[key];
+        if (!w || (w.resetsAt && w.resetsAt <= mereno)) continue;
+        const def = STATUS_WINDOWS[key];
+        store.setLimit({ id: `${def.id}:${accountId}`, accountId, provider: 'anthropic', app: 'Claude', label: def.label,
+          usedPercent: w.usedPercent, windowMinutes: def.minutes, resetsAt: w.resetsAt, reached: w.usedPercent >= 100,
+          plan: null, text: '', at: mereno, source: 'account-usage', kind: 'window' });
+      }
+    }
     claudeAccounts = [...new Map(authenticatedClaudeProfiles.map((item) =>
       [item.accountId, { id: item.accountId, provider: 'anthropic', service: 'claude',
         plan: item.plan?.plan || null, observedAt: Date.now(),
@@ -570,7 +585,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const current = new Map();
     for (const claudeAccount of claudeAccounts) if (claudeAccount.id) {
       const limits = store.limitList().filter((l) => l.provider === 'anthropic'
-        && l.accountId === claudeAccount.id && l.source === 'statusline'
+        && l.accountId === claudeAccount.id && (l.source === 'statusline' || l.source === 'account-usage')
         && Number.isFinite(l.usedPercent) && l.at <= Date.now()
         && Date.now() - l.at <= 5 * 60_000)
         .map((l) => ({ key: l.id, label: l.label, primary: {

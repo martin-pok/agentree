@@ -651,7 +651,8 @@ export function untilLabel(ts, now = Date.now()) {
 export const isSpendLimit = (l) => l.kind === 'spend';
 
 // Živá okna Claude (5 h a týden) mají tři zdroje v tomto pořadí přednosti:
-// 1. přesná měření od serveru – stavový řádek Claude Code, uložená stránka Usage v Claude Desktopu
+// 1. přesná měření od serveru – stavový řádek Claude Code, vytížení účtu ze serveru Anthropicu
+//    (src/claude-profil.js), uložená stránka Usage v Claude Desktopu
 //    a odmítnutí 429 s `quotaLimits` z přepisu (vyčerpáno, přesný čas obnovy);
 // 2. čerstvý vzorek historie Claude Desktopu (procenta bez času obnovy, nejvýš 30 minut starý).
 // Mezi přesnými vyhrává nejnovější měření (při shodě v pořadí výše). Historie se ukáže jen tehdy,
@@ -659,7 +660,7 @@ export const isSpendLimit = (l) => l.kind === 'spend';
 // Na každé okno je jeden řádek. Když vybrané měření samo čas obnovy nenese, převezme ho od přesného
 // zdroje jen ve stejném okně; jinak by se připojil konec starého okna.
 const OKNO_CLAUDE = /^claude:(five_hour|seven_day)(?::|$)/;
-const PORADI_PRESNYCH = ['statusline', 'desktop-usage', 'transcript-quota'];
+const PORADI_PRESNYCH = ['statusline', 'account-usage', 'desktop-usage', 'transcript-quota'];
 const PRESNE = new Set(PORADI_PRESNYCH);
 const LIMIT_FRESH_MS = 30 * 60e3;
 const poradi = (l) => {

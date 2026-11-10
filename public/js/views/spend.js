@@ -155,9 +155,14 @@ export function providerAccountsHtml(sp, connectors = state.connectors || []) {
     const windowLabel = (minutes) => minutes === 300 ? tr('limit 5 h')
       : minutes === 10080 ? tr('týdenní limit')
         : minutes ? tr('okno {0} min', minutes) : tr('limit');
+    // Okno se připíše jen tam, kde ho název ještě neříká („Limit 5 h“, ne „Limit 5 h · limit 5 h“).
+    const popisek = (label, minutes) => {
+      const okno = windowLabel(minutes);
+      return String(label || '').toLowerCase().includes(okno.toLowerCase()) ? label : `${label} · ${okno}`;
+    };
     const limits = account.active ? (account.limits || []).flatMap((bucket) => [
-      bucket.primary ? { ...bucket.primary, label: `${bucket.label} · ${windowLabel(bucket.primary.windowMinutes)}` } : null,
-      bucket.secondary ? { ...bucket.secondary, label: `${bucket.label} · ${windowLabel(bucket.secondary.windowMinutes)}` } : null,
+      bucket.primary ? { ...bucket.primary, label: popisek(bucket.label, bucket.primary.windowMinutes) } : null,
+      bucket.secondary ? { ...bucket.secondary, label: popisek(bucket.label, bucket.secondary.windowMinutes) } : null,
     ].filter(Boolean)) : [];
     return `<li class="provider-account${account.active ? ' is-active' : ''}">
       <span class="lwin-logo">${glyph(account.provider)}</span>
