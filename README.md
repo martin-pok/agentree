@@ -4,7 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.93** — připravované Preview (neveřejné vydání): popisky se při zvětšeném řádkování zalomí místo useknutí (WCAG 1.4.12), přísnější kontrola fokusu a dialogů z klávesnice.
+> **0.46.94** — připravované Preview (neveřejné vydání): plán každého přihlášeného účtu Claude živě ze serveru Anthropicu (i bez samostatného CLI); u vzdálené relace Claude potvrzené účtem tlačítko „Otevřít konverzaci“ přímo na tutéž relaci.
+>
+> **0.46.93** — aktuální [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.93): popisky se při zvětšeném řádkování zalomí místo useknutí (WCAG 1.4.12), kontrola fokusu a dialogů z klávesnice. Stable Latest zůstává 0.46.58.
 >
 > **0.46.92** — [veřejné Preview z 9. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.92): bez záseků při běžícím Claude Desktopu, „Co je nového“ se při startu nestahuje. Stable Latest zůstává 0.46.58.
 >
@@ -97,7 +99,7 @@ Vzdálené relace Claude Code z Claude Desktopu se načítají automaticky z mí
 
 ```bash
 npm run audit:data  # porovná, co aplikace ukazuje, se surovými zdroji na tomto Macu
-npm test          # 1397 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
+npm test          # 1553 testů: parsery, stav, upozornění, rozpočty, hooky, projekty, spouštění, licence, dovednosti, vlastní agenti, kredity, HTTP API, realtime stream, Tailscale, web, rozšíření, vydání a DMG
 npm run check     # syntaktická kontrola všech JS souborů
 npm run smoke     # zabalí balíček, nainstaluje ho do dočasné složky a ověří, že běží
 npm run dev       # server s automatickým restartem při změně src/

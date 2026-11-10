@@ -96,3 +96,17 @@ test('vzdálený Code z cache nesmí otevřít poslední cizí chat v Claude ani
     assert.equal(planOpen({ ...s, exactUrl: wrong }, 'app', ALL_APPS), null);
   }
 });
+
+// Vlastník 10. 11. 2026: v detailu vzdálené relace chyběl odkaz na ni. Relaci, kterou právě hlásí
+// účet Claude (server Anthropicu ID potvrdil), jde otevřít přesně přes claude.ai/code/<id>.
+// Claude Desktop nemá zdokumentovaný odkaz na konkrétní existující relaci, proto ne „open -a Claude“.
+test('vzdálená relace potvrzená účtem Claude: přesný odkaz na tutéž relaci; jen z cache ne', () => {
+  const url = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
+  const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache', url, observation: { source: 'claude-account' } };
+  assert.deepEqual(planOpen(s, 'app', ALL_APPS).args, [url]);
+  assert.equal(planOpen(s, 'app', ALL_APPS).title, 'Otevřít konverzaci');
+  assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app']);
+  assert.equal(planOpen({ ...s, observation: { source: 'desktop-cache' } }, 'app', ALL_APPS), null, 'stará cache nestačí');
+  assert.equal(planOpen({ ...s, url: 'https://claude.ai/code/session_01DifferentAgent123' }, 'app', ALL_APPS), null, 'jiná relace ne');
+  assert.equal(planOpen({ ...s, url: 'https://evil.example/code/session_01FixtureRemoteAgent123' }, 'app', ALL_APPS), null);
+});

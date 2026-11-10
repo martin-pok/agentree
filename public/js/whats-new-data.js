@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.94', date: '2026-11-10', title: 'Plány všech účtů Claude',
+    items: [
+      'Útrata zná plán každého přihlášeného účtu Claude – načte ho živě ze serveru Anthropicu, i když používáš Claude Code jen v aplikaci Claude.',
+      'Vzdálený agent Claude má v detailu tlačítko „Otevřít konverzaci“, které otevře přesně tu relaci.',
+    ],
+    en: {
+      title: 'Plans of all Claude accounts',
+      items: [
+        'Spend now knows the plan of every signed-in Claude account – read live from Anthropic’s server, even if you only use Claude Code inside the Claude app.',
+        'A remote Claude agent now has an “Open conversation” button in its details that opens exactly that session.',
+      ],
+    },
+  },
+  {
     version: '0.46.93', date: '2026-11-10', title: 'Popisky se zalomí, nic se neutne',
     items: [
       'Při zvětšeném písmu nebo řádkování se popisky zalomí na další řádek – nic se neschová za trojtečku.',

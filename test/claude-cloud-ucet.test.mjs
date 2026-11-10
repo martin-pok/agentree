@@ -437,3 +437,16 @@ test('bridge relace bez místního přepisu: Remote Control, nikdy „Běží v 
   assert.equal(envOf({ connector: 'claude-desktop-code', source: 'desktop-cache', bridge: true }), ENV.pocitac);
   assert.equal(envOf({ connector: 'claude-desktop-code', source: 'desktop-cache' }), ENV.cloud);
 });
+
+test('relace z účtu Claude má v okně tlačítko na tutéž relaci (claude.ai/code/<id>)', async () => {
+  const server = await startTestServer({}, { claudeCloud: { enabled: true, intervalMs: 60e3,
+    prihlaseni: async () => ({ accessToken: 'tok', expiresAt: Date.now() + 3600e3 }),
+    fetchImpl: async () => odpoved(200, { data: [surova({ worker_status: 'requires_action' })] }) } });
+  try {
+    const id = 'claude-desktop-code:session_019pjCMAW6NZjG9fzTfPLyCe';
+    await waitFor(() => server.app.store.summary(id), 3000);
+    const v = server.app.store.summary(id);
+    assert.deepEqual(v.open?.map((t) => t.id), ['app']);
+    assert.equal(v.open[0].label, 'Otevřít konverzaci');
+  } finally { await server.close(); }
+});
