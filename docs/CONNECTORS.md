@@ -624,3 +624,8 @@ Audit našel a opravuje stránkování `thread/list` za první stovkou a autorit
 ## Bridge relace Claude (Remote Control, záložka Code v Claude Desktopu)
 
 Seznam relací z účtu (`/v1/code/sessions`) nese `environment_kind` (`bridge`, `anthropic_cloud`, `byoc`, `snap`) – podle kódu Claude Code. Místní přepis Claude Code ukládá řádek `{type: "bridge-session", bridgeSessionId}`; podle něj se relace z účtu spáruje s místní konverzací a podruhé se neukáže. 🧪 Beta: tvar ověřen ve zdrojovém kódu Claude Code, na skutečném Macu vlastníka zatím ne.
+
+
+## Otevření vzdálené relace Claude
+
+Přesné otevření jde jen přes `https://claude.ai/code/<id>` – Claude Desktop zdokumentoval pouze `claude://code/new` (nová relace), odkaz na existující relaci podle ID neexistuje (stav 10. 11. 2026). Odkaz se nabízí, když relaci potvrdil server: párované rozšíření ji vidělo v kartě, nebo ji hlásí seznam relací účtu Claude. Relace jen z cache Claude Desktopu odkaz nemá.

@@ -4,6 +4,18 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.94', date: '2026-11-10', title: 'Otevřít vzdálenou relaci Claude',
+    items: [
+      'Vzdálený agent Claude má v detailu tlačítko „Otevřít konverzaci“, které otevře přesně tu relaci.',
+    ],
+    en: {
+      title: 'Open a remote Claude session',
+      items: [
+        'A remote Claude agent now has an “Open conversation” button in its details that opens exactly that session.',
+      ],
+    },
+  },
+  {
     version: '0.46.93', date: '2026-11-10', title: 'Popisky se zalomí, nic se neutne',
     items: [
       'Při zvětšeném písmu nebo řádkování se popisky zalomí na další řádek – nic se neschová za trojtečku.',

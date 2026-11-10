@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.94 – 2026-11-10 · Otevřít vzdálenou relaci Claude
+
+- **Tlačítko na tutéž relaci:** detail vzdáleného agenta Claude (cloud i Remote Control), kterého právě hlásí účet Claude, má „Otevřít konverzaci“ – otevře přesně tu relaci na claude.ai/code. Dřív tlačítko chybělo, pokud relaci nepotvrdilo rozšíření Chrome. Claude Desktop nemá zdokumentovaný odkaz na konkrétní existující relaci (jen `claude://code/new`), proto se neotevírá „naslepo“ aplikace Claude s posledním, často cizím chatem. Relace jen ze staré cache Claude Desktopu tlačítko dál nemá – nemusí už existovat.
+
 ## 0.46.93 – 2026-11-10 · Popisky se zalomí, nic se neutne
 
 - **Přístupnost (WCAG 1.4.12):** pevné popisky se při zvětšeném řádkování a mezerách zalomí na další řádek místo useknutí trojtečkou – verze a „Co je nového?“ v postranním panelu, nadpis stránky na telefonu, dlouhé odkazové kapsle v kartách (citace ceníku v detailu projektu už nepřetéká) a stav agenta v okně rozšíření. S běžným písmem se vzhled nemění.

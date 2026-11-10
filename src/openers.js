@@ -97,12 +97,16 @@ function appPlan(s, apps) {
     case 'vscode-copilot':
       return apps.vscode && hasFolder(s) ? { kind: 'open', args: ['-a', APPS.vscode.name, s.cwd], label: 'VS Code', title: ui('Otevřít ve VS Code') } : null;
     case 'claude-desktop-code': {
-      // `open -a Claude` pouze aktivuje poslední chat, často úplně jiný. Cache navíc
-      // odvozuje s.url z ID; ta sama nedokazuje, že chat existuje na claude.ai.
-      // Přesný odkaz nabízíme až po tom, co párované rozšíření vidělo tutéž relaci.
+      // `open -a Claude` pouze aktivuje poslední chat, často úplně jiný, a Claude Desktop nemá
+      // zdokumentovaný odkaz na konkrétní existující relaci (jen claude://code/new). Spolehlivě
+      // vede na tutéž relaci jen claude.ai/code/<id>. Nabízí se, když relaci potvrdil server:
+      // párované rozšíření ji vidělo v kartě, nebo ji právě hlásí účet Claude (seznam relací
+      // z api.anthropic.com). ID odvozené jen ze staré cache Claude Desktopu nestačí – relace už
+      // nemusí existovat (vlastník 10. 11. 2026: „chybí button, kterým se prekliknu na tu session“).
       if (!/^session_[A-Za-z0-9]{8,80}$/.test(id)) return null;
+      const zUctu = s.observation?.source === 'claude-account' ? s.url : '';
       let url;
-      try { url = new URL(s.exactUrl || s.karta?.url); } catch { return null; }
+      try { url = new URL(s.exactUrl || s.karta?.url || zUctu); } catch { return null; }
       if (url.protocol !== 'https:' || url.hostname !== 'claude.ai' || url.port || url.username || url.password ||
           url.pathname !== `/code/${id}` || url.search || url.hash) return null;
       return { kind: 'open', args: [url.href], label: 'Claude', title: ui('Otevřít konverzaci') };
