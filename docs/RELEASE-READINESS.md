@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.94: kandidát.** Otevření vzdálené relace potvrzené účtem Claude přes claude.ai/code/<id>; vydat po CI a auditu příloh.
+- **v0.46.94: kandidát.** Plán každého profilu Claude Code živě z `api.anthropic.com/api/oauth/profile` (🧪 Beta). Otevření vzdálené relace potvrzené účtem Claude přes claude.ai/code/<id>; vydat po CI a auditu příloh.
 - **v0.46.93: veřejné Preview od 10. 11. 2026.** Release build `42716556805`, nezávislý audit Draftu, SHA256SUMS ověřeno proti všem 8 přílohám. Přístupnost: zalamování popisků (WCAG 1.4.12), kontrola zakrytého fokusu a dialogů.
 - **v0.46.92: veřejné Preview od 9. 11. 2026.** Release build `42583356651`, nezávislý audit Draftu, SHA256SUMS ověřeno proti všem 8 přílohám. Bez opakovaného čtení cache Claude Desktopu, „Co je nového“ až na požádání.
 - **v0.46.91: veřejné Preview od 8. 11. 2026.** Release build `42511446296`, nezávislý audit Draftu, SHA256SUMS ověřeno proti všem 8 přílohám. Rychlý start, bez duplicit bridge relací; obsahuje i 0.46.90.

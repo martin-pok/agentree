@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.46.94 – 2026-11-10 · Otevřít vzdálenou relaci Claude
+## 0.46.94 – 2026-11-10 · Plány všech účtů Claude a otevření vzdálené relace
 
+- **Plán Claude přímo ze serveru Anthropicu:** Útrata → Účty nástrojů a Zjištěné plány čtou účet a plán každého profilu Claude Code (výchozí i každý `CLAUDE_CONFIG_DIR`) živě ze serveru Anthropicu – stejným dotazem jako Claude Code, při každém obnovení (každé 2 minuty). Dva přihlášené účty = dva aktivní účty, každý se svým plánem (Pro, Max 5×/20×, Team, Enterprise). Dřív plán vyžadoval samostatně nainstalované CLI `claude`; kdo používá Claude Code jen v Claude Desktopu, viděl „Nelze ověřit“ a své účty jen jako „Dříve rozpoznané“. Bez sítě a bez CLI dál platí „Nelze ověřit“, nikdy vymyšlený plán; krátký výpadek sítě (do 15 minut) účet neshodí. Přihlášení se jen čte (Klíčenka / `.credentials.json`), nikdy neobnovuje ani neukládá, jde jen na api.anthropic.com bez přesměrování; z odpovědi se bere jen UUID účtu a plán.
 - **Tlačítko na tutéž relaci:** detail vzdáleného agenta Claude (cloud i Remote Control), kterého právě hlásí účet Claude, má „Otevřít konverzaci“ – otevře přesně tu relaci na claude.ai/code. Dřív tlačítko chybělo, pokud relaci nepotvrdilo rozšíření Chrome. Claude Desktop nemá zdokumentovaný odkaz na konkrétní existující relaci (jen `claude://code/new`), proto se neotevírá „naslepo“ aplikace Claude s posledním, často cizím chatem. Relace jen ze staré cache Claude Desktopu tlačítko dál nemá – nemusí už existovat.
 
 ## 0.46.93 – 2026-11-10 · Popisky se zalomí, nic se neutne

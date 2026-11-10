@@ -734,6 +734,8 @@ export default {
   "Tento měsíc {0} ze {1}.": "{0} of {1} this month.",
 
   // src/subscriptions.js
+  "účet Claude ověřený na serveru Anthropicu (typ účtu {0}, úroveň {1})": "the Claude account verified on Anthropic's server (account type {0}, tier {1})",
+  "účet Claude ověřený na serveru Anthropicu (typ účtu {0})": "the Claude account verified on Anthropic's server (account type {0})",
   "přihlášený účet Claude Code (typ účtu {0}, úroveň {1})": "the signed-in Claude Code account (account type {0}, tier {1})",
   "neuveden": "not stated",
   "přihlášený účet Claude Code (typ účtu {0})": "the signed-in Claude Code account (account type {0})",

@@ -17,6 +17,7 @@ import { spendSummary, spendCsv, SERVICES, KINDS, CURRENCIES, convert, monthKey 
 import { createRateFeed, rateInfo } from './rates.js';
 import { readClaudeAccount, claudePlanFromAccount, describePlan, subscriptionPortfolio } from './subscriptions.js';
 import { claudeIdentity, observeAccount, readCodexAccount } from './provider-accounts.js';
+import { createClaudeProfily } from './claude-profil.js';
 import { claudeSettingsPath, hookHeadersPath, hooksStatus } from './hooks-installer.js';
 import { run, debounce, clip, uid, HOUR } from './util.js';
 import { repoInfo, createWorktree, workDiff, acceptWork, discardWork, cleanupWork, slugify } from './git.js';
@@ -91,7 +92,7 @@ export async function findInstallPackage(distDir = DIST_DIR, version = VERSION, 
 const HOME_HIDDEN = new Set(['Library']);
 const hashToken = (value) => crypto.createHash('sha256').update(String(value)).digest('hex');
 
-export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu, updateService, updateFetch, codexAccountReader = readCodexAccount, claudeCloud } = {}) {
+export async function createApp(config = loadConfig(), { licensePublicKey, distDir = DIST_DIR, tunnelDetector = detectTunnels, networkInterfaces, installed: installedOverride, hostIdentity, napojeniRun, vypisProcesu, updateService, updateFetch, codexAccountReader = readCodexAccount, claudeCloud, claudeProfily } = {}) {
   // Cesta, kterou má uživatel vybrat v Chromu. Do startu ukazuje na složku v balíčku, pak na kopii.
   let extensionPath = EXTENSION_DIR;
   try {
@@ -453,11 +454,14 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let subscriptionJson = '';
   let subscriptionRefreshGeneration = 0;
   let subscriptionAuthGeneration = 0;
+  // Plán a účet Claude živě ze serveru Anthropicu, pro každý profil Claude Code zvlášť (src/claude-profil.js).
+  // Síťová funkce: vypnutá s config.cloudFetch a v testech (dry), pokud ji test sám nepodstrčí.
+  const profilyClaude = claudeProfily || (config.cloudFetch && !dry ? createClaudeProfily({ config }) : null);
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
   async function refreshSubscriptions() {
     const generation = ++subscriptionRefreshGeneration;
     // Samotný starý ~/.claude.json nestačí: po odhlášení může na disku zůstat. Plán přijmeme
-    // pouze když vlastní `claude auth status --json` právě potvrdí aktivní přihlášení.
+    // jen z právě ověřeného přihlášení – odpovědi serveru Anthropicu, nebo `claude auth status --json`.
     const codexHomes = [...new Set([config.codexHome || path.join(config.sourceHome, '.codex'), ...connectors.codex.domovy()])].slice(0, 8);
     for (const home of codexHomes) if (!codexAccountWatchers.has(home)) {
       codexAccountWatchers.set(home, watchExactFile(path.join(home, 'auth.json'), () => refreshSubscriptions().catch(() => {}), { retryMs: 1000 }));
@@ -469,15 +473,29 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     }
     const [claudeProfiles, codexResults] = await Promise.all([
       Promise.all(claudeHomes.map(async (home) => {
+        // Výchozí profil (~/.claude.json) a každý CLAUDE_CONFIG_DIR, který má vlastní .claude.json.
+        const vychozi = home === config.sourceHome;
+        if (!vychozi) {
+          try { await fsp.access(path.join(home, '.claude.json')); } catch { return { home, loggedIn: null, account: null }; }
+        }
+        // 1) Server Anthropicu: aktuální účet a plán, stejně jako je čte Claude Code. Nepotřebuje
+        //    samostatné CLI, takže funguje i s Claude Code jen uvnitř Claude Desktop.
+        if (profilyClaude) {
+          const zivy = await profilyClaude.nacti(vychozi ? '' : home).catch(() => null);
+          if (zivy?.stav === 'ok') {
+            const mistni = await readClaudeAccount(home).catch(() => null);
+            const stejny = mistni?.accountUuid === zivy.ucet.accountUuid;
+            return { home, loggedIn: true, account: { ...zivy.ucet, overenoNaServeru: true,
+              ...(stejny && mistni.subscriptionCreatedAt ? { subscriptionCreatedAt: mistni.subscriptionCreatedAt } : {}) } };
+          }
+        }
+        // 2) Záloha: `claude auth status` samostatného CLI potvrdí přihlášení, plán z ~/.claude.json.
         if (!launchEnv.bins?.claude) return { home, loggedIn: null, account: null };
         const env = prostrediPro(launchEnv.bins.claude, { ...process.env, HOME: config.sourceHome });
         // The default CLI profile and each CLAUDE_CONFIG_DIR must be authenticated in their
         // own environment. A global auth check can otherwise authorize the wrong account file.
-        if (home === config.sourceHome) delete env.CLAUDE_CONFIG_DIR;
-        else {
-          try { await fsp.access(path.join(home, '.claude.json')); } catch { return { home, loggedIn: null, account: null }; }
-          env.CLAUDE_CONFIG_DIR = home;
-        }
+        if (vychozi) delete env.CLAUDE_CONFIG_DIR;
+        else env.CLAUDE_CONFIG_DIR = home;
         try {
           const result = await (napojeniRun || run)(launchEnv.bins.claude, ['auth', 'status', '--json'], { timeout: 10000, env });
           if (result?.ok === false) return { home, loggedIn: null, account: null };

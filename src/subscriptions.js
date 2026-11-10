@@ -68,9 +68,14 @@ export function claudePlanFromAccount(acc, now = Date.now(), observedAt = now) {
     plan,
     since: Number.isFinite(created) && created <= now ? ymd(created) : null,
     observedAt: Number.isFinite(Number(observedAt)) ? Number(observedAt) : now,
-    evidence: tier && tier !== 'default_claude_ai'
-      ? ui('přihlášený účet Claude Code (typ účtu {0}, úroveň {1})', org || ui('neuveden'), tier)
-      : ui('přihlášený účet Claude Code (typ účtu {0})', org || ui('neuveden')),
+    // `overenoNaServeru`: účet a plán právě vrátil server Anthropicu (src/claude-profil.js).
+    evidence: acc.overenoNaServeru
+      ? (tier && tier !== 'default_claude_ai'
+        ? ui('účet Claude ověřený na serveru Anthropicu (typ účtu {0}, úroveň {1})', org || ui('neuveden'), tier)
+        : ui('účet Claude ověřený na serveru Anthropicu (typ účtu {0})', org || ui('neuveden')))
+      : tier && tier !== 'default_claude_ai'
+        ? ui('přihlášený účet Claude Code (typ účtu {0}, úroveň {1})', org || ui('neuveden'), tier)
+        : ui('přihlášený účet Claude Code (typ účtu {0})', org || ui('neuveden')),
     extraUsage: acc.hasExtraUsageEnabled === true,
   };
 }

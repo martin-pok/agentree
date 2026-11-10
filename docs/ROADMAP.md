@@ -68,7 +68,7 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.94 Preview:** tlačítko „Otevřít konverzaci“ (claude.ai/code/<id>) u vzdálené relace potvrzené účtem Claude.
+**Kandidát v0.46.94 Preview:** plán každého účtu Claude živě ze serveru Anthropicu; tlačítko „Otevřít konverzaci“ (claude.ai/code/<id>) u vzdálené relace potvrzené účtem Claude.
 
 **v0.46.93 Preview (zveřejněno 10. 11. 2026, build 42716556805, 8 příloh se SHA-256 ověřením):** přístupnost (#217) – pevné popisky se zalomí místo zkrácení (WCAG 1.4.12), qa:axe hlídá zakrytý fokus (2.4.11) a dialogy z klávesnice.
 
