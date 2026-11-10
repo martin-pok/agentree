@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { createClaudeProfily, ucetZProfilu, PROFIL_API } from '../src/claude-profil.js';
+import { createClaudeProfily, ucetZProfilu, vyuzitiZOdpovedi, PROFIL_API, VYUZITI_API } from '../src/claude-profil.js';
 import { startTestServer, tempDir } from './helpers.mjs';
 
 const UUID_A = '11111111-aaaa-4aaa-8aaa-111111111111';
@@ -93,7 +93,8 @@ test('dva profily Claude Code = dva aktivní účty se svými plány, i bez samo
     if (configDir === '') return { stav: 'ok', ucet: ucetZProfilu(profil(UUID_A, 'claude_max', 'default_claude_max_5x')) };
     if (configDir === druhy) return { stav: 'ok', ucet: ucetZProfilu(profil(UUID_B, 'claude_pro')) };
     return { stav: 'bez-prihlaseni' };
-  } };
+  }, vyuziti: async (configDir) => (configDir === '' ? vyuzitiZOdpovedi({ five_hour: { utilization: 42, resets_at: new Date(Date.now() + 3600e3).toISOString() }, seven_day: { utilization: 7, resets_at: new Date(Date.now() + 86400e3).toISOString() } })
+    : configDir === druhy ? vyuzitiZOdpovedi({ five_hour: { utilization: 91, resets_at: new Date(Date.now() + 1800e3).toISOString() } }) : null) };
   const srv = await startTestServer({ AGENTEEQ_SOURCE_HOME: sourceHome, AGENTEEQ_CLAUDE_CONFIG_DIR: druhy }, { claudeProfily });
   try {
     assert.ok(dotazy.includes('') && dotazy.includes(druhy), 'každý profil se ptá zvlášť');
@@ -108,6 +109,13 @@ test('dva profily Claude Code = dva aktivní účty se svými plány, i bez samo
     assert.match(text, /"pro"/);
     assert.match(text, /ověřený na serveru Anthropicu/);
     assert.match(text, /2026-01-05/, 'datum předplatného z místního účtu, jen když jde o stejný účet');
+    // Vytížení: každý účet své okno, přesná procenta ze serveru, bez míchání licencí.
+    const a = claude.find((x) => x.plan === 'max5x');
+    const b = claude.find((x) => x.plan === 'pro');
+    assert.equal(a.limits.find((l) => l.key.startsWith('claude:five_hour'))?.primary.usedPercent, 42);
+    assert.equal(a.limits.find((l) => l.key.startsWith('claude:seven_day'))?.primary.usedPercent, 7);
+    assert.equal(b.limits.find((l) => l.key.startsWith('claude:five_hour'))?.primary.usedPercent, 91);
+    assert.equal(b.limits.some((l) => l.key.startsWith('claude:seven_day')), false, 'chybějící okno se nedosadí nulou');
   } finally {
     await srv.close();
   }
@@ -124,4 +132,36 @@ test('server nedostupný a CLI chybí: Claude zůstane „Nelze ověřit“, ne 
   } finally {
     await srv.close();
   }
+});
+
+test('vytížení: procenta 0–100 a čas obnovy přesně jako /usage v Claude Code', () => {
+  const v = vyuzitiZOdpovedi({ five_hour: { utilization: 63.4, resets_at: '2026-11-11T03:00:00.000Z' }, seven_day: { utilization: 120, resets_at: null }, seven_day_sonnet: { utilization: 1 } });
+  assert.deepEqual(v.five_hour, { usedPercent: 63.4, resetsAt: Date.parse('2026-11-11T03:00:00.000Z') });
+  assert.deepEqual(v.seven_day, { usedPercent: 100, resetsAt: null });
+  assert.equal(vyuzitiZOdpovedi({ five_hour: { utilization: null } }), null, 'bez čísla žádné vymyšlené 0 %');
+  assert.equal(vyuzitiZOdpovedi({}), null);
+  assert.equal(vyuzitiZOdpovedi({ five_hour: { utilization: 5, resets_at: 1794400000 } }).five_hour.resetsAt, 1794400000000, 'sekundy i milisekundy');
+});
+
+test('vytížení: dotaz jen na api.anthropic.com bez přesměrování; po 429 pauza, nic se nevymýšlí', async () => {
+  let t = 1_000_000;
+  const volani = [];
+  let status = 200;
+  const p = createClaudeProfily({
+    now: () => t,
+    cist: async () => ({ accessToken: 'tok', expiresAt: 0 }),
+    fetchImpl: async (url, opts) => { volani.push({ url, opts }); return { ok: status === 200, status, headers: new Headers(status === 429 ? { 'retry-after': '600' } : {}), json: async () => ({ five_hour: { utilization: 12, resets_at: new Date(t + 3600e3).toISOString() } }) }; },
+  });
+  assert.equal((await p.vyuziti('')).five_hour.usedPercent, 12);
+  assert.equal(volani[0].url, VYUZITI_API);
+  assert.equal(volani[0].opts.redirect, 'error');
+  assert.equal(volani[0].opts.headers['anthropic-beta'], 'oauth-2025-04-20');
+  status = 429;
+  assert.equal(await p.vyuziti(''), null);
+  status = 200;
+  t += 5 * 60e3;
+  assert.equal(await p.vyuziti(''), null, 'server řekl 10 minut – do té doby se neptá');
+  assert.equal(volani.length, 2);
+  t += 6 * 60e3;
+  assert.equal((await p.vyuziti('')).five_hour.usedPercent, 12);
 });
