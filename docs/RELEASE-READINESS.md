@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.97: kandidát.** Účet bez výzvy k ručnímu načtení fotky z Googlu; vydat po CI a auditu příloh.
+- **v0.46.97: kandidát.** Obnova vrací souhrn změn a ověřuje účty; účet bez výzvy k ručnímu načtení fotky z Googlu; vydat po CI a auditu příloh.
 - **v0.46.96: veřejné Preview od 11. 11. 2026.** Release build `43091352839`, SHA256SUMS ověřeno proti všem 8 přílohám. Jednobarevný překryv (indigo, 50 %) přes celou aplikaci při ruční obnově.
 - **v0.46.95: veřejné Preview od 10. 11. 2026.** Release build `42923923229`, SHA256SUMS ověřeno proti všem 8 přílohám. Živé vytížení (5 h, týden) každého profilu Claude Code z `api.anthropic.com/api/oauth/usage` (🧪 Beta).
 - **v0.46.94: veřejné Preview od 10. 11. 2026.** Release build `42916006549`, SHA256SUMS ověřeno proti všem 8 přílohám. Plán každého profilu Claude Code živě z `api.anthropic.com/api/oauth/profile` (🧪 Beta). Otevření vzdálené relace potvrzené účtem Claude přes claude.ai/code/<id>.

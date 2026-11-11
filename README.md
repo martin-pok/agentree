@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.97** — připravované Preview (neveřejné vydání): Nastavení → Účet bez výzvy k ručnímu načtení fotky z Googlu.
+> **0.46.97** — připravované Preview (neveřejné vydání): obnova řekne, co našla (nové a změněné konverzace, účty), a ověří i plány; účet bez výzvy k ručnímu načtení fotky z Googlu.
 >
 > **0.46.96** — aktuální [veřejné Preview z 11. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.96): ruční obnova je zřetelná – celou aplikaci překryje barva značky (50 %) s hlavou robota uprostřed. Stable Latest zůstává 0.46.58.
 >

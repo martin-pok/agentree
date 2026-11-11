@@ -4,13 +4,15 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.97', date: '2026-11-11', title: 'Účet bez zbytečné výzvy',
+    version: '0.46.97', date: '2026-11-11', title: 'Obnova řekne, co našla',
     items: [
+      'Po obnově uvidíš, co se změnilo – nové a změněné konverzace a účty – nebo že je vše aktuální. Obnova nově ověří i plány účtů.',
       'Nastavení účtu už nežádá ruční načtení fotky z Googlu – fotka se načte sama, jinak zůstanou iniciály.',
     ],
     en: {
-      title: 'Account without a pointless prompt',
+      title: 'Refresh tells you what it found',
       items: [
+        'After a refresh you see what changed – new and changed conversations and accounts – or that everything is up to date. Refresh now also re-checks account plans.',
         'Account settings no longer ask you to load your Google photo by hand – it loads on its own, otherwise your initials stay.',
       ],
     },

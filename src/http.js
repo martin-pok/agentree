@@ -845,8 +845,8 @@ export function createHttpServer(app, existingServer = null) {
       return { integrations: await refreshIntegrations() };
     }],
     ['POST', /^\/api\/connectors\/rescan$/, async () => {
-      await Promise.allSettled(Object.values(app.connectors).map((c) => c.scan()));
-      return { connectors: app.connectorList() };
+      const vysledek = await app.obnovVse();
+      return { connectors: app.connectorList(), vysledek };
     }],
 
     /* Projekty */
