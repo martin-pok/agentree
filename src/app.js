@@ -571,6 +571,22 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       } catch {}
     }
   }
+  // Ruční obnova (tlačítko v liště): znovu projde všechny zdroje, ověří účty a plány a vrátí,
+  // co se opravdu změnilo – rozhraní to řekne nahlas, ať obnova není jen efekt.
+  async function obnovVse() {
+    const otisk = () => new Map(store.list().map((s) => [s.id, `${s.status}|${s.lastAt}|${s.title || ''}`]));
+    const pred = otisk();
+    const predUcty = JSON.stringify([claudeAccounts.map((a) => [a.id, a.plan]), codexAccounts.map((a) => [a.id, a.plan])]);
+    const zdroje = Object.values(connectors);
+    await Promise.allSettled([...zdroje.map((c) => c.scan()), refreshSubscriptions()]);
+    let nove = 0, zmenene = 0;
+    for (const [id, v] of otisk()) {
+      if (!pred.has(id)) nove++;
+      else if (pred.get(id) !== v) zmenene++;
+    }
+    const ucty = JSON.stringify([claudeAccounts.map((a) => [a.id, a.plan]), codexAccounts.map((a) => [a.id, a.plan])]) !== predUcty;
+    return { zdroje: zdroje.length, nove, zmenene, ucty, at: Date.now() };
+  }
   function subscriptions(now = Date.now()) {
     // Historický přepis Codexu nemá identitu účtu. Po přepnutí licence by mohl patřit jinému
     // účtu; Útrata proto přijímá jen plán z aktuálního odečtu oficiálního app-serveru.
@@ -1895,7 +1911,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     dokonceno: () => { prvniStav(); return dokonceniStartu; },
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, obnovVse, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

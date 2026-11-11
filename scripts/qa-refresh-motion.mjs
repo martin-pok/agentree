@@ -37,16 +37,17 @@ try {
   });
   const response = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
   await page.locator('#refresh-app').click();
-  await page.locator('#refresh-app').click();
+  // Myš teď zachytí závoj; druhé kliknutí se proto pošle přímo tlačítku – i tak nesmí spustit druhou obnovu.
+  await page.locator('#refresh-app').dispatchEvent('click');
   await page.waitForFunction(() => document.querySelector('#refresh-app')?.getAttribute('aria-busy') === 'true');
-  // Obnova se ukazuje přes celou aplikaci: fialový závoj s bílou hlavou robota a odleskem, který
-  // nic neblokuje. Žádný pruh, žádný systémový kurzor „pracuje“.
+  // Obnova se ukazuje přes celou aplikaci: závoj v barvě značky s bílou hlavou robota a odleskem.
+  // Po dobu obnovy zachytí myš s kurzorem „pracuji“ (vlastník 11. 11. 2026). Žádný pruh.
   const tlacitko = page.locator('#refresh-app');
   await page.waitForFunction(() => document.querySelector('.obnova-zavoj.is-on'));
   assert.equal(await page.locator('.obnova-zavoj .obnova-hlava').isVisible(), true, 'uprostřed je hlava robota');
-  assert.equal(await page.locator('.obnova-zavoj').evaluate((el) => getComputedStyle(el).pointerEvents), 'none', 'závoj nic neblokuje');
+  assert.equal(await page.locator('.obnova-zavoj').evaluate((el) => getComputedStyle(el).pointerEvents), 'auto', 'závoj po dobu obnovy zachytí myš');
+  assert.equal(await page.locator('.obnova-zavoj').evaluate((el) => getComputedStyle(el).cursor), 'progress', 'kurzor ukazuje, že se pracuje');
   assert.equal(await page.locator('.refresh-status, .refresh-status__track, .topbar [role="progressbar"]').count(), 0, 'žádný pruh ani karta');
-  assert.notEqual(await tlacitko.evaluate((el) => getComputedStyle(el).cursor), 'progress', 'žádný systémový kurzor');
   assert.equal(await page.locator('.obnova-zavoj[role="status"]').filter({ hasText: 'Obnovuji aktuální data' }).count(), 1, 'čtečka obrazovky stav slyší');
   assert.notEqual(await page.locator('.oz-lesk').evaluate((el) => getComputedStyle(el).animationName), 'none', 'odlesk se pohybuje');
   const rozmer = await tlacitko.evaluate((el) => [el.offsetWidth, el.offsetHeight]);
@@ -55,6 +56,8 @@ try {
   assert.equal((await response).status(), 200);
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   await page.waitForFunction(() => !document.querySelector('.obnova-zavoj'));
+  // Po obnově přijde souhrn: co se změnilo, nebo že je vše aktuální.
+  await page.waitForFunction(() => /Vše je aktuální|Aktualizováno/.test(document.body.innerText));
   assert.deepEqual(await tlacitko.evaluate((el) => [el.offsetWidth, el.offsetHeight]), rozmer, 'tlačítko nemění rozměr');
   assert.equal(requests, 1, 'opakované kliknutí nesmí spustit souběžnou obnovu');
 

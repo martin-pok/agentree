@@ -845,8 +845,8 @@ export function createHttpServer(app, existingServer = null) {
       return { integrations: await refreshIntegrations() };
     }],
     ['POST', /^\/api\/connectors\/rescan$/, async () => {
-      await Promise.allSettled(Object.values(app.connectors).map((c) => c.scan()));
-      return { connectors: app.connectorList() };
+      const vysledek = await app.obnovVse();
+      return { connectors: app.connectorList(), vysledek };
     }],
 
     /* Projekty */
@@ -1119,6 +1119,13 @@ export function createHttpServer(app, existingServer = null) {
       || Boolean(app.lan && app.lan.hosts().includes(host));
     if (!hostOk) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
+      return;
+    }
+    // Tělo nad 1 MB se odmítne hned u vstupu, i u akcí, které tělo nečtou (stejný strop jako
+    // readBody). Nic se nezpracuje a útočník neudrží otevřené spojení se stovkami megabajtů.
+    if (Number(req.headers['content-length']) > 1_000_000) {
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8', Connection: 'close' }).end(ui('Příliš velký požadavek.'));
+      req.resume();
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');

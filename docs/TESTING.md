@@ -6,6 +6,17 @@
 
 **Dočasné složky:** `npm test` (`scripts/test.mjs`) spouští testy s vlastní dočasnou složkou (`TMPDIR`, `TEMP`, `TMP`) a po doběhnutí ji smaže – testy si v ní zakládají stovky složek a bez úklidu zaplnily disk. Kdo pouští jednotlivý soubor přímo přes `node --test`, uklízí si `os.tmpdir()` sám.
 
+## Protokol ověření – 0.46.97: chaos test a zátěž (11. 11. 2026, Linux, Chromium)
+
+`npm run qa:chaos` hraje nového uživatele, který se v aplikaci neorientuje, a zlomyslného testera z konkurence: od prvního spuštění s průvodcem náhodně (opakovatelně podle `AGENTEEQ_CHAOS_SEED`) kliká na všechno včetně dvoj- a pětinásobných kliků, píše extrémní texty (5000 znaků, emoji, RTL, Zalgo, `<script>`, SQL, cesty, řídicí znaky), mačká klávesy (Escape, Tab, Enter, šipky, ⌘K), přepíná stránky i neexistující trasy, chodí zpět a vpřed, mění velikost okna od 320 do 2560 px a uprostřed práce mu na chvíli vypadne server. Po každém kroku hlídá chybu JavaScriptu, zamrznutí hlavního vlákna (4 s), víc oken nebo hlášek naráz, přetečení stránky, prázdnou obrazovku, spuštěný XSS, růst DOM a paměti a návrat spojení po výpadku.
+
+| Kontrola | Výsledek |
+|---|---|
+| Chaos, seed 20261111, 400 kroků | Našel chybu: po výpadku, při kterém selhal jen dotaz na stav, zůstala aplikace navždy „offline“, přestože živý proud běžel. Opraveno (`public/js/app.js#naplanujZotaveni`); stejný seed pak prošel bez chyby. |
+| Chaos, seedy 7, 1337 a 424242, po 800 krocích | Bez chyby. Nejdelší odezva hlavního vlákna 231 ms (tři prohlížeče souběžně), paměť stabilně 10 MB, DOM 1917 → nejvýš 3730 uzlů. |
+| Zátěž serveru | 300 souběžných čtení stavu, 25 souběžných obnov a 100 zápisů (polovina rozbitý JSON, polovina extrémní názvy) za 0,8 s: vše vyřízeno (200 / 400 / 422), žádný pád; další čtení stavu hned potom za 2 ms. |
+| Neověřeno | WebKit (v kontejneru není), nainstalovaná macOS aplikace a skutečné zařízení. |
+
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
 | Kontrola | Výsledek |

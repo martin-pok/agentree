@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { loadConfig } from '../src/config.js';
 import { createApp } from '../src/app.js';
-import { tempDir } from './helpers.mjs';
+import { tempDir, startTestServer } from './helpers.mjs';
 
 // Vlastník 8. 11. 2026: „appka se načítá strašně dlouho“. Okno se otevře s konverzacemi z posledních
 // dvou dnů; starší se dočtou na pozadí tiše (bez stovek zpráv do živého proudu) a okno si pak stáhne
@@ -46,4 +46,19 @@ test('rychlý start: okno s nedávnými, starší se dočtou tiše a okno dostan
     assert.equal(udalosti.filter(([n]) => n === 'resync').length, 1, 'okno dostane jeden pokyn ke stažení stavu');
     assert.equal(app.alerts.list().filter((a) => a.sessionId?.includes('2222')).length, 0, 'stará chyba se neohlásí jako nová');
   } finally { await app.stop(); }
+});
+
+test('ruční obnova vrátí, co se opravdu změnilo (ne jen efekt)', async () => {
+  const srv = await startTestServer();
+  try {
+    const prvni = await srv.app.obnovVse();
+    assert.equal(prvni.nove, 0);
+    assert.equal(prvni.zmenene, 0);
+    assert.ok(prvni.zdroje > 0, 'prošel zdroje');
+    await prepis(srv.sourceHome, 'obnova-relace-1', 0);
+    const druha = await srv.app.obnovVse();
+    assert.equal(druha.nove, 1, 'nová konverzace je v souhrnu');
+  } finally {
+    await srv.close();
+  }
 });

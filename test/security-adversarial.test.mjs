@@ -48,3 +48,20 @@ test('account history neither merges two IDs nor accepts forged arbitrary keys',
   assert.equal(history.length, 2);
   assert.deepEqual(normalizeObservedAccounts([{ id: '__proto__', provider: 'anthropic', seenAt: 4 }]), []);
 });
+
+test('tělo nad 1 MB se odmítne u vstupu i u akce, která tělo nečte', async () => {
+  const { startTestServer: start } = await import('./helpers.mjs');
+  const http = await import('node:http');
+  const srv = await start();
+  try {
+    const { port } = new URL(srv.url);
+    const status = await new Promise((resolve) => {
+      const r = http.request({ host: '127.0.0.1', port, method: 'POST', path: '/api/connectors/rescan', headers: { 'X-Agenteeq': '1', 'Content-Type': 'application/json', 'Content-Length': String(2_000_000) } }, (res) => { res.resume(); resolve(res.statusCode); });
+      r.on('error', () => resolve('ERR'));
+      r.end('x'.repeat(2_000_000));
+    });
+    assert.ok(status === 413 || status === 'ERR', `čekal jsem 413, přišlo ${status}`);
+  } finally {
+    await srv.close();
+  }
+});

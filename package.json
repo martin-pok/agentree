@@ -1,6 +1,6 @@
 {
   "name": "agenteeq",
-  "version": "0.46.96",
+  "version": "0.46.97",
   "private": true,
   "description": "Agenteeq – všichni AI agenti na jednom místě v reálném čase: Claude, ChatGPT/Codex, Copilot, Gemini, Cursor, Perplexity, Grok, Qwen.",
   "type": "module",
@@ -44,6 +44,7 @@
     "qa:contrast": "node scripts/qa-contrast.mjs",
     "qa:axe": "node scripts/qa-axe.mjs",
     "qa:tvary": "node scripts/qa-tvary.mjs",
+    "qa:chaos": "node scripts/qa-chaos.mjs",
     "qa:site": "node scripts/qa-site.mjs",
     "qa:loader": "node scripts/qa-loader.mjs",
     "qa:extension": "node scripts/qa-extension.mjs",

@@ -749,9 +749,16 @@ const palette = createPalette(
 // i když obnova skončí dřív.
 const HLAVA = 'M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z';
 const ODLESK_MS = 1800;
+export function souhrnObnovy({ zdroje = 0, nove = 0, zmenene = 0, ucty = false } = {}) {
+  const casti = [];
+  if (nove) casti.push(tr('nové konverzace: {0}', nove));
+  if (zmenene) casti.push(tr('změněné: {0}', zmenene));
+  if (ucty) casti.push(tr('účty a plány aktualizované'));
+  return casti.length ? `${tr('Aktualizováno')} · ${casti.join(' · ')}` : tr('Vše je aktuální · zkontrolováno zdrojů: {0}', zdroje);
+}
 // Ruční obnova se týká celé aplikace, a tak ji ukazuje celá aplikace: přes rozhraní se položí
-// jemný fialový závoj a uprostřed bílá hlava robota s přejíždějícím odleskem – stejný motiv jako
-// načítací scéna. Závoj nic neblokuje (pointer-events: none) a rozepsaný formulář zůstane.
+// závoj v barvě značky a uprostřed bílá hlava robota s přejíždějícím odleskem – stejný motiv jako
+// načítací scéna. Po dobu obnovy závoj zachytí myš (kurzor „pracuji“); rozepsaný formulář zůstane.
 function spustObnovu(button) {
   const start = performance.now();
   button.setAttribute('aria-busy', 'true');
@@ -769,16 +776,17 @@ function spustObnovu(button) {
       if (!cleaned && stage === 'snapshot') status.textContent = tr('Aktualizuji zobrazená data…');
     },
     finish() {
-      if (cleaned) return;
+      if (cleaned) return Promise.resolve();
       cleaned = true;
       // Odlesk vždy dojede aspoň jednou celý, i když obnova skončí dřív.
       const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
-      setTimeout(() => {
+      return new Promise((hotovo) => setTimeout(() => {
         zavoj.classList.remove('is-on');
         setTimeout(() => zavoj.remove(), 650);
         button.classList.remove('is-refreshing');
         button.removeAttribute('aria-busy');
-      }, zbyva < 60 ? 0 : zbyva);
+        hotovo();
+      }, zbyva < 60 ? 0 : zbyva));
     },
   };
 }
@@ -808,17 +816,21 @@ document.addEventListener('click', async (e) => {
     const button = document.getElementById('refresh-app');
     if (!button || button.getAttribute('aria-busy') === 'true') return;
     const obnova = spustObnovu(button);
+    let vysledek = null;
     try {
-      await api.rescan();
+      vysledek = (await api.rescan())?.vysledek || null;
       // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
       // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
       obnova.setStage('snapshot');
       await obnovStav(tr('ruční obnova'), { force: true });
     } catch (err) {
       toast(err.message, { tone: 'err' });
+      vysledek = null;
     } finally {
-      obnova.finish();
+      await obnova.finish();
     }
+    // Obnova řekne, co našla: nové a změněné konverzace, změnu účtů – nebo že je vše aktuální.
+    if (vysledek) toast(souhrnObnovy(vysledek), { tone: vysledek.nove || vysledek.zmenene || vysledek.ucty ? 'action' : 'ink' });
     return;
   }
   const updateAction = e.target.closest('[data-update-action]');
@@ -1206,14 +1218,32 @@ async function obnovStav(duvod, { force = false } = {}) {
   if (!force && Date.now() - posledniObnova < 3000) return;
   posledniObnova = Date.now();
   obnovaSnapshot = api.state()
-    .then(prijmiSnimek)
+    .then((snimek) => {
+      prijmiSnimek(snimek);
+      // Stav se načetl: pokud ho předtím shodil jen neúspěšný dotaz a proud žije, je zase „připojeno“.
+      if (state.connection === 'offline' && proud.zivy()) onConnection('live');
+    })
     .catch((err) => {
       onConnection('offline');
       void duvod;
+      // Dotaz selhal, ale živý proud může dál běžet a nový „hello“ by nepřišel – aplikace by
+      // zůstala „offline“ navždy (chaos test 11. 11. 2026). Zkusí to proto sama znovu.
+      naplanujZotaveni();
       throw err;
     })
     .finally(() => { obnovaSnapshot = null; });
   return obnovaSnapshot;
+}
+let zotaveni = null, zotaveniPokus = 0;
+function naplanujZotaveni() {
+  if (zotaveni) return;
+  const ms = [2000, 4000, 8000, 15000][Math.min(zotaveniPokus++, 3)];
+  zotaveni = setTimeout(() => {
+    zotaveni = null;
+    if (state.connection === 'live') { zotaveniPokus = 0; return; }
+    proud.obnov();
+    obnovStav('zotavení', { force: true }).then(() => { zotaveniPokus = 0; }).catch(() => {});
+  }, ms);
 }
 function tichaObnova(duvod, options) {
   // Proud zavřený chybou serveru se při návratu do okna nebo obnovení sítě připojí hned.

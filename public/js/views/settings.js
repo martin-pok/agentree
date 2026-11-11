@@ -1011,9 +1011,8 @@ function accountCard() {
         ${badge}
       </div>
       ${u.fotoStav === 'chyba' ? `<p class="set-note">${tr('Profilovou fotku z Googlu se zatím nepodařilo načíst. Zkusím to znovu za pár minut.')}</p>`
-        // Fotku Google posílá jen při přihlášení (obnovení přihlášení ji nepřinese). Když chyběla,
-        // nabídne se rovnou nové načtení – nikdy rada „nastav si fotku“, kterou člověk dávno má.
-        : u.fotoStav === 'bez' ? `<p class="set-note acct-foto-znovu"><span>${tr('Při posledním přihlášení Google neposlal profilovou fotku.')}</span><button class="btn btn--sm" type="button" data-action="ucet-prihlasit">${ICON.google}<span>${tr('Načíst fotku z Googlu')}</span></button></p>`
+        // Když Google fotku neposlal, účet ukáže iniciály a nic dalšího – žádná výzva k ručnímu
+        // načtení (vlastník 11. 11. 2026: fotka se buď načte sama, nebo se o ní nemluví).
         : u.fotoStav === 'stahuji' ? `<p class="set-note">${tr('Načítám profilovou fotku z Googlu…')}</p>` : ''}
       ${u.stav === 'nedostupne' ? `<p class="set-note set-note--warn">${esc(u.chyba || tr('Server účtů teď neodpovídá.'))} ${tr('Přihlášení zůstává, další pokus proběhne sám.')}</p>` : ''}
       ${u.trvale || u.stav !== 'prihlaseno' ? '' : `<p class="set-note">${tr('Přihlášení vydrží do zavření Agenteeq.')}</p>`}
