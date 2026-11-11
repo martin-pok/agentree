@@ -3,6 +3,7 @@
 ## 0.46.97 – 2026-11-11 · Obnova řekne, co našla
 
 - **Obnova je vidět i ve výsledku:** tlačítko obnovy dál znovu projde všechny zdroje (Claude Code, Codex, Cursor, Claude Desktop, rozšíření…) a nově ověří i účty a plány na serveru. Po skončení řekne, co našlo – „Aktualizováno · nové konverzace: 2 · změněné: 1 · účty a plány aktualizované“, nebo „Vše je aktuální · zkontrolováno zdrojů: 14“. Dřív obnova skončila beze slova a když se nic nezměnilo, působila jako atrapa.
+- **Bezpečnost – útočný audit:** 27 útoků proti běžícímu serveru (DNS rebinding, CSRF, cizí Origin, path traversal, podvržené hooky a rozšíření, XSS z obsahu konverzací, úniky tajemství, práva souborů). Jediný nález opraven: tělo požadavku nad 1 MB se teď odmítne hned u vstupu i u akcí, které tělo nečtou. Podrobně `docs/SECURITY.md`.
 - **Během obnovy se pod závojem neklikat:** závoj po dobu obnovy zachytí myš a ukáže kurzor „pracuji“. Rozepsaný text zůstane.
 - **Fotka z Googlu bez ruční výzvy:** když Google při přihlášení profilovou fotku nepošle, Nastavení → Účet ukáže iniciály a nic dalšího. Dřív tam visela věta „Google neposlal profilovou fotku“ s tlačítkem „Načíst fotku z Googlu“, které jen znovu otevřelo přihlášení. Fotka, kterou Google pošle, se dál načte a obnovuje sama.
 

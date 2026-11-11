@@ -1121,6 +1121,13 @@ export function createHttpServer(app, existingServer = null) {
       res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }).end(ui('Zakázáno'));
       return;
     }
+    // Tělo nad 1 MB se odmítne hned u vstupu, i u akcí, které tělo nečtou (stejný strop jako
+    // readBody). Nic se nezpracuje a útočník neudrží otevřené spojení se stovkami megabajtů.
+    if (Number(req.headers['content-length']) > 1_000_000) {
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8', Connection: 'close' }).end(ui('Příliš velký požadavek.'));
+      req.resume();
+      return;
+    }
     const url = new URL(req.url, 'http://127.0.0.1');
     if (url.pathname.startsWith('/ucet/navrat') && app.ucet) return navratUctu(req, res, url);
     if (config.localKey && zTohotoMacu(req) && localKeyGate(req, res, url)) return;

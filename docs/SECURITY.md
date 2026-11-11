@@ -32,6 +32,23 @@ Seznam dovedností čte pouze soubory `SKILL.md` z předem určených uživatels
 | Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'`; platí pro export projektu i útraty | `src/csv.js#bunka` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
+## Útočný audit – 2026-11-11 (0.46.97)
+
+Proti běžícímu serveru (stejná sestava jako aplikace, dočasná data) proběhlo 27 útoků; 26 neprošlo hned, jediný nález je opravený:
+
+- **DNS rebinding, cizí Origin, `Sec-Fetch-Site: cross-site`, SSE z cizího webu** → odmítnuto (403).
+- **CSRF** bez `X-Agenteeq`, s cizím Origin, jako „simple request“ `text/plain`, i na spuštění agenta → odmítnuto; CORS preflight z cizího webu nedostane `Access-Control-Allow-Origin`.
+- **Path traversal** (`../`, `%2e%2e`, `%2f`, `%5c`, `....//`) → nic mimo `public/`.
+- **Hooky a rozšíření** bez tokenu nebo se špatným tokenem → odmítnuto; cizí rozšíření bez jednorázového kódu token nedostane.
+- **Hlavičky:** CSP `script-src 'self'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, bez `X-Powered-By`.
+- **Úniky:** `/api/state` ani `/api/settings` nenesou token hooků, API klíče ani přihlášení Claude. Logy nevypisují tokeny ani e-maily; odkaz s místním klíčem jen do Terminálu před uživatelem.
+- **Data na disku:** složka `~/.agenteeq` 0700, `data.json` 0600.
+- **XSS z obsahu přepisů:** název, větev, složka, model, zprávy i nástroje s `<img onerror>`, `<script>`, `<svg onload>`, `javascript:` odkazem a `<iframe>` – na Přehledu, v Agentech, detailu, Projektech, Statistikách a Upozorněních se nic nespustilo a žádný škodlivý prvek nevznikl.
+- **Dodavatelský řetězec:** nula běhových i vývojových závislostí.
+- **Opraveno:** akce, které tělo nečtou, přijaly i 5MB požadavek (nic se nezpracovalo, ale spojení zůstávalo otevřené). Teď se tělo nad 1 MB odmítne hned u vstupu (413) – `src/http.js#handle`, test `security-adversarial`.
+
+Přihlášení Claude Code (plán a vytížení účtu, 0.46.94–0.46.95) se jen čte, nikdy neobnovuje ani neukládá, jde jen na `api.anthropic.com` s `redirect: 'error'` a časovým limitem; z odpovědi se bere jen UUID účtu, plán a procenta vytížení.
+
 ## Zpevnění desktopu – 2026-09-11
 
 - API odmítá cizí Origin a cross-site metadata i při čtení a připojení SSE.
