@@ -141,7 +141,7 @@ export function connectStream({ onHello, onEvent, onStatus }) {
   // Ukázka nemá server ani živé změny: jednou „připojeno“ a hotovo.
   if (ukazka) {
     queueMicrotask(() => { onStatus('live'); onHello({}); });
-    return { close() {}, obnov() {} };
+    return { close() {}, obnov() {}, zivy() { return true; } };
   }
   let es = null;
   let pokus = 0;
@@ -205,6 +205,8 @@ export function connectStream({ onHello, onEvent, onStatus }) {
       casovac = null;
       es?.close();
     },
+    // Proud je otevřený a server už pozdravil – živá spojení s aplikací.
+    zivy() { return !ukonceno && es?.readyState === EventSource.OPEN && posledniPozdrav > 0; },
     obnov() {
       if (ukonceno || es?.readyState !== EventSource.CLOSED) return;
       clearTimeout(casovac);

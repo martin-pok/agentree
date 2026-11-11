@@ -44,6 +44,7 @@
     "qa:contrast": "node scripts/qa-contrast.mjs",
     "qa:axe": "node scripts/qa-axe.mjs",
     "qa:tvary": "node scripts/qa-tvary.mjs",
+    "qa:chaos": "node scripts/qa-chaos.mjs",
     "qa:site": "node scripts/qa-site.mjs",
     "qa:loader": "node scripts/qa-loader.mjs",
     "qa:extension": "node scripts/qa-extension.mjs",

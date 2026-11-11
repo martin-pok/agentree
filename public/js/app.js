@@ -1218,14 +1218,32 @@ async function obnovStav(duvod, { force = false } = {}) {
   if (!force && Date.now() - posledniObnova < 3000) return;
   posledniObnova = Date.now();
   obnovaSnapshot = api.state()
-    .then(prijmiSnimek)
+    .then((snimek) => {
+      prijmiSnimek(snimek);
+      // Stav se načetl: pokud ho předtím shodil jen neúspěšný dotaz a proud žije, je zase „připojeno“.
+      if (state.connection === 'offline' && proud.zivy()) onConnection('live');
+    })
     .catch((err) => {
       onConnection('offline');
       void duvod;
+      // Dotaz selhal, ale živý proud může dál běžet a nový „hello“ by nepřišel – aplikace by
+      // zůstala „offline“ navždy (chaos test 11. 11. 2026). Zkusí to proto sama znovu.
+      naplanujZotaveni();
       throw err;
     })
     .finally(() => { obnovaSnapshot = null; });
   return obnovaSnapshot;
+}
+let zotaveni = null, zotaveniPokus = 0;
+function naplanujZotaveni() {
+  if (zotaveni) return;
+  const ms = [2000, 4000, 8000, 15000][Math.min(zotaveniPokus++, 3)];
+  zotaveni = setTimeout(() => {
+    zotaveni = null;
+    if (state.connection === 'live') { zotaveniPokus = 0; return; }
+    proud.obnov();
+    obnovStav('zotavení', { force: true }).then(() => { zotaveniPokus = 0; }).catch(() => {});
+  }, ms);
 }
 function tichaObnova(duvod, options) {
   // Proud zavřený chybou serveru se při návratu do okna nebo obnovení sítě připojí hned.
