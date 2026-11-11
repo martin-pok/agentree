@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.95 Preview:** živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu.
+**Kandidát v0.46.96 Preview:** ruční obnova se zřetelnou barevnou září kolem hlavy robota.
+
+**v0.46.95 Preview (zveřejněno 10. 11. 2026, build 42923923229, 8 příloh se SHA-256 ověřením):** živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu.
 
 **v0.46.94 Preview (zveřejněno 10. 11. 2026, build 42916006549, 8 příloh se SHA-256 ověřením):** plán každého účtu Claude živě ze serveru Anthropicu; tlačítko „Otevřít konverzaci“ (claude.ai/code/<id>) u vzdálené relace potvrzené účtem Claude.
 

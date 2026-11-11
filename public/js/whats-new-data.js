@@ -4,6 +4,18 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.96', date: '2026-11-11', title: 'Zřetelná obnova',
+    items: [
+      'Při obnově hlavu robota obklopí měkká barevná záře, takže je hned vidět, že se načítají čerstvá data.',
+    ],
+    en: {
+      title: 'Clearer refresh',
+      items: [
+        'While refreshing, a soft colourful glow surrounds the robot head, so it is clear right away that fresh data is loading.',
+      ],
+    },
+  },
+  {
     version: '0.46.95', date: '2026-11-10', title: 'Živé limity každého účtu Claude',
     items: [
       'Útrata ukáže u každého účtu Claude jeho aktuální 5h a týdenní limit – přímo ze serveru Anthropicu, i když zrovna žádný agent neběží.',

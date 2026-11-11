@@ -3048,7 +3048,15 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
    okraje obrazovky zůstanou, jak byly; náběh i dojezd 0,6 s. Hlava robota pomalu dýchá. */
 .obnova-zavoj.is-on { opacity: 1; }
 html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, #6260d8 14%, rgba(8, 8, 16, .12)), transparent 100%); }
-.obnova-hlava { width: 64px; height: 64px; overflow: visible; filter: drop-shadow(0 12px 26px rgba(60, 50, 180, .22)); opacity: 0; transform: scale(.9); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
+/* Záře za hlavou (vlastník 11. 11. 2026): bílá hlava na rušném pozadí splývala, obnova nebyla
+   zřetelná. Měkký barevný radiální přechod těsně kolem hlavy, nikdy plně krytý; nabíhá a dýchá s ní. */
+.obnova-zavoj::before { content: ''; grid-area: 1 / 1; width: 248px; height: 248px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, #8f8dff 62%, transparent) 0%, color-mix(in srgb, #6d6be6 42%, transparent) 34%, color-mix(in srgb, #6260d8 16%, transparent) 64%, transparent 100%);
+  filter: blur(6px); opacity: 0; transform: scale(.72); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
+.obnova-zavoj.is-on::before { opacity: .9; transform: scale(1); animation: oz-zare 2.4s ease-in-out var(--motion-calm) infinite; }
+html[data-theme='dark'] .obnova-zavoj::before { background: radial-gradient(closest-side, color-mix(in srgb, #9b99ff 70%, transparent) 0%, color-mix(in srgb, #6d6be6 50%, transparent) 34%, color-mix(in srgb, #4f4dc8 22%, transparent) 64%, transparent 100%); }
+@keyframes oz-zare { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.08); opacity: .75; } }
+.obnova-hlava { grid-area: 1 / 1; position: relative; width: 64px; height: 64px; overflow: visible; filter: drop-shadow(0 12px 26px rgba(60, 50, 180, .22)); opacity: 0; transform: scale(.9); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
 .obnova-zavoj.is-on .obnova-hlava { opacity: 1; transform: scale(1); animation: oz-dech 2.4s ease-in-out var(--motion-calm) infinite; }
 @keyframes oz-dech { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 .oz-zaklad { fill: #fff; }
@@ -3057,6 +3065,7 @@ html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(42% 42% at 5
 @media (prefers-reduced-motion: reduce) {
   .oz-lesk { animation: none; opacity: 0; }
   .obnova-hlava, .obnova-zavoj.is-on .obnova-hlava { transition: opacity var(--motion-response) var(--ease); transform: none; animation: none; }
+  .obnova-zavoj::before, .obnova-zavoj.is-on::before { transition: opacity var(--motion-response) var(--ease); transform: none; animation: none; }
 }
 
 
