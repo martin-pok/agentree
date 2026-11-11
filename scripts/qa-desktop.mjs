@@ -1128,7 +1128,15 @@ for (const engine of engines) {
         return value.top > dial.top + 16 && value.bottom < dial.bottom - 16 && label.top >= dial.bottom + 7 && sub.top >= label.bottom + 7;
       })), `${engine} ${width} gauge safe zone`);
     }
-    await page.locator('.gauges--sm').screenshot({ path: `dist/qa/${engine}-limits-safe-zone.png` });
+    // Po změně šířky se karta limitů překreslí asynchronně (nový uzel). Fotit až ustálenou;
+    // když se uzel během snímku vymění, vzít ten nový – kontrola rozložení proběhla výše.
+    await page.waitForTimeout(400);
+    for (let pokus = 0; ; pokus++) {
+      try { await page.locator('.gauges--sm').screenshot({ path: `dist/qa/${engine}-limits-safe-zone.png` }); break; } catch (e) {
+        if (pokus >= 2 || !/not attached/i.test(e.message)) throw e;
+        await page.waitForTimeout(300);
+      }
+    }
     for (const route of ['agenti', 'projekty', 'statistiky', 'utrata', 'upozorneni', 'nastaveni']) {
       if (route === 'statistiky') {
         await page.route('**/api/usage/claude*', (request) => request.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
