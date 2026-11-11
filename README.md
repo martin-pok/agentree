@@ -4,9 +4,11 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.96** — připravované Preview (neveřejné vydání): ruční obnova je zřetelná – celou aplikaci překryje barva značky (50 %) s hlavou robota uprostřed.
+> **0.46.97** — připravované Preview (neveřejné vydání): Nastavení → Účet bez výzvy k ručnímu načtení fotky z Googlu.
 >
-> **0.46.95** — aktuální [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.95): živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu, i když žádný agent neběží. Stable Latest zůstává 0.46.58.
+> **0.46.96** — aktuální [veřejné Preview z 11. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.96): ruční obnova je zřetelná – celou aplikaci překryje barva značky (50 %) s hlavou robota uprostřed. Stable Latest zůstává 0.46.58.
+>
+> **0.46.95** — [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.95): živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu, i když žádný agent neběží. Stable Latest zůstává 0.46.58.
 >
 > **0.46.94** — [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.94): plán každého přihlášeného účtu Claude živě ze serveru Anthropicu (i bez samostatného CLI); u vzdálené relace Claude potvrzené účtem tlačítko „Otevřít konverzaci“ přímo na tutéž relaci. Stable Latest zůstává 0.46.58.
 >

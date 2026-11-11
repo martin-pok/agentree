@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.97 – 2026-11-11 · Účet bez zbytečné výzvy
+
+- **Fotka z Googlu bez ruční výzvy:** když Google při přihlášení profilovou fotku nepošle, Nastavení → Účet ukáže iniciály a nic dalšího. Dřív tam visela věta „Google neposlal profilovou fotku“ s tlačítkem „Načíst fotku z Googlu“, které jen znovu otevřelo přihlášení. Fotka, kterou Google pošle, se dál načte a obnovuje sama.
+
 ## 0.46.96 – 2026-11-11 · Zřetelná obnova
 
 - **Zřetelná obnova:** po klepnutí na obnovu se bílá hlava robota ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď celou aplikaci překryje jedna barva – indigo značky s krytím 50 % – obsah pod ní se jemně rozostří a uprostřed je větší bílá hlava robota (96 px). Plynule nabíhá i mizí, nic neblokuje; se sníženým pohybem bez animace.

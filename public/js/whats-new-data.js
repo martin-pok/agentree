@@ -4,6 +4,18 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.97', date: '2026-11-11', title: 'Účet bez zbytečné výzvy',
+    items: [
+      'Nastavení účtu už nežádá ruční načtení fotky z Googlu – fotka se načte sama, jinak zůstanou iniciály.',
+    ],
+    en: {
+      title: 'Account without a pointless prompt',
+      items: [
+        'Account settings no longer ask you to load your Google photo by hand – it loads on its own, otherwise your initials stay.',
+      ],
+    },
+  },
+  {
     version: '0.46.96', date: '2026-11-11', title: 'Zřetelná obnova',
     items: [
       'Při obnově celou aplikaci překryje barva značky a uprostřed je hlava robota – hned je vidět, že se načítají čerstvá data.',
