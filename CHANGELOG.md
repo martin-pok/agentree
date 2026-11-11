@@ -2,7 +2,7 @@
 
 ## 0.46.96 – 2026-11-11 · Zřetelná obnova
 
-- **Výrazná barevná záře při obnově:** po klepnutí na obnovu se bílá hlava robota uprostřed obrazovky ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď ji obklopí velká barevná záře (indigo → fialová → růžová → modrá), barvy se pomalu otáčejí a k okrajům se plynule rozpouští do ztracena. Obsah pod září se jemně rozostří a ztlumí, hlava je větší (96 px) – vystoupí na jakémkoli pozadí ve světlém i tmavém vzhledu. Nic neblokuje; se sníženým pohybem bez animace.
+- **Zřetelná obnova:** po klepnutí na obnovu se bílá hlava robota ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď celou aplikaci překryje jedna barva – indigo značky s krytím 50 % – obsah pod ní se jemně rozostří a uprostřed je větší bílá hlava robota (96 px). Plynule nabíhá i mizí, nic neblokuje; se sníženým pohybem bez animace.
 
 ## 0.46.95 – 2026-11-10 · Živé limity každého účtu Claude
 

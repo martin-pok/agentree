@@ -6,12 +6,12 @@ export const RELEASES = [
   {
     version: '0.46.96', date: '2026-11-11', title: 'Zřetelná obnova',
     items: [
-      'Při obnově hlavu robota obklopí velká barevná záře a obsah pod ní se rozostří – hned je vidět, že se načítají čerstvá data.',
+      'Při obnově celou aplikaci překryje barva značky a uprostřed je hlava robota – hned je vidět, že se načítají čerstvá data.',
     ],
     en: {
       title: 'Clearer refresh',
       items: [
-        'While refreshing, a large colourful glow surrounds the robot head and blurs the content beneath it – it is clear right away that fresh data is loading.',
+        'While refreshing, the brand colour covers the whole app with the robot head in the middle – it is clear right away that fresh data is loading.',
       ],
     },
   },

@@ -68,7 +68,7 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.96 Preview:** ruční obnova se zřetelnou barevnou září kolem hlavy robota.
+**Kandidát v0.46.96 Preview:** ruční obnova se zřetelným jednobarevným překryvem (indigo, 50 %).
 
 **v0.46.95 Preview (zveřejněno 10. 11. 2026, build 42923923229, 8 příloh se SHA-256 ověřením):** živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu.
 

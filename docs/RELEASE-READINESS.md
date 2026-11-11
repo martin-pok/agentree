@@ -6,7 +6,7 @@
 
 ## Zdroj pravdy
 
-- **v0.46.96: kandidát.** Barevná radiální záře kolem hlavy robota při ruční obnově; vydat po CI a auditu příloh.
+- **v0.46.96: kandidát.** Jednobarevný překryv (indigo, 50 %) přes celou aplikaci při ruční obnově; vydat po CI a auditu příloh.
 - **v0.46.95: veřejné Preview od 10. 11. 2026.** Release build `42923923229`, SHA256SUMS ověřeno proti všem 8 přílohám. Živé vytížení (5 h, týden) každého profilu Claude Code z `api.anthropic.com/api/oauth/usage` (🧪 Beta).
 - **v0.46.94: veřejné Preview od 10. 11. 2026.** Release build `42916006549`, SHA256SUMS ověřeno proti všem 8 přílohám. Plán každého profilu Claude Code živě z `api.anthropic.com/api/oauth/profile` (🧪 Beta). Otevření vzdálené relace potvrzené účtem Claude přes claude.ai/code/<id>.
 - **v0.46.93: veřejné Preview od 10. 11. 2026.** Release build `42716556805`, nezávislý audit Draftu, SHA256SUMS ověřeno proti všem 8 přílohám. Přístupnost: zalamování popisků (WCAG 1.4.12), kontrola zakrytého fokusu a dialogů.
