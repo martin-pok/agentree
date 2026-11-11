@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.46.96 – 2026-11-11 · Zřetelná obnova
+
+- **Zřetelná obnova:** po klepnutí na obnovu se bílá hlava robota ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď celou aplikaci překryje jedna barva – indigo značky s krytím 50 % – obsah pod ní se jemně rozostří a uprostřed je větší bílá hlava robota (96 px). Plynule nabíhá i mizí, nic neblokuje; se sníženým pohybem bez animace.
+
 ## 0.46.95 – 2026-11-10 · Živé limity každého účtu Claude
 
 - **Vytížení 5 h a týdne přímo ze serveru:** každý přihlášený profil Claude Code (výchozí i každý `CLAUDE_CONFIG_DIR`) si při obnovení (každé 2 minuty) přečte své vytížení stejným dotazem, ze kterého Claude Code kreslí `/usage` (`api.anthropic.com/api/oauth/usage`, procenta 0–100 a čas obnovy). Útrata → Účty nástrojů ukáže u každého účtu jeho vlastní 5h a týdenní limit; Přehled je bere jako přesné měření serveru. Dřív byla čísla jen ze stavového řádku běžícího Claude Code nebo z uložené stránky Usage v Claude Desktopu – bez běžícího agenta chyběla. Okno, které server nevrátí, se nedosadí nulou; když server požádá o pauzu (429), Agenteeq se do té doby neptá (nejméně 5 minut).

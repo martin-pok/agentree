@@ -777,10 +777,15 @@ test('pozdrav říká „Dnes: N konverzace“, ne „aktivní“ (vedle Právě
   assert.match(ov, /Dnešní konverzace najdeš v Agentech/, 'prázdné Právě teď ukáže, kde dnešní konverzace jsou');
 });
 
-test('obnova je klidné nadechnutí, ne fialový záblesk přes celou obrazovku', async () => {
+// Vlastník 11. 11. 2026 (mění rozhodnutí z 19. 10.): slabý tón jen u středu splýval s pozadím
+// a obnova nebyla vidět. Teď jedna barva značky s krytím 50 % přes celou aplikaci, bez přechodu.
+test('obnova: jedna barva značky (indigo 50 %) přes celou aplikaci, bez přechodu', async () => {
   const css = await zdroj('public/styles.css');
   const z = css.match(/^\.obnova-zavoj \{[^}]+\}/m)?.[0] || '';
-  assert.match(z, /#6260d8 9%, transparent\), transparent 100%\)/, 'slabý tón jen u středu, okraje průhledné');
+  assert.match(z, /inset: 0;/, 'přes celou aplikaci');
+  assert.match(z, /background: rgba\(98, 96, 216, \.5\);/, 'indigo značky s krytím 50 %');
+  assert.doesNotMatch(z, /gradient/, 'žádný přechod');
+  assert.doesNotMatch(css, /html\[data-theme='dark'\] \.obnova-zavoj \{/, 'stejná barva i v tmavém vzhledu');
   assert.match(z, /transition: opacity var\(--motion-calm\)/);
   assert.match(css, /@keyframes oz-dech/);
 });

@@ -3040,15 +3040,17 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
   .link[href]:hover::after { translate: none; }
 }
 
-/* Obnova: přes celou aplikaci jemný fialový závoj a uprostřed bílá hlava robota s odleskem
+/* Obnova: přes celou aplikaci velký barevný overlay a uprostřed bílá hlava robota s odleskem
    (app.js#spustObnovu). Závoj nic neblokuje; tlačítko obnovy jen drží stisknutý stav. */
 #refresh-app.is-refreshing { color: var(--action); box-shadow: inset 0 0 0 1px color-mix(in srgb, #6260d8 45%, var(--line)); background: color-mix(in srgb, #6260d8 8%, var(--card)); }
-.obnova-zavoj { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; opacity: 0; background: radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, #6260d8 9%, transparent), transparent 100%); transition: opacity var(--motion-calm) var(--ease-settle); }
-/* Klidné „nadechnutí“, ne fialový záblesk (vlastník 19. 10. 2026): slabý tón jen kolem středu,
-   okraje obrazovky zůstanou, jak byly; náběh i dojezd 0,6 s. Hlava robota pomalu dýchá. */
+.obnova-zavoj { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; opacity: 0;
+  background: rgba(98, 96, 216, .5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: opacity var(--motion-calm) var(--ease-settle); }
+/* Obnova musí být zřetelná na první pohled (vlastník 11. 11. 2026): přes celou aplikaci jeden
+   odstín indiga značky (#6260d8) s krytím 50 %, žádný přechod. Obsah pod ním se jemně rozostří,
+   bílá hlava robota uprostřed vystoupí na jakémkoli pozadí. Plynule nabíhá i mizí. */
 .obnova-zavoj.is-on { opacity: 1; }
-html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, #6260d8 14%, rgba(8, 8, 16, .12)), transparent 100%); }
-.obnova-hlava { width: 64px; height: 64px; overflow: visible; filter: drop-shadow(0 12px 26px rgba(60, 50, 180, .22)); opacity: 0; transform: scale(.9); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
+.obnova-hlava { grid-area: 1 / 1; position: relative; z-index: 1; width: 96px; height: 96px; overflow: visible; filter: drop-shadow(0 10px 30px rgba(40, 24, 140, .5)); opacity: 0; transform: scale(.86); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
 .obnova-zavoj.is-on .obnova-hlava { opacity: 1; transform: scale(1); animation: oz-dech 2.4s ease-in-out var(--motion-calm) infinite; }
 @keyframes oz-dech { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 .oz-zaklad { fill: #fff; }
