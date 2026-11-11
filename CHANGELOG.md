@@ -2,7 +2,7 @@
 
 ## 0.46.96 – 2026-11-11 · Zřetelná obnova
 
-- **Záře kolem hlavy robota:** po klepnutí na obnovu se bílá hlava robota uprostřed obrazovky ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď ji obklopí měkká barevná radiální záře (fialová, poloprůhledná, rozostřená do ztracena), která plynule nabíhá, pomalu dýchá s hlavou a s koncem obnovy zmizí. Nic neblokuje; se sníženým pohybem bez animace.
+- **Výrazná barevná záře při obnově:** po klepnutí na obnovu se bílá hlava robota uprostřed obrazovky ztrácela na rušném pozadí a nebylo jasné, že se obnovuje. Teď ji obklopí velká barevná záře (indigo → fialová → růžová → modrá), barvy se pomalu otáčejí a k okrajům se plynule rozpouští do ztracena. Obsah pod září se jemně rozostří a ztlumí, hlava je větší (96 px) – vystoupí na jakémkoli pozadí ve světlém i tmavém vzhledu. Nic neblokuje; se sníženým pohybem bez animace.
 
 ## 0.46.95 – 2026-11-10 · Živé limity každého účtu Claude
 

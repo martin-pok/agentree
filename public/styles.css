@@ -3043,20 +3043,30 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
 /* Obnova: přes celou aplikaci jemný fialový závoj a uprostřed bílá hlava robota s odleskem
    (app.js#spustObnovu). Závoj nic neblokuje; tlačítko obnovy jen drží stisknutý stav. */
 #refresh-app.is-refreshing { color: var(--action); box-shadow: inset 0 0 0 1px color-mix(in srgb, #6260d8 45%, var(--line)); background: color-mix(in srgb, #6260d8 8%, var(--card)); }
-.obnova-zavoj { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; opacity: 0; background: radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, #6260d8 9%, transparent), transparent 100%); transition: opacity var(--motion-calm) var(--ease-settle); }
-/* Klidné „nadechnutí“, ne fialový záblesk (vlastník 19. 10. 2026): slabý tón jen kolem středu,
-   okraje obrazovky zůstanou, jak byly; náběh i dojezd 0,6 s. Hlava robota pomalu dýchá. */
+.obnova-zavoj { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(246, 246, 255, .55) 0, rgba(246, 246, 255, .28) 34vmin, rgba(246, 246, 255, 0) 70vmin);
+  transition: opacity var(--motion-calm) var(--ease-settle); }
+/* Obnova musí být zřetelná na jakémkoli pozadí (vlastník 11. 11. 2026): velká barevná záře
+   (indigo → fialová → růžová → modrá) s pomalu se otáčejícími barvami, pod ní rozostřený obsah,
+   aby hlava robota jasně vystoupila. Nikdy plně krytá – okraje plynule mizí do ztracena. */
 .obnova-zavoj.is-on { opacity: 1; }
-html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(42% 42% at 50% 50%, color-mix(in srgb, #6260d8 14%, rgba(8, 8, 16, .12)), transparent 100%); }
-/* Záře za hlavou (vlastník 11. 11. 2026): bílá hlava na rušném pozadí splývala, obnova nebyla
-   zřetelná. Měkký barevný radiální přechod těsně kolem hlavy, nikdy plně krytý; nabíhá a dýchá s ní. */
-.obnova-zavoj::before { content: ''; grid-area: 1 / 1; width: 248px; height: 248px; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, color-mix(in srgb, #8f8dff 62%, transparent) 0%, color-mix(in srgb, #6d6be6 42%, transparent) 34%, color-mix(in srgb, #6260d8 16%, transparent) 64%, transparent 100%);
-  filter: blur(6px); opacity: 0; transform: scale(.72); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
-.obnova-zavoj.is-on::before { opacity: .9; transform: scale(1); animation: oz-zare 2.4s ease-in-out var(--motion-calm) infinite; }
-html[data-theme='dark'] .obnova-zavoj::before { background: radial-gradient(closest-side, color-mix(in srgb, #9b99ff 70%, transparent) 0%, color-mix(in srgb, #6d6be6 50%, transparent) 34%, color-mix(in srgb, #4f4dc8 22%, transparent) 64%, transparent 100%); }
-@keyframes oz-zare { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.08); opacity: .75; } }
-.obnova-hlava { grid-area: 1 / 1; position: relative; width: 64px; height: 64px; overflow: visible; filter: drop-shadow(0 12px 26px rgba(60, 50, 180, .22)); opacity: 0; transform: scale(.9); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
+html[data-theme='dark'] .obnova-zavoj { background: radial-gradient(circle at 50% 50%, rgba(6, 6, 16, .62) 0, rgba(6, 6, 16, .34) 34vmin, rgba(6, 6, 16, 0) 70vmin); }
+.obnova-zavoj::before, .obnova-zavoj::after { content: ''; grid-area: 1 / 1; width: min(560px, 118vw); aspect-ratio: 1; border-radius: 50%; pointer-events: none; opacity: 0; transform: scale(.6);
+  transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
+/* Spodní vrstva: rozostření obsahu pod září, maskované do kruhu, ať nikde není tvrdá hrana. */
+.obnova-zavoj::before { -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-mask-image: radial-gradient(closest-side, #000 38%, transparent 100%); mask-image: radial-gradient(closest-side, #000 38%, transparent 100%); }
+/* Horní vrstva: barevná záře. Kónický přechod barev se pomalu otáčí, radiální maska ho
+   ve středu drží sytý a k okraji plynule rozpouští. */
+.obnova-zavoj::after { background: conic-gradient(from 0deg, #6366f1, #a855f7, #ec4899, #8b5cf6, #38bdf8, #6366f1);
+  -webkit-mask-image: radial-gradient(closest-side, rgba(0, 0, 0, .95) 0%, rgba(0, 0, 0, .72) 22%, rgba(0, 0, 0, .34) 50%, rgba(0, 0, 0, .1) 74%, transparent 100%);
+  mask-image: radial-gradient(closest-side, rgba(0, 0, 0, .95) 0%, rgba(0, 0, 0, .72) 22%, rgba(0, 0, 0, .34) 50%, rgba(0, 0, 0, .1) 74%, transparent 100%); }
+.obnova-zavoj.is-on::before { opacity: 1; transform: scale(1); }
+.obnova-zavoj.is-on::after { opacity: .82; transform: scale(1); animation: oz-barvy 7s linear infinite, oz-zare 2.4s ease-in-out var(--motion-calm) infinite; }
+html[data-theme='dark'] .obnova-zavoj.is-on::after { opacity: .9; }
+@keyframes oz-barvy { to { rotate: 360deg; } }
+@keyframes oz-zare { 0%, 100% { scale: 1; } 50% { scale: 1.06; } }
+.obnova-hlava { grid-area: 1 / 1; position: relative; z-index: 1; width: 96px; height: 96px; overflow: visible; filter: drop-shadow(0 10px 28px rgba(40, 20, 120, .45)); opacity: 0; transform: scale(.86); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
 .obnova-zavoj.is-on .obnova-hlava { opacity: 1; transform: scale(1); animation: oz-dech 2.4s ease-in-out var(--motion-calm) infinite; }
 @keyframes oz-dech { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
 .oz-zaklad { fill: #fff; }
@@ -3065,7 +3075,7 @@ html[data-theme='dark'] .obnova-zavoj::before { background: radial-gradient(clos
 @media (prefers-reduced-motion: reduce) {
   .oz-lesk { animation: none; opacity: 0; }
   .obnova-hlava, .obnova-zavoj.is-on .obnova-hlava { transition: opacity var(--motion-response) var(--ease); transform: none; animation: none; }
-  .obnova-zavoj::before, .obnova-zavoj.is-on::before { transition: opacity var(--motion-response) var(--ease); transform: none; animation: none; }
+  .obnova-zavoj::before, .obnova-zavoj::after, .obnova-zavoj.is-on::before, .obnova-zavoj.is-on::after { transition: opacity var(--motion-response) var(--ease); transform: none; animation: none; }
 }
 
 

@@ -4,7 +4,7 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.96** — připravované Preview (neveřejné vydání): ruční obnova je zřetelná – hlavu robota obklopí měkká barevná záře.
+> **0.46.96** — připravované Preview (neveřejné vydání): ruční obnova je zřetelná – hlavu robota obklopí velká barevná záře a obsah pod ní se rozostří.
 >
 > **0.46.95** — aktuální [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.95): živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu, i když žádný agent neběží. Stable Latest zůstává 0.46.58.
 >
