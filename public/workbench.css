@@ -131,9 +131,11 @@ body { letter-spacing: -.012em; }
 }
 @media (min-width: 1200px) {
   .launch-agents { display: grid; grid-template-columns: 192px minmax(0, 1fr); gap: 20px; }
-  .view:has(> .pulse-bar) { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 28px 32px; align-items: start; }
-  .view:has(> .pulse-bar) > :empty { display: none; }
-  .view:has(> .pulse-bar) > [data-region='onboard'], .view:has(> .pulse-bar) > [data-region='newtools'] { grid-column: 1 / -1; }
+  /* Mřížku obrazovky s pásem nese třída view--pulz (app.js#navigate), ne .view:has(> .pulse-bar):
+     :has() na obalu celé obrazovky přepočítal při každé živé události styly všech jejích prvků. */
+  .view.view--pulz { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 28px 32px; align-items: start; }
+  .view.view--pulz > :empty { display: none; }
+  .view.view--pulz > [data-region='onboard'], .view.view--pulz > [data-region='newtools'] { grid-column: 1 / -1; }
   .view > .pulse-bar { grid-column: 1 / -1; grid-row: 1; margin: 0; }
   .view > .launch { grid-column: 1; grid-row: 2 / 4; margin: 0; }
   .view > .ov, .view > .ov > .ov-col { display: contents; }

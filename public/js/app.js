@@ -243,6 +243,9 @@ function navigate() {
     if (!reduceMotion.matches) viewEl.classList.add('is-entering');
     nastupCeka = !reduceMotion.matches;
     current.mount(viewEl, r.params, r.query);
+    // Mřížka obrazovky s pásem (workbench.css) – třídou, ne :has() na obalu, který by při každé živé
+    // události přepočítal styly celé obrazovky. Stejná podmínka jako dřívější .view:has(> .pulse-bar).
+    viewEl.classList.toggle('view--pulz', !!viewEl.querySelector(':scope > .pulse-bar'));
     // Fokus na nadpis nové stránky – kromě chvíle, kdy člověk píše do pomocníka, který zůstává otevřený.
     if (!firstNav && !UKAZKA && !(pisePrave() && document.activeElement.closest('.pomocnik'))) titleEl.focus({ preventScroll: true });
   } else {
