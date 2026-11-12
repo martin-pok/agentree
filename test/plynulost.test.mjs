@@ -161,3 +161,17 @@ test('Agenti: karty bez :has(), mimo okno se nevykreslují, dávka jen připojuj
   assert.match(pohyb, /new IntersectionObserver\(/);
   assert.match(pohyb, /const visible = \(\) => io \? \[\.\.\.vOkne\]/, 'viditelné roboty určuje IntersectionObserver, ne měření každého robota');
 });
+
+// #401: `.view:has(> .pulse-bar)` udělal z obalu celé obrazovky prvek „ovlivněný :has()“ – každá živá
+// událost pak přepočítala styly všech jejích prvků (u 60 agentů 2 422 prvků, 25–40 ms, 11× za 5 událostí).
+// Obaly, pod kterými se živě překresluje, smí nést :has() jen přes třídu nastavenou v JS.
+test('obal obrazovky ani stránky nenese :has() – mřížka s pásem jde přes třídu view--pulz', async () => {
+  const soubory = ['public/styles.css', 'public/workbench.css', 'public/refinement.css', 'public/desktop.css', 'public/koncert.css'];
+  for (const p of soubory) {
+    const css = (await zdroj(p)).replace(/\/\*[\s\S]*?\*\//g, '');
+    assert.doesNotMatch(css, /(^|[\s,}>])(\.view|#view|\.main|\.app|\.layout)(\.[\w-]+|\[[^\]]*\])*:has\(/m, `${p}: :has() na obalu obrazovky přepočítá při každé živé události celou stránku`);
+  }
+  const app = await zdroj('public/js/app.js');
+  assert.match(app, /classList\.toggle\('view--pulz', !!viewEl\.querySelector\(':scope > \.pulse-bar'\)\)/, 'třída view--pulz musí kopírovat podmínku původního :has()');
+  assert.match(await zdroj('public/workbench.css'), /\.view\.view--pulz \{ display: grid;/);
+});
