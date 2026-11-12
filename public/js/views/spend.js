@@ -5,8 +5,9 @@ import { glyph, pkey, ICON } from '../icons.js';
 import { gauge, columnChart, donut } from '../charts.js';
 import { chartColor } from '../data.js';
 import { fill, tween, modal, confirmDialog, toast, emptyState, limitAge, infoTip } from '../ui.js';
-import { tr, LOCALE, mnozne as plural } from '../i18n.js';
+import { tr, LOCALE, mnozne as plural, tomtoPocitaci } from '../i18n.js';
 import { ze } from '../predlozky.js';
+import { spustNapojeni } from '../napojeni-ui.js';
 
 // `otevrene` = rozbalené rozpady po modelech (klíč měsíc|služba). Drží se mimo DOM, aby živá
 // aktualizace útraty rozbalený řádek nezavřela.
@@ -140,6 +141,9 @@ const ZDROJ_UCTU = { anthropic: 'claude-code', openai: 'codex' };
 const zastupnyBezNastroje = (account, connectors) => !account.id && !account.active && account.state === 'unavailable'
   && connectors.find((c) => c.id === ZDROJ_UCTU[account.provider])?.state === 'missing';
 
+// Účet, který nejde ověřit, má hned vedle cestu k nápravě: stejné přihlášení jako v Nastavení
+// (public/js/napojeni-ui.js) – vlastník 11. 11. 2026, „Nelze ověřit“ bez akce nikam nevede.
+const NAPOJENI_UCTU = { anthropic: 'claude-code', openai: 'codex' };
 export function providerAccountsHtml(sp, connectors = state.connectors || []) {
   const accounts = (sp.providerAccounts || []).filter((a) => !zastupnyBezNastroje(a, connectors));
   if (!accounts.length) return '';
@@ -170,6 +174,7 @@ export function providerAccountsHtml(sp, connectors = state.connectors || []) {
         <div class="provider-account-top"><strong>${name}${tag ? ` <span class="provider-account-id">${tag}</span>` : ''}</strong><span class="provider-account-state">${status}</span></div>
         <span class="plan-sub">${esc(description)}${account.observedAt ? ` · <span data-ago="${account.observedAt}">${esc(rel(account.observedAt))}</span>` : ''}</span>
         ${limits.map((limit) => `<div class="provider-account-limit"><span>${esc(limit.label)}${limit.resetsAt ? ` · ${tr('obnova {0}', esc(dateLong(limit.resetsAt)))}` : ''}</span><strong>${Math.round(limit.usedPercent)} %</strong><span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(limit.usedPercent)}" aria-label="${esc(`${name} ${limit.label}`)}"><i style="width:${limit.usedPercent}%"></i></span></div>`).join('')}
+        ${!known && !account.active && NAPOJENI_UCTU[account.provider] ? `<div class="provider-account-akce"><button class="btn btn--sm btn--primary" type="button" data-napojit-ucet="${esc(NAPOJENI_UCTU[account.provider])}">${tr('Napojit')}</button><span>${tr('Přihlásí {0} na {1}, pak se plán a limity načtou samy.', name, tomtoPocitaci())}</span></div>` : ''}
         ${account.active && Number.isFinite(account.credits) && account.credits >= 0 ? `<div class="provider-account-credit">${tr('Kredity Codexu')} <strong>${esc(fmtNum(account.credits))}</strong></div>` : ''}
       </div>
     </li>`;
@@ -206,6 +211,21 @@ function mount(el, _params, query) {
   // protože se hned pod zavřeným objeví další identický).
   if (v.onClick) el.removeEventListener('click', v.onClick);
   v.onClick = async (e) => {
+    const nap = e.target.closest('[data-napojit-ucet]');
+    if (nap) {
+      if (nap.disabled) return;
+      nap.disabled = true;
+      try {
+        const polozka = (await api.napojeni()).napojeni?.find((n) => n.id === nap.dataset.napojitUcet);
+        if (!polozka) throw new Error(tr('Nástroj na {0} nenacházím. Nainstaluj ho a zkus to znovu.', tomtoPocitaci()));
+        await spustNapojeni(polozka);
+      } catch (err) {
+        toast(err.message, { tone: 'err', timeout: 8000 });
+      } finally {
+        nap.disabled = false;
+      }
+      return;
+    }
     const m = e.target.closest('[data-models]');
     if (m) {
       const k = m.dataset.models;

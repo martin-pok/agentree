@@ -984,3 +984,10 @@ test('okna se zavírají jednotně a neuložené změny se bez potvrzení neztra
   assert.match(vzhled, /addEventListener\('cancel', \(e\) => \{ e\.preventDefault\(\); zavrit\(\); \}\)/);
   assert.doesNotMatch(vzhled, /\[data-close\]'\)\.addEventListener\('click', \(\) => dialog\.close\(\)\)/);
 });
+
+test('Útrata: účet „Nelze ověřit“ má hned tlačítko Napojit se stejným přihlášením jako Nastavení', async () => {
+  const src = await zdroj('public/js/views/spend.js');
+  assert.match(src, /const NAPOJENI_UCTU = \{ anthropic: 'claude-code', openai: 'codex' \};/);
+  assert.match(src, /!known && !account\.active && NAPOJENI_UCTU\[account\.provider\]/, 'jen u účtu, který nejde ověřit');
+  assert.match(src, /await spustNapojeni\(polozka\)/, 'stejný postup jako v Nastavení');
+});

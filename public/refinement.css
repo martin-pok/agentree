@@ -1059,3 +1059,7 @@ img[data-media].is-nacteno { opacity: 1; }
 @media (max-width: 560px) {
   .page-title { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
 }
+
+/* Účet, který nejde ověřit: tlačítko Napojit a jedna věta, co se stane; na úzkém okně pod sebou. */
+.provider-account-akce { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
+.provider-account-akce span { color: var(--ink-2); font-size: 13px; line-height: 1.5; }
