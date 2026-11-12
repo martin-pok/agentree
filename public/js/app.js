@@ -751,7 +751,6 @@ const palette = createPalette(
 // a čtečce obrazovky stav řekne skrytá oblast role="status". Odlesk vždy dojede aspoň jednou celý,
 // i když obnova skončí dřív.
 const HLAVA = 'M20.8 4.5A3.2 3.2 0 0 1 27.2 4.5A3.2 3.2 0 0 1 20.8 4.5ZM22.25 4.5H25.75V13H22.25ZM17 12H31A12 12 0 0 1 43 24V31A12 12 0 0 1 31 43H17A12 12 0 0 1 5 31V24A12 12 0 0 1 17 12ZM17.5 22A2.5 2.5 0 0 0 15 24.5V29.5A2.5 2.5 0 0 0 17.5 32A2.5 2.5 0 0 0 20 29.5V24.5A2.5 2.5 0 0 0 17.5 22ZM30.5 22A2.5 2.5 0 0 0 28 24.5V29.5A2.5 2.5 0 0 0 30.5 32A2.5 2.5 0 0 0 33 29.5V24.5A2.5 2.5 0 0 0 30.5 22Z';
-const ODLESK_MS = 1800;
 export function souhrnObnovy({ zdroje = 0, nove = 0, zmenene = 0, ucty = false } = {}) {
   const casti = [];
   if (nove) casti.push(tr('nové konverzace: {0}', nove));
@@ -816,12 +815,14 @@ function spustObnovu(button, { hned = false } = {}) {
     finish() {
       if (cleaned) return Promise.resolve();
       cleaned = true;
-      // Odlesk vždy dojede aspoň jednou celý, i když obnova skončí dřív.
-      const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
+      // Závoj zmizí hned, jak je hotovo – žádné čekání na dojetí animace (vlastník 12. 11. 2026:
+      // obnova nesmí zdržovat). Jen velmi rychlá obnova drží závoj aspoň 250 ms, ať neproblikne.
+      const zbyva = Math.max(0, 250 - (performance.now() - start));
       return new Promise((hotovo) => setTimeout(() => {
+        zavoj.classList.add('is-odchod');
         zavoj.classList.remove('is-on', 'is-hned');
         delete document.documentElement.dataset.obnova;
-        setTimeout(() => zavoj.remove(), 650);
+        setTimeout(() => zavoj.remove(), 220);
         button?.classList.remove('is-refreshing');
         button?.removeAttribute('aria-busy');
         hotovo();

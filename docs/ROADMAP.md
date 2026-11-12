@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.97 Preview:** obnova řekne, co našla, a ověří plány; účet bez výzvy k ručnímu načtení fotky z Googlu.
+**Kandidát v0.46.98 Preview:** obnova do 1 s; žádné dotazy macOS na Stažené soubory, Dokumenty ani Plochu.
+
+**v0.46.97 Preview (zveřejněno 12. 11. 2026, build 43316255409, 8 příloh se SHA-256 ověřením):** obnova řekne, co našla, a ověří plány; účet bez výzvy k ručnímu načtení fotky z Googlu.
 
 **v0.46.96 Preview (zveřejněno 11. 11. 2026, build 43091352839, 8 příloh se SHA-256 ověřením):** ruční obnova se zřetelným jednobarevným překryvem (indigo, 50 %).
 

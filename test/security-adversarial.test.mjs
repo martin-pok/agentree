@@ -65,3 +65,15 @@ test('tělo nad 1 MB se odmítne u vstupu i u akce, která tělo nečte', async 
     await srv.close();
   }
 });
+
+test('na pozadí se nesahá do soukromých složek macOS (Stažené soubory, Dokumenty, iCloud…)', async () => {
+  const { soukromaSlozkaMacu } = await import('../src/platform.js');
+  const { vetevSlozky } = await import('../src/bezici-agenti.js');
+  const home = '/Users/qa';
+  for (const cesta of ['/Users/qa/Downloads', '/Users/qa/Downloads/projekt', '/Users/qa/Documents/x', '/Users/qa/Desktop/a/b', '/Users/qa/Library/Mobile Documents/com~apple~CloudDocs/p', '/Users/qa/Pictures/x', '/Volumes/USB/projekt']) {
+    assert.equal(soukromaSlozkaMacu(cesta, home, 'macos'), true, cesta);
+    assert.equal(vetevSlozky(cesta, Date.now(), { home, system: 'macos' }), '', `${cesta}: bez čtení .git`);
+  }
+  for (const cesta of ['/Users/qa/Projekty/web', '/Users/qa/code', '/Users/qa/DownloadsArchiv']) assert.equal(soukromaSlozkaMacu(cesta, home, 'macos'), false, cesta);
+  assert.equal(soukromaSlozkaMacu('/Users/qa/Downloads/x', home, 'linux'), false, 'jen macOS');
+});

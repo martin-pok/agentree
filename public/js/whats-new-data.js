@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.98', date: '2026-11-12', title: 'Rychlá obnova, žádné dotazy',
+    items: [
+      'Obnova je hotová za necelou sekundu – dřív trvala skoro tři.',
+      'Agenteeq se už sám od sebe neptá na přístup ke Staženým souborům, Dokumentům ani Ploše.',
+    ],
+    en: {
+      title: 'Fast refresh, no prompts',
+      items: [
+        'Refresh finishes in under a second – it used to take almost three.',
+        'Agenteeq no longer asks on its own for access to your Downloads, Documents or Desktop.',
+      ],
+    },
+  },
+  {
     version: '0.46.97', date: '2026-11-11', title: 'Obnova řekne, co našla',
     items: [
       'Obnova teď aplikaci opravdu načte znovu, ověří i plány účtů a pak řekne, co se změnilo – rozepsaný text zůstane.',

@@ -3052,6 +3052,7 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
    bílá hlava robota uprostřed vystoupí na jakémkoli pozadí. Plynule nabíhá i mizí. */
 .obnova-zavoj.is-on { opacity: 1; }
 .obnova-zavoj.is-hned { transition: none; }
+.obnova-zavoj.is-odchod, .obnova-zavoj.is-odchod .obnova-hlava { transition-duration: .2s; }
 .obnova-zavoj.is-hned .obnova-hlava { transition: none; }
 /* Než se po přenačtení vykreslí závoj s hlavou, kryje stránku stejná barva (appearance-boot.js). */
 html[data-obnova] body::after { content: ''; position: fixed; inset: 0; z-index: 59; background: rgba(98, 96, 216, .5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); pointer-events: auto; cursor: progress; }

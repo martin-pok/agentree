@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.98 – 2026-11-12 · Rychlá obnova, žádné dotazy na soukromé složky
+
+- **Obnova za necelou sekundu:** změřeno od kliknutí po zmizení závoje na 700 konverzacích (358 MB) – dřív 2,9 s, teď 0,9 s. Závoj už nečeká, až dojede animace odlesku (až 1,8 s), a mizí za 0,2 s místo 0,65 s. Server čeká na zdroje a ověření účtů nejvýš 1,5 s; pomalé kroky (`claude auth status`, síť, Klíčenka, Codex) doběhnou na pozadí a výsledek přijde živě.
+- **Žádné dotazy na Stažené soubory:** když na Macu běžel agent ve složce uvnitř Stažených souborů, Dokumentů, na Ploše, v iCloud Drive nebo na externím disku, Agenteeq si na pozadí četl jeho větev gitu (`.git/HEAD`) – a macOS se zeptal na přístup, aniž bys cokoli otevřel. Do soukromých složek macOS teď Agenteeq sám od sebe nesahá; větev se u takového agenta jen neukáže.
+
 ## 0.46.97 – 2026-11-11 · Obnova řekne, co našla
 
 - **Obnova je skutečné přenačtení:** tlačítko obnovy nejdřív nechá server znovu projít všechny zdroje (Claude Code, Codex, Cursor, Claude Desktop, rozšíření…) a ověřit účty a plány, pak celou aplikaci opravdu načte znovu – stránku, skripty, styly i data. Závoj v barvě značky drží přes celé přenačtení, rozepsaný text a místo na stránce se vrátí a na konci přijde souhrn: „Aktualizováno · nové konverzace: 2 · změněné: 1 · účty a plány aktualizované“, nebo „Vše je aktuální · zkontrolováno zdrojů: 14“. Dřív se jen tiše přepsala čísla a obnova působila jako atrapa.

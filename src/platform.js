@@ -458,6 +458,20 @@ export function appInstalled(names, home, { fileExists = (p) => fs.existsSync(p)
 const CHRANENE_KORENY = ['Desktop', 'Documents', 'Downloads'];
 const CHRANENE_CELE = ['Library', 'Pictures', 'Movies', 'Music'];
 
+// Složky, do kterých macOS pouští aplikaci až po dotazu „…chce přistupovat k souborům ve složce
+// Stažené soubory“ (TCC). Agenteeq do nich sám od sebe, na pozadí, nikdy nesahá – dotaz by přišel
+// bez toho, aby uživatel cokoli udělal, a aplikace by působila nedůvěryhodně (vlastník 12. 11. 2026).
+// Platí jen pro čtení na pozadí (větev gitu u běžícího procesu); co uživatel otevře sám, projde.
+const SOUKROME_SLOZKY = ['Desktop', 'Documents', 'Downloads', 'Pictures', 'Movies', 'Music', 'Library/Mobile Documents', 'Library/CloudStorage'];
+export function soukromaSlozkaMacu(cwd, home, system = SYSTEM) {
+  const p = path.posix;
+  if (system !== 'macos' || typeof cwd !== 'string' || !p.isAbsolute(cwd) || !home) return false;
+  const c = p.resolve(cwd);
+  const h = p.resolve(home);
+  if (c.startsWith('/Volumes/')) return true; // externí a síťové disky mají vlastní dotaz
+  return SOUKROME_SLOZKY.some((d) => c === p.join(h, d) || c.startsWith(`${p.join(h, d)}/`));
+}
+
 export function slozkaSDotazySystemu(cwd, home, system = SYSTEM) {
   // Cesty macOS: vždy POSIX, i když se pravidlo ověřuje na jiném systému.
   const p = path.posix;

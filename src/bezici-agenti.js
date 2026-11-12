@@ -15,6 +15,7 @@ import path from 'node:path';
 import { touch } from './model.js';
 import { lastSegment } from './util.js';
 import { ui } from './texty.js';
+import { soukromaSlozkaMacu } from './platform.js';
 
 // Nástroje, které se hledají po procesech. `domov` = proměnná, podle které zapisují jinam.
 export const AGENTI = {
@@ -88,8 +89,11 @@ export function nesparovane(procesy, sessions) {
 // Větev gitu ve složce procesu – podle čeho se v agentech orientuješ, když přepis ještě není.
 // Čte se jen .git/HEAD (u pracovní kopie přes `gitdir:`); nic se nespouští. Výsledek se drží 30 s.
 const VETVE = new Map();
-export function vetevSlozky(cwd, now = Date.now()) {
+export function vetevSlozky(cwd, now = Date.now(), { home = os.homedir(), system } = {}) {
   if (!cwd || !path.isAbsolute(cwd)) return '';
+  // Do soukromých složek macOS (Stažené soubory, Dokumenty, Plocha, iCloud…) se na pozadí nesahá:
+  // čtení .git/HEAD by vyvolalo systémový dotaz na přístup, aniž by uživatel cokoli otevřel.
+  if (soukromaSlozkaMacu(cwd, home, system)) return '';
   const drive = VETVE.get(cwd);
   if (drive && now - drive.at < 30e3) return drive.vetev;
   let vetev = '';
