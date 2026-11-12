@@ -221,7 +221,6 @@ export default {
     "Více": "More",
     "Hledat": "Search",
     "Obnovit aktuální data": "Refresh current data",
-    "ruční obnova": "manual refresh",
     "okno znovu v popředí": "window returned to the foreground",
     "ověření aktuálnosti": "freshness check",
     "Poslední upozornění": "Recent alerts",

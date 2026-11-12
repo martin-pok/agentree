@@ -30,9 +30,12 @@ try {
   await page.waitForFunction(() => document.querySelector('#conn-pill .dot--live'), null, { timeout: 10000 });
 
   let requests = 0;
+  let nacteni = 1;
+  page.on('load', () => { nacteni += 1; });
   await page.route('**/api/connectors/rescan', async (route) => {
     requests += 1;
-    await new Promise((resolve) => setTimeout(resolve, 180));
+    // Server „pracuje“ 1,5 s: kontroly závoje proběhnou před skutečným přenačtením stránky.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
     await route.continue();
   });
   const response = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
@@ -56,7 +59,8 @@ try {
   assert.equal((await response).status(), 200);
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   await page.waitForFunction(() => !document.querySelector('.obnova-zavoj'));
-  // Po obnově přijde souhrn: co se změnilo, nebo že je vše aktuální.
+  // Obnova je skutečné přenačtení stránky; po něm přijde souhrn: co se změnilo, nebo že je vše aktuální.
+  assert.ok(nacteni >= 2, 'stránka se po obnově opravdu načetla znovu');
   await page.waitForFunction(() => /Vše je aktuální|Aktualizováno/.test(document.body.innerText));
   assert.deepEqual(await tlacitko.evaluate((el) => [el.offsetWidth, el.offsetHeight]), rozmer, 'tlačítko nemění rozměr');
   assert.equal(requests, 1, 'opakované kliknutí nesmí spustit souběžnou obnovu');

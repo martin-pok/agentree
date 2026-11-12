@@ -543,9 +543,9 @@ test('filtry na Agentech drží jednu mřížku: popisky ve sloupci, řádky 56 
 test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje omezený pohyb', async () => {
   const app = await zdroj('public/js/app.js');
   const css = await zdroj('public/styles.css');
-  assert.match(app, /function spustObnovu\(button\)/);
-  assert.match(app, /button\.setAttribute\('aria-busy', 'true'\)/);
-  assert.match(app, /button\.classList\.add\('is-refreshing'\)/);
+  assert.match(app, /function spustObnovu\(button, \{ hned = false \} = \{\}\)/);
+  assert.match(app, /button\?\.setAttribute\('aria-busy', 'true'\)/);
+  assert.match(app, /button\?\.classList\.add\('is-refreshing'\)/);
   assert.match(app, /button\.getAttribute\('aria-busy'\) === 'true'/, 'druhý refresh se nesmí spustit souběžně');
   assert.doesNotMatch(app.slice(app.indexOf("data-action === 'rescan'"), app.indexOf("data-action === 'rescan'") + 900), /button\.disabled\s*=/, 'stav obnovy nesmí změnit geometrii ani fokus tlačítka');
   // Obnova se týká celé aplikace (vlastník, 18. 10. 2026): závoj přes rozhraní s bílou hlavou robota
@@ -555,7 +555,8 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.doesNotMatch(app.slice(app.indexOf('function spustObnovu'), app.indexOf("document.addEventListener('click'", app.indexOf('function spustObnovu'))), /refresh-status|track/, 'žádný pruh ani karta');
   assert.doesNotMatch(css, /#refresh-app\[aria-busy='true'\] \{ cursor: progress/);
   assert.match(css, /\.obnova-zavoj \{[^}]*pointer-events: auto; cursor: progress;/, 'po dobu obnovy závoj zachytí myš');
-  assert.match(app, /toast\(souhrnObnovy\(vysledek\)/, 'obnova řekne, co našla');
+  assert.match(app, /toast\(souhrnObnovy\(zaznam\.vysledek/, 'obnova řekne, co našla');
+  assert.match(app, /ulozPredObnovou\(vysledek\);\n    location\.reload\(\);/, 'obnova je skutečné přenačtení aplikace (vlastník 11. 11. 2026)');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  \.oz-lesk \{ animation: none; opacity: 0; \}/);
 });
 
