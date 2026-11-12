@@ -3051,6 +3051,11 @@ body.is-dragging-card { user-select: none; -webkit-user-select: none; cursor: gr
    odstín indiga značky (#6260d8) s krytím 50 %, žádný přechod. Obsah pod ním se jemně rozostří,
    bílá hlava robota uprostřed vystoupí na jakémkoli pozadí. Plynule nabíhá i mizí. */
 .obnova-zavoj.is-on { opacity: 1; }
+.obnova-zavoj.is-hned { transition: none; }
+.obnova-zavoj.is-hned .obnova-hlava { transition: none; }
+/* Než se po přenačtení vykreslí závoj s hlavou, kryje stránku stejná barva (appearance-boot.js). */
+html[data-obnova] body::after { content: ''; position: fixed; inset: 0; z-index: 59; background: rgba(98, 96, 216, .5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); pointer-events: auto; cursor: progress; }
+html[data-obnova] body:has(> .obnova-zavoj)::after { display: none; }
 .obnova-hlava { grid-area: 1 / 1; position: relative; z-index: 1; width: 96px; height: 96px; overflow: visible; filter: drop-shadow(0 10px 30px rgba(40, 24, 140, .5)); opacity: 0; transform: scale(.86); transition: transform var(--motion-calm) var(--ease-settle), opacity var(--motion-calm) var(--ease-settle); }
 .obnova-zavoj.is-on .obnova-hlava { opacity: 1; transform: scale(1); animation: oz-dech 2.4s ease-in-out var(--motion-calm) infinite; }
 @keyframes oz-dech { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }

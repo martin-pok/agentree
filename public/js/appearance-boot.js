@@ -15,4 +15,9 @@
   document.documentElement.dataset.look = look;
   document.documentElement.dataset.appearance = preference;
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  // Ruční obnova přenačítá stránku: závoj musí svítit už od prvního vykreslení, jinak by aplikace
+  // mezi starou a novou stránkou probleskla (public/js/app.js#navazNaObnovu).
+  try {
+    if (sessionStorage.getItem('agenteeq.obnova')) document.documentElement.dataset.obnova = '1';
+  } catch { /* bez úložiště bez závoje při startu */ }
 })();

@@ -759,19 +759,54 @@ export function souhrnObnovy({ zdroje = 0, nove = 0, zmenene = 0, ucty = false }
   if (ucty) casti.push(tr('účty a plány aktualizované'));
   return casti.length ? `${tr('Aktualizováno')} · ${casti.join(' · ')}` : tr('Vše je aktuální · zkontrolováno zdrojů: {0}', zdroje);
 }
+const KLIC_OBNOVY = 'agenteeq.obnova';
+function ulozPredObnovou(vysledek) {
+  const koncepty = [...document.querySelectorAll('textarea[id], input[id]:not([type="password"]):not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"])')]
+    .filter((el) => el.value && el.value !== el.defaultValue)
+    .slice(0, 20)
+    .map((el) => ({ id: el.id, value: String(el.value).slice(0, 20000) }));
+  try {
+    sessionStorage.setItem(KLIC_OBNOVY, JSON.stringify({ vysledek, hash: location.hash, y: Math.round(scrollY), koncepty, at: Date.now() }));
+  } catch { /* bez úložiště se jen neobnoví rozepsaný text */ }
+}
+// Po přenačtení: závoj svítí hned, po prvním vykreslení se vrátí rozepsaný text a místo na stránce,
+// závoj zmizí a přijde souhrn. Záznam starší než minuta se ignoruje (zavřené a znovu otevřené okno).
+function navazNaObnovu() {
+  let zaznam = null;
+  try {
+    zaznam = JSON.parse(sessionStorage.getItem(KLIC_OBNOVY) || 'null');
+    sessionStorage.removeItem(KLIC_OBNOVY);
+  } catch { zaznam = null; }
+  if (!zaznam || !(Date.now() - Number(zaznam.at) < 60e3)) { delete document.documentElement.dataset.obnova; return null; }
+  const obnova = spustObnovu(document.getElementById('refresh-app'), { hned: true });
+  return () => {
+    requestAnimationFrame(() => requestAnimationFrame(async () => {
+      for (const { id, value } of Array.isArray(zaznam.koncepty) ? zaznam.koncepty : []) {
+        const el = typeof id === 'string' ? document.getElementById(id) : null;
+        if (el && 'value' in el && !el.value) { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+      if (zaznam.hash === location.hash && Number(zaznam.y) > 0) scrollTo({ top: Number(zaznam.y), behavior: 'instant' });
+      await obnova.finish();
+      toast(souhrnObnovy(zaznam.vysledek || {}), { tone: zaznam.vysledek?.nove || zaznam.vysledek?.zmenene || zaznam.vysledek?.ucty ? 'action' : 'ink' });
+    }));
+  };
+}
+const dokonciObnovu = navazNaObnovu();
 // Ruční obnova se týká celé aplikace, a tak ji ukazuje celá aplikace: přes rozhraní se položí
 // závoj v barvě značky a uprostřed bílá hlava robota s přejíždějícím odleskem – stejný motiv jako
 // načítací scéna. Po dobu obnovy závoj zachytí myš (kurzor „pracuji“); rozepsaný formulář zůstane.
-function spustObnovu(button) {
+function spustObnovu(button, { hned = false } = {}) {
   const start = performance.now();
-  button.setAttribute('aria-busy', 'true');
-  button.classList.add('is-refreshing');
+  button?.setAttribute('aria-busy', 'true');
+  button?.classList.add('is-refreshing');
   const zavoj = document.createElement('div');
   zavoj.className = 'obnova-zavoj';
   zavoj.setAttribute('role', 'status');
   zavoj.innerHTML = `<svg class="obnova-hlava" viewBox="0 0 48 48" aria-hidden="true" focusable="false"><defs><clipPath id="oz-tvar"><path d="${HLAVA}"/></clipPath><linearGradient id="oz-lesk" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#c9caff" stop-opacity="0"/><stop offset=".5" stop-color="#8f91ff"/><stop offset="1" stop-color="#c9caff" stop-opacity="0"/></linearGradient></defs><path class="oz-zaklad" d="${HLAVA}"/><g clip-path="url(#oz-tvar)"><rect class="oz-lesk" x="-24" y="-12" width="22" height="72" fill="url(#oz-lesk)" transform="rotate(16 -13 24)"/></g></svg><span class="sr-only">${esc(tr('Obnovuji aktuální data'))}</span>`;
+  // Po přenačtení stránky závoj už svítí (navazuje na předchozí stránku), jinak plynule naběhne.
+  if (hned) zavoj.classList.add('is-on', 'is-hned');
   document.body.append(zavoj);
-  requestAnimationFrame(() => zavoj.classList.add('is-on'));
+  if (!hned) requestAnimationFrame(() => zavoj.classList.add('is-on'));
   const status = zavoj.querySelector('.sr-only');
   let cleaned = false;
   return {
@@ -784,10 +819,11 @@ function spustObnovu(button) {
       // Odlesk vždy dojede aspoň jednou celý, i když obnova skončí dřív.
       const zbyva = ODLESK_MS - ((performance.now() - start) % ODLESK_MS);
       return new Promise((hotovo) => setTimeout(() => {
-        zavoj.classList.remove('is-on');
+        zavoj.classList.remove('is-on', 'is-hned');
+        delete document.documentElement.dataset.obnova;
         setTimeout(() => zavoj.remove(), 650);
-        button.classList.remove('is-refreshing');
-        button.removeAttribute('aria-busy');
+        button?.classList.remove('is-refreshing');
+        button?.removeAttribute('aria-busy');
         hotovo();
       }, zbyva < 60 ? 0 : zbyva));
     },
@@ -819,21 +855,20 @@ document.addEventListener('click', async (e) => {
     const button = document.getElementById('refresh-app');
     if (!button || button.getAttribute('aria-busy') === 'true') return;
     const obnova = spustObnovu(button);
-    let vysledek = null;
+    let vysledek;
     try {
-      vysledek = (await api.rescan())?.vysledek || null;
-      // Ruční obnova nesmí shodit rozepsaný formulář ani vrátit stránku nahoru. Stejný čerstvý
-      // snapshot jako po události proudu promítne změněná data přímo do otevřeného rozhraní.
-      obnova.setStage('snapshot');
-      await obnovStav(tr('ruční obnova'), { force: true });
+      // 1) Server znovu projde všechny zdroje, účty a plány a řekne, co se změnilo.
+      vysledek = (await api.rescan())?.vysledek || { zdroje: 0 };
     } catch (err) {
-      toast(err.message, { tone: 'err' });
-      vysledek = null;
-    } finally {
       await obnova.finish();
+      toast(err.message, { tone: 'err' });
+      return;
     }
-    // Obnova řekne, co našla: nové a změněné konverzace, změnu účtů – nebo že je vše aktuální.
-    if (vysledek) toast(souhrnObnovy(vysledek), { tone: vysledek.nove || vysledek.zmenene || vysledek.ucty ? 'action' : 'ink' });
+    // 2) Skutečné přenačtení celé aplikace (stránka, skripty, styly, data) – vlastník 11. 11. 2026:
+    //    obnova musí být opravdová, ne jen přepsání čísel. Rozepsaný text a místo na stránce se
+    //    uloží a po načtení vrátí; závoj zůstane přes celé přenačtení a pak ukáže, co se změnilo.
+    ulozPredObnovou(vysledek);
+    location.reload();
     return;
   }
   const updateAction = e.target.closest('[data-update-action]');
@@ -1126,8 +1161,12 @@ const zalozniNacteni = setTimeout(() => {
 
 let generaceSnimek = 0;
 
+let poObnove = dokonciObnovu;
+// Pojistka: když se stav po přenačtení nenačte (server neodpovídá), závoj nesmí zůstat navždy.
+if (poObnove) setTimeout(() => { if (poObnove) { const hotovo = poObnove; poObnove = null; hotovo(); } }, 12000);
 function prijmiSnimek(snap) {
   applySnapshot(snap);
+  if (poObnove) { const hotovo = poObnove; poObnove = null; hotovo(); }
   window.webkit?.messageHandlers?.agenteeq?.postMessage({ type: 'ready' });
   queued.drain(handle);
 }
