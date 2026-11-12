@@ -4,9 +4,11 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.46.97** — připravované Preview (neveřejné vydání): obnova řekne, co našla (nové a změněné konverzace, účty), a ověří i plány; účet bez výzvy k ručnímu načtení fotky z Googlu.
+> **0.46.98** — připravované Preview (neveřejné vydání): obnova za necelou sekundu místo tří; Agenteeq se na pozadí už neptá na přístup ke Staženým souborům, Dokumentům ani Ploše.
 >
-> **0.46.96** — aktuální [veřejné Preview z 11. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.96): ruční obnova je zřetelná – celou aplikaci překryje barva značky (50 %) s hlavou robota uprostřed. Stable Latest zůstává 0.46.58.
+> **0.46.97** — aktuální [veřejné Preview z 12. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.97): obnova řekne, co našla (nové a změněné konverzace, účty), a ověří i plány; účet bez výzvy k ručnímu načtení fotky z Googlu. Stable Latest zůstává 0.46.58.
+>
+> **0.46.96** — [veřejné Preview z 11. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.96): ruční obnova je zřetelná – celou aplikaci překryje barva značky (50 %) s hlavou robota uprostřed. Stable Latest zůstává 0.46.58.
 >
 > **0.46.95** — [veřejné Preview z 10. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.95): živé vytížení 5 h a týdenního limitu každého účtu Claude ze serveru Anthropicu, i když žádný agent neběží. Stable Latest zůstává 0.46.58.
 >

@@ -32,6 +32,10 @@ Seznam dovedností čte pouze soubory `SKILL.md` z předem určených uživatels
 | Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'`; platí pro export projektu i útraty | `src/csv.js#bunka` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
+## Soukromé složky macOS – 2026-11-12 (0.46.98)
+
+Na pozadí (bez akce uživatele) Agenteeq nesahá do složek chráněných macOS TCC: Stažené soubory, Dokumenty, Plocha, Obrázky, Filmy, Hudba, iCloud Drive (`~/Library/Mobile Documents`, `~/Library/CloudStorage`) ani `/Volumes`. Dřív čtení větve gitu u běžícího procesu (`src/bezici-agenti.js#vetevSlozky`) vyvolalo dotaz „…chce přistupovat ke složce Stažené soubory“. Pravidlo: `src/platform.js#soukromaSlozkaMacu`, test `security-adversarial`.
+
 ## Útočný audit – 2026-11-11 (0.46.97)
 
 Proti běžícímu serveru (stejná sestava jako aplikace, dočasná data) proběhlo 27 útoků; 26 neprošlo hned, jediný nález je opravený:

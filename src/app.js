@@ -578,7 +578,10 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     const pred = otisk();
     const predUcty = JSON.stringify([claudeAccounts.map((a) => [a.id, a.plan]), codexAccounts.map((a) => [a.id, a.plan])]);
     const zdroje = Object.values(connectors);
-    await Promise.allSettled([...zdroje.map((c) => c.scan()), refreshSubscriptions()]);
+    // Obnova nesmí zdržovat: nejvýš 1,5 s se čeká na zdroje i ověření účtů. Co nedoběhne (pomalý
+    // `claude auth status`, síť, Klíčenka), dokončí se na pozadí a přijde živě přes proud.
+    const prace = Promise.allSettled([...zdroje.map((c) => c.scan()), refreshSubscriptions()]);
+    await Promise.race([prace, new Promise((r) => setTimeout(r, 1500))]);
     let nove = 0, zmenene = 0;
     for (const [id, v] of otisk()) {
       if (!pred.has(id)) nove++;
