@@ -316,8 +316,10 @@ test('opening an already populated remote transcript also refreshes a recovered 
     assert.equal(server.app.store.summary(`claude-desktop-code:${sid}`).status, 'failed');
     await connector.sledujDetail(sid);
     assert.ok(server.app.store.get(`claude-desktop-code:${sid}`).transcript.length);
+    // Posun o 9 s od skutečné chvíle prvního načtení, ne od začátku testu: na pomalém Windows trvá
+    // start serveru přes sekundu a posun by pak nepřekročil 8s pojistku (aplikace by správně nečekala).
+    clock = actualNow() + 9000;
     t.mock.method(Date, 'now', () => clock);
-    clock += 9000;
     worker = 'running';
     const response = await fetch(`${server.url}/api/sessions/${encodeURIComponent(`claude-desktop-code:${sid}`)}`);
     const detail = await response.json();
