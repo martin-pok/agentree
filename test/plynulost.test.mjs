@@ -175,3 +175,15 @@ test('obal obrazovky ani stránky nenese :has() – mřížka s pásem jde přes
   assert.match(app, /classList\.toggle\('view--pulz', !!viewEl\.querySelector\(':scope > \.pulse-bar'\)\)/, 'třída view--pulz musí kopírovat podmínku původního :has()');
   assert.match(await zdroj('public/workbench.css'), /\.view\.view--pulz \{ display: grid;/);
 });
+
+// #401: u 50 agentů stálo porovnání všech karet uzel po uzlu ~50 ms hlavního vlákna na každou živou
+// událost (dlouhá úloha pokaždé, 100–120 ms). Karta s klíčem, jejíž HTML se od minulého sloučení
+// nezměnilo, se teď přeskočí celá; změněná i nově vložená si zapamatuje, z čeho vznikla.
+test('slučování přeskočí nezměněnou kartu s klíčem a pamatuje si, z jakého HTML vznikla', async () => {
+  const ui = await zdroj('public/js/ui.js');
+  const deti = ui.slice(ui.indexOf('function sloucitDeti'), ui.indexOf('function sloucitUzel'));
+  assert.match(deti, /const html = k != null \? n\.outerHTML : null;/);
+  assert.match(deti, /if \(html == null \|\| shoda\._sloucenoZ !== html\) sloucitUzel\(shoda, n\);/, 'nezměněná karta se neprochází');
+  assert.match(deti, /if \(html != null\) shoda\._sloucenoZ = html;/, 'sloučená karta si zapamatuje nové HTML');
+  assert.match(deti, /a\.insertBefore\(n, kurzor\);\s*if \(html != null\) n\._sloucenoZ = html;/, 'nová karta si zapamatuje své HTML');
+});
