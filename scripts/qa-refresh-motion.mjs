@@ -39,6 +39,10 @@ try {
     await route.continue();
   });
   const response = page.waitForResponse((r) => r.url().endsWith('/api/connectors/rescan') && r.request().method() === 'POST');
+  // Obnova končí přenačtením stránky. Na nové stránce je chvíle, kdy tlačítko ještě nemá aria-busy
+  // a závoj ještě nevznikl – čekání jen na tyto podmínky pak prošlo dřív, než přišel `load`
+  // (CI #410). Proto se na skutečné načtení nové stránky čeká výslovně.
+  const prenacteno = page.waitForEvent('load', { timeout: 20000 });
   await page.locator('#refresh-app').click();
   // Myš teď zachytí závoj; druhé kliknutí se proto pošle přímo tlačítku – i tak nesmí spustit druhou obnovu.
   await page.locator('#refresh-app').dispatchEvent('click');
@@ -57,6 +61,7 @@ try {
   assert.equal(await page.locator('#refresh-app').isDisabled(), false, 'tlačítko obnovy nesmí při práci změnit velikost ani přijít o fokus');
   await page.screenshot({ path: `${out}/refresh-motion.png` });
   assert.equal((await response).status(), 200);
+  await prenacteno;
   await page.waitForFunction(() => !document.querySelector('#refresh-app')?.hasAttribute('aria-busy'));
   await page.waitForFunction(() => !document.querySelector('.obnova-zavoj'));
   // Obnova je skutečné přenačtení stránky; po něm přijde souhrn: co se změnilo, nebo že je vše aktuální.
