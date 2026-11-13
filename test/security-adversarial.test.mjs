@@ -55,12 +55,25 @@ test('tělo nad 1 MB se odmítne u vstupu i u akce, která tělo nečte', async 
   const srv = await start();
   try {
     const { port } = new URL(srv.url);
-    const status = await new Promise((resolve) => {
-      const r = http.request({ host: '127.0.0.1', port, method: 'POST', path: '/api/connectors/rescan', headers: { 'X-Agenteeq': '1', 'Content-Type': 'application/json', 'Content-Length': String(2_000_000) } }, (res) => { res.resume(); resolve(res.statusCode); });
-      r.on('error', () => resolve('ERR'));
-      r.end('x'.repeat(2_000_000));
+    // Klient posílá po kouscích s pauzami (jako pomalá síť nebo velký obrázek). Musí dostat čitelné
+    // 413, ne přerušené spojení: dřív server zavřel dřív, než klient dopsal, a na macOS přišlo jen
+    // ECONNRESET (CI na main, nahrání loga projektu). Proto tu „ERR“ už není přijatelný výsledek.
+    const poslat = (delka, kusy) => new Promise((resolve) => {
+      const r = http.request({ host: '127.0.0.1', port, method: 'POST', path: '/api/connectors/rescan', headers: { 'X-Agenteeq': '1', 'Content-Type': 'application/json', 'Content-Length': String(delka) } }, (res) => { res.resume(); resolve(res.statusCode); });
+      r.on('error', (e) => resolve(`ERR ${e.code}`));
+      if (!kusy) { r.flushHeaders(); return; }
+      const kus = Buffer.alloc(Math.ceil(delka / kusy), 120);
+      let i = 0;
+      const dalsi = () => { if (i++ < kusy) { r.write(kus.subarray(0, Math.min(kus.length, delka - (i - 1) * kus.length))); setTimeout(dalsi, 5); } else r.end(); };
+      dalsi();
     });
-    assert.ok(status === 413 || status === 'ERR', `čekal jsem 413, přišlo ${status}`);
+    assert.equal(await poslat(2_000_000, 40), 413, 'pomalu posílané velké tělo dostane 413');
+    assert.equal(await poslat(1_600_000, 1), 413, 'najednou poslané velké tělo dostane 413');
+    // Obří ohlášené tělo se nedočítá: odpověď nebo konec spojení hned, bez čekání na data.
+    const t0 = Date.now();
+    const obri = await poslat(500_000_000, 0);
+    assert.ok(obri === 413 || String(obri).startsWith('ERR'), `obří tělo: ${obri}`);
+    assert.ok(Date.now() - t0 < 3000, 'obří tělo server utne hned');
   } finally {
     await srv.close();
   }

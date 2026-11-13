@@ -278,6 +278,24 @@ export function createHttpServer(app, existingServer = null) {
 
   /* ---------- Pomocníci ---------- */
 
+  // Odmítnutí příliš velkého těla (413). Odpověď odejde až po dočtení těla: kdyby server zavřel
+  // spojení, zatímco klient ještě posílá, zbytek dat v jádře shodí spojení přes RST a klient
+  // (na macOS spolehlivě) místo „příliš velký“ dostane jen ECONNRESET. Obří nebo vlečené tělo
+  // se ale nedočítá – nad 16 MB nebo po 10 s se spojení utne, ať ho nikdo nedrží otevřené.
+  function odmitniVelke(req, res) {
+    const odpovez = () => {
+      if (res.headersSent) return;
+      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8', Connection: 'close' }).end(ui('Příliš velký požadavek.'));
+    };
+    if (Number(req.headers['content-length']) > 16_000_000) { odpovez(); req.destroy(); return; }
+    let precteno = 0;
+    const pojistka = setTimeout(() => { odpovez(); req.destroy(); }, 10_000);
+    pojistka.unref?.();
+    req.on('data', (c) => { precteno += c.length; if (precteno > 16_000_000) { clearTimeout(pojistka); odpovez(); req.destroy(); } });
+    req.on('end', () => { clearTimeout(pojistka); odpovez(); });
+    req.on('error', () => clearTimeout(pojistka));
+  }
+
   async function readBody(req) {
     const chunks = [];
     let size = 0;
@@ -1124,8 +1142,7 @@ export function createHttpServer(app, existingServer = null) {
     // Tělo nad 1 MB se odmítne hned u vstupu, i u akcí, které tělo nečtou (stejný strop jako
     // readBody). Nic se nezpracuje a útočník neudrží otevřené spojení se stovkami megabajtů.
     if (Number(req.headers['content-length']) > 1_000_000) {
-      res.writeHead(413, { 'Content-Type': 'text/plain; charset=utf-8', Connection: 'close' }).end(ui('Příliš velký požadavek.'));
-      req.resume();
+      odmitniVelke(req, res);
       return;
     }
     const url = new URL(req.url, 'http://127.0.0.1');
