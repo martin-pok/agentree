@@ -188,12 +188,18 @@ function sloucitDeti(a, b) {
     } else if (kurzor && klic(kurzor) == null && kurzor.nodeType === n.nodeType && kurzor.nodeName === n.nodeName) {
       shoda = kurzor;
     }
+    // Klíčovaný řádek (karta agenta) si pamatuje HTML, ze kterého byl naposledy sloučen. Když se
+    // nezměnilo, celé porovnávání uzel po uzlu se přeskočí: u 50 agentů s roboty v SVG to při každé
+    // živé události stálo ~50 ms hlavního vlákna, přestože se změnila jediná karta (#401).
+    const html = k != null ? n.outerHTML : null;
     if (shoda) {
       if (shoda === kurzor) kurzor = kurzor.nextSibling;
       else a.insertBefore(shoda, kurzor);
-      sloucitUzel(shoda, n);
+      if (html == null || shoda._sloucenoZ !== html) sloucitUzel(shoda, n);
+      if (html != null) shoda._sloucenoZ = html;
     } else {
       a.insertBefore(n, kurzor);
+      if (html != null) n._sloucenoZ = html;
     }
     n = dalsi;
   }
