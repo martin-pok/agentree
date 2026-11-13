@@ -14,7 +14,19 @@ const icons = [
   ['public/icons/icon-192.png', 192],
   ['public/icons/icon-512.png', 512],
   ['public/icons/apple-touch-icon.png', 180],
+  // Favicon webu (a ikona projektu na Vercelu) je ICO s jediným PNG 32×32 uvnitř. Porovnává se
+  // vložený PNG; při --write se nepřepisuje (ICO obal skládá jiný nástroj), jen ověřuje.
+  ['site/favicon.ico', 32, { ico: true, tolerance: 3 }],
 ];
+
+// PNG uložený v ICO (jediný obrázek, viz test/favicon-brand.test.mjs).
+function pngZIco(buf) {
+  if (buf.readUInt16LE(2) !== 1 || buf.readUInt16LE(4) !== 1) throw new Error('favicon.ico musí mít právě jeden obrázek');
+  const velikost = buf.readUInt32LE(14), posun = buf.readUInt32LE(18);
+  const png = buf.subarray(posun, posun + velikost);
+  if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('favicon.ico nenese PNG');
+  return png;
+}
 
 const browser = await chromium.launch({
   ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || process.env.CHROME
@@ -23,7 +35,7 @@ const browser = await chromium.launch({
   headless: true,
 });
 try {
-  for (const [name, size] of icons) {
+  for (const [name, size, volby = {}] of icons) {
     const page = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 });
     try {
       await page.goto(pathToFileURL(source).href, { waitUntil: 'load' });
@@ -37,12 +49,13 @@ try {
       }, size);
       const generated = await page.screenshot({ omitBackground: true, animations: 'disabled' });
       const output = path.join(root, name);
+      if (write && volby.ico) { console.log(`Skipped ${name} (ICO se jen ověřuje)`); continue; }
       if (write) {
         await fs.writeFile(output, generated);
         console.log(`Updated ${name} from canonical SVG (${size} px)`);
         continue;
       }
-      const tracked = await fs.readFile(output);
+      const tracked = volby.ico ? pngZIco(await fs.readFile(output)) : await fs.readFile(output);
       const delta = await page.evaluate(async ({ a, b, size: expected }) => {
         async function pixels(base64) {
           const image = new Image();
@@ -63,7 +76,7 @@ try {
         for (let i = 0; i < original.data.length; i++) sum += Math.abs(original.data[i] - current.data[i]);
         return sum / original.data.length;
       }, { a: tracked.toString('base64'), b: generated.toString('base64'), size });
-      if (delta > 2) throw new Error(`${name} differs from canonical Dock SVG (${delta.toFixed(2)} mean RGBA delta)`);
+      if (delta > (volby.tolerance ?? 2)) throw new Error(`${name} differs from canonical Dock SVG (${delta.toFixed(2)} mean RGBA delta)`);
       console.log(`Verified ${name} against canonical SVG (${delta.toFixed(2)} mean RGBA delta)`);
     } finally { await page.close(); }
   }
