@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.3', date: '2026-11-14', title: 'Prohlídka aplikace',
+    items: ['Krátká prohlídka ti ukáže hlavní místa přímo v aplikaci. Znovu ji spustíš v Pomocníkovi nebo v Nastavení → Nápověda.'],
+    en: { title: 'App tour', items: ['A short tour shows you the main places right in the app. Run it again from the Assistant or Settings → Help.'] },
+  },
+  {
     version: '0.47.2', date: '2026-11-14', title: 'Pomocník bez zátěže',
     items: ['Pomocník odpovídá okamžitě a nikdy nespouští jazykový model, takže počítač nezatěžuje.'],
     en: { title: 'A lightweight Assistant', items: ['The Assistant answers instantly and never runs a language model, so it doesn’t load your computer.'] },

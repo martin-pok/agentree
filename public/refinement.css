@@ -1066,3 +1066,25 @@ img[data-media].is-nacteno { opacity: 1; }
 .provider-account-akce { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; }
 .provider-account-akce span { color: var(--ink-2); font-size: 13px; line-height: 1.5; }
 .privacy-list li > .btn { justify-self: start; margin-top: 8px; }
+
+/* Prohlídka aplikace (public/js/prohlidka.js): ztmavení s „oknem“ nad skutečným místem v aplikaci
+   a karta s krokem. Světlo se plynule přesouvá mezi kroky; se sníženým pohybem bez animace. */
+.prohl { position: fixed; inset: 0; z-index: 80; opacity: 0; transition: opacity var(--motion-calm) var(--ease-settle); }
+.prohl.je-videt { opacity: 1; }
+.prohl-svetlo { position: fixed; border-radius: var(--r-lg); box-shadow: 0 0 0 9999px rgba(8, 8, 18, .62), 0 0 0 2px rgba(143, 141, 255, .9), 0 0 32px 4px rgba(98, 96, 216, .45); pointer-events: none;
+  transition: left .38s var(--ease-settle), top .38s var(--ease-settle), width .38s var(--ease-settle), height .38s var(--ease-settle); }
+.prohl-karta { position: fixed; width: min(360px, calc(100vw - 32px)); padding: 20px 20px 16px; border-radius: var(--r-lg); background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line), 0 24px 64px rgba(0, 0, 0, .4);
+  transition: top .38s var(--ease-settle), left .38s var(--ease-settle); }
+.prohl-karta.je-dole { left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); top: auto; width: auto; }
+.prohl-karta.je-nahore { left: 16px; right: 16px; top: calc(16px + env(safe-area-inset-top)); bottom: auto; width: auto; }
+.prohl-krok { margin: 0 0 6px; font-size: 12px; color: var(--ink-2); }
+.prohl-karta h2 { margin: 0 0 6px; font-size: 18px; font-weight: 500; }
+.prohl-karta p#prohl-text { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+.prohl-paticka { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.prohl-tecky { display: flex; gap: 6px; }
+.prohl-tecky i { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+.prohl-tecky i.je-hotovo { background: color-mix(in srgb, #6260d8 55%, var(--line)); }
+.prohl-tecky i.je-ted { width: 18px; border-radius: var(--r-full); background: #6260d8; }
+.prohl-tlacitka { display: flex; gap: 8px; margin-left: auto; }
+@media (prefers-reduced-motion: reduce) { .prohl, .prohl-svetlo, .prohl-karta { transition: none; } }
+.pm-navrh--prohlidka { font-weight: 500; box-shadow: inset 0 0 0 1px color-mix(in srgb, #6260d8 60%, transparent); }

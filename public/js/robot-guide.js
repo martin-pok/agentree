@@ -196,8 +196,8 @@ function sestav() {
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
-      <div class="pm-log" role="log" aria-live="polite"></div>
-      <div class="pm-navrhy">${NAVRHY().map((n) => `<button type="button" class="pm-navrh" data-navrh="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+      <div class="pm-log" role="log" aria-live="polite" tabindex="0" aria-label="${tr('Rozhovor s pomocníkem')}"></div>
+      <div class="pm-navrhy"><button type="button" class="pm-navrh pm-navrh--prohlidka" data-prohlidka data-pm="zavrit">${tr('Provést aplikací')}</button>${NAVRHY().map((n) => `<button type="button" class="pm-navrh" data-navrh="${esc(n)}">${esc(n)}</button>`).join('')}</div>
       <form class="pm-pole">
         <label class="sr-only" for="pm-vstup">${tr('Zeptej se pomocníka')}</label>
         <textarea id="pm-vstup" class="pm-vstup" rows="1" maxlength="500" placeholder="${tr('S čím ti můžu pomoct?')}"></textarea>

@@ -294,6 +294,7 @@ function helpCard() {
     ${head(ICON.info, tr('Nápověda a zkratky'), '', '', tr('Novinky, zkratky a pomoc, když něco nefunguje.'))}
     <dl class="shortcuts">${zkratky.map(([k, popis]) => `<div><dt><kbd>${esc(k)}</kbd></dt><dd>${popis}</dd></div>`).join('')}</dl>
     <div class="set-actions">
+      <button class="btn btn--sm btn--primary" type="button" data-prohlidka>${ICON.spark}${tr('Prohlídka aplikace')}</button>
       <button class="btn btn--sm" type="button" data-whats-new>${ICON.spark}${tr('Co je nového')}</button>
       <a class="btn btn--sm" href="https://github.com/martin-pok/agentree/issues/new" target="_blank" rel="noopener">${ICON.external}${tr('Nahlásit chybu')}</a>
       <a class="btn btn--sm" href="${ZASADY_SOUKROMI}" target="_blank" rel="noopener">${ICON.shield}${tr('Zásady ochrany soukromí')}</a>

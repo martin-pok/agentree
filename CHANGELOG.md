@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.47.3 – 2026-11-14 · Prohlídka aplikace
+
+- **Prohlídka v sedmi krocích:** místo AI pomocníka, který zatěžoval počítač, krátká prohlídka přímo nad skutečným rozhraním – ztmavení s „oknem“ kolem místa, o kterém je řeč, a karta s jednou větou: pole pro úkol, Vyžaduje pozornost (a v detailu Otevřít konverzaci), Právě teď, Agenti, Útrata a účty, obnova a hledání, Pomocník. Krok, jehož místo zrovna na obrazovce není, se přeskočí.
+- **Poprvé sama, pak na požádání:** spustí se po úvodním okně, když nic jiného není otevřené, a jen jednou. Znovu ji spustíš tlačítkem Prohlídka v Pomocníkovi nebo v Nastavení → Nápověda; Pomocník ji nabídne i na „Jak začít?“.
+- **Ovládání:** Další/Zpět, šipky, Enter, Escape; fokus zůstává v kartě. Na telefonu je karta přes celou šířku a sama se přesune nahoru, když krok ukazuje na spodní navigaci. Se sníženým pohybem bez animací. Světlý i tmavý vzhled, čeština i angličtina.
+
 ## 0.47.2 – 2026-11-14 · Pomocník bez zátěže
 
 - **Žádný jazykový model:** Pomocník už nikdy nespouští model – ani lokální Ollamu, ani Claude Code (`claude -p`). Se zapnutým „Pomocník odpovídá jako AI“ šla každá otázka k aplikaci nejdřív do modelu, i když průvodce odpověď znal; lokální model se načetl do paměti a vytížil počítač (ventilátory, sekání). Stejně tak výchozí „Odpovědi formulovat lokálním modelem“ u hledání konverzací. Obě volby zmizely, odpovídá okamžitě vestavěný průvodce; hledání starého chatu běží dál bez modelu (nejvýš 5 s a 3 MB přepisů).
