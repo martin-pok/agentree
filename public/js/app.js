@@ -786,7 +786,9 @@ function navazNaObnovu() {
       }
       if (zaznam.hash === location.hash && Number(zaznam.y) > 0) scrollTo({ top: Number(zaznam.y), behavior: 'instant' });
       await obnova.finish();
-      toast(souhrnObnovy(zaznam.vysledek || {}), { tone: zaznam.vysledek?.nove || zaznam.vysledek?.zmenene || zaznam.vysledek?.ucty ? 'action' : 'ink' });
+      // Souhrn obnovy je vždy úspěch (zelená s fajfkou), i když našla změny. Tón „action“ (zvonek,
+      // barva „vyžaduje pozornost“) v tmavém vzhledu vypadal jako chyba (vlastník 14. 11. 2026).
+      toast(souhrnObnovy(zaznam.vysledek || {}), { tone: 'ok' });
     }));
   };
 }

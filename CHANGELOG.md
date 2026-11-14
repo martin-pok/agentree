@@ -6,6 +6,7 @@
 - **Kapsle „Další N agentů v sekci Agenti“ na jednom řádku:** na Přehledu se od 0.46.93 zalamovala na dva řádky na všech šířkách okna.
 - **Plynulejší seznam agentů:** s 50 agenty každá živá změna zablokovala okno na 100–120 ms; nezměněné karty se teď přeskočí (zpoždění změny p50 100 → 64 ms, dlouhé úlohy 40 → 7 na 40 změn).
 - **Velký obrázek projektu:** příliš velký soubor dostane srozumitelnou hlášku místo přerušeného spojení.
+- **Souhrn obnovy v zelené:** hláška po obnově („Aktualizováno · změněné: 1“) byla v tmavém vzhledu růžovočervená se zvonkem a vypadala jako chyba. Teď je to zelené potvrzení s fajfkou. Verze v postranním panelu je zkrácená na „v0.46.100“, aby se patička nezalomila.
 
 ## 0.46.99 – 2026-11-14 · Oprávnění jen na tvůj pokyn
 

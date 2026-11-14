@@ -556,6 +556,7 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.doesNotMatch(css, /#refresh-app\[aria-busy='true'\] \{ cursor: progress/);
   assert.match(css, /\.obnova-zavoj \{[^}]*pointer-events: auto; cursor: progress;/, 'po dobu obnovy závoj zachytí myš');
   assert.match(app, /toast\(souhrnObnovy\(zaznam\.vysledek/, 'obnova řekne, co našla');
+  assert.match(app, /toast\(souhrnObnovy\(zaznam\.vysledek \|\| \{\}\), \{ tone: 'ok' \}\)/, 'souhrn obnovy je úspěch, ne „vyžaduje pozornost“ v barvě chyby');
   assert.match(app, /ulozPredObnovou\(vysledek\);\n    location\.reload\(\);/, 'obnova je skutečné přenačtení aplikace (vlastník 11. 11. 2026)');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  \.oz-lesk \{ animation: none; opacity: 0; \}/);
 });
