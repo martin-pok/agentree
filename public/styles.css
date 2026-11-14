@@ -2581,7 +2581,7 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .side-card .side-head h3 { margin: 0; }
 .side-head .link { font-size: 13px; }
 .side-note { margin: 8px 0 0; }
-.side-actions { display: flex; gap: 8px; margin-top: 10px; }
+.side-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .brief { width: 100%; min-height: 168px; background: var(--paper); border-color: transparent; font-size: 14px; }
 .pchip { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--r-full); background: var(--paper); text-decoration: none; font-size: 15px; }
 .pchip span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2621,8 +2621,14 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
 .swatches legend { padding: 0; }
 /* Šablona nového projektu: volba jako kapsle (jednořádkové, na co se klepe – docs/DESIGN.md). */
 .cost-val { margin: 4px 0 8px; font: 400 28px/1.1 var(--f-display); color: var(--ink); }
-.tpl-inline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
-.tpl-inline[hidden] { display: none; }
+.tpl-menu { position: relative; }
+.tpl-menu[hidden] { display: none; }
+.tpl-chevron { width: 14px; height: 14px; transition: rotate var(--motion-response) var(--ease); }
+[data-tpl-toggle][aria-expanded='true'] .tpl-chevron { rotate: 180deg; }
+.tpl-list { position: absolute; z-index: 30; left: 0; top: calc(100% + 6px); min-width: 200px; margin: 0; padding: 6px; list-style: none; border-radius: var(--r-md); background: var(--card); box-shadow: inset 0 0 0 1px var(--line), 0 12px 32px rgba(0, 0, 0, .28); }
+.tpl-list[hidden] { display: none; }
+.tpl-item { display: flex; align-items: center; width: 100%; min-height: 40px; padding: 0 14px; border: 0; border-radius: var(--r-full); background: transparent; color: var(--ink); font: 500 14px/1 var(--f-body); text-align: left; cursor: pointer; white-space: nowrap; }
+.tpl-item:hover, .tpl-item:focus-visible { background: var(--surface-2); outline: none; }
 .tpl-picks { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
 .tpl-pick { position: relative; display: inline-flex; }
 .tpl-pick input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }

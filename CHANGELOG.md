@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.47.1 – 2026-11-14 · Nízké karty projektu
+
+- **Šablony podkladů v jedné nabídce:** tři tlačítka šablon (Agentura a klient, Vývoj, Marketing) pod sebou natahovala kartu Podklady a s ní celou řadu karet v detailu projektu. Teď je to jedno tlačítko „Šablona“ s nabídkou (šipky, Enter, Escape) a kopírování podkladů je ikonové tlačítko vedle něj. Řada karet je na 1440 px vysoká 300 px místo ~480 px.
+
 ## 0.47.0 – 2026-11-14 · K čekajícímu agentovi jedním klikem
 
 - **Otevřít konverzaci vždy:** detail vzdáleného agenta Claude (cloud i Remote Control) má tlačítko „Otevřít konverzaci“ i tehdy, když relaci zná jen cache Claude Desktopu – vede přesně na claude.ai/code/<id> téže relace. Dřív tlačítko chybělo, pokud relaci nepotvrdil účet Claude nebo rozšíření, a ty jsi musel chat hledat. Adresa se skládá jen z ověřeného ID; Agenteeq nikdy neaktivuje aplikaci Claude s posledním, často cizím chatem. Stejně se otevírá z rozšíření a z projektu.

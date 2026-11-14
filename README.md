@@ -4,9 +4,11 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.47.0** — připravované Preview (neveřejné vydání): k čekajícímu vzdálenému agentovi vždy jedním klikem, Dovednosti i s vlastními příkazy, subagenty a dovednostmi v projektech, chytřejší Pomocník, karty projektu přes celou šířku.
+> **0.47.1** — připravované Preview (neveřejné vydání): nízké karty v detailu projektu – šablony podkladů v jedné nabídce.
 >
-> **0.46.99** — aktuální [veřejné Preview z 14. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.99): do Klíčenky macOS jen s tvým svolením – žádný dotaz na přístup po startu. Stable Latest zůstává 0.46.58.
+> **0.47.0** — aktuální [veřejné Preview z 14. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.47.0): k čekajícímu vzdálenému agentovi vždy jedním klikem, Dovednosti i s vlastními příkazy, subagenty a dovednostmi v projektech, chytřejší Pomocník, karty projektu přes celou šířku. Stable Latest zůstává 0.46.58.
+>
+> **0.46.99** — [veřejné Preview z 14. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.99): do Klíčenky macOS jen s tvým svolením – žádný dotaz na přístup po startu. Stable Latest zůstává 0.46.58.
 >
 > **0.46.98** — [veřejné Preview z 12. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.46.98): obnova za necelou sekundu místo tří; Agenteeq se na pozadí už neptá na přístup ke Staženým souborům, Dokumentům ani Ploše. Stable Latest zůstává 0.46.58.
 >

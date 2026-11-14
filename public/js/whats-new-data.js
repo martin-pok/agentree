@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.1', date: '2026-11-14', title: 'Nízké karty projektu',
+    items: ['Šablony podkladů jsou v jedné nabídce, takže karty v detailu projektu zůstanou nízké.'],
+    en: { title: 'Compact project cards', items: ['Brief templates now sit in one menu, so the cards in the project detail stay compact.'] },
+  },
+  {
     version: '0.47.0', date: '2026-11-14', title: 'K čekajícímu agentovi jedním klikem',
     items: [
       'Vzdálený agent Claude má v detailu vždy tlačítko „Otevřít konverzaci“ – i když ho Agenteeq zná jen z Claude Desktopu.',
