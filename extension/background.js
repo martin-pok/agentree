@@ -326,9 +326,9 @@ async function hello({ hned = false, znovu = false } = {}) {
       return { paired: false, revoked: true, parovani: (await chrome.storage.local.get(['parovani'])).parovani };
     }
     const body = await res.json().catch(() => ({}));
-    return { paired: true, online: res.ok, status: body };
+    return { paired: true, online: res.ok, status: body, ...(res.ok ? {} : { duvod: `HTTP ${res.status}` }) };
   } catch {
-    return { paired: true, online: false };
+    return { paired: true, online: false, duvod: 'spojení s aplikací selhalo' };
   }
 }
 

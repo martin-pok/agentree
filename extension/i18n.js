@@ -100,6 +100,10 @@
       // Aplikace běží, ale ověření rozšíření selhalo
       'Nepodařilo se ověřit spojení s Agenteeq': 'Couldn’t verify the connection to Agenteeq',
       'Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.': 'The app is running, but the extension got no answer from it. I’ll try again in a few seconds.',
+      'Důvod: {0}.': 'Reason: {0}.',
+      'proces rozšíření na pozadí neodpověděl': 'the extension’s background process didn’t respond',
+      'aplikace neodpověděla do 3 s': 'the app didn’t answer within 3 s',
+      'spojení s aplikací selhalo': 'the connection to the app failed',
       'Stáhnout Agenteeq': 'Get Agenteeq',
       // Agenti na tomto počítači
       'Chaty v prohlížeči': 'Chats in the browser',
