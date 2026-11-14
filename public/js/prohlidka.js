@@ -3,7 +3,7 @@
 // Nápověda, Pomocník). Každý krok zvýrazní skutečné místo v aplikaci a jednou větou řekne, k čemu
 // je. Krok, jehož místo zrovna na obrazovce není (prázdná sekce, telefon), se přeskočí – nikdy se
 // neukazuje na nic. Bez sítě, bez modelu, čisté DOM a CSS.
-import { state, subscribe } from './state.js';
+import { subscribe } from './state.js';
 import { tr } from './i18n.js';
 import { ze } from './predlozky.js';
 import { zkratka } from './system.js';
@@ -142,22 +142,31 @@ function otevri() {
   requestAnimationFrame(() => { vrstva.classList.add('je-videt'); ukaz(); });
 }
 
-// Poprvé sama: po úvodním okně, na Přehledu, když nic jiného není otevřené (objev nástrojů, dialog).
+// Sama jen novému uživateli: hned po dokončení úvodního okna (welcome.js), na Přehledu, až nic jiného
+// není otevřené (objev nástrojů). Stávající uživatel po aktualizaci nic nevyskočí – prohlídku najde
+// v Nastavení → Nápověda a v Pomocníkovi. Automatizovaný prohlížeč (testy) ji sám nespouští.
 export function initProhlidka() {
   document.addEventListener('click', (e) => { if (e.target.closest('[data-prohlidka]')) { e.preventDefault(); spustProhlidku(); } });
   addEventListener('agenteeq-prohlidka', spustProhlidku);
-  let hotovo = false;
+  let ceka = false;
   const zkus = () => {
-    if (hotovo || !state.loaded || !state.settings?.welcomeCompleted) return;
-    try { if (localStorage.getItem(UKAZANO)) { hotovo = true; return; } } catch { hotovo = true; return; }
+    if (!ceka || bezi) return;
     if (!/^#\/(prehled)?$/.test(location.hash || '#/')) return;
     if (document.querySelector('dialog[open], .modal-scrim, .welcome-dialog')) return;
-    hotovo = true;
-    setTimeout(() => { if (!document.querySelector('dialog[open], .modal-scrim')) spustProhlidku(); else hotovo = false; }, 900);
+    ceka = false;
+    setTimeout(() => {
+      if (document.querySelector('dialog[open], .modal-scrim')) { ceka = true; return; }
+      spustProhlidku();
+    }, 900);
   };
+  addEventListener('agenteeq-pruvodce-hotov', () => {
+    if (navigator.webdriver) return;
+    try { if (localStorage.getItem(UKAZANO)) return; } catch { /* bez úložiště jednou za relaci */ }
+    ceka = true;
+    setTimeout(zkus, 1200);
+  });
   subscribe(zkus);
   addEventListener('hashchange', zkus);
-  addEventListener('agenteeq-pruvodce-hotov', () => setTimeout(zkus, 1200));
   document.addEventListener('close', () => setTimeout(zkus, 300), true);
 }
 
