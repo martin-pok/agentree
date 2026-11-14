@@ -86,5 +86,32 @@ test('extension refresh loop tests actual health and auto-recovers after restart
   assert.match(loop, /finally \{[\s\S]*?probihaKontrolaSpojeni = false/);
   // Nepodařené ověření (hello) při běžící aplikaci se nikdy nehlásí jako „připojeno“, ale ani jako
   // „neběží“ či „nespárováno“: je to „nepodařilo se ověřit“.
-  assert.match(code, /if \(!r \|\| r\.chyba \|\| \(r\.paired && !r\.online\)\) \{[\s\S]*?ukazNeovereno\(\)/);
+  assert.match(code, /if \(!r \|\| r\.chyba \|\| \(r\.paired && !r\.online\)\) \{[\s\S]*?const primo = await helloPrimo\(\);[\s\S]*?if \(primo\?\.online\) r = primo;[\s\S]*?ukazNeovereno\(/);
+});
+
+// Uživatel 14. 11. 2026: rozšíření z obchodu zůstalo na „Neověřeno“, i když aplikace běžela – proces
+// na pozadí (service worker) se neozval. Okno se teď zeptá aplikace samo, stejným tokenem.
+test('when the background worker does not answer, the popup verifies the app itself', async () => {
+  const src = await read();
+  const helloKod = cut(src, 'async function helloPrimo() {', '// Důvod nepodařeného ověření');
+  const prehledKod = cut(src, 'async function prehledPrimo() {', '// Otevře konverzaci');
+  const pozadavky = [];
+  const env = (odpoved, token = 'tok') => ({
+    APLIKACE: 'http://127.0.0.1:4620/',
+    AbortSignal: { timeout: () => undefined },
+    tr: (t) => t,
+    chrome: { storage: { local: { get: async () => (token ? { token } : {}) } }, runtime: { getManifest: () => ({ version: '9.9.9' }) } },
+    fetch: async (url, init) => { pozadavky.push([url, init.headers['X-Agenteeq-Token']]); if (odpoved instanceof Error) throw odpoved; return odpoved; },
+  });
+  const res = (status, body = {}) => ({ status, ok: status >= 200 && status < 300, json: async () => body });
+  const spust = async (kod, fn, e) => { const v = await vm.runInNewContext(`${kod}\n${fn}()`, e); return v == null ? v : JSON.parse(JSON.stringify(v)); };
+  assert.deepEqual(await spust(helloKod, 'helloPrimo', env(res(200, { state: 'ready' }))), { paired: true, online: true, status: { state: 'ready' } });
+  assert.deepEqual(pozadavky.at(-1), ['http://127.0.0.1:4620/api/extension/hello', 'tok']);
+  assert.equal(await spust(helloKod, 'helloPrimo', env(res(401))), null, 'rejected token: pairing again stays with the background worker');
+  assert.equal(await spust(helloKod, 'helloPrimo', env(res(200), null)), null, 'no token, nothing to verify');
+  assert.deepEqual(await spust(helloKod, 'helloPrimo', env(res(500))), { paired: true, online: false, duvod: 'HTTP 500' }, 'the reason is shown, not guessed');
+  assert.equal((await spust(helloKod, 'helloPrimo', env(new TypeError('Failed to fetch')))).duvod, 'spojení s aplikací selhalo');
+  assert.deepEqual(await spust(prehledKod, 'prehledPrimo', env(res(200, { zdravi: { pracuje: 1 } }))), { zdravi: { pracuje: 1 } });
+  assert.equal(await spust(prehledKod, 'prehledPrimo', env(res(503))), null);
+  assert.match(src, /if \(!r\?\.zdravi\) r = await prehledPrimo\(\);/, 'agent overview has the same fallback');
 });

@@ -462,8 +462,21 @@ function souhrnStavu(z, { selhaloHlaseni = false } = {}) {
 }
 
 async function nactiPrehled() {
-  const r = await chrome.runtime.sendMessage({ type: 'agenteeq:prehled' }).catch(() => null);
+  let r = await chrome.runtime.sendMessage({ type: 'agenteeq:prehled' }).catch(() => null);
+  // Záloha jako u ověření spojení: když proces na pozadí neodpoví, zeptá se okno samo.
+  if (!r?.zdravi) r = await prehledPrimo();
   return r && r.zdravi ? { rozhodnuti: [], pracuji: [], nedavne: [], ...r } : null;
+}
+
+async function prehledPrimo() {
+  const { token } = await chrome.storage.local.get(['token']);
+  if (!token) return null;
+  try {
+    const res = await fetch(`${APLIKACE}api/extension/prehled`, { method: 'POST', headers: { 'X-Agenteeq-Token': token }, signal: AbortSignal.timeout(3000) });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
 }
 
 // Otevře konverzaci agenta tam, kde žije: webový chat v kartě Chromu, ostatní v aplikaci na Macu
@@ -561,7 +574,7 @@ function slideHtml(M) {
       : posledni ? `<span class="chip chip--glass"><span class="dot"></span><span>${esc(tr('Naposledy: {0}', posledni.title))} · <span data-at="${posledni.at}">${esc(cas(posledni.at))}</span></span></span>` : '';
     const nadpis = nevim ? (M.neovereno ? tr('Nepodařilo se ověřit spojení s Agenteeq') : M.bezPrehledu ? tr('Přehled agentů se nepodařilo načíst') : tr('Nepodařilo se zjistit, co na počítači běží')) : tr('Všechno je v klidu');
     const text = nevim
-      ? (M.neovereno ? tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.') : M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
+      ? (M.neovereno ? `${tr('Aplikace běží, ale rozšíření od ní nedostalo odpověď. Zkusím to znovu za pár sekund.')}${overeni.duvod ? ` ${tr('Důvod: {0}.', overeni.duvod)}` : ''}` : M.bezPrehledu ? tr('Zkus obnovit. Chaty v prohlížeči sleduje rozšíření dál.') : tr('Agenteeq teď nevidí výpis procesů. Níž je jen to, co víme jistě.'))
       : tr('Nikdo teď nepracuje a žádný agent nečeká na tvé rozhodnutí.');
     return `<div class="calm">
       <span class="calm-bot" data-s="tile"${nevim ? ' data-nevim' : ''}>${ROBOT}</span>
@@ -1008,11 +1021,33 @@ function ukazVypadek() {
   obnovSeznam();
 }
 
-function ukazNeovereno() {
+// Ověření spojení přímo z okna rozšíření, bez procesu na pozadí. Vrací null, když token chybí
+// nebo ho aplikace odmítla (401) – spárování znovu pak řeší proces na pozadí jako dosud.
+async function helloPrimo() {
+  const { token } = await chrome.storage.local.get(['token']);
+  if (!token) return null;
+  try {
+    const res = await fetch(`${APLIKACE}api/extension/hello`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Agenteeq-Token': token },
+      body: JSON.stringify({ version: chrome.runtime.getManifest().version }),
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.status === 401) return null;
+    if (!res.ok) return { paired: true, online: false, duvod: `HTTP ${res.status}` };
+    return { paired: true, online: true, status: await res.json().catch(() => ({})) };
+  } catch (e) {
+    return { paired: true, online: false, duvod: e?.name === 'TimeoutError' ? tr('aplikace neodpověděla do 3 s') : tr('spojení s aplikací selhalo') };
+  }
+}
+
+// Důvod nepodařeného ověření se ukáže v textu okna (overeni.duvod), aby šel nahlásit.
+function ukazNeovereno(duvod = '') {
   zakladniStav();
   prehled = null;
   seznam.konverzace = [];
   overeni.diagnostika = null;
+  overeni.duvod = typeof duvod === 'string' ? duvod.slice(0, 120) : '';
   // Aplikace odpovídá, jen ověření selhalo: žádná nabídka ke stažení ani spárování. Okno to
   // za pár sekund zkusí znovu samo (kontrola spojení níž) a chaty v kartách ukazuje dál.
   rezim = 'neovereno';
@@ -1046,12 +1081,17 @@ async function render() {
   }
 
   // Naše rozšíření se spáruje samo (background při „hello“). Kód je jen záloha pro jiné případy.
-  const r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
+  let r = await chrome.runtime.sendMessage({ type: 'agenteeq:hello' }).catch(() => null);
   if (!r || r.chyba || (r.paired && !r.online)) {
-    // Aplikace odpovídá na /api/health, ale ověření rozšíření selhalo nebo se background
-    // neozval. Není to „neběží“ ani „nespárováno“ – jen se to nepodařilo zjistit.
-    ukazNeovereno();
-    return;
+    // Aplikace odpovídá na /api/health, ale ověření přes proces na pozadí selhalo nebo se
+    // neozval (uspaný či zaseknutý service worker). Okno se proto zeptá aplikace samo, stejným
+    // tokenem – dřív v tom případě zůstalo „Neověřeno“, dokud člověk rozšíření nepřenačetl.
+    const primo = await helloPrimo();
+    if (primo?.online) r = primo;
+    else {
+      ukazNeovereno(primo?.duvod || (r?.duvod ? tr(r.duvod) : '') || (r ? '' : tr('proces rozšíření na pozadí neodpověděl')));
+      return;
+    }
   }
   if (!r?.paired) {
     const [konverzace, off] = await Promise.all([nactiKonverzace(), vypnute()]);
