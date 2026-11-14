@@ -4,6 +4,24 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.0', date: '2026-11-14', title: 'K čekajícímu agentovi jedním klikem',
+    items: [
+      'Vzdálený agent Claude má v detailu vždy tlačítko „Otevřít konverzaci“ – i když ho Agenteeq zná jen z Claude Desktopu.',
+      'Dovednosti ukážou i tvoje vlastní příkazy a subagenty, příkazy Codexu a Gemini a dovednosti uložené v projektech.',
+      'Pomocník rozumí víc otázkám – účtu Claude, obnově, exportu, selhaným agentům – a na „kdo na mě čeká“ dá odkazy rovnou na agenty.',
+      'Karty v detailu projektu vyplní celou šířku a robot už nemává pořád dokola.',
+    ],
+    en: {
+      title: 'One click to the agent that needs you',
+      items: [
+        'A remote Claude agent always has an “Open conversation” button in its detail – even when Agenteeq only knows it from Claude Desktop.',
+        'Skills now also show your own commands and subagents, Codex and Gemini commands and skills stored in projects.',
+        'The Assistant understands more – the Claude account, refresh, export, failed agents – and “who is waiting for me” links straight to the agents.',
+        'Cards in the project detail fill the full width and the robot no longer waves non-stop.',
+      ],
+    },
+  },
+  {
     version: '0.46.99', date: '2026-11-14', title: 'Oprávnění jen na tvůj pokyn',
     items: [
       'Do Klíčenky macOS Agenteeq sahá až po tvém svolení – po startu se na nic neptá. Povolit i vypnout jde v Nastavení → Soukromí a bezpečnost.',

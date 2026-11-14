@@ -296,6 +296,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (run.projectId && projects().assignments[s.id] === undefined) assignToProject([s.id], run.projectId);
   }
   const projects = () => datastore.data.projects;
+  // Složky, ve kterých se pracuje (konverzace, projekty, repozitáře) – pro dovednosti uložené v projektu.
+  const slozkyProjektu = () => [
+    ...store.list().map((s) => s.cwd),
+    ...(datastore.data.projects?.items || []).flatMap((p) => [...(p.folders || []), p.settings?.repo]),
+  ].filter(Boolean);
   const worktreeRoot = path.join(config.dataDir, 'worktrees');
   const mediaRoot = path.join(config.dataDir, 'media');
 
@@ -1928,7 +1933,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     dokonceno: () => { prvniStav(); return dokonceniStartu; },
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, obnovVse, povolKlicenkuClaude, stavKlicenky, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, obnovVse, povolKlicenkuClaude, stavKlicenky, slozkyProjektu, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

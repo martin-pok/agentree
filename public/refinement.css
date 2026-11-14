@@ -55,12 +55,14 @@ button, input, textarea, select { font-family: var(--f-body); letter-spacing: 0;
 /* Zvednutá ruka míří ven do strany, ne nahoru: paže se kreslí pod hlavou, takže nad ~30° nad
    vodorovnou by za ní zmizela a při mávání z ní „vyjížděla“ (19. 10. 2026). Rozsah −40° až −62°
    (5° až 27° nad vodorovnou) zůstane vidět u všech postav. */
-:is(.agent-portrait[data-state='needs_input'], .pb-agent[data-status='needs_input']) .robot-arm-right { transform: rotate(-50deg); animation: robot-wave 5s ease-in-out infinite; }
+/* Mávne jednou za 12 s a mezi tím odpočívá se zdviženou rukou; po minutě přestane úplně – zvednutá
+   ruka dál říká „čekám na tebe“ (vlastník 14. 11. 2026: nemávat non-stop). */
+:is(.agent-portrait[data-state='needs_input'], .pb-agent[data-status='needs_input']) .robot-arm-right { transform: rotate(-50deg); animation: robot-wave 12s ease-in-out 5; }
 :is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-aerial { transform: rotate(38deg); }
 :is(.agent-portrait, .pb-agent):is([data-state='failed'], [data-state='limited'], [data-status='failed'], [data-status='limited']) .robot-eyes { opacity: .45; }
 @keyframes robot-signal { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
 @keyframes robot-type { from { transform: rotate(0deg); } to { transform: rotate(-14deg) translateY(-1px); } }
-@keyframes robot-wave { 0%, 70%, 100% { transform: rotate(-50deg); } 76% { transform: rotate(-40deg); } 82% { transform: rotate(-62deg); } 88% { transform: rotate(-42deg); } 94% { transform: rotate(-58deg); } }
+@keyframes robot-wave { 0%, 86%, 100% { transform: rotate(-50deg); } 89% { transform: rotate(-40deg); } 92% { transform: rotate(-62deg); } 95% { transform: rotate(-42deg); } 98% { transform: rotate(-58deg); } }
 .mascot-motion-off .robot * { animation: none !important; transition: none !important; }
 @media (prefers-reduced-motion: reduce) { .robot * { animation: none !important; transition: none !important; } }
 /* Standard control heights; extra text-spacing may still expand the line box. */

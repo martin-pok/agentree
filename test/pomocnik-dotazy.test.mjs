@@ -223,3 +223,27 @@ test('pomocník: „co na mě čeká?“ odpoví ze živého stavu, „jak schv�
   assert.equal(odpovedPruvodce('Kdo na mě čeká a jak to schválím?', { language: 'cs-CZ', snapshot: ZIVY, agenti }).topic, 'decisions');
   assert.equal(odpovedPruvodce('claude code neukazuje, že čeká na povolení – hooky', { language: 'cs-CZ', snapshot: ZIVY, agenti }).topic, 'hooks');
 });
+
+// Vlastník 14. 11. 2026: pomocník nesmí odpovídat mimo téma. Otázky nového uživatele, které dřív
+// vedly jinam (účet Claude → schvalování, „Nelze ověřit“ → upozornění, obnova → limity…).
+test('pomocník: otázky nového uživatele míří na správné téma', () => {
+  const ocekavane = [
+    ['Jak povolím účet Claude?', 'claude-ucet'], ['Mám dva účty Claude, jak to funguje?', 'claude-ucet'], ['Co znamená Nelze ověřit?', 'claude-ucet'],
+    ['Proč nevidím svoje agenty v cloudu?', 'claude-ucet'], ['Proč se aplikace ptá na Klíčenku?', 'claude-ucet'], ["Why can't I see my Claude plan?", 'claude-ucet'],
+    ['Co dělá tlačítko obnovit?', 'obnova'], ['Jak smažu historii upozornění?', 'historie'], ['Jak exportuju data?', 'export'],
+    ['Agent selhal, co mám dělat?', 'selhani'], ['Jak zastavím agenta?', 'zastavit'], ['Jak odpovím agentovi?', 'odpovedet'],
+    ['Co je Právě teď?', 'prehled-sekce'], ['k cemu je ten robot', 'robot'], ['Proč se mi neukazuje ChatGPT?', 'chatgpt'],
+    ['Jak nastavím rozpočet?', 'budget'], ['jak sledovat chatgpt v prohlizeci', 'extension'],
+  ];
+  for (const [q, topic] of ocekavane) assert.equal(guideAnswer(q, { language: /^[A-Z][a-z]+ (can|do)|^Why|^How/.test(q) ? 'en' : 'cs' })?.topic, topic, q);
+});
+
+test('pomocník: „jak otevřu agenta, co na mě čeká“ dá seznam čekajících s odkazy, ne obecný návod', () => {
+  const agenti = [{ id: 'claude-desktop-code:session_01Abc12345', status: 'needs_input', title: 'BRNO APP - REPO UPDATE', app: 'Claude Desktop', lastAt: Date.now() }];
+  const r = odpovedPruvodce('Jak otevřu chat agenta, který na mě čeká?', { agenti, snapshot: { loaded: true, connection: 'live' } });
+  assert.equal(r.topic, 'cekani');
+  assert.equal(r.vysledky[0].sessionId, 'claude-desktop-code:session_01Abc12345');
+  assert.match(r.text, /Otevřít konverzaci/);
+  const nikdo = odpovedPruvodce('Jak otevřu chat agenta, který na mě čeká?', { agenti: [], snapshot: { loaded: true, connection: 'live' } });
+  assert.match(nikdo.text, /Vyžaduje pozornost/, 'i bez čekajících řekne, kde je hledat');
+});

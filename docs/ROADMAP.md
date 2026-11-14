@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.99 Preview:** Klíčenka jen se svolením; audit všech systémových oprávnění.
+**Kandidát v0.47.0 Preview:** k čekajícímu agentovi jedním klikem, úplné Dovednosti, chytřejší Pomocník, layout projektu.
+
+**v0.46.99 Preview (zveřejněno 14. 11. 2026, build 43584885360, 8 příloh se SHA-256 ověřením):** Klíčenka jen se svolením; audit všech systémových oprávnění.
 
 **v0.46.98 Preview (zveřejněno 12. 11. 2026, build 43325382057, 8 příloh se SHA-256 ověřením):** obnova do 1 s; žádné dotazy macOS na Stažené soubory, Dokumenty ani Plochu.
 
