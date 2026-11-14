@@ -401,6 +401,7 @@ const kdy = (ts) => {
   return `${d.getDate()}. ${d.getMonth() + 1}. ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 };
 const DUVOD_NENALEZENO = ui('Agenty v cloudu z účtu Claude nevidím: na tomto počítači chybí přihlášení Claude Code. Stačí se jednou přihlásit v Terminálu příkazem claude, pak se stav načte sám.');
+const DUVOD_SOUHLAS = ui('Agenty v cloudu z účtu Claude ukážu, až povolíš čtení účtu Claude (Útrata → Účty nástrojů, nebo Nastavení → Soukromí). Bez tvého svolení Agenteeq do Klíčenky nesahá.');
 const DUVOD_PRISTUP = ui('Agenty v cloudu z účtu Claude nevidím: macOS nepovolil přístup ke Klíčence (položka „Claude Code-credentials“). Až se macOS zeptá, zvol Vždy povolit.');
 export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = {} }) {
   const root = path.join(appSupportDir(config.sourceHome), 'Claude', 'IndexedDB');
@@ -418,8 +419,12 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
   // přihlášení se 10 minut znovu nečte – kdyby macOS na přístup ke Klíčence ptal, neptá se pořád.
   // Důvod, proč přihlášení přečíst nešlo (src/platform.js#prihlaseniClaudeCodeSDuvodem).
   const tok = { p: null, chybaAt: 0, duvod: '' };
+  // Klíčenka jen s výslovným svolením (src/app.js#klicenkaClaude): systémový dotaz na přístup
+  // k „Claude Code-credentials“ smí přijít jen jako odpověď na kliknutí, nikdy sám po startu.
+  const klicenka = () => (claudeCloud.klicenka ? claudeCloud.klicenka() : config.keychain);
   const cist = claudeCloud.prihlaseni || (async () => {
-    const r = await prihlaseniClaudeCodeSDuvodem(config);
+    const r = await prihlaseniClaudeCodeSDuvodem({ ...config, keychain: klicenka() });
+    if (r.duvod === 'vypnuto' && config.keychain && !klicenka()) r.duvod = 'souhlas';
     tok.duvod = r.duvod;
     return r.p;
   });
@@ -560,7 +565,8 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       } catch (e) {
         api.bezUctu = Boolean(e.bezUctu);
         // Bez přihlášení se řekne přesně proč – „nenalezeno“ a „odepřený přístup“ se řeší jinak.
-        api.error = e.bezUctu && tok.duvod === 'pristup' ? DUVOD_PRISTUP
+        api.error = e.bezUctu && tok.duvod === 'souhlas' ? DUVOD_SOUHLAS
+          : e.bezUctu && tok.duvod === 'pristup' ? DUVOD_PRISTUP
           : e.bezUctu && tok.duvod === 'nenalezeno' ? DUVOD_NENALEZENO : e.message;
         api.pauzaMs = e.pauzaMs || 0;
         if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }

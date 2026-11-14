@@ -40,6 +40,7 @@ export const api = {
   objev: () => request('GET', '/api/objev'),
   rozhodnout: (id, akce) => request('POST', `/api/rozhodnuti/${encodeURIComponent(id)}/${akce}`, {}),
   napojit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}`),
+  klicenkaClaude: (povolit) => request('POST', '/api/claude/klicenka', { povolit }),
   napojeniZrusit: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/zrusit`),
   napojeniOdkaz: (id) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/odkaz`),
   napojeniKod: (id, kod) => request('POST', `/api/napojeni/${encodeURIComponent(id)}/kod`, { kod }),

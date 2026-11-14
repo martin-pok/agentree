@@ -862,6 +862,11 @@ export function createHttpServer(app, existingServer = null) {
       await app.connectors['cloud-billing'].scan();
       return { integrations: await refreshIntegrations() };
     }],
+    ['POST', /^\/api\/claude\/klicenka$/, async (req) => {
+      const body = await readBody(req);
+      if (typeof body.povolit !== 'boolean') throw new HttpError(422, ui('Chybí volba povolit.'));
+      return app.povolKlicenkuClaude(body.povolit);
+    }],
     ['POST', /^\/api\/connectors\/rescan$/, async () => {
       const vysledek = await app.obnovVse();
       return { connectors: app.connectorList(), vysledek };

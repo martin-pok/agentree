@@ -253,6 +253,7 @@ function customAgentsCard() {
 // Soukromí: karta říká jen ověřitelná fakta – co je v paměti, co na disku a co odchází ven.
 function privacyCard() {
   const alertCount = state.alerts?.items?.length || 0;
+  const klicenka = state.spend?.claudeKlicenka;
   const dataFile = `${state.integrations?.install?.dataDir || '~/.agenteeq'}/data.json`;
   const keysOn = (state.connectors || []).filter((c) => c.id === 'cloud-billing' && c.state !== 'missing').length > 0;
   // Co skutečně odchází ven – podle toho, co je zapnuté. Vždy jen kurzy a kontrola verzí, bez dat o tobě.
@@ -270,6 +271,7 @@ function privacyCard() {
     <ul class="privacy-list">
       <li><b>${tr('Konverzace agentů')}</b><span>${tr('Čtou se ze souborů na disku ({0}, {1} a dalších) a drží se jen v paměti běžícího serveru. Agenteeq si z nich nedělá vlastní kopii.', esc(`~/.claude`), esc(`~/.codex`))}</span></li>
       <li><b>${tr('Na disku v ~/.agenteeq/data.json')}</b><span>${tr('Nastavení, projekty, rozpočty a historie upozornění – soubor má práva jen pro tebe (0600) a složka 0700.')}</span></li>
+      ${klicenka?.potreba ? `<li><b>${tr('Účet Claude z Klíčenky')}</b><span>${klicenka.povoleno ? tr('Povoleno: kvůli plánu, limitům a agentům v cloudu čtu jen položku „Claude Code-credentials“. Nikdy ji neměním ani neukládám a posílám ji jen na api.anthropic.com.') : tr('Vypnuto: do Klíčenky nesahám a macOS se na nic neptá. Plán, limity a agenty v cloudu z účtu Claude pak nevidím.')}</span><button class="btn btn--sm${klicenka.povoleno ? '' : ' btn--primary'}" type="button" data-klicenka-claude="${klicenka.povoleno ? 'vypnout' : 'povolit'}">${klicenka.povoleno ? tr('Vypnout') : tr('Povolit')}</button></li>` : ''}
       <li><b>${tr('Klíče k API')}</b><span>${keysOn ? tr('Uložené v systémové Klíčence, nikdy v souboru aplikace.') : tr('Zatím žádné. Když je přidáš, uloží se do systémové Klíčenky, ne do souboru.')}</span></li>
       <li><b>${tr('Ven z {0}', tohotoPocitace())}</b><span>${vence.join(' ')}</span></li>
     </ul>
@@ -499,6 +501,21 @@ function mount(el) {
     const sw = e.target.closest('[data-setting]');
     if (sw?.dataset.setting === 'push-telefon') return prepniTelefon(sw);
     if (sw) return toggleSetting(sw);
+    const kl = e.target.closest('[data-klicenka-claude]');
+    if (kl) {
+      kl.disabled = true;
+      try {
+        const r = await api.klicenkaClaude(kl.dataset.klicenkaClaude === 'povolit');
+        if (state.spend) state.spend.claudeKlicenka = r.claudeKlicenka;
+        toast(r.claudeKlicenka?.povoleno ? tr('Čtení účtu Claude je povolené. Když se macOS zeptá, zvol Vždy povolit.') : tr('Čtení účtu Claude je vypnuté. Do Klíčenky už nesahám.'));
+        update();
+      } catch (err) {
+        toast(err.message, { tone: 'err', timeout: 8000 });
+      } finally {
+        kl.disabled = false;
+      }
+      return;
+    }
     const nap = e.target.closest('[data-napojit]');
     if (nap) {
       const polozka = v.napojeni?.find((n) => n.id === nap.dataset.napojit);

@@ -734,6 +734,8 @@ export default {
   "Tento měsíc {0} ze {1}.": "{0} of {1} this month.",
 
   // src/subscriptions.js
+  "Chybí volba povolit.": "The allow choice is missing.",
+  "Agenty v cloudu z účtu Claude ukážu, až povolíš čtení účtu Claude (Útrata → Účty nástrojů, nebo Nastavení → Soukromí). Bez tvého svolení Agenteeq do Klíčenky nesahá.": "I’ll show cloud agents from your Claude account once you allow reading the Claude account (Spend → Tool accounts, or Settings → Privacy). Without your permission Agenteeq never touches the Keychain.",
   "účet Claude ověřený na serveru Anthropicu (typ účtu {0}, úroveň {1})": "the Claude account verified on Anthropic's server (account type {0}, tier {1})",
   "účet Claude ověřený na serveru Anthropicu (typ účtu {0})": "the Claude account verified on Anthropic's server (account type {0})",
   "přihlášený účet Claude Code (typ účtu {0}, úroveň {1})": "the signed-in Claude Code account (account type {0}, tier {1})",

@@ -174,7 +174,9 @@ export function providerAccountsHtml(sp, connectors = state.connectors || []) {
         <div class="provider-account-top"><strong>${name}${tag ? ` <span class="provider-account-id">${tag}</span>` : ''}</strong><span class="provider-account-state">${status}</span></div>
         <span class="plan-sub">${esc(description)}${account.observedAt ? ` · <span data-ago="${account.observedAt}">${esc(rel(account.observedAt))}</span>` : ''}</span>
         ${limits.map((limit) => `<div class="provider-account-limit"><span>${esc(limit.label)}${limit.resetsAt ? ` · ${tr('obnova {0}', esc(dateLong(limit.resetsAt)))}` : ''}</span><strong>${Math.round(limit.usedPercent)} %</strong><span class="lwin-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(limit.usedPercent)}" aria-label="${esc(`${name} ${limit.label}`)}"><i style="width:${limit.usedPercent}%"></i></span></div>`).join('')}
-        ${!known && !account.active && NAPOJENI_UCTU[account.provider] ? `<div class="provider-account-akce"><button class="btn btn--sm btn--primary" type="button" data-napojit-ucet="${esc(NAPOJENI_UCTU[account.provider])}">${tr('Napojit')}</button><span>${tr('Přihlásí {0} na {1}, pak se plán a limity načtou samy.', name, tomtoPocitaci())}</span></div>` : ''}
+        ${!known && !account.active && account.provider === 'anthropic' && sp.claudeKlicenka?.potreba && !sp.claudeKlicenka.povoleno
+    ? `<div class="provider-account-akce"><button class="btn btn--sm btn--primary" type="button" data-povolit-klicenku>${tr('Povolit účet Claude')}</button><span>${tr('Plán, limity a agenty v cloudu čtu z přihlášení Claude Code v Klíčence. Po kliknutí se macOS jednou zeptá – zvol Vždy povolit. Nic jiného z Klíčenky nečtu.')}</span></div>`
+    : !known && !account.active && NAPOJENI_UCTU[account.provider] ? `<div class="provider-account-akce"><button class="btn btn--sm btn--primary" type="button" data-napojit-ucet="${esc(NAPOJENI_UCTU[account.provider])}">${tr('Napojit')}</button><span>${tr('Přihlásí {0} na {1}, pak se plán a limity načtou samy.', name, tomtoPocitaci())}</span></div>` : ''}
         ${account.active && Number.isFinite(account.credits) && account.credits >= 0 ? `<div class="provider-account-credit">${tr('Kredity Codexu')} <strong>${esc(fmtNum(account.credits))}</strong></div>` : ''}
       </div>
     </li>`;
@@ -211,6 +213,20 @@ function mount(el, _params, query) {
   // protože se hned pod zavřeným objeví další identický).
   if (v.onClick) el.removeEventListener('click', v.onClick);
   v.onClick = async (e) => {
+    const povolit = e.target.closest('[data-povolit-klicenku]');
+    if (povolit) {
+      if (povolit.disabled) return;
+      povolit.disabled = true;
+      try {
+        await api.klicenkaClaude(true);
+        toast(tr('Čtení účtu Claude je povolené. Když se macOS zeptá, zvol Vždy povolit.'));
+      } catch (err) {
+        toast(err.message, { tone: 'err', timeout: 8000 });
+      } finally {
+        povolit.disabled = false;
+      }
+      return;
+    }
     const nap = e.target.closest('[data-napojit-ucet]');
     if (nap) {
       if (nap.disabled) return;

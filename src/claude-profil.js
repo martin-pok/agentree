@@ -122,5 +122,7 @@ export function createClaudeProfily({ config, fetchImpl = globalThis.fetch, cist
     if (!res.ok || Number(res.headers?.get?.('content-length')) > 1024 * 1024) return null;
     try { return vyuzitiZOdpovedi(await res.json()); } catch { return null; }
   }
-  return { nacti, vyuziti };
+  // Po udělení nebo odebrání svolení ke Klíčence: zapomenout přihlášení i pauzu po neúspěchu.
+  function reset() { tokeny.clear(); posledni.clear(); vyuzitiPauza.clear(); }
+  return { nacti, vyuziti, reset };
 }

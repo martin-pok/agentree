@@ -32,6 +32,23 @@ Seznam dovedností čte pouze soubory `SKILL.md` z předem určených uživatels
 | Vzorce v exportu CSV (CSV injection) | Buňky začínající `= + - @` dostanou prefix `'`; platí pro export projektu i útraty | `src/csv.js#bunka` |
 | Zablokování serveru velkým požadavkem | Limit těla 1 MB, validace a ořez polí z rozšíření | `src/http.js#readBody`, `connectors/web.js` |
 
+## Systémová oprávnění macOS – 2026-11-14 (0.46.99)
+
+Zásada: každý dotaz macOS přijde jen jako odpověď na akci uživatele, nikdy sám po startu.
+
+| Oprávnění | Kdy | Kde |
+|---|---|---|
+| Klíčenka – přihlášení Claude Code („Claude Code-credentials“) | jen po „Povolit účet Claude“ (Útrata, Nastavení → Soukromí), jde vypnout | `src/app.js#klicenkaClaude`, `src/connectors/claude-desktop-code.js`, test `klicenka-souhlas` |
+| Klíčenka – API klíče Agenteeq | vlastní položky aplikace, bez dotazu; jen když uživatel klíč uloží | `src/secrets.js` |
+| Notifikace | s prvním upozorněním | `desktop/Agenteeq.swift` |
+| Ovládání Terminálu (Apple Events) | jen „Otevřít v Terminálu“ / spuštění agenta v Terminálu | `src/openers.js` |
+| Zpřístupnění + System Events (okno ChatGPT) | jen po „Napojit“ u aplikace ChatGPT | `src/connectors/chatgpt-app.js` |
+| Spuštění po přihlášení (LaunchAgent) | jen tlačítkem | `src/launch-agent.js` |
+| Soukromé složky (Stažené, Dokumenty, Plocha, iCloud, /Volumes) | na pozadí nikdy (0.46.98) | `src/platform.js#soukromaSlozkaMacu` |
+| Místní síť | server jen na 127.0.0.1; síť až po zapnutí přístupu z telefonu | `src/lan.js` |
+
+Nežádá se: kamera, mikrofon, poloha, kontakty, kalendář, připomínky, fotky, nahrávání obrazovky, plný přístup k disku, Bluetooth. Entitlementy: jen `com.apple.security.automation.apple-events` (aplikace) a `allow-jit` (Node).
+
 ## Soukromé složky macOS – 2026-11-12 (0.46.98)
 
 Na pozadí (bez akce uživatele) Agenteeq nesahá do složek chráněných macOS TCC: Stažené soubory, Dokumenty, Plocha, Obrázky, Filmy, Hudba, iCloud Drive (`~/Library/Mobile Documents`, `~/Library/CloudStorage`) ani `/Volumes`. Dřív čtení větve gitu u běžícího procesu (`src/bezici-agenti.js#vetevSlozky`) vyvolalo dotaz „…chce přistupovat ke složce Stažené soubory“. Pravidlo: `src/platform.js#soukromaSlozkaMacu`, test `security-adversarial`.
