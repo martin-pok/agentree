@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.2 – 2026-11-14 · Pomocník bez zátěže
+
+- **Žádný jazykový model:** Pomocník už nikdy nespouští model – ani lokální Ollamu, ani Claude Code (`claude -p`). Se zapnutým „Pomocník odpovídá jako AI“ šla každá otázka k aplikaci nejdřív do modelu, i když průvodce odpověď znal; lokální model se načetl do paměti a vytížil počítač (ventilátory, sekání). Stejně tak výchozí „Odpovědi formulovat lokálním modelem“ u hledání konverzací. Obě volby zmizely, odpovídá okamžitě vestavěný průvodce; hledání starého chatu běží dál bez modelu (nejvýš 5 s a 3 MB přepisů).
+- **„Jak začít?“:** průvodce dá čtyři první kroky (agenti se najdou sami, úkol v Přehledu, Vyžaduje pozornost → Otevřít konverzaci, rozšíření pro webové chaty).
+
 ## 0.47.1 – 2026-11-14 · Nízké karty projektu
 
 - **Šablony podkladů v jedné nabídce:** tři tlačítka šablon (Agentura a klient, Vývoj, Marketing) pod sebou natahovala kartu Podklady a s ní celou řadu karet v detailu projektu. Teď je to jedno tlačítko „Šablona“ s nabídkou (šipky, Enter, Escape) a kopírování podkladů je ikonové tlačítko vedle něj. Řada karet je na 1440 px vysoká 300 px místo ~480 px.

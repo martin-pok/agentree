@@ -551,8 +551,6 @@ export function createHttpServer(app, existingServer = null) {
     ['POST', /^\/api\/hooks\/claude-code$/, async (req) => {
       if (!tokenOk(req)) throw new HttpError(401, ui('Neplatný token.'));
       const telo = await readBody(req);
-      // Dotaz Pomocníka přes Claude Code není agent uživatele (src/pomocnik-ai.js).
-      if (app.jePomocnikSession?.(telo?.session_id)) return { ok: true };
       const r = await app.connectors['claude-code'].ingestHook(telo);
       if (!r.ok) throw new HttpError(400, r.error);
       // Agent pokračuje bez nás (rozhodl se v terminálu, další nástroj, zadání, konec tahu): karta zmizí.
@@ -753,10 +751,6 @@ export function createHttpServer(app, existingServer = null) {
       return { alert };
     }],
     // Pomocník: jen čte. Z telefonu bez přepisů (stejně jako /api/sessions/:id).
-    ['POST', /^\/api\/pomocnik\/ai$/, async (req) => {
-      const body = await readBody(req);
-      return unwrap(await app.pomocnikOdpoved({ dotaz: body?.dotaz, historie: body?.historie, stranka: body?.stranka, znalosti: body?.znalosti, zTohotoPocitace: zTohotoMacu(req) }));
-    }],
     ['POST', /^\/api\/pomocnik$/, async (req) => {
       const body = await readBody(req);
       return unwrap(await app.pomocnik({ dotaz: body?.dotaz, smiPrepisy: zTohotoMacu(req) }));

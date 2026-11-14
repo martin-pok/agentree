@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.2', date: '2026-11-14', title: 'Pomocník bez zátěže',
+    items: ['Pomocník odpovídá okamžitě a nikdy nespouští jazykový model, takže počítač nezatěžuje.'],
+    en: { title: 'A lightweight Assistant', items: ['The Assistant answers instantly and never runs a language model, so it doesn’t load your computer.'] },
+  },
+  {
     version: '0.47.1', date: '2026-11-14', title: 'Nízké karty projektu',
     items: ['Šablony podkladů jsou v jedné nabídce, takže karty v detailu projektu zůstanou nízké.'],
     en: { title: 'Compact project cards', items: ['Brief templates now sit in one menu, so the cards in the project detail stay compact.'] },

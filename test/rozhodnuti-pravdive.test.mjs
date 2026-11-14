@@ -234,7 +234,7 @@ test('Pomocník: „Proč Codex nepracuje?“ odpoví ze živého stavu toho ná
   assert.match(nenacteno.text, /nepodařilo zjistit/);
   assert.match(stavNastroje({ nazev: 'Claude Code', agenti: agenti.slice(1, 2), nacteno: true, spojeni: 'offline' }).pozn, /není potvrzené/);
 
-  // Odpověď ze živého stavu nesmí přeformulovat AI, která stav agentů nezná.
+  // Odpověď ze živého stavu nikdy nepřeformuluje model – Pomocník žádný nespouští.
   const kod = await zdroj('public/js/robot-guide.js');
-  assert.match(kod, /rada\?\.topic !== 'stav-nastroje'/);
+  assert.doesNotMatch(kod, /\/api\/pomocnik\/ai/);
 });

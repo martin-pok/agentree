@@ -234,6 +234,7 @@ test('pomocník: otázky nového uživatele míří na správné téma', () => {
     ['Agent selhal, co mám dělat?', 'selhani'], ['Jak zastavím agenta?', 'zastavit'], ['Jak odpovím agentovi?', 'odpovedet'],
     ['Co je Právě teď?', 'prehled-sekce'], ['k cemu je ten robot', 'robot'], ['Proč se mi neukazuje ChatGPT?', 'chatgpt'],
     ['Jak nastavím rozpočet?', 'budget'], ['jak sledovat chatgpt v prohlizeci', 'extension'],
+    ['how can i start', 'zacatek'], ['jak začít', 'zacatek'], ['how do i begin', 'zacatek'],
   ];
   for (const [q, topic] of ocekavane) assert.equal(guideAnswer(q, { language: /^[A-Z][a-z]+ (can|do)|^Why|^How/.test(q) ? 'en' : 'cs' })?.topic, topic, q);
 });

@@ -811,10 +811,10 @@ async function toggleSetting(sw) {
   const key = sw.dataset.setting;
   const next = sw.getAttribute('aria-checked') !== 'true';
   if (key === 'appearanceSystem') { await prepniVzhledSystem(next); return; }
-  if (key === 'pomocnikZobrazit' || key === 'pomocnikModel' || key === 'pomocnikAi') {
+  if (key === 'pomocnikZobrazit') {
     sw.setAttribute('aria-checked', String(next));
     try {
-      state.settings = (await api.saveSettings({ pomocnik: { [{ pomocnikZobrazit: 'zobrazit', pomocnikModel: 'model', pomocnikAi: 'ai' }[key]]: next } })).settings;
+      state.settings = (await api.saveSettings({ pomocnik: { zobrazit: next } })).settings;
       document.dispatchEvent(new CustomEvent('agenteeq:pomocnik'));
       toast(key === 'pomocnikZobrazit' ? (next ? tr('Pomocník je zpět vpravo dole') : tr('Pomocník je skrytý. Zapneš ho tady.')) : tr('Uloženo'));
       update();
@@ -1179,9 +1179,7 @@ function update(topics) {
       <button class="btn btn--sm" type="button" data-action="reset-layout"${Object.keys(state.settings.layout || {}).length ? '' : ' disabled'}>${tr('Obnovit výchozí')}</button></div>`);
   fill(el, 'assistant', `
     ${head(ICON.spark, tr('Pomocník'), tr('Rady k aplikaci a hledání dřívějších konverzací na tomto počítači.'))}
-    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}
-    ${switchRow({ key: 'pomocnikAi', label: tr('Pomocník odpovídá jako AI'), tip: tr('Odpovídá jen z návodů k Agenteeq přes Ollamu, jinak přes Claude Code – otázka pak odejde do Anthropicu. Konverzace se neposílají.'), checked: state.settings?.pomocnik?.ai === true, disabled: state.settings?.pomocnik?.zobrazit === false })}
-    ${switchRow({ key: 'pomocnikModel', label: tr('Odpovědi formulovat lokálním modelem'), tip: tr('Když máš Ollamu, shrne nalezené konverzace vlastními slovy. Model běží na tomto počítači, nic se neodesílá.'), checked: state.settings?.pomocnik?.model !== false, disabled: state.settings?.pomocnik?.zobrazit === false })}`);
+    ${switchRow({ key: 'pomocnikZobrazit', label: tr('Pomocník'), tip: tr('Kulaté tlačítko vpravo dole: odpoví na otázky k aplikaci a najde dřívější konverzaci na tomto počítači.'), checked: state.settings?.pomocnik?.zobrazit !== false })}`);
   document.dispatchEvent(new CustomEvent('robot:guide-ready'));
   if (v.zvyrazneni && Date.now() < v.zvyrazneni.do) {
     const radek = el.querySelector(`[data-region="${v.zvyrazneni.karta}"] [data-setting="${CSS.escape(v.zvyrazneni.prepinac)}"]`)?.closest('.set-row');

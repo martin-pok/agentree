@@ -11,7 +11,7 @@ import { tr, LOCALE } from './i18n.js';
 import { state, agentsList } from './state.js';
 import { request } from './api.js';
 import { esc, dateLong } from './format.js';
-import { odpovedPruvodce, poradSNastavenim, znalostiPruvodce, jeHledaniChatu } from './assistant-guide.js';
+import { odpovedPruvodce, poradSNastavenim, jeHledaniChatu } from './assistant-guide.js';
 import { jeOtazkaNaCekani } from './co-ceka.js';
 import { renderChatAtPosition } from './assistant-scroll.js';
 import { goToSettings, goToSection } from './jump.js';
@@ -91,12 +91,9 @@ function zpravaHtml(z, i) {
     </li>`).join('');
   return `<div class="pm-msg pm-msg--on">
     ${z.text ? `<p>${esc(z.text)}</p>` : ''}
-    ${z.ai ? `<small class="pm-zdroj">${esc(z.ai === 'Claude Code' ? tr('Odpověděl Claude Code na tvoje předplatné · jen z návodů k Agenteeq') : tr('Odpověděl lokální model {0} · jen z návodů k Agenteeq', z.ai))}</small>` : ''}
-    ${z.lokalne ? `<p class="pm-lokalne">${esc(z.lokalne.text)}<small>${esc(tr('Zformuloval lokální model {0} na tomto počítači.', z.lokalne.model))}</small></p>` : ''}
     ${cile ? `<ul class="pm-cile">${cile}</ul>` : ''}
     ${vysledky ? `<ul class="pm-vysledky">${vysledky}</ul>` : ''}
     ${z.pozn ? `<p class="pm-pozn">${esc(z.pozn)}</p>` : ''}
-    ${z.modelMimo ? `<p class="pm-pozn">${esc(tr('Lokální model odpověď neformuloval: adresa Ollamy (AGENTEEQ_OLLAMA_URL) nevede na tento počítač, a úryvky konverzací proto nikam neodešly.'))}</p>` : ''}
   </div>`;
 }
 
@@ -122,21 +119,9 @@ async function posli(text) {
     // Bez serveru: „co na mě čeká?“ ze živého stavu agentů, otázky k aplikaci z průvodce,
     // otázky mimo Agenteeq poctivé „s tím neporadím“ (public/js/assistant-guide.js).
     const rada = odpovedPruvodce(dotaz, { previousTopic, language: LOCALE, route: trasa(), snapshot: state, agenti: agentsList });
-    // Otázky k aplikaci zodpoví AI ze znalostní báze (src/pomocnik-ai.js) vlastními slovy; odkazy
-    // na místa v aplikaci přidá průvodce. „Co na mě čeká?“ a „Proč Codex nepracuje?“ (živý stav,
-    // který AI nezná) a hledání starého chatu (přepisy na disku) zůstávají deterministické. Bez AI
-    // na počítači odpoví průvodce.
-    if (!jeHledaniChatu(dotaz) && !(rada?.topic === 'cekani' && jeOtazkaNaCekani(dotaz)) && rada?.topic !== 'stav-nastroje') {
-      const historie = zpravy.slice(0, -1).slice(-6).map((z) => ({ kdo: z.kdo, text: z.text || '' }));
-      const ai = await request('POST', '/api/pomocnik/ai', { dotaz, historie, stranka: trasa(), znalosti: znalostiPruvodce(LOCALE) }).catch(() => null);
-      if (ai?.engine) {
-        const cile = rada?.cile?.length ? rada.cile : poradSNastavenim(dotaz, { presne: true });
-        odpoved = { kdo: 'on', text: ai.text, ai: ai.label, cile: (cile || []).slice(0, 3), topic: rada?.topic || null };
-      }
-    }
-    if (odpoved) {
-      // AI odpověděla.
-    } else if (rada) {
+    // Pomocník nikdy nespouští jazykový model (vlastník 14. 11. 2026: lokální model vytížil Mac).
+    // Odpovídá průvodce okamžitě; hledání starého chatu jde na server bez modelu.
+    if (rada) {
       odpoved = { kdo: 'on', ...rada };
     } else {
     const r = await request('POST', '/api/pomocnik', { dotaz });
@@ -146,7 +131,7 @@ async function posli(text) {
         ? { kdo: 'on', text: tr('Tady to najdeš:'), cile }
         : { kdo: 'on', text: tr('Tohle nastavení se nepodařilo najít. Zkus ho popsat jinak nebo otevři hledání ({0}).', zkratka('K')) };
     } else {
-      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [], lokalne: r.lokalne, modelMimo: Boolean(r.modelMimoPocitac) };
+      odpoved = { kdo: 'on', text: r.veta, vysledky: r.vysledky, vzory: r.rozbor?.vzory || [] };
       if (r.vysledky.length && r.rozbor?.okno) odpoved.pozn = tr('Hledané období: {0} – {1}.', dateLong(r.rozbor.okno.od), dateLong(r.rozbor.okno.do));
       // V konverzacích nic, ale dotaz vypadá i na nastavení – nabídnout obojí.
       if (!r.vysledky.length) {
