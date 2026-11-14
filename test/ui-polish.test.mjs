@@ -556,6 +556,7 @@ test('obnova má zřetelný stav bez vypnutí ovládacího prvku a respektuje om
   assert.doesNotMatch(css, /#refresh-app\[aria-busy='true'\] \{ cursor: progress/);
   assert.match(css, /\.obnova-zavoj \{[^}]*pointer-events: auto; cursor: progress;/, 'po dobu obnovy závoj zachytí myš');
   assert.match(app, /toast\(souhrnObnovy\(zaznam\.vysledek/, 'obnova řekne, co našla');
+  assert.match(app, /toast\(souhrnObnovy\(zaznam\.vysledek \|\| \{\}\), \{ tone: 'ok' \}\)/, 'souhrn obnovy je úspěch, ne „vyžaduje pozornost“ v barvě chyby');
   assert.match(app, /ulozPredObnovou\(vysledek\);\n    location\.reload\(\);/, 'obnova je skutečné přenačtení aplikace (vlastník 11. 11. 2026)');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\n  \.oz-lesk \{ animation: none; opacity: 0; \}/);
 });
@@ -941,6 +942,9 @@ test('limity a tokeny bez hovorových rad; malé cílové plochy mají 44 px', a
   const css = await zdroj('public/styles.css');
   assert.match(css, /\.legend-item::before \{ content: ''; position: absolute; inset: -8px -4px; \}/, 'legenda grafu 28 → 44 px');
   assert.match(css, /\.source-version \{[^}]*margin: -10px 0; padding: 14px 0;/, '„Co je nového?“ 25 → 45 px bez posunu rozvržení');
+  // 0.46.100: „Agenteeq 0.46.100 Co je nového?“ se ve WebKitu zalomilo na dva řádky a patička panelu
+  // přečnívala o 19 px. Název je v panelu hned nahoře, u verze stačí „v0.46.100“.
+  assert.match(await fs.readFile(new URL('../public/js/app.js', import.meta.url), 'utf8'), /class="source-version" data-whats-new>v\$\{esc\(state\.version\)\}<span>/);
   assert.match(await zdroj('public/js/views/agents.js'), /placeholder="\$\{tr\('Hledat agenta…'\)\}"/);
 });
 

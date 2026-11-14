@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.46.100 – 2026-11-14 · Rozšíření se nezasekne na „Neověřeno“
+
+- **Rozšíření pro Chrome se připojí i bez procesu na pozadí:** když se jeho proces na pozadí (service worker) neozval, okno rozšíření zůstalo na „Neověřeno – Aplikace běží, ale rozšíření od ní nedostalo odpověď“, dokud se rozšíření ručně nepřenačetlo. Teď se okno zeptá aplikace samo, stejným tokenem, a připojí se i s přehledem agentů. Když ani to nevyjde, ukáže konkrétní důvod (stav HTTP, neodpověď do 3 s, selhané spojení).
+- **Kapsle „Další N agentů v sekci Agenti“ na jednom řádku:** na Přehledu se od 0.46.93 zalamovala na dva řádky na všech šířkách okna.
+- **Plynulejší seznam agentů:** s 50 agenty každá živá změna zablokovala okno na 100–120 ms; nezměněné karty se teď přeskočí (zpoždění změny p50 100 → 64 ms, dlouhé úlohy 40 → 7 na 40 změn).
+- **Velký obrázek projektu:** příliš velký soubor dostane srozumitelnou hlášku místo přerušeného spojení.
+- **Souhrn obnovy v zelené:** hláška po obnově („Aktualizováno · změněné: 1“) byla v tmavém vzhledu růžovočervená se zvonkem a vypadala jako chyba. Teď je to zelené potvrzení s fajfkou. Verze v postranním panelu je zkrácená na „v0.46.100“, aby se patička nezalomila.
+
 ## 0.46.99 – 2026-11-14 · Oprávnění jen na tvůj pokyn
 
 - **Klíčenka jen se svolením:** Agenteeq dřív hned po startu četl přihlášení Claude Code z Klíčenky a macOS se zeptal „security chce použít důvěrné informace…“, aniž bys cokoli udělal. Teď do Klíčenky nesahá, dokud nepovolíš čtení účtu Claude – tlačítkem „Povolit účet Claude“ v Útratě → Účty nástrojů, nebo v Nastavení → Soukromí a bezpečnost, kde jde i kdykoli vypnout. U tlačítka je napsáno, proč a co přesně se čte (jen položka „Claude Code-credentials“, nikdy se nemění ani neukládá, jde jen na api.anthropic.com). Dotaz macOS tak přijde jen jako odpověď na tvoje kliknutí.
