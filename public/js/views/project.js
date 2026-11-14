@@ -129,8 +129,13 @@ function mount(el, [id]) {
           <div class="side-head"><h3 id="brief-h">${tr('Podklady a poznámky')}</h3><span class="small muted" data-notes-status aria-live="polite"></span></div>
           <label class="sr-only" for="brief-${esc(id)}">${tr('Podklady projektu')}</label>
           <textarea class="brief" id="brief-${esc(id)}" data-notes maxlength="20000" placeholder="${tr('Cíl, tón, značka, kontakty, rozhodnutí… Při spuštění agenta z projektu je můžeš připojit k zadání.')}"></textarea>
-          <div class="tpl-inline" data-brief-tpl hidden><span class="small muted">${tr('Začít ze šablony:')}</span>${SABLONY_PROJEKTU().filter((t) => t.brief).map((t) => `<button class="btn btn--sm" type="button" data-brief-sablona="${t.id}">${esc(t.label)}</button>`).join('')}</div>
-          <div class="side-actions"><button class="btn btn--sm" type="button" data-action="copy-brief">${ICON.copy}${tr('Kopírovat podklady')}</button></div>
+          <div class="side-actions">
+            <div class="tpl-menu" data-brief-tpl hidden>
+              <button class="btn btn--sm" type="button" data-tpl-toggle aria-expanded="false" aria-controls="tpl-list-${esc(id)}">${tr('Šablona')}<svg class="icon tpl-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <ul class="tpl-list" id="tpl-list-${esc(id)}" role="menu" hidden>${SABLONY_PROJEKTU().filter((t) => t.brief).map((t) => `<li role="none"><button class="tpl-item" type="button" role="menuitem" data-brief-sablona="${t.id}">${esc(t.label)}</button></li>`).join('')}</ul>
+            </div>
+            <button class="btn btn--sm btn--ico" type="button" data-action="copy-brief" title="${tr('Kopírovat podklady')}">${ICON.copy}<span class="sr-only">${tr('Kopírovat podklady')}</span></button>
+          </div>
         </section>
         <section class="card side-card" data-card="folders" aria-label="${tr('Složky projektu')}">${GRIP}<div data-region="folders"></div></section>
         <section class="card side-card" data-card="services" aria-label="${tr('Služby v projektu')}">${GRIP}<div data-region="services"></div></section>
@@ -156,8 +161,29 @@ function mount(el, [id]) {
   const ukazSablony = () => { sablonyBriefu.hidden = Boolean(textarea.value.trim()); };
   ukazSablony();
   textarea.addEventListener('input', () => { ukazSablony(); saveNotes(textarea, status); });
+  // Šablony v jedné rozbalovací nabídce (vlastník 14. 11. 2026: tři tlačítka pod sebou natáhla
+  // celou řadu karet). Zavře ji výběr, Escape i klik vedle.
+  const tplToggle = sablonyBriefu.querySelector('[data-tpl-toggle]');
+  const tplList = sablonyBriefu.querySelector('.tpl-list');
+  const nabidka = (otevrit) => {
+    tplList.hidden = !otevrit;
+    tplToggle.setAttribute('aria-expanded', String(otevrit));
+    if (otevrit) tplList.querySelector('button')?.focus();
+  };
+  tplToggle.addEventListener('click', () => nabidka(tplList.hidden));
+  sablonyBriefu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !tplList.hidden) { e.stopPropagation(); nabidka(false); tplToggle.focus(); }
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !tplList.hidden) {
+      e.preventDefault();
+      const polozky = [...tplList.querySelectorAll('button')];
+      const i = polozky.indexOf(document.activeElement);
+      polozky[(i + (e.key === 'ArrowDown' ? 1 : -1) + polozky.length) % polozky.length]?.focus();
+    }
+  });
+  document.addEventListener('click', (e) => { if (!tplList.hidden && !sablonyBriefu.contains(e.target)) nabidka(false); });
   sablonyBriefu.addEventListener('click', (e) => {
     const b = e.target.closest('[data-brief-sablona]');
+    if (b) nabidka(false);
     const sablona = b && SABLONY_PROJEKTU().find((t) => t.id === b.dataset.briefSablona);
     if (!sablona || textarea.value.trim()) return;
     textarea.value = sablona.brief;

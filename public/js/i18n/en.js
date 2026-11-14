@@ -1444,7 +1444,6 @@ export default {
     "Filtrovat podle štítku": "Filter by tag",
     "Všechny štítky": "All tags",
     "Zkus jiný název, složku nebo štítek.": "Try a different name, folder or tag.",
-    "Začít ze šablony:": "Start from a template:",
     "90 dní": "90 days",
     "12 měsíců": "12 months",
     "Načítám historii…": "Loading history…",
