@@ -394,7 +394,7 @@ export function createHttpServer(app, existingServer = null) {
   /* ---------- Trasy ---------- */
 
   // Dovednosti se čtou přímo z lokálních adresářů uživatele, nic se nedrží v paměti.
-  const skills = createSkills({ config });
+  const skills = createSkills({ config, slozkyProjektu: () => app.slozkyProjektu?.() || [] });
 
   const routes = [
     ['GET', /^\/api\/skills$/, async () => ({ skills: await skills.list() })],

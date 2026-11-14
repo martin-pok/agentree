@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.47.0 – 2026-11-14 · K čekajícímu agentovi jedním klikem
+
+- **Otevřít konverzaci vždy:** detail vzdáleného agenta Claude (cloud i Remote Control) má tlačítko „Otevřít konverzaci“ i tehdy, když relaci zná jen cache Claude Desktopu – vede přesně na claude.ai/code/<id> téže relace. Dřív tlačítko chybělo, pokud relaci nepotvrdil účet Claude nebo rozšíření, a ty jsi musel chat hledat. Adresa se skládá jen z ověřeného ID; Agenteeq nikdy neaktivuje aplikaci Claude s posledním, často cizím chatem. Stejně se otevírá z rozšíření a z projektu.
+- **Přesný důvod v přepisu:** místo obecné „přihlášení se nepodařilo přečíst“ detail řekne, jestli chybí svolení ke Klíčence, přihlášení Claude Code, nebo macOS přístup odepřel.
+- **Dovednosti – nic vlastního nechybí:** kromě SKILL.md (Claude, pluginy, plánované úlohy, Codex, sdílené) nově i vlastní příkazy a subagenti Claude Code (`~/.claude/commands`, `~/.claude/agents`), příkazy Codexu (`~/.codex/prompts`), příkazy Gemini CLI (`~/.gemini/commands`) a dovednosti uložené v projektech (`.claude/skills`, `.agents/skills` ve složkách, kde pracuješ – nikdy ze soukromých složek macOS). Dovednost z projektu nese jeho název.
+- **Pomocník rozumí víc:** 11 nových témat – účet Claude a Klíčenka, víc účtů Claude, „Nelze ověřit“, obnova, smazání historie, export, selhaný agent, zastavení, odpověď agentovi, části Přehledu, roboti, dotazy macOS na oprávnění a ChatGPT. „Jak otevřu agenta, který na mě čeká?“ odpoví seznamem čekajících s odkazy do detailu. Opraveno, že „Jak povolím účet Claude?“ vedlo na schvalování agentů, „Co znamená Nelze ověřit?“ na upozornění a „Co dělá tlačítko obnovit?“ na limity. Regresní test 40 otázek. Bez placeného API: lokální model nebo Claude Code, jsou-li na počítači, jinak vestavěný průvodce.
+- **Detail projektu:** čtyři karty pod konverzacemi (Podklady, Složky, Tokeny podle služby, Cena přes API) vyplní celou šířku jako seznam nad nimi – dřív zbýval prázdný pátý sloupec. Na užším okně dvě vedle sebe, na telefonu pod sebou.
+- **Robot nemává non-stop:** když tě agent potřebuje, mávne jednou za 12 s a po minutě přestane; zvednutá ruka zůstane.
+- **Angličtina:** v Dovednostech už není „upraveno“ a „Z pluginu“, v projektu „aktivita“ – vše přeložené; anglické rozhraní prošlo kontrolou všech stránek bez české diakritiky.
+
 ## 0.46.99 – 2026-11-14 · Oprávnění jen na tvůj pokyn
 
 - **Klíčenka jen se svolením:** Agenteeq dřív hned po startu četl přihlášení Claude Code z Klíčenky a macOS se zeptal „security chce použít důvěrné informace…“, aniž bys cokoli udělal. Teď do Klíčenky nesahá, dokud nepovolíš čtení účtu Claude – tlačítkem „Povolit účet Claude“ v Útratě → Účty nástrojů, nebo v Nastavení → Soukromí a bezpečnost, kde jde i kdykoli vypnout. U tlačítka je napsáno, proč a co přesně se čte (jen položka „Claude Code-credentials“, nikdy se nemění ani neukládá, jde jen na api.anthropic.com). Dotaz macOS tak přijde jen jako odpověď na tvoje kliknutí.

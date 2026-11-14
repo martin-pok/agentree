@@ -27,6 +27,52 @@ const TELEFON = /\b(telefon\w*|mobil\w*|iphon\w*|android\w*|phone\w*|ipad\w*)\b/
 // „=slovo“ jen na celé slovo, spojení „a_b“ na souvislý úsek dotazu „a b“. Vyhrává nejvyšší
 // součet, při shodě dřívější záměr. `cil` je místo v aplikaci (nebo funkce dotazu).
 const intents = [
+  // Témata doplněná po testu 40 otázek nového uživatele (14. 11. 2026): víc slov = přednost před
+  // obecnými záměry níže, aby „Jak povolím účet Claude?“ nevedlo na schvalování agentů.
+  { id: 'claude-ucet', cil: { route: '#/utrata' },
+    slova: [['ucet_claude', 6], ['uctu_claude', 6], ['ucty_claude', 6], ['claude_ucet', 6], ['claude_account', 6], ['claude_plan', 6], ['dva_ucty', 6], ['dvou_uctu', 6], ['vice_uctu', 6], ['two_accounts', 6], ['multiple_accounts', 6], ['nelze_overit', 7], ['can_t_verify', 7], ['cannot_verify', 7], ['klicenk', 6], ['keychain', 6], ['v_cloudu', 5], ['in_the_cloud', 5], ['cloud_agent', 5], ['licenc', 4]],
+    cs: 'Plán, limity a agenty v cloudu z účtu Claude čte Agenteeq z přihlášení Claude Code. Na Macu je uložené v Klíčence a Agenteeq do ní sáhne až po tvém svolení: v Útratě → Účty nástrojů klepni na Povolit účet Claude (jde i vypnout v Nastavení → Soukromí a bezpečnost); až se macOS zeptá, zvol Vždy povolit. „Nelze ověřit“ znamená, že přihlášení zatím nevidím – svolení chybí, nebo Claude Code není přihlášený (tlačítko Napojit). Víc účtů: každý profil Claude Code (výchozí i každá složka CLAUDE_CONFIG_DIR) je vlastní účet s vlastním plánem; když v jednom profilu přepneš účet, předchozí se ukáže jako Dříve rozpoznaný.',
+    en: 'Agenteeq reads the plan, limits and cloud agents of your Claude account from the Claude Code sign-in. On a Mac it is stored in the Keychain, and Agenteeq only touches it after you allow it: in Spend → Tool accounts click Allow Claude account (you can turn it off in Settings → Privacy and security); when macOS asks, choose Always Allow. “Can’t verify” means I can’t see the sign-in yet – permission is missing, or Claude Code isn’t signed in (the Connect button). Several accounts: each Claude Code profile (the default and every CLAUDE_CONFIG_DIR folder) is its own account with its own plan; if you switch accounts in one profile, the previous one shows as Previously recognised.' },
+  { id: 'opravneni-macos', cil: { karta: 'privacy' },
+    slova: [['stazene_soubory', 6], ['downloads', 5], ['zpristupn', 5], ['accessibility', 5], ['dotaz_macos', 6], ['macos_se_pta', 6], ['pta_na_pristup', 6], ['asks_for_access', 6], ['permission_prompt', 6], ['system_events', 6]],
+    cs: 'Agenteeq se macOS ptá jen jako odpověď na tvou akci: Klíčenka až po Povolit účet Claude, Zpřístupnění až po napojení aplikace ChatGPT, ovládání Terminálu jen když v něm sám něco otevřeš, notifikace s prvním upozorněním. Do Stažených souborů, Dokumentů ani na Plochu na pozadí nesahá. Kameru, mikrofon, polohu ani kontakty nežádá nikdy. Přehled najdeš v Nastavení → Soukromí a bezpečnost.',
+    en: 'Agenteeq only triggers a macOS prompt in response to something you do: the Keychain after Allow Claude account, Accessibility after connecting the ChatGPT app, controlling Terminal only when you open something there, notifications with the first alert. It never touches Downloads, Documents or the Desktop in the background, and never asks for the camera, microphone, location or contacts. See Settings → Privacy and security.' },
+  { id: 'chatgpt', cil: { karta: 'models' },
+    slova: [['chatgpt', 2], ['=gpt', 2], ['openai', 2]],
+    cs: 'ChatGPT vidí Agenteeq dvěma cestami: chaty na chatgpt.com přes rozšíření pro Chrome (Nastavení → Propojení → Rozšíření pro Chrome) a aplikaci ChatGPT pro Mac po klepnutí na Napojit v Nastavení → Propojení → Napojené modely – pak čte jen názvy oken a jestli odpovídá, ne obsah. Codex od OpenAI se čte sám ze složky .codex.',
+    en: 'Agenteeq sees ChatGPT two ways: chats on chatgpt.com through the Chrome extension (Settings → Connections → Chrome extension) and the ChatGPT Mac app after you click Connect in Settings → Connections → Connected models – it then reads only window titles and whether it is answering, not the content. OpenAI’s Codex is read automatically from the .codex folder.' },
+  { id: 'obnova', cil: { route: '#/prehled' },
+    slova: [['obnovit', 5], ['obnoveni_dat', 6], ['tlacitko_obnov', 7], ['=refresh', 5], ['reload', 5], ['nacist_znovu', 5]],
+    cs: 'Tlačítko obnovy vpravo nahoře (dvě šipky) nechá Agenteeq znovu projít všechny zdroje – Claude Code, Codex, Cursor, Claude Desktop, rozšíření – a ověřit účty a plány, pak aplikaci znovu načte. Rozepsaný text zůstane. Na konci řekne, co se změnilo, nebo že je vše aktuální. Běžně to nepotřebuješ: změny chodí živě samy.',
+    en: 'The refresh button at the top right (two arrows) makes Agenteeq re-read every source – Claude Code, Codex, Cursor, Claude Desktop, the extension – and re-check accounts and plans, then reloads the app. Unsent text stays. At the end it tells you what changed, or that everything is up to date. Usually you don’t need it: changes arrive live.' },
+  { id: 'historie', cil: { karta: 'privacy' },
+    slova: [['smazat_histori', 7], ['smazu_histori', 7], ['vymazat_histori', 7], ['clear_history', 7], ['delete_history', 7], ['historii_upozorn', 6]],
+    cs: 'Historii upozornění smažeš v Nastavení → Soukromí a bezpečnost tlačítkem Smazat historii upozornění. Konverzace samotné Agenteeq neukládá – čte je z disku nástrojů, takže je maže jen nástroj, ve kterém vznikly.',
+    en: 'Clear the alert history in Settings → Privacy and security with Clear alert history. Agenteeq doesn’t store the conversations themselves – it reads them from the tools’ files, so only the tool that created them can delete them.' },
+  { id: 'export', cil: { route: '#/projekty' },
+    slova: [['export', 6], ['=csv', 6], ['vyexport', 6], ['do_excelu', 5], ['excel', 4], ['spreadsheet', 4]],
+    cs: 'Export do CSV najdeš na dvou místech: v detailu projektu tlačítkem Export CSV (konverzace, tokeny, časy) a v Útratě (záznamy útraty). Soubor otevřeš v Excelu i Numbers.',
+    en: 'You can export to CSV in two places: in a project’s detail with Export CSV (conversations, tokens, times) and in Spend (spend records). The file opens in Excel and Numbers.' },
+  { id: 'selhani', cil: { route: '#/agenti' },
+    slova: [['selhal', 6], ['selhan', 6], ['spadl', 5], ['zhavaroval', 5], ['=failed', 6], ['failure', 5], ['crashed', 5], ['skoncil_chybou', 6], ['ended_with_an_error', 6]],
+    cs: 'Selhaného agenta najdeš v Přehledu ve Vyžaduje pozornost nebo v Agentech. Otevři ho: v detailu je důvod chyby a tlačítko Otevřít konverzaci, které tě vezme přímo do nástroje, kde agent běžel – tam ho opravíš nebo spustíš znovu. Selhání kvůli limitu se samo vyřeší po jeho obnově; čas obnovy vidíš u limitu.',
+    en: 'Find the failed agent on the Overview under Needs attention or in Agents. Open it: the detail shows why it failed and an Open conversation button that takes you straight to the tool where it ran – fix or restart it there. A failure caused by a limit resolves itself once the limit resets; the reset time is shown next to the limit.' },
+  { id: 'zastavit', cil: { route: '#/agenti' },
+    slova: [['=zastavit', 6], ['=zastavim', 6], ['=zastav', 6], ['zastaveni_agent', 6], ['ukoncit_agent', 6], ['=ukoncim', 5], ['=stop', 5], ['=kill', 5], ['prerusit', 5], ['=cancel', 4]],
+    cs: 'Agenta spuštěného z Agenteeq na pozadí zastavíš v jeho detailu tlačítkem Zastavit. Agenta, který běží v jiné aplikaci nebo v Terminálu, zastavíš tam – otevři ho z detailu tlačítkem Otevřít konverzaci (v Claude Code klávesou Esc, v Terminálu Ctrl+C). Agenteeq do cizích nástrojů nezasahuje.',
+    en: 'An agent started from Agenteeq in the background stops with the Stop button in its detail. An agent running in another app or in Terminal is stopped there – open it from the detail with Open conversation (Esc in Claude Code, Ctrl+C in Terminal). Agenteeq never interferes with other tools.' },
+  { id: 'odpovedet', cil: { route: '#/agenti' },
+    slova: [['odpovim', 6], ['odpovedet', 6], ['odpovedi_agent', 6], ['napsat_agentovi', 6], ['reply', 5], ['answer_the_agent', 6], ['respond', 4]],
+    cs: 'Agentovi odpovíš v detailu konverzace, pokud to nástroj dovolí (některé konverzace Claude Code mají pole pro odpověď přímo v Agenteeq). Jinak klepni na Otevřít konverzaci nebo Pokračovat v Terminálu a odpověz tam – dostaneš se přesně do téhle konverzace.',
+    en: 'Reply to an agent in the conversation detail when the tool allows it (some Claude Code conversations have a reply field right in Agenteeq). Otherwise click Open conversation or Continue in Terminal and answer there – it takes you to exactly this conversation.' },
+  { id: 'prehled-sekce', cil: { route: '#/prehled' },
+    slova: [['co_je_prave_ted', 7], ['what_is_right_now', 7], ['=prave_ted', 3], ['vyzaduje_pozornost', 6], ['needs_attention', 6], ['stav_agentu', 6], ['agent_status', 6], ['co_je_na_prehledu', 6]],
+    cs: 'Přehled má tři hlavní části: Vyžaduje pozornost (agenti, kteří čekají na tvé rozhodnutí, selhali nebo narazili na limit – s tlačítkem do detailu), Stav agentů (kolik jich pracuje, čeká, selhalo a je na limitu) a Právě teď (karty s roboty agentů, kteří teď pracují nebo nedávno pracovali). Nahoře je pole, kam napíšeš nový úkol.',
+    en: 'The Overview has three main parts: Needs attention (agents waiting for your decision, failed or at a limit – with a button to their detail), Agent status (how many are working, waiting, failed and at a limit) and Right now (cards with the robots of agents working now or recently). At the top is the field where you type a new task.' },
+  { id: 'robot', cil: { route: '#/agenti' },
+    slova: [['robot', 5], ['=mascot', 5], ['postavick', 5], ['mava', 4], ['waving', 4]],
+    cs: 'Každý robot je jeden agent. Podle toho, co dělá, se chová: při práci se otočí zády a píše, když tě potřebuje, zvedne ruku a občas zamává, když selže, svěsí anténu. Vzhled (postavu, barvu, čepici, oblečení) mu změníš v detailu klepnutím na robota s tužkou. Robot vpravo dole je tenhle Pomocník.',
+    en: 'Each robot is one agent and behaves according to what it’s doing: it turns its back and types while working, raises a hand and waves now and then when it needs you, and droops its antenna when it fails. Change its look (character, colour, hat, clothes) in the detail by tapping the robot with the pencil. The robot at the bottom right is this Assistant.' },
   { id: 'decisions', cil: { route: '#/prehled', region: 'decisions' },
     slova: [['povol', 3], ['schval', 3], ['opravnen', 3], ['permis', 3], ['approv', 3], ['rozhodnut', 2], ['potvrd', 2], ['decision', 2], ['pozornost', 2], ['attention', 2]],
     cs: 'Kdo čeká na tvoje povolení, vidíš v Přehledu v části Vyžaduje pozornost a v Agentech pod filtrem Potřebuje tebe. Schválit ale musíš v nástroji, kde agent běží – otevři ho tlačítkem Otevřít v… nebo Pokračovat v Terminálu. Agenteeq za tebe nic neschvaluje. Codex žádosti o schválení do souborů nezapisuje, takže je Agenteeq neuvidí.',
@@ -64,7 +110,7 @@ const intents = [
     cs: 'Ve Statistikách vidíš tokeny podle poskytovatele, aplikace, modelu a složky a kdy agenti pracují. Tokeny z přepisů jsou zaznamenaná aktivita, ne účtované náklady.',
     en: 'Statistics shows tokens by provider, app, model and folder, and when your agents work. Tokens from transcripts are recorded activity, not billed costs.' },
   { id: 'extension', cil: { karta: 'extension' },
-    slova: [['rozsiren', 3], ['extens', 3], ['chrom', 3], ['prohlizec', 2], ['browser', 2], ['webov', 2], ['=web', 1]],
+    slova: [['rozsiren', 3], ['extens', 3], ['chrom', 3], ['prohlizec', 3], ['browser', 3], ['webov', 2], ['=web', 1]],
     cs: 'Webové AI chaty uvidíš díky rozšíření pro Chrome. Najdeš ho v Nastavení → Propojení → Rozšíření pro Chrome: nainstaluj ho a spáruje se samo; když ne, vytvoř tam jednorázový kód a vlož ho do rozšíření. Přihlášení k účtu AI služby je něco jiného. Rozšíření je v Betě.',
     en: 'Web AI chats show up through the Chrome extension. Open Settings → Connections → Chrome extension: install it and it pairs by itself; if not, create a one-time code there and paste it into the extension. Signing in to the AI service is a separate thing. The extension is in Beta.' },
   { id: 'mobile', cil: (q) => (/\btailscal\w*/.test(q) ? { karta: 'tailscale' } : /\b(mimo domov|vzdalen\w*|remote|away from home|tunel\w*|tunnel\w*)/.test(q) ? { karta: 'remote' } : { karta: 'phone' }),
@@ -298,6 +344,18 @@ export const jeHledaniChatu = (dotaz) => isSearch(norm(dotaz).replace(/[?!.,:;()
 export function odpovedPruvodce(dotaz, { agenti = [], snapshot = null, ...ctx } = {}) {
   const rada = guideAnswer(dotaz, { ...ctx, snapshot });
   const q = norm(dotaz);
+  // „Jak otevřu agenta, který na mě čeká?“ – rovnou seznam čekajících s odkazy do detailu, kde je
+  // tlačítko Otevřít konverzaci. Návod bez konkrétních agentů by tě nechal hledat.
+  const otevritCekajiciho = /\b(otevr\w*|otevir\w*|dostan\w*|prepnu|open|get to|go to)\b/.test(q)
+    && /\b(ceka\w*|potrebuj\w*|needs?|waiting|selhal\w*|failed)\b/.test(q);
+  if (otevritCekajiciho) {
+    const seznam = typeof agenti === 'function' ? agenti() : agenti;
+    const r = coNaMeCeka({ agenti: seznam, nacteno: Boolean(snapshot?.loaded), spojeni: snapshot?.connection });
+    const en = String(ctx.language || '').startsWith('en');
+    const navod = en ? ' Click an agent below – its detail has an Open conversation button that takes you straight to that chat.' : ' Klepni na agenta níže – v jeho detailu je tlačítko Otevřít konverzaci, které tě vezme přímo do toho chatu.';
+    const obecne = en ? ' When someone is waiting, they appear on the Overview under Needs attention – click them and use Open conversation in the detail.' : ' Až někdo bude čekat, uvidíš ho v Přehledu ve Vyžaduje pozornost – klepni na něj a v detailu použij Otevřít konverzaci.';
+    return { topic: 'cekani', ...r, text: r.text + (r.vysledky?.length ? navod : obecne) };
+  }
   if (jeOtazkaNaCekani(dotaz) && !/\b(jak|how)\b/.test(q) && (!rada || rada.topic == null || ['agents', 'decisions', 'nevim'].includes(rada.topic))) {
     const seznam = typeof agenti === 'function' ? agenti() : agenti;
     return { topic: 'cekani', ...coNaMeCeka({ agenti: seznam, nacteno: Boolean(snapshot?.loaded), spojeni: snapshot?.connection }) };

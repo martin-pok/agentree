@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { readdirSafe, statSafe, clip } from './util.js';
 import { ui } from './texty.js';
+import { soukromaSlozkaMacu } from './platform.js';
 
 // Dovednosti = soubory SKILL.md, které si na disk ukládají Claude, jeho pluginy a Codex.
 // Čteme je jen lokálně a jen na vyžádání; nic se nikam neodesílá.
@@ -17,10 +18,29 @@ export const SOURCES = [
   { id: 'claude-task', label: ui('Claude · plánovaná úloha'), tool: 'claude', rel: ['scheduled-tasks'], depth: 2 },
   { id: 'codex', label: 'Codex', tool: 'codex', rel: ['skills'], depth: 3 },
   { id: 'codex-memory', label: ui('Codex · paměť'), tool: 'codex', rel: ['memories', 'skills'], depth: 2 },
+  // Vlastní příkazy a subagenti (vlastník 14. 11. 2026: v Dovednostech nesmí chybět nic vlastního).
+  // Nejsou to SKILL.md, ale jednotlivé soubory – název je jméno souboru, popis z hlavičky.
+  { id: 'claude-command', label: ui('Claude · příkaz'), tool: 'claude', rel: ['commands'], depth: 3, soubory: /\.md$/i },
+  { id: 'claude-agent', label: ui('Claude · subagent'), tool: 'claude', rel: ['agents'], depth: 3, soubory: /\.md$/i },
+  { id: 'codex-prompt', label: ui('Codex · příkaz'), tool: 'codex', rel: ['prompts'], depth: 2, soubory: /\.md$/i },
+  { id: 'gemini-command', label: ui('Gemini · příkaz'), rel: ['.gemini', 'commands'], depth: 3, soubory: /\.toml$/i },
+];
+// Dovednosti uložené v projektu (`<složka>/.claude/skills`, `<složka>/.agents/skills`) – Claude Code
+// je načítá, když v té složce pracuje. Složky se berou z konverzací a projektů, nikdy ze soukromých
+// složek macOS (dotaz na přístup bez akce uživatele) a nejvýš 40 různých.
+const PROJEKTOVE = [
+  { id: 'project-claude', label: ui('Claude · projekt'), rel: ['.claude', 'skills'], depth: 2 },
+  { id: 'project-shared', label: ui('Projekt · sdílené'), rel: ['.agents', 'skills'], depth: 2 },
 ];
 
 // Hlavička souboru je YAML mezi dvěma řádky `---`. Bereme jen `name` a `description`,
 // nic dalšího neodhadujeme – když hlavička chybí, název vezmeme z názvu složky.
+// Příkaz Gemini CLI je TOML: `description = "…"` (a `prompt`). Bere se jen popis.
+export function popisZToml(text) {
+  const m = /^\s*description\s*=\s*("(?:[^"\\]|\\.)*"|'[^']*')/m.exec(text || '');
+  return m ? m[1].slice(1, -1).replace(/\\"/g, '"') : '';
+}
+
 export function parseFrontMatter(text) {
   const m = /^---\r?\n([\s\S]*?)\r?\n---/.exec(text || '');
   if (!m) return {};
@@ -58,7 +78,7 @@ export function originOf(dir) {
 
 const idOf = (file) => crypto.createHash('sha1').update(file).digest('hex').slice(0, 12);
 
-async function findSkillFiles(root, depth) {
+async function findSkillFiles(root, depth, soubory = null) {
   const out = [];
   const visited = new Set();
   async function walk(dir, level) {
@@ -70,7 +90,8 @@ async function findSkillFiles(root, depth) {
     visited.add(realDir);
     for (const e of await readdirSafe(dir)) {
       const full = path.join(dir, e.name);
-      if (e.name === FILE_NAME && (e.isFile() || e.isSymbolicLink()) && (await statSafe(full))?.isFile()) out.push(full);
+      const hledany = soubory ? soubory.test(e.name) && !e.name.startsWith('.') : e.name === FILE_NAME;
+      if (hledany && (e.isFile() || e.isSymbolicLink()) && (await statSafe(full))?.isFile()) out.push(full);
       else if ((e.isDirectory() || e.isSymbolicLink()) && level < depth && !e.name.startsWith('node_modules') && (await statSafe(full))?.isDirectory()) await walk(full, level + 1);
     }
   }
@@ -78,7 +99,7 @@ async function findSkillFiles(root, depth) {
   return out;
 }
 
-export function createSkills({ config }) {
+export function createSkills({ config, slozkyProjektu = () => [] }) {
   // Testovací sourceHome izoluje všechny zdroje. V běžném provozu respektujeme i vlastní
   // umístění Claude/Codex, které jejich CLI dovolují přes CLAUDE_CONFIG_DIR a CODEX_HOME.
   const rootOf = (src) => {
@@ -90,10 +111,14 @@ export function createSkills({ config }) {
   async function list() {
     const seen = new Set();
     const items = [];
-    for (const src of SOURCES) {
-      const root = rootOf(src);
+    const zdroje = SOURCES.map((src) => ({ src, root: rootOf(src) }));
+    const slozky = [...new Set((slozkyProjektu() || []).filter((d) => typeof d === 'string' && path.isAbsolute(d)))]
+      .filter((d) => !soukromaSlozkaMacu(d, config.sourceHome) && path.resolve(d) !== path.resolve(config.sourceHome))
+      .slice(0, 40);
+    for (const d of slozky) for (const src of PROJEKTOVE) zdroje.push({ src: { ...src, projekt: path.basename(d) }, root: path.join(d, ...src.rel) });
+    for (const { src, root } of zdroje) {
       if (!(await statSafe(root))) continue;
-      for (const file of await findSkillFiles(root, src.depth)) {
+      for (const file of await findSkillFiles(root, src.depth, src.soubory)) {
         let canonical;
         try { canonical = await fs.realpath(file); } catch { continue; }
         if (seen.has(canonical)) continue;
@@ -113,15 +138,18 @@ export function createSkills({ config }) {
         } catch {
           continue;
         }
-        const fm = parseFrontMatter(head);
+        const fm = src.soubory && /\.toml$/i.test(file) ? { description: popisZToml(head) } : parseFrontMatter(head);
+        const jmenoSouboru = path.basename(file).replace(/\.(md|toml)$/i, '');
         items.push({
           id: idOf(file),
-          name: clip(fm.name || path.basename(path.dirname(file)), 80),
+          name: clip(fm.name || (src.soubory ? jmenoSouboru : path.basename(path.dirname(file))), 80),
           description: clip(fm.description || '', 240),
           source: src.label,
+          ...(src.projekt ? { projekt: src.projekt } : {}),
           sourceId: src.id,
           origin: originOf(path.dirname(file)),
           dir: path.dirname(file),
+          file,
           bytes: stat.size,
           at: Math.round(stat.mtimeMs),
         });
@@ -137,7 +165,7 @@ export function createSkills({ config }) {
     const items = await list();
     const hit = items.find((s) => s.id === id);
     if (!hit) return null;
-    const file = path.join(hit.dir, FILE_NAME);
+    const file = hit.file || path.join(hit.dir, FILE_NAME);
     const stat = await statSafe(file);
     if (!stat?.isFile() || stat.size > MAX_BYTES) return null;
     return { ...hit, file, text: await fs.readFile(file, 'utf8') };

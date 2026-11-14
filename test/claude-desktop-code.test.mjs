@@ -38,9 +38,10 @@ test('Claude remote: recovers missing morning agent and reported failure without
   assert.equal(s.repo, 'example/project'); assert.equal(s.cwd, ''); assert.equal(s.resume, null);
   assert.equal(s.tokens.input, 0); assert.equal(s.tokens.output, 0); assert.equal(s.observation.partial, true);
   assert.equal(s.spans.length, 1, 'one reported update, no invented whole-day working interval');
-  // Samotná cache nemá adresu ověřené karty a aktivace Claude by ukázala poslední cizí chat.
+  // Samotná cache nemá adresu ověřené karty; otevírá se přesně claude.ai/code/<id> (vlastník
+  // 14. 11. 2026: k čekajícímu agentovi jedním klikem), nikdy aktivace Claude s posledním chatem.
   assert.equal(s.exactUrl, undefined);
-  assert.equal(s.open.some((x) => x.id === 'app'), false);
+  assert.equal(s.open.some((x) => x.id === 'app'), true);
   assert.equal(JSON.stringify(s).includes('private fixture'), false);
 });
 

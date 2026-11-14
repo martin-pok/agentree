@@ -264,7 +264,7 @@ function update() {
     <div class="card kpi"><span class="eyebrow">${tr('Konverzace')}</span><span class="val">${st.total}</span><small>${st.older.length ? tr('z toho {0} starších', st.older.length) : tr('žádná starší než 30 dní')}</small></div>
     <div class="card kpi"><span class="eyebrow">${tr('Právě pracuje')}</span><span class="val">${st.working}</span><small>${st.needs ? `<span class="sub-alert">${st.needs} ${plural(st.needs, 'čeká', 'čekají', 'čeká')} ${tr('na tebe')}</span>` : tr('nikdo nečeká')}</small></div>
     <div class="card kpi"><span class="eyebrow">${tr('Tokeny · 30 dní')}</span><span class="val">${st.tokens ? fmtTok(st.tokens) : '0'}</span><small>${tr('vstup a výstup')}</small></div>
-    <div class="card kpi"><span class="eyebrow">${tr('Služby')}</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">–</span>'}</span><small>${st.lastAt ? `aktivita <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('zatím bez aktivity')}</small></div>`);
+    <div class="card kpi"><span class="eyebrow">${tr('Služby')}</span><span class="kpi-logos">${st.services.length ? logoStack(st.services, 6) : '<span class="muted">–</span>'}</span><small>${st.lastAt ? `${tr('aktivita')} <span data-ago="${st.lastAt}">${rel(st.lastAt, now)}</span>` : tr('zatím bez aktivity')}</small></div>`);
 
   const counts = {
     all: st.total,

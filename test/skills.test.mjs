@@ -108,3 +108,32 @@ test('Dovednosti: seznam není potichu omezen na prvních 400 položek', async (
   }
   assert.equal((await createSkills({ config }).list()).length, 405);
 });
+
+test('Dovednosti: vlastní příkazy a subagenti Claude, příkazy Codexu a Gemini i dovednosti v projektu', async () => {
+  const { createSkills } = await import('../src/skills.js');
+  const home = await tempDir('skills-vse-');
+  const projekt = await tempDir('skills-projekt-');
+  const pis = async (f, t) => { await fs.mkdir(path.dirname(f), { recursive: true }); await fs.writeFile(f, t); };
+  await pis(path.join(home, '.claude', 'commands', 'nasadit.md'), '---\ndescription: Nasadí web na Vercel\n---\nKroky…');
+  await pis(path.join(home, '.claude', 'agents', 'recenzent.md'), '---\nname: recenzent\ndescription: Projde diff jako senior\n---\n');
+  await pis(path.join(home, '.codex', 'prompts', 'opravit.md'), 'Oprav chybu v testech');
+  await pis(path.join(home, '.gemini', 'commands', 'git', 'commit.toml'), 'description = "Napíše zprávu commitu"\nprompt = "…"\n');
+  await pis(path.join(projekt, '.claude', 'skills', 'brand', 'SKILL.md'), '---\nname: brand\ndescription: Barvy a písma klienta\n---\n');
+  await pis(path.join(home, '.claude', 'commands', '.skryty.md'), 'nic');
+  const config = loadConfig({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_HOME: path.join(home, 'app') });
+  const skills = createSkills({ config, slozkyProjektu: () => [projekt, projekt, 'relativni/cesta', home] });
+  const items = await skills.list();
+  const podle = (n) => items.find((s) => s.name === n);
+  assert.equal(podle('nasadit')?.sourceId, 'claude-command');
+  assert.equal(podle('nasadit')?.description, 'Nasadí web na Vercel');
+  assert.equal(podle('recenzent')?.sourceId, 'claude-agent');
+  assert.equal(podle('opravit')?.sourceId, 'codex-prompt');
+  assert.equal(podle('commit')?.sourceId, 'gemini-command');
+  assert.equal(podle('commit')?.description, 'Napíše zprávu commitu');
+  assert.equal(podle('brand')?.sourceId, 'project-claude');
+  assert.equal(podle('brand')?.projekt, path.basename(projekt), 'název projektu u dovednosti, ne ve filtru zdrojů');
+  assert.equal(items.filter((s) => s.name === 'brand').length, 1, 'stejná složka projektu jen jednou');
+  assert.equal(items.some((s) => s.name.startsWith('.')), false, 'skryté soubory ne');
+  const text = await skills.read(podle('commit').id);
+  assert.match(text.text, /Napíše zprávu commitu/, 'obsah se čte z téhož souboru');
+});
