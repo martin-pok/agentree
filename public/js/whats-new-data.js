@@ -4,6 +4,20 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.100', date: '2026-11-14', title: 'Rozšíření se nezasekne',
+    items: [
+      'Rozšíření pro Chrome se připojí, i když se jeho proces na pozadí neozve – žádné „Neověřeno“, dokud ho nepřenačteš. Když spojení přesto selže, řekne proč.',
+      'Kapsle „Další N agentů v sekci Agenti“ je zase na jednom řádku a seznam agentů je při 50 agentech plynulejší.',
+    ],
+    en: {
+      title: 'The extension no longer gets stuck',
+      items: [
+        'The Chrome extension connects even when its background process does not answer – no more “Not verified” until you reload it. If the connection still fails, it tells you why.',
+        'The “N more agents in Agents” capsule is on one line again, and the agent list stays smooth with 50 agents.',
+      ],
+    },
+  },
+  {
     version: '0.46.99', date: '2026-11-14', title: 'Oprávnění jen na tvůj pokyn',
     items: [
       'Do Klíčenky macOS Agenteeq sahá až po tvém svolení – po startu se na nic neptá. Povolit i vypnout jde v Nastavení → Soukromí a bezpečnost.',
