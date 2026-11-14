@@ -28,6 +28,7 @@ import settings from './views/settings.js';
 import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
+import { initProhlidka } from './prohlidka.js';
 import { initObjev } from './objev-ui.js';
 import { initRozhodnuti } from './rozhodnuti-ui.js';
 import { rozhodnutiPro } from './rozhodnuti-data.js';
@@ -60,6 +61,7 @@ for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app
 
 initSelects();
 initWelcome();
+initProhlidka();
 initObjev();
 initRozhodnuti();
 initWhatsNew();

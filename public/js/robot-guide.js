@@ -193,6 +193,7 @@ function sestav() {
       <header class="pm-hlava">
         <span class="pm-avatar" aria-hidden="true">${GLYPH}</span>
         <div><h2 id="pm-nadpis">${tr('Pomocník')} <span class="pm-beta">${tr('Beta')}</span></h2><small>${tr('Průvodce aplikací')}</small></div>
+        <button type="button" class="pm-prohlidka" data-prohlidka data-pm="zavrit" title="${tr('Prohlídka aplikace')}">${tr('Prohlídka')}</button>
         <button type="button" class="pm-novy" data-pm="novy" title="${tr('Nový rozhovor')}" aria-label="${tr('Nový rozhovor')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></button>
         <button type="button" class="pm-zavrit" data-pm="zavrit" aria-label="${tr('Zavřít pomocníka')}">×</button>
       </header>
