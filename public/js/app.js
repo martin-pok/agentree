@@ -420,7 +420,7 @@ function updateChrome() {
   // profilem a patičkou) po načtení poskočila nahoru.
   setHtml(footEl, `${conn === 'live' || conn === 'connecting' ? '' : `<span class="source-state"><i class="dot dot--down"></i>${tr('Bez spojení se serverem')}</span>`}
     ${!state.loaded ? '<span class="source-version p-skel" aria-hidden="true"><span class="skel-text skel-text--ver"></span></span>' : ''}
-    ${state.version ? `<button type="button" class="source-version" data-whats-new>Agenteeq ${esc(state.version)}<span>${tr('Co je nového?')}</span></button>` : ''}`);
+    ${state.version ? `<button type="button" class="source-version" data-whats-new>v${esc(state.version)}<span>${tr('Co je nového?')}</span></button>` : ''}`);
 
   document.title = `${needs ? `(${needs}) ` : working ? '● ' : ''}${current?.title || tr('Přehled')} · Agenteeq`;
   if (!pop.hidden) renderPopover();
