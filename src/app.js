@@ -26,8 +26,7 @@ import { createClaudeCodeConnector, korenyClaudeCode, STATUS_WINDOWS } from './c
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
 import { createCodexAppThreadsConnector } from './connectors/codex-app-threads.js';
 import { createCodexCloudConnector } from './connectors/codex-cloud.js';
-import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
-import { createPomocnikAi } from './pomocnik-ai.js';
+import { najdiKonverzace, vetaOdpovedi } from './pomocnik.js';
 import { createCursorConnector } from './connectors/cursor.js';
 import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
@@ -220,43 +219,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       ...domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }).map((d) => ({ cesta: path.join(d, 'sessions'), app: 'Codex' })),
     ];
     const v = await najdiKonverzace({ dotaz: text, sessions: store.list(), koreny, smiPrepisy });
-    let lokalne = null;
-    let modelMimoPocitac = false;
-    // Úryvky konverzací smí dostat jen model na tomto počítači (vyberLokalniModel): Ollama na
-    // loopback adrese, bez cloudových a embeddingových modelů. Jiná adresa se odmítne a řekne se to.
-    if (smiPrepisy && v.vysledky.length && datastore.data.settings.pomocnik?.model !== false) {
-      const { model, duvod } = await vyberLokalniModel({ ollama });
-      modelMimoPocitac = duvod === 'mimo-pocitac';
-      if (model) {
-        // Optional wording must not hold the assistant response hostage for 25 seconds.
-        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language, casMs: 4500 });
-        if (odpoved) lokalne = { text: odpoved, model };
-      }
-    }
-    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne, modelMimoPocitac };
-  }
-
-  // Pomocník jako AI (src/pomocnik-ai.js): lokální Ollama, jinak Claude Code na předplatné uživatele.
-  // Hooky dotazu pomocníka se zahodí, aby se neukázal jako další agent.
-  const pomocnikSessions = new Set();
-  const pomocnikAi = createPomocnikAi({
-    ollama,
-    claudeBin: () => launchEnv.bins?.claude || null,
-    ignoruj: (id) => { pomocnikSessions.add(id); setTimeout(() => pomocnikSessions.delete(id), 10 * 60e3).unref?.(); },
-  });
-  async function pomocnikOdpoved({ dotaz, historie, stranka, znalosti, zTohotoPocitace }) {
-    const text = String(dotaz || '').trim().slice(0, 500);
-    if (!text) return { status: 400, error: ui('Napiš, co hledáš.') };
-    if (datastore.data.settings.pomocnik?.ai !== true) return { engine: null, vypnuto: true };
-    // Claude Code smí spustit jen dotaz z tohoto počítače – telefon ho na předplatné nespustí.
-    return pomocnikAi.odpovez({
-      dotaz: text,
-      historie: Array.isArray(historie) ? historie.slice(-6) : [],
-      stranka: String(stranka || ''),
-      znalosti: Array.isArray(znalosti) ? znalosti.slice(0, 80).map(String) : [],
-      jazyk: datastore.data.settings.language === 'en' ? 'en' : 'cs',
-      smiCloud: Boolean(zTohotoPocitace),
-    });
+    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno };
   }
 
   const runs = new RunManager({
@@ -1941,7 +1904,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, push, pomocnik, pomocnikOdpoved, jePomocnikSession: (id) => pomocnikSessions.has(String(id || '')), odpovedet, muzeOdpovedet, sledujDetail, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, push, pomocnik, odpovedet, muzeOdpovedet, sledujDetail, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

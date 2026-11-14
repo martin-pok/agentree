@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.47.1 Preview:** šablony podkladů v jedné nabídce, nízké karty projektu.
+**Kandidát v0.47.2 Preview:** Pomocník bez jazykového modelu.
+
+**v0.47.1 Preview (zveřejněno 14. 11. 2026, build 43614827119, 8 příloh se SHA-256 ověřením):** šablony podkladů v jedné nabídce, nízké karty projektu.
 
 **v0.47.0 Preview (zveřejněno 14. 11. 2026, build 43609196227, 8 příloh se SHA-256 ověřením):** k čekajícímu agentovi jedním klikem, úplné Dovednosti, chytřejší Pomocník, layout projektu.
 
