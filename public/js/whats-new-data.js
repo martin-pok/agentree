@@ -4,6 +4,18 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.46.99', date: '2026-11-14', title: 'Oprávnění jen na tvůj pokyn',
+    items: [
+      'Do Klíčenky macOS Agenteeq sahá až po tvém svolení – po startu se na nic neptá. Povolit i vypnout jde v Nastavení → Soukromí a bezpečnost.',
+    ],
+    en: {
+      title: 'Permissions only when you ask',
+      items: [
+        'Agenteeq only touches the macOS Keychain after you allow it – nothing is asked at launch. Allow or turn it off in Settings → Privacy and security.',
+      ],
+    },
+  },
+  {
     version: '0.46.98', date: '2026-11-12', title: 'Rychlá obnova, žádné dotazy',
     items: [
       'Obnova je hotová za necelou sekundu – dřív trvala skoro tři.',

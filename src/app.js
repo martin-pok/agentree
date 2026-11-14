@@ -61,7 +61,7 @@ import { adresaObchodu, CHROME_WEB_STORE_URL } from '../public/js/obchod.js';
 import { createCloudSync, utrataPoMesicich } from './cloud-sync.js';
 import { resolveProject, snapshotOf, projectsPayload, validateProject, assignSessions, deleteProject, reorderProjects, projectCsv, projectMonthTokens as mesicniTokenyProjektu, COVER_PRESETS, MEDIA_FILE, TEAM_AGENTS } from './projects.js';
 import { installLaunchAgent, uninstallLaunchAgent, isLaunchAgentInstalled } from './launch-agent.js';
-import { fullUserName } from './platform.js';
+import { fullUserName, prihlaseniClaudeCodeSDuvodem } from './platform.js';
 import { ui } from './texty.js';
 import { ze } from '../public/js/predlozky.js';
 import { UpdateService, compareVersions } from './updates.js';
@@ -110,6 +110,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   const historie = createHistorie({ dataDir: config.dataDir, windowDays: config.windowDays });
   await historie.load();
   const secrets = createSecrets({ keychain: config.keychain });
+  const klicenkaClaude = () => Boolean(config.keychain) && datastore.data.claudeKlicenka?.povoleno === true;
   const notifier = createNotifier({ enabled: config.nativeNotify });
   const alerts = new AlertEngine({
     store,
@@ -360,7 +361,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     createWebConnector(ctx),
     createCloudBillingConnector(ctx),
     createClaudeDesktopUsageConnector(ctx),
-    createClaudeDesktopCodeConnector({ ...ctx, claudeCloud }),
+    createClaudeDesktopCodeConnector({ ...ctx, claudeCloud: { klicenka: () => klicenkaClaude(), ...claudeCloud } }),
     createChatGptAppConnector({ ...ctx, povoleno: () => Boolean(datastore.data.chatgptApp?.zapnuto) }),
   ];
   // Pojistka proti přehlédnutému agentovi (src/bezici-agenti.js): běžící proces bez konverzace se
@@ -456,7 +457,20 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
   let subscriptionAuthGeneration = 0;
   // Plán a účet Claude živě ze serveru Anthropicu, pro každý profil Claude Code zvlášť (src/claude-profil.js).
   // Síťová funkce: vypnutá s config.cloudFetch a v testech (dry), pokud ji test sám nepodstrčí.
-  const profilyClaude = claudeProfily || (config.cloudFetch && !dry ? createClaudeProfily({ config }) : null);
+  const profilyClaude = claudeProfily || (config.cloudFetch && !dry ? createClaudeProfily({ config,
+    cist: async (configDir) => (await prihlaseniClaudeCodeSDuvodem({ ...config, keychain: klicenkaClaude(), claudeConfigDir: configDir })).p }) : null);
+  // Svolení ke Klíčence (Útrata, Nastavení → Soukromí). Udělení i odebrání hned zapomene uložená
+  // přihlášení a znovu načte plán, limity i agenty v cloudu – dotaz macOS přijde jako odpověď na klik.
+  async function povolKlicenkuClaude(povolit) {
+    datastore.data.claudeKlicenka = { povoleno: povolit === true };
+    datastore.save();
+    profilyClaude?.reset?.();
+    await connectors['claude-desktop-code']?.scan?.(true);
+    await refreshSubscriptions();
+    spendChanged();
+    return { claudeKlicenka: stavKlicenky() };
+  }
+  const stavKlicenky = () => ({ potreba: Boolean(config.keychain), povoleno: klicenkaClaude() });
   const rateFeed = createRateFeed({ spend: () => datastore.data.spend, save: () => datastore.save(), changed: () => spendChanged(), enabled: config.cloudFetch && !dry });
   async function refreshSubscriptions() {
     const generation = ++subscriptionRefreshGeneration;
@@ -646,7 +660,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Zdroj s klíčem, jehož náklady se nepodařilo načíst. Bez něj by Útrata neúplný součet ukázala
     // jako celý (jeden zdroj selže, druhý platí) nebo selhání jako „nepřipojeno“ – nevíme ≠ nic.
     const failed = Object.entries(sources).filter(([, source]) => source.state === 'error').map(([id, source]) => ({ id, detail: source.detail || '' }));
-    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null, failed }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
+    return { ...spend(), billing: { connected: connected.length > 0, at: connected.length ? Math.max(...connected.map((source) => source.at || 0)) : null, failed }, ledger: sp.ledger, budgetsConfig: sp.budgets, rates: sp.rates, rateInfo: rateInfo(sp), subscriptions: subscriptions(), providerAccounts: providerAccounts(), claudeKlicenka: stavKlicenky(), services: SERVICES, kinds: KINDS, currencies: CURRENCIES };
   }
 
   function spendChanged() {
@@ -1914,7 +1928,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     dokonceno: () => { prvniStav(); return dokonceniStartu; },
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, obnovVse, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, obnovVse, povolKlicenkuClaude, stavKlicenky, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,

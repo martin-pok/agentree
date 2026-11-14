@@ -12,6 +12,6 @@
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
-<key>NSAppleEventsUsageDescription</key><string>Agenteeq otevírá zvolenou konverzaci a spouští agenty v Terminálu na tvůj pokyn.</string>
+<key>NSAppleEventsUsageDescription</key><string>Agenteeq na tvůj pokyn otevírá konverzace a spouští agenty v Terminálu. Po napojení aplikace ChatGPT čte jen názvy jejích oken, ne obsah konverzací.</string>
 <key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>
 </dict></plist>

@@ -190,6 +190,9 @@ function normalizeDataInner(raw) {
     claudeHooks: Number(d.claudeHooks?.od) > 0 ? { od: Number(d.claudeHooks.od), presne: d.claudeHooks.presne === true } : null,
     // Čtení okna aplikace ChatGPT (src/connectors/chatgpt-app.js) zapnuté tlačítkem Napojit.
     chatgptApp: { zapnuto: d.chatgptApp?.zapnuto === true },
+    // Svolení číst přihlášení Claude Code z Klíčenky macOS (plán, limity, agenti v cloudu). Bez něj
+    // Agenteeq do Klíčenky nesahá a macOS se na nic neptá (vlastník 14. 11. 2026).
+    claudeKlicenka: { povoleno: d.claudeKlicenka?.povoleno === true },
     settings: {
       ...DEFAULT_SETTINGS,
       ...s,

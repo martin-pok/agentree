@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.46.99 – 2026-11-14 · Oprávnění jen na tvůj pokyn
+
+- **Klíčenka jen se svolením:** Agenteeq dřív hned po startu četl přihlášení Claude Code z Klíčenky a macOS se zeptal „security chce použít důvěrné informace…“, aniž bys cokoli udělal. Teď do Klíčenky nesahá, dokud nepovolíš čtení účtu Claude – tlačítkem „Povolit účet Claude“ v Útratě → Účty nástrojů, nebo v Nastavení → Soukromí a bezpečnost, kde jde i kdykoli vypnout. U tlačítka je napsáno, proč a co přesně se čte (jen položka „Claude Code-credentials“, nikdy se nemění ani neukládá, jde jen na api.anthropic.com). Dotaz macOS tak přijde jen jako odpověď na tvoje kliknutí.
+- **Audit oprávnění:** prošli jsme všechno, na co se macOS může ptát. Notifikace se žádají až s prvním upozorněním, ovládání Terminálu a spuštění po přihlášení jen na tvůj pokyn, okno ChatGPT (Zpřístupnění) až po „Napojit“, API klíče jsou vlastní položky Agenteeq bez dotazu, server poslouchá jen na 127.0.0.1 (žádný dotaz na místní síť), soukromé složky na pozadí nečte (0.46.98). Agenteeq nežádá kameru, mikrofon, polohu, kontakty, kalendář, fotky, nahrávání obrazovky ani plný přístup k disku. Přehled je v `docs/SECURITY.md`.
+
 ## 0.46.98 – 2026-11-12 · Rychlá obnova, žádné dotazy na soukromé složky
 
 - **Obnova za necelou sekundu:** změřeno od kliknutí po zmizení závoje na 700 konverzacích (358 MB) – dřív 2,9 s, teď 0,9 s. Závoj už nečeká, až dojede animace odlesku (až 1,8 s), a mizí za 0,2 s místo 0,65 s. Server čeká na zdroje a ověření účtů nejvýš 1,5 s; pomalé kroky (`claude auth status`, síť, Klíčenka, Codex) doběhnou na pozadí a výsledek přijde živě.
