@@ -17,7 +17,7 @@ test('prohlídka: kroky míří na skutečná místa, poprvé sama, znovu z Nast
   const app = await zdroj('public/js/app.js');
   assert.match(app, /initProhlidka\(\);/);
   assert.match(await zdroj('public/js/views/settings.js'), /data-prohlidka>\$\{ICON\.spark\}\$\{tr\('Prohlídka aplikace'\)\}/);
-  assert.match(await zdroj('public/js/robot-guide.js'), /class="pm-prohlidka" data-prohlidka/);
+  assert.match(await zdroj('public/js/robot-guide.js'), /class="pm-navrh pm-navrh--prohlidka" data-prohlidka/);
   const css = await zdroj('public/refinement.css');
   assert.match(css, /\.prohl-karta\.je-nahore/, 'na telefonu nezakryje spodní navigaci');
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{ \.prohl, \.prohl-svetlo, \.prohl-karta \{ transition: none; \} \}/);

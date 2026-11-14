@@ -18,7 +18,7 @@ const KROKY = () => [
   { cil: ['.nav a[data-nav="agenti"]'], nadpis: tr('Všichni agenti'), text: tr('Seznam všech konverzací napříč nástroji s filtry – třeba jen ty, které tě potřebují.') },
   { cil: ['.nav a[data-nav="utrata"]', '.nav-more'], nadpis: tr('Útrata a účty'), text: tr('Plány, limity a útrata. Plán a limity účtu Claude uvidíš po klepnutí na Povolit účet Claude v Účtech nástrojů.') },
   { cil: ['#refresh-app'], nadpis: tr('Obnova a hledání'), text: tr('Změny chodí samy živě. Obnova vedle znovu projde všechny zdroje a řekne, co se změnilo; hledání ({0}) najde stránku, nastavení i agenta.', zkratka('K')) },
-  { cil: ['.pm-fab'], nadpis: tr('Pomocník'), text: tr('Zeptej se na cokoli k aplikaci nebo najdi starší chat. Tuhle prohlídku spustíš znovu v Pomocníkovi nebo v Nastavení → Nápověda.') },
+  { cil: ['.pm-fab'], nadpis: tr('Pomocník'), text: tr('Zeptej se na cokoli k aplikaci nebo najdi starší chat. Tuhle prohlídku spustíš znovu volbou Provést aplikací v Pomocníkovi nebo v Nastavení → Nápověda.') },
 ];
 
 const viditelny = (el) => {
