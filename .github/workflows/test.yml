@@ -193,7 +193,8 @@ jobs:
     runs-on: ubuntu-24.04
     # Kontrast se od 0.38.0 měří ve čtyřech vzhledech a qa:desktop klepe i na výběr vzhledu.
     # Instalace prohlížečů (apt) sama trvá na runneru 1–11 minut, 20 minut na celek nestačilo.
-    timeout-minutes: 35
+    # +5 minut pro chaos test (250 kroků trvá na runneru kolem 2 minut).
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -225,6 +226,13 @@ jobs:
       - run: npm run qa:refresh
       - run: npm run qa:tvary
       - run: npm run qa:studio
+      # Chaos test (nový i zlomyslný uživatel, výpadek serveru): v každém běhu jiný seed, ať se
+      # postupně prochází víc situací. Seed je v souhrnu, takže nalezenou chybu jde přesně zopakovat.
+      - run: npm run qa:chaos
+        env:
+          QA_ENGINE: chromium
+          AGENTEEQ_CHAOS_KROKY: '250'
+          AGENTEEQ_CHAOS_SEED: ${{ github.run_number }}
       - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         if: always()
         with:
