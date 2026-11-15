@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.5', date: '2026-11-15', title: 'Který účet Claude agent používá',
+    items: ['Máš-li víc účtů Claude, detail agenta ukáže, pod kterým plánem a účtem běží. Agent druhého účtu se už nepřipíše tomu prvnímu.'],
+    en: { title: 'Which Claude account an agent uses', items: ['With more than one Claude account, the agent detail shows which plan and account it runs on. An agent on your second account is no longer attributed to the first.'] },
+  },
+  {
     version: '0.47.4', date: '2026-11-15', title: 'Přesné upozornění u vzdáleného agenta',
     items: ['Když vzdálený agent Claude skončí chybou, upozornění to tak i řekne – už ne „spuštění selhalo“.'],
     en: { title: 'Accurate alert for remote agents', items: ['When a remote Claude agent ends with an error, the alert now says so – no more “start failed”.'] },

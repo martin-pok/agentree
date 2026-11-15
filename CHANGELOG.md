@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.47.5 – 2026-11-15 · Který účet Claude agent používá
+
+- **Účet v detailu agenta:** máš-li na Macu dva a víc účtů Claude (výchozí profil a CLAUDE_CONFIG_DIR), karta Detaily ukáže, pod kterým plánem agent běží („Claude Pro · účet a74e“ – stejné označení jako v Účtech nástrojů). Jen u ověřené vazby: přepis leží v profilu téhož přihlášeného účtu. S jedním účtem se řádek neukazuje, nic by nerozlišoval; u účtu, který teď nejde ověřit, stojí „Plán teď nejde ověřit“ místo vymyšleného plánu.
+- **Oprava: agent druhé licence pod cizím účtem:** výchozí profil si přivlastňoval i složku konverzací profilu CLAUDE_CONFIG_DIR. Když druhý profil nešel ověřit (třeba bez svolení ke Klíčence), jeho agenti se hlásili k prvnímu účtu a jeho limitům. Teď vlastní každý profil jen své složky; složka, na kterou si dělají nárok dva různé účty, zůstane bez účtu.
+
 ## 0.47.4 – 2026-11-15 · Přesné upozornění u vzdáleného agenta
 
 - **„Skončil chybou“, ne „spuštění selhalo“:** vzdálená relace Claude (cloud i Remote Control), kterou Claude Desktop hlásí jako selhanou, se spustila v pořádku a chyba přišla až při práci. Upozornění teď říká „Claude Desktop · vzdálený Code: skončil chybou“; dřív zavádějící „spuštění selhalo“ („start failed“).

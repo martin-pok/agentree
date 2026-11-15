@@ -524,12 +524,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
     // An account is bound only where authenticated CLI profile and transcript root agree.
     // Never assign all agents to the currently signed-in global account.
+    // Výchozí profil (~/.claude.json) vlastní jen své kořeny (~/.claude, ~/.config/claude), nikdy
+    // kořen CLAUDE_CONFIG_DIR: ten má vlastní přihlášení. Dřív si ho výchozí účet přivlastnil, a když
+    // druhý profil nešel ověřit, agenti druhé licence se hlásili k té první. Kořen, na který si dělají
+    // nárok dva různé účty, zůstane bez účtu – raději „nevím“ než špatná licence.
     const observedAt = Date.now();
-    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
-      home === config.sourceHome
-        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
-          .map((root) => ({ root, accountId, observedAt }))
-        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    const vlastnik = new Map(); // kořen → accountId | null (spor)
+    const prirad = (root, accountId) => {
+      const r = path.resolve(root);
+      vlastnik.set(r, vlastnik.has(r) && vlastnik.get(r) !== accountId ? null : accountId);
+    };
+    for (const { home, accountId } of authenticatedClaudeProfiles) {
+      if (home === config.sourceHome) for (const root of korenyClaudeCode({ home: config.sourceHome })) prirad(root, accountId);
+      else prirad(path.join(home, 'projects'), accountId);
+    }
+    const roots = [...vlastnik].filter(([, accountId]) => accountId).map(([root, accountId]) => ({ root, accountId, observedAt }));
     connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     connectors.codex.bindAccounts?.(codexHomes.map((home, i) => ({ home, accountId: codexResults[i]?.id || null })));
