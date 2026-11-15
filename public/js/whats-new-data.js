@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.4', date: '2026-11-15', title: 'Přesné upozornění u vzdáleného agenta',
+    items: ['Když vzdálený agent Claude skončí chybou, upozornění to tak i řekne – už ne „spuštění selhalo“.'],
+    en: { title: 'Accurate alert for remote agents', items: ['When a remote Claude agent ends with an error, the alert now says so – no more “start failed”.'] },
+  },
+  {
     version: '0.47.3', date: '2026-11-14', title: 'Prohlídka aplikace',
     items: ['Krátká prohlídka ti ukáže hlavní místa přímo v aplikaci. Znovu ji spustíš v Pomocníkovi nebo v Nastavení → Nápověda.'],
     en: { title: 'App tour', items: ['A short tour shows you the main places right in the app. Run it again from the Assistant or Settings → Help.'] },
