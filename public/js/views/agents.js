@@ -11,10 +11,22 @@ import { skladejCipy, zastavSkladani } from '../chips-skladani.js';
 const DALSI = '<button class="chip chip--dalsi" type="button" data-dalsi hidden>+</button>';
 import { pdot, projectTag, assignDialog } from '../projects-ui.js';
 import { BEZ_PREPISU, bezPrepisu } from '../no-transcript.js';
-import { tr, tomtoPocitaci } from '../i18n.js';
+import { tr, tomtoPocitaci, LOCALE } from '../i18n.js';
 import { selectableSessions, selectionOutsideVisible, pruneSelection } from '../agent-bulk-selection.js';
 
-const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set() };
+// Řazení seznamu (vlastník 15. 11. 2026: „ať si to mohu lépe seřadit, třeba od nejnovějších“).
+// Výchozí „Podle stavu“ drží nahoře agenty, kteří tě potřebují. Volba se pamatuje v tomto prohlížeči.
+const RAZENI_KLIC = 'agenteeq:agenti:razeni';
+const RAZENI = {
+  stav: [() => tr('Podle stavu'), compareAgentsForList],
+  nejnovejsi: [() => tr('Nejnovější aktivita'), (a, b) => (b.lastAt || 0) - (a.lastAt || 0)],
+  nejstarsi: [() => tr('Nejstarší aktivita'), (a, b) => (a.lastAt || 0) - (b.lastAt || 0)],
+  zalozeno: [() => tr('Naposledy založené'), (a, b) => (b.startedAt || b.lastAt || 0) - (a.startedAt || a.lastAt || 0)],
+  tokeny: [() => tr('Nejvíc tokenů'), (a, b) => sessionTotal(b) - sessionTotal(a) || (b.lastAt || 0) - (a.lastAt || 0)],
+  nazev: [() => tr('Název A–Z'), (a, b) => String(a.title || '').localeCompare(String(b.title || ''), LOCALE, { sensitivity: 'base', numeric: true }) || (b.lastAt || 0) - (a.lastAt || 0)],
+};
+const ulozeneRazeni = () => { try { const r = localStorage.getItem(RAZENI_KLIC); return RAZENI[r] ? r : 'stav'; } catch { return 'stav'; } };
+const f = { status: 'all', source: 'all', providers: new Set(), q: '', project: 'all', selecting: false, selected: new Set(), razeni: ulozeneRazeni() };
 const v = { el: null, visible: [], limit: Infinity, ceka: false, doplnuje: false };
 // Po otevření obrazovky se vykreslí jen tolik řádků, kolik zaplní i vysoké okno (32 řádků je přes
 // dvě okna); zbytek se doplní sloučením po dávkách, jedna dávka na snímek. Celý seznam naráz
@@ -213,6 +225,7 @@ function mount(el, _params, query) {
   el.innerHTML = `
     <div class="toolbar toolbar--filtry" data-enter style="--i:1" data-jen-s-agenty>
       <div class="seg" role="group" aria-label="${tr('Filtrovat podle stavu')}" data-region="seg"></div>
+      <label class="select razeni"><span class="sr-only">${tr('Seřadit agenty')}</span><select data-razeni>${Object.entries(RAZENI).map(([k, [label]]) => `<option value="${k}"${f.razeni === k ? ' selected' : ''}>${esc(label())}</option>`).join('')}</select></label>
     </div>
     <div class="filtry card" data-enter style="--i:2" data-jen-s-agenty>
       <div class="filtry-rada">
@@ -241,6 +254,13 @@ function mount(el, _params, query) {
     update();
   });
   el.addEventListener('change', (e) => {
+    const razeni = e.target.closest('[data-razeni]');
+    if (razeni) {
+      f.razeni = RAZENI[razeni.value] ? razeni.value : 'stav';
+      try { localStorage.setItem(RAZENI_KLIC, f.razeni); } catch { /* bez úložiště jen pro tuto relaci */ }
+      update();
+      return;
+    }
     const cb = e.target.closest('[data-select-session]');
     if (!cb) return;
     if (cb.checked) f.selected.add(cb.value);
@@ -377,15 +397,17 @@ function update() {
   selectToggle?.setAttribute('aria-pressed', String(f.selecting));
   selectToggle?.classList.toggle('agent-select-toggle--active', f.selecting);
 
-  const list = base.filter((s) => matchStatus(s, f.status)).sort(compareAgentsForList);
+  const list = base.filter((s) => matchStatus(s, f.status)).sort(RAZENI[f.razeni]?.[1] || compareAgentsForList);
   // A grid cannot preserve the card under the pointer by vertical scrolling alone.
   // Keep existing slots during live updates below the filters; explicit filter changes re-sort.
-  const filterKey = JSON.stringify([f.status, f.source, [...f.providers], f.q, f.project]);
+  const filterKey = JSON.stringify([f.status, f.source, [...f.providers], f.q, f.project, f.razeni]);
   const table = el.querySelector('[data-region="table"]');
   if (v.filterKey === filterKey && table?.getBoundingClientRect().top < 0) {
     const positions = new Map([...table.querySelectorAll('[data-key]')].map((node, i) => [node.dataset.key, i]));
-    // Pozici při scrollu zachovávej jen uvnitř skupiny, nikdy přes prioritu stavu.
-    list.sort((a, b) => agentListRank(a) - agentListRank(b)
+    // Pozici při scrollu zachovávej jen uvnitř skupiny, nikdy přes prioritu stavu (u řazení podle
+    // stavu); u ostatních řazení drž pořadí na obrazovce, nové karty přibudou na konec.
+    const skupina = f.razeni === 'stav' ? agentListRank : () => 0;
+    list.sort((a, b) => skupina(a) - skupina(b)
       || (positions.get(a.id) ?? Infinity) - (positions.get(b.id) ?? Infinity));
   }
   v.filterKey = filterKey;
