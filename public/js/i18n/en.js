@@ -148,6 +148,8 @@ export default {
 
     "Účty nástrojů": "Tool accounts",
     "účet": "account",
+    "Účet": "Account",
+    "Plán teď nejde ověřit": "Plan can’t be verified right now",
     "Aktivní": "Active",
     "Dříve rozpoznaný": "Previously detected",
     "Neznámá služba": "Unknown service",

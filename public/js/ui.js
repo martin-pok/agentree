@@ -1239,3 +1239,18 @@ export function switchRow({ key, label, desc = '', tip = '', checked, disabled =
     <button class="switch" type="button" role="switch" aria-checked="${Boolean(checked)}" aria-labelledby="lbl-${esc(key)}" data-setting="${esc(key)}"${disabled ? ' disabled' : ''}></button>
   </div>`;
 }
+
+// Účet, ke kterému agent patří (vlastník 15. 11. 2026: „app stále nedokáže správně pracovat s více
+// licencemi Claude“). Jen ověřená vazba ze serveru (src/store.js#bindAccount – přepis leží v profilu
+// téhož přihlášeného účtu) a jen když má nástroj na tomto počítači aspoň dva aktivní účty: s jedním
+// účtem štítek nic nerozlišuje. Nikdy se neodhaduje podle modelu ani podle právě přihlášeného účtu.
+export function ucetAgenta(s, sp) {
+  const id = s?.accountBinding?.confidence === 'verified' ? s.accountBinding.accountId : null;
+  if (typeof id !== 'string' || !id) return null;
+  const sluzba = id.split(':')[0];
+  const provider = sluzba === 'claude' ? 'anthropic' : sluzba === 'codex' ? 'openai' : sluzba;
+  const aktivni = (sp?.providerAccounts || []).filter((a) => a.active && a.id && a.provider === provider);
+  if (new Set(aktivni.map((a) => a.id)).size < 2) return null;
+  const ucet = aktivni.find((a) => a.id === id);
+  return { id, tag: `${tr('účet')} ${id.slice(-4)}`, plan: ucet?.planLabel || '', aktivni: Boolean(ucet) };
+}
