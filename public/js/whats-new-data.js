@@ -4,6 +4,11 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
+    version: '0.47.7', date: '2026-11-15', title: 'Plastičtí roboti',
+    items: ['Roboti se otáčejí jako plná tělesa s hloubkou: obličej je součástí hlavy, ruce i uši zůstávají vidět a stínování je plynulé.'],
+    en: { title: 'Sculpted robots', items: ['Robots now turn as solid bodies with depth: the face is part of the head, arms and ears stay visible and the shading is smooth.'] },
+  },
+  {
     version: '0.47.6', date: '2026-11-15', title: 'Chat, který nezůstane viset',
     items: ['Nový chat v ChatGPT se po první odpovědi správně přejmenuje a dál aktualizuje.', 'Prohlídka aplikace je plynulá a nikdy nezakryje, o čem mluví.', 'Agenty si seřadíš – třeba od nejnovější aktivity.'],
     en: { title: 'Chats that don’t get stuck', items: ['A new ChatGPT chat now picks up its new name after the first reply and keeps updating.', 'The app tour moves smoothly and never covers what it is pointing at.', 'Sort your agents – for example by latest activity.'] },
