@@ -68,7 +68,9 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.47.5 Preview:** účet Claude v detailu agenta při víc licencích; agent druhého profilu se nepřipíše cizímu účtu.
+**Kandidát v0.47.6 Preview:** webový chat se změněným ID nezůstane viset; plynulá prohlídka; řazení agentů; okno upozornění.
+
+**v0.47.5 Preview (zveřejněno 15. 11. 2026, build 43692130052, 8 příloh se SHA-256 ověřením):** účet Claude v detailu agenta při víc licencích; agent druhého profilu se nepřipíše cizímu účtu.
 
 **v0.47.4 Preview (zveřejněno 15. 11. 2026, build 43664006422, 8 příloh se SHA-256 ověřením):** přesné upozornění u vzdáleného agenta, který skončil chybou.
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.47.6 – 2026-11-15 · Chat, který nezůstane viset, a plynulá prohlídka
+
+- **Oprava: chat v ChatGPT visel na první zprávě:** nový chat má v ChatGPT nejdřív dočasnou adresu a po první odpovědi dostane skutečné ID (`/c/…`) i nový název. Agenteeq dřív zůstal u záznamu se starým ID – s názvem podle první zprávy („l“) a bez dalších zpráv. Rozšíření teď pozná, že konverzace pod novým ID pokračuje (všechny dosavadní zprávy uživatele jsou jejím začátkem), a Agenteeq oba záznamy spojí do jednoho s aktuálním názvem a celým přepisem. Bez takového důkazu se nic nespojuje ani nemaže – cizí konverzaci tudy smazat nejde. Platí pro všechny webové služby.
+- **Plynulá prohlídka:** zvýraznění a posun stránky jedou v týchž snímcích po jedné křivce, bez honění a překmitu („bounce“); karta se mění jen skrytá a objeví se na svém místě; nikdy nezakryje zvýrazněné místo – vysoký cíl se zkrátí na čisté hraně (pod celou řadou karet). Funguje i při živém překreslení Přehledu, změně okna a na telefonech (iPhone SE až iPad, i na šířku). Spuštění z Nastavení už nevynechá kroky.
+- **Řazení agentů:** vedle stavů výběr Podle stavu (výchozí), Nejnovější a Nejstarší aktivita, Naposledy založené, Nejvíc tokenů, Název A–Z. Volba se pamatuje.
+- **Okno upozornění:** seznam se k patičce plynule rozplyne (jen když pokračuje), místo ostrého řezu; tlačítko „Zobrazit všechna upozornění“ má nádech značky. „Označit vše jako přečtené“ zůstane na jednom řádku i na telefonu.
+
 ## 0.47.5 – 2026-11-15 · Který účet Claude agent používá
 
 - **Účet v detailu agenta:** máš-li na Macu dva a víc účtů Claude (výchozí profil a CLAUDE_CONFIG_DIR), karta Detaily ukáže, pod kterým plánem agent běží („Claude Pro · účet a74e“ – stejné označení jako v Účtech nástrojů). Jen u ověřené vazby: přepis leží v profilu téhož přihlášeného účtu. S jedním účtem se řádek neukazuje, nic by nerozlišoval; u účtu, který teď nejde ověřit, stojí „Plán teď nejde ověřit“ místo vymyšleného plánu.

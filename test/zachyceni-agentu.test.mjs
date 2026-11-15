@@ -131,6 +131,37 @@ test('nová konverzace v prohlížeči: po přidělení ID zůstane jeden zázna
   }
 });
 
+// Vlastník 15. 11. 2026: nový chat v ChatGPT dostal po první zprávě „l“ jiné ID v adrese a nový
+// název („Pozdrav Martinovi“); Agenteeq zůstal na starém záznamu s „l“ a dál se neaktualizoval.
+test('konverzace, které služba sama změní ID: jeden záznam s novým názvem, cizí se nesmaže', async () => {
+  const srv = await startTestServer();
+  try {
+    const { token } = await pairExtension(srv.url);
+    const hlavicky = { 'X-Agenteeq-Token': token, Origin: EXTENSION_ORIGIN };
+    const a = api(srv.url);
+    const posli = (telo) => a.send('POST', '/api/ingest/web', { site: 'chatgpt', generating: false, ...telo }, hlavicky);
+    assert.equal((await posli({ conversationId: 'local-chatgpt', url: 'https://chatgpt.com/c/local-chatgpt', title: 'l', messages: [{ role: 'user', text: 'l' }] })).status, 200);
+    assert.equal(srv.app.store.get('web:chatgpt:local-chatgpt').title, 'l');
+    const zpravy = [{ role: 'user', text: 'l' }, { role: 'assistant', text: 'Ahoj!' }, { role: 'user', text: 'Co umíš?' }, { role: 'assistant', text: 'Hodně věcí.' }];
+    assert.equal((await posli({ conversationId: '6af98a49-9ac8-83eb-a786-1dc914f3ccb7', url: 'https://chatgpt.com/c/6af98a49-9ac8-83eb-a786-1dc914f3ccb7', title: 'Pozdrav Martinovi', messages: zpravy, nahrazuje: 'local-chatgpt' })).status, 200);
+    const web = srv.app.store.list().filter((x) => x.connector === 'web');
+    assert.deepEqual(web.map((x) => x.id), ['web:chatgpt:6af98a49-9ac8-83eb-a786-1dc914f3ccb7'], 'jeden záznam, žádný visící „l“');
+    assert.equal(web[0].title, 'Pozdrav Martinovi');
+    assert.equal(srv.app.store.get(web[0].id).transcript.filter((e) => e.role === 'user').length, 2, 'celý přepis');
+
+    // Jiná konverzace se jiným začátkem se poslaným „nahrazuje“ nesmaže.
+    await posli({ conversationId: 'cizi-1', url: 'https://chatgpt.com/c/cizi-1', title: 'Cizí', messages: [{ role: 'user', text: 'Úplně jiný chat' }] });
+    await posli({ conversationId: 'dalsi-2', url: 'https://chatgpt.com/c/dalsi-2', title: 'Další', messages: [{ role: 'user', text: 'Jiný začátek' }], nahrazuje: 'cizi-1' });
+    assert.ok(srv.app.store.get('web:chatgpt:cizi-1'), 'konverzace bez důkazu pokračování zůstala');
+    // Konverzace bez zpráv uživatele (nic k porovnání) se taky nesmaže.
+    await posli({ conversationId: 'prazdna', url: 'https://chatgpt.com/c/prazdna', title: 'Prázdná', counts: { user: 0, assistant: 1 }, messages: [{ role: 'assistant', text: 'x' }] });
+    await posli({ conversationId: 'treti-3', url: 'https://chatgpt.com/c/treti-3', title: 'Třetí', messages: [{ role: 'user', text: 'x' }], nahrazuje: 'prazdna' });
+    assert.ok(srv.app.store.get('web:chatgpt:prazdna'));
+  } finally {
+    await srv.close();
+  }
+});
+
 // ── Selhání výpisu procesů ≠ nic neběží ─────────────────────────────────────
 
 test('selhání výpisu procesů: stav zdroje hned hlásí chybu, běžící agenti nezmizí', async (t) => {

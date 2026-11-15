@@ -479,11 +479,19 @@ html.notif-open .pomocnik { opacity: 0; pointer-events: none; }
 .pop-time { font-size: 12px; color: var(--mute); }
 .pop-empty { padding: 24px; text-align: center; color: var(--mute); }
 /* Patička: viditelné tlačítko (kapsle 44 px s obrysem), oddělené od seznamu linkou. */
-.pop-foot { display: flex; align-items: center; justify-content: center; flex: none; height: 44px; margin: 0 12px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--ink) 5%, var(--card)); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font: 500 14px/1 var(--f-body); text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
-.pop-foot:hover { background: color-mix(in srgb, var(--ink) 9%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 24%, transparent); }
+/* Patička: kapsle s nádechem značky (vlastník 15. 11. 2026: šedá splývala s podkladem). */
+.pop-foot { display: flex; align-items: center; justify-content: center; flex: none; height: 44px; margin: 0 12px 12px; border-radius: var(--r-full); background: color-mix(in srgb, var(--brand) 12%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 34%, transparent); color: var(--ink); font: 500 14px/1 var(--f-body); text-decoration: none; transition: background-color var(--motion-response) var(--ease), box-shadow var(--motion-response) var(--ease); }
+.pop-foot:hover { background: color-mix(in srgb, var(--brand) 20%, var(--card)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 55%, transparent); }
 /* Okno se vejde do okna prohlížeče vždy celé: seznam se zkrátí a roluje, patička zůstane vidět. */
 .notif-pop { max-height: calc(100dvh - 120px); }
-.notif-pop > .pop-list { flex: 1 1 auto; min-height: 0; max-height: none; border-bottom: 1px solid var(--line-2); margin-bottom: 12px; }
+.notif-pop > .pop-list { flex: 1 1 auto; min-height: 0; max-height: none; margin-bottom: 4px; }
+/* Seznam se k okrajům plynule rozplyne do plochy okna, místo ostrého řezu – jen tam, kde další
+   upozornění opravdu pokračují (app.js#stinySeznamu). Výška přechodu se animuje. */
+@property --pop-dole { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --pop-nahore { syntax: '<length>'; inherits: false; initial-value: 0px; }
+.notif-pop > .pop-list { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--pop-nahore), #000 calc(100% - var(--pop-dole)), transparent 100%); mask-image: linear-gradient(to bottom, transparent 0, #000 var(--pop-nahore), #000 calc(100% - var(--pop-dole)), transparent 100%); transition: --pop-dole var(--motion-response) var(--ease), --pop-nahore var(--motion-response) var(--ease); }
+.notif-pop > .pop-list.ma-dalsi { --pop-dole: 56px; }
+.notif-pop > .pop-list.ma-predchozi { --pop-nahore: 20px; }
 .level-action .pop-icon, .level-action .alert-icon, .level-critical .pop-icon, .level-critical .alert-icon { background: var(--velvet-tint); color: var(--velvet-ink); }
 .pop-icon { box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); }
 .level-warning .pop-icon, .level-warning .alert-icon { background: var(--brass-tint); color: var(--brass-ink); }
@@ -2669,6 +2677,14 @@ body.is-dragging .nav a[data-project-drop] { box-shadow: inset 0 0 0 1px var(--l
    s dozněním u okraje. Dřív se řádek projektů lámal do dvou výšek, „Vybrat“ stálo svisle jinde
    než čipy a hledání viselo samo na vlastním řádku. Stejný jazyk má karta na Dovednostech. */
 .toolbar--filtry { margin-bottom: 16px; }
+/* Řazení vpravo ve stejné řadě jako stavy (stavy se při nedostatku místa posouvají, výběr zůstane
+   celý); stejná plocha a výška jako řada stavů. Na telefonu na vlastním řádku přes celou šířku. */
+.toolbar--filtry:has(.razeni) { flex-wrap: nowrap; }
+.toolbar--filtry:has(.razeni) > .seg { flex: 0 1 auto; min-width: 0; }
+.toolbar--filtry .razeni { margin-left: auto; flex: none; }
+.toolbar--filtry .razeni .picker-trigger { min-height: 44px; padding-inline: 20px 18px; border-color: transparent; background: var(--card); box-shadow: var(--shadow-sm); color: var(--ink-2); font-weight: 500; }
+.toolbar--filtry .razeni .picker-trigger:hover { color: var(--ink); border-color: transparent; box-shadow: inset 0 0 0 1px var(--line), var(--shadow-sm); }
+@media (max-width: 640px) { .toolbar--filtry:has(.razeni) { flex-wrap: wrap; } .toolbar--filtry .razeni { margin-left: 0; width: 100%; } .toolbar--filtry .razeni .picker-trigger { width: 100%; min-height: 40px; } }
 .filtry { margin-bottom: 24px; box-shadow: var(--shadow-sm); }
 /* Vpravo 8 px: hledání i „Vybrat“ pak sedí v kartě se stejným odstupem nad, pod i vpravo. */
 .filtry-rada { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; align-items: center; column-gap: 16px; min-height: 56px; padding: 0 8px 0 24px; }
