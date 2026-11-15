@@ -16,6 +16,7 @@
 | Chaos, seedy 7, 1337 a 424242, po 800 krocích | Bez chyby. Nejdelší odezva hlavního vlákna 231 ms (tři prohlížeče souběžně), paměť stabilně 10 MB, DOM 1917 → nejvýš 3730 uzlů. |
 | Zátěž serveru | 300 souběžných čtení stavu, 25 souběžných obnov a 100 zápisů (polovina rozbitý JSON, polovina extrémní názvy) za 0,8 s: vše vyřízeno (200 / 400 / 422), žádný pád; další čtení stavu hned potom za 2 ms. |
 | Neověřeno | WebKit (v kontejneru není), nainstalovaná macOS aplikace a skutečné zařízení. |
+| CI (od 14. 11. 2026) | `qa:chaos` běží v úloze „rozhraní a přístupnost“ na každém PR i `main`: 250 kroků v Chromiu, seed = číslo běhu (každý běh jiné situace; seed je v souhrnu pro přesné zopakování). Lokálně před zapnutím 4 seedy × 250 kroků bez chyby. |
 
 ## Protokol ověření – Nevydáno: Pomocník a historie chatu (11. 10. 2026, macOS, Node 24.18.1)
 
