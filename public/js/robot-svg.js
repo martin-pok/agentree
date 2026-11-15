@@ -93,15 +93,19 @@ function aerial(kind, top, s) {
   }
 }
 
+// Uši jsou součást hlavy, ne nalepené plošky (vlastník 15. 11. 2026): stejný materiál a objem jako
+// skořepina (robot-ear-objem) a v otočce se kolem vlastního středu rozšíří – z profilu na plnou plochu,
+// jak se k nám bok hlavy natočí (refinement.css, rz-ucho-natoceni). Vrací [levé, pravé].
 function ears(kind, h, s) {
   const { x, w, top } = h;
   const y = top + 16 * s;
   const eh = 19 * s;
+  const ucho = (tvar) => `<g class="robot-ucho-tvar">${tvar}${tvar.replace('class="robot-ear"', 'class="robot-ear-objem"')}</g>`;
   switch (kind) {
-    case 'round': return `<circle class="robot-ear" cx="${n(x - 2)}" cy="${n(y + eh / 2)}" r="${n(7 * s)}"/><circle class="robot-ear" cx="${n(x + w + 2)}" cy="${n(y + eh / 2)}" r="${n(7 * s)}"/>`;
-    case 'square': return `<rect class="robot-ear" x="${n(x - 7)}" y="${n(y + 2)}" width="9" height="${n(eh - 4)}" rx="2"/><rect class="robot-ear" x="${n(x + w - 2)}" y="${n(y + 2)}" width="9" height="${n(eh - 4)}" rx="2"/>`;
-    case 'rect': return `<rect class="robot-ear" x="${n(x - 7)}" y="${n(y)}" width="10" height="${n(eh)}" rx="5"/><rect class="robot-ear" x="${n(x + w - 3)}" y="${n(y)}" width="10" height="${n(eh)}" rx="5"/>`;
-    default: return '';
+    case 'round': return [x - 2, x + w + 2].map((cx) => ucho(`<circle class="robot-ear" cx="${n(cx)}" cy="${n(y + eh / 2)}" r="${n(7 * s)}"/>`));
+    case 'square': return [x - 7, x + w - 2].map((ex) => ucho(`<rect class="robot-ear" x="${n(ex)}" y="${n(y + 2)}" width="9" height="${n(eh - 4)}" rx="2"/>`));
+    case 'rect': return [x - 7, x + w - 3].map((ex) => ucho(`<rect class="robot-ear" x="${n(ex)}" y="${n(y)}" width="10" height="${n(eh)}" rx="5"/>`));
+    default: return [];
   }
 }
 
@@ -269,16 +273,28 @@ function signal(g) {
     + `</g>`;
 }
 
-// Objem (rozhodnutí vlastníka 23. 10. 2026: „víc 3D, ne samolepka, ne čtyři ploché stěny“). Hlava
-// i trup jsou zaoblená tělesa s eliptickým průřezem (hloubka = podíl šířky). Při otočce se obrys
-// plynule mění z šířky na hloubku (refinement.css, rz-otocka-*) a všechno, co na těle leží – obličej,
-// oči, jádro, záda – po povrchu přejede, zkrátí se a za okrajem zmizí, přesně podle průmětu bodu na
-// elipse. Bližší ucho přejde přes hlavu, vzdálenější za ni zajde. Žádné přilepené boční plochy.
-const HLOUBKA_HLAVY = 0.62;
-const HLOUBKA_TRUPU = 0.7;
-// Posun prvku z čela tělesa při natočení o θ je (hloubka/2)·cos α·sin θ, kde sin α = šířka prvku /
-// šířka tělesa (prvek je na elipse, ne na plochém čele). Vrací (hloubka/2)·cos α v jednotkách SVG.
-const posunPovrchu = (sirkaTelesa, sirkaPrvku, hloubka) => (sirkaTelesa * hloubka / 2) * Math.sqrt(Math.max(0, 1 - (sirkaPrvku / sirkaTelesa) ** 2));
+// Objem. 23. 10. 2026: „víc 3D, ne samolepka, ne čtyři ploché stěny“. 15. 11. 2026: v otočce to pořád
+// působilo placatě („hlava má připomínat krychli, i tělo má mít hloubku“) a hned nato „hlava má být
+// vyplněná, ne spojené placaté stěny“. Hlava i trup jsou proto plná zaoblená tělesa s průřezem
+// blízkým čtverci: v otočce zůstanou jedním tvarem s jedním obrysem, široké |cos θ| + hloubka·sin θ
+// (na 90° je vidět celá hloubka). Obličej, jádro a záda leží na čele/zádech: zkrátí se na |cos θ|
+// a posunou po zaobleném povrchu – u kraje se zhustí a zajdou za obrys, nikdy se neodchlípnou.
+// Stínování: plynulé zesílení stínu ve tvaru tělesa (stiny). Uši a paže jsou na bocích.
+const HLOUBKA_HLAVY = 0.84;
+const HLOUBKA_TRUPU = 0.78;
+// Měřítko pro prvky na povrchu (obličej, záda, jádro, panel): polovina šířky tělesa. Polohu jejich
+// okrajů při otočce počítá refinement.css z bodů zaobleného povrchu (rz-otocka-predek/-zada).
+const posunPovrchu = (sirkaTelesa) => sirkaTelesa / 2;
+// Stínování v otočce (vlastník 15. 11. 2026: „smooth, realistické, ne tmavý flek“): dvě vrstvy přesně
+// ve tvaru skořepiny, uvnitř téže skupiny – nemají vlastní okraje ani rohy. Tmavnou plynule od kraje,
+// který se od světla odvrací; v otočce se jen zesilují a slábnou (refinement.css, rz-stin-l/-p).
+// Obličej a záda jsou v otočce oříznuté tvarem hlavy (robot-hlava-plocha, sdílený clipPath
+// rb-hlava-<typ> z robot-materials.js) – na kulaté hlavě tak rohy obličeje nikdy nevyjedou ven.
+// Světlo a hrana tělesa leží NAD obličejem a zády (vlastník 15. 11. 2026: „obličej je součást modelu
+// hlavy, ne nalepená placka“): stín odvrácené strany zatemní i obličej a obrys hlavy přejde přes jeho
+// okraj, takže obličej zajede pod hranu hlavy. Skupina má obrys tělesa (rz-otocka-hlava/-trup).
+const svetlo = (trida, obrys, x, y, w, h, r) => `<g class="${trida}">${stiny(x, y, w, h, r)}<rect class="robot-obrys ${obrys}" x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}"/></g>`;
+const stiny = (x, y, w, h, r) => ['l', 'p'].map((k) => `<rect class="robot-stin robot-stin-${k}" x="${n(x)}" y="${n(y)}" width="${n(w)}" height="${n(h)}" rx="${n(r)}"/>`).join('');
 
 // Zadní strana robota: místo obličeje kryt s větráním a dvěma šrouby, na trupu servisní panel.
 function zada(g) {
@@ -310,26 +326,31 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
   const { levo: [lx, shoulderY, lex, ley], pravo: [rxx, , rex, rey] } = paze(g);
   const f = g.face;
   // Uši zvlášť: levé (bližší při otočce zády) přejde přes hlavu, pravé zajde za ni.
-  const usi = ears(g.ears, h, s).split('/>').filter(Boolean).map((u) => `${u}/>`);
+  const usi = ears(g.ears, h, s);
+  // Levá paže je při otočce zády ta bližší: v otočce se kreslí znovu přes trup (robot-paze-pres),
+  // jinak by za ním zmizela (vlastník 15. 11. 2026: „proč agentovi při otáčení zmizí ruce?“).
+  const pazeLeva = `<path class="robot-limbs robot-arm-left" style="--tw:${n(t.w)}px;transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`;
   const shadow = Math.max(18, Math.min(30, Math.max(t.w, h.w * 0.55) / 1.7));
   const cheeks = g.cheeks ? `<ellipse class="robot-cheek" cx="${n(54 - 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/><ellipse class="robot-cheek" cx="${n(54 + 20 * s)}" cy="${n(g.eyeY + 8 * g.es)}" rx="${n(4 * s)}" ry="${n(2.4 * s)}"/>` : '';
   return `<svg class="robot robot--${kind.toLowerCase()}" data-robot-type="${kind}" viewBox="0 0 108 112" aria-hidden="true">`
     + `<ellipse class="robot-shadow" cx="54" cy="${n(ZEME + 1.5)}" rx="${n(shadow)}" ry="4"/>`
     + (kusy.prace ? dilna(g) : '')
     + `<g class="robot-body">${legs(g.legs, t)}`
-    + `<path class="robot-limbs robot-arm-left" style="--tw:${n(t.w)}px;transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`
+    + pazeLeva
     + `<path class="robot-limbs robot-arm-right" style="--tw:${n(t.w)}px;transform-origin:${n(rxx)}px ${n(shoulderY)}px" d="M${n(rxx)} ${n(shoulderY)}L${n(rex)} ${n(rey)}"/>`
-    + `<g class="robot-trup-telo"><rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
+    + `<g class="robot-trup-telo" style="--pd:${n(t.w * HLOUBKA_TRUPU / 2)}px"><rect class="robot-torso" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/>`
     + `<rect class="robot-objem" x="${n(t.x)}" y="${n(t.top)}" width="${n(t.w)}" height="${n(t.h)}" rx="${n(t.r)}"/></g>`
     + `<g class="robot-predek-trupu" style="--fd:${n(posunPovrchu(t.w, 6, HLOUBKA_TRUPU))}px">`
     + (g.core === 'star' ? `<g class="robot-core">${hvezda(54, t.top + t.h / 2 - 1, 4.4)}</g>` : `<circle class="robot-core" cx="54" cy="${n(t.top + t.h / 2 - 1)}" r="3"/>`)
     + '</g>'
     + `<g class="robot-zada-trupu" style="--fd:${n(posunPovrchu(t.w, t.w * 0.5, HLOUBKA_TRUPU))}px">${zadaTrup(t)}</g>`
+    + svetlo('robot-trup-svetlo', 'robot-obrys-trupu', t.x, t.top, t.w, t.h, t.r)
+    + `<g class="robot-paze-pres">${pazeLeva}</g>`
     + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}${kusy.signal ? signal(g) : ''}</g>`
     + `<g class="robot-ucho-zadni" style="--hw:${n(h.w)}px">${usi[1] || ''}</g><g class="robot-ucho-predni" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
-    + `<g class="robot-hlava-telo"><rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
+    + `<g class="robot-hlava-telo" style="--pd:${n(h.w * HLOUBKA_HLAVY / 2)}px"><rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
     + `<rect class="robot-objem" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/></g>`
-    + `<g class="robot-ucho-pres" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
+    + `<g class="robot-hlava-plocha" style="--klip:url(#rb-hlava-${kind})">`
     + `<g class="robot-celo" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">`
     + `<rect class="robot-face-well" x="${n(f.x - 1.2)}" y="${n(f.top - 1.2)}" width="${n(f.w + 2.4)}" height="${n(f.h + 2.4)}" rx="${n(f.r + 1.2)}"/>`
     + `<rect class="robot-face" x="${n(f.x)}" y="${n(f.top)}" width="${n(f.w)}" height="${n(f.h)}" rx="${n(f.r)}"/>`
@@ -337,6 +358,8 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + `<path class="robot-face-glint" d="M${n(f.x + Math.max(4, f.r * .48))} ${n(f.top + 2.4)}H${n(f.x + f.w * .54)}"/>`
     + cheeks
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
-    + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g></g>`
+    + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g>`
+    + svetlo('robot-hlava-svetlo', 'robot-obrys-hlavy', h.x, h.top, h.w, h.h, h.r)
+    + `<g class="robot-ucho-pres" style="--hw:${n(h.w)}px">${usi[0] || ''}</g></g></g>`
     + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + '</svg>';
 }
