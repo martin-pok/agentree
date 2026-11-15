@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.47.4 – 2026-11-15 · Přesné upozornění u vzdáleného agenta
+
+- **„Skončil chybou“, ne „spuštění selhalo“:** vzdálená relace Claude (cloud i Remote Control), kterou Claude Desktop hlásí jako selhanou, se spustila v pořádku a chyba přišla až při práci. Upozornění teď říká „Claude Desktop · vzdálený Code: skončil chybou“; dřív zavádějící „spuštění selhalo“ („start failed“).
+
 ## 0.47.3 – 2026-11-14 · Prohlídka aplikace
 
 - **Prohlídka v sedmi krocích:** místo AI pomocníka, který zatěžoval počítač, krátká prohlídka přímo nad skutečným rozhraním – ztmavení s „oknem“ kolem místa, o kterém je řeč, a karta s jednou větou: pole pro úkol, Vyžaduje pozornost (a v detailu Otevřít konverzaci), Právě teď, Agenti, Útrata a účty, obnova a hledání, Pomocník. Krok, jehož místo zrovna na obrazovce není, se přeskočí.

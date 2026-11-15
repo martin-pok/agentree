@@ -243,7 +243,9 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.runningAt = hlasenoAt;
   s.activity = '';
   if (hlaseno === 'failed') {
-    s.failure = { at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') };
+    // Vzdálená relace se spustila a skončila chybou až při práci – upozornění „skončil chybou“,
+    // ne „spuštění selhalo“ (vlastník 14. 11. 2026 viděl „start failed“ u běžících relací).
+    s.failure = { kind: 'chyba', at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') };
   } else if (hlaseno === 'needs_input') {
     const otazka = metadata.post_turn_summary?.needs_action;
     s.pending = { kind: 'question', at: updated, observedAt: hlasenoAt, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
