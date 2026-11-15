@@ -327,6 +327,9 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
   const f = g.face;
   // Uši zvlášť: levé (bližší při otočce zády) přejde přes hlavu, pravé zajde za ni.
   const usi = ears(g.ears, h, s);
+  // Ucho v otočce přejede z levého boku přesně na místo pravého (vlastník 15. 11. 2026: „uši mají být
+  // víc na pravém boku hlavy“): posun je vzdálenost středů obou uší, ne šířka hlavy – uši trčí za okraj.
+  const rozpetiUsi = h.w + (g.ears === 'square' ? 5 : 4);
   // Levá paže je při otočce zády ta bližší: v otočce se kreslí znovu přes trup (robot-paze-pres),
   // jinak by za ním zmizela (vlastník 15. 11. 2026: „proč agentovi při otáčení zmizí ruce?“).
   const pazeLeva = `<path class="robot-limbs robot-arm-left" style="--tw:${n(t.w)}px;transform-origin:${n(lx)}px ${n(shoulderY)}px" d="M${n(lx)} ${n(shoulderY)}L${n(lex)} ${n(ley)}"/>`;
@@ -347,7 +350,7 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + svetlo('robot-trup-svetlo', 'robot-obrys-trupu', t.x, t.top, t.w, t.h, t.r)
     + `<g class="robot-paze-pres">${pazeLeva}</g>`
     + `<g class="robot-head" style="transform-origin:54px ${n(h.top + h.h - 8)}px"><g class="robot-aerial" style="transform-origin:54px ${n(h.top)}px">${aerial(g.aerial, h.top, s)}${kusy.signal ? signal(g) : ''}</g>`
-    + `<g class="robot-ucho-zadni" style="--hw:${n(h.w)}px">${usi[1] || ''}</g><g class="robot-ucho-predni" style="--hw:${n(h.w)}px">${usi[0] || ''}</g>`
+    + `<g class="robot-ucho-zadni" style="--hw:${n(rozpetiUsi)}px">${usi[1] || ''}</g><g class="robot-ucho-predni" style="--hw:${n(rozpetiUsi)}px">${usi[0] || ''}</g>`
     + `<g class="robot-hlava-telo" style="--pd:${n(h.w * HLOUBKA_HLAVY / 2)}px"><rect class="robot-shell" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/>`
     + `<rect class="robot-objem" x="${n(h.x)}" y="${n(h.top)}" width="${n(h.w)}" height="${n(h.h)}" rx="${n(h.r)}"/></g>`
     + `<g class="robot-hlava-plocha" style="--klip:url(#rb-hlava-${kind})">`
@@ -360,6 +363,6 @@ export function robot(type = 'Scout', kusy = { prace: true, hra: true, signal: t
     + `<g class="robot-gaze"><g class="robot-eyes" style="transform-origin:54px ${n(g.eyeY)}px">${eyes(g.eyes, g.eyeY, s, g.es)}</g>${mouth(g.mouth, g)}</g></g>`
     + `<g class="robot-zada-hlavy" style="--fd:${n(posunPovrchu(h.w, f.w, HLOUBKA_HLAVY))}px">${zada(g)}</g></g>`
     + svetlo('robot-hlava-svetlo', 'robot-obrys-hlavy', h.x, h.top, h.w, h.h, h.r)
-    + `<g class="robot-ucho-pres" style="--hw:${n(h.w)}px">${usi[0] || ''}</g></g></g>`
+    + `<g class="robot-ucho-pres" style="--hw:${n(rozpetiUsi)}px">${usi[0] || ''}</g></g></g>`
     + (kusy.prace ? praceNad(g) : '') + (kusy.hra ? zabava(g, kusy.hra) : '') + '</svg>';
 }

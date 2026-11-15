@@ -90,6 +90,17 @@ test('dílna: pracující robot je zády u stolu s nástrojem, obrobek roste pod
     assert.equal(op[0], 0); assert.equal(op.at(-1), 0);
     assert.ok(op.every((v, i) => i === 0 || Math.abs(v - op[i - 1]) <= 0.35), `${jmeno}: plynule`);
   }
+  // Uši: ucho přejede přesně na místo protějšího ucha (posun = vzdálenost středů uší, ne šířka hlavy)
+  // a na koncích otočky se plynule prolne za hranu hlavy (vlastník: „uši víc na pravém boku hlavy“).
+  for (const typ of ROBOT_TYPES) {
+    const svgU = robot(typ, { prace: false, hra: false, signal: false });
+    const ucho = [...svgU.matchAll(/<g class="robot-ucho-(?:zadni|predni)" style="--hw:([\d.]+)px"><g class="robot-ucho-tvar"><(circle|rect) class="robot-ear" (?:cx="([\d.]+)"|x="([\d.]+)" y="[\d.]+" width="([\d.]+)")/g)];
+    if (!ucho.length) continue;
+    const stred = (m) => (m[2] === 'circle' ? Number(m[3]) : Number(m[4]) + Number(m[5]) / 2);
+    const [zadni, predni] = ucho;
+    assert.ok(Math.abs(Number(predni[1]) - (stred(zadni) - stred(predni))) < 0.01, `${typ}: ucho dojede přesně na pravý bok`);
+  }
+  assert.match(css, /@keyframes rz-ucho-pred \{ 0% \{ opacity: 0; \} 12%, 88% \{ opacity: 1; \} 100% \{ opacity: 0; \} \}/);
   // Ruce jsou vidět celou otočku; pracovní paže převezmou až na konci.
   assert.match(css, /\.robot\[data-otocka\] \.robot-paze-pres \{ display: inline; \}/);
   assert.doesNotMatch(css, /\.robot-arm-left \{ animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul/, 'paže v půlce otočky nezmizí');
