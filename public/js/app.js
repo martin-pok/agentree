@@ -28,6 +28,7 @@ import settings from './views/settings.js';
 import skills from './views/skills.js';
 import { initSelects } from './selects.js';
 import { initWelcome } from './welcome.js';
+import { initProhlidka } from './prohlidka.js';
 import { initObjev } from './objev-ui.js';
 import { initRozhodnuti } from './rozhodnuti-ui.js';
 import { rozhodnutiPro } from './rozhodnuti-data.js';
@@ -60,6 +61,7 @@ for (const attr of ['aria-label', 'title']) document.getElementById('refresh-app
 
 initSelects();
 initWelcome();
+initProhlidka();
 initObjev();
 initRozhodnuti();
 initWhatsNew();
@@ -560,7 +562,7 @@ function renderPopover({ vynutit = false } = {}) {
   if (!vynutit && klic === popKlic && pop.querySelector('.pop-list')) return;
   popKlic = klic;
   const rolovani = pop.querySelector('.pop-list')?.scrollTop || 0;
-  pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all>${tr('Označit vše jako přečtené')}</button>` : ''}</div>
+  pop.innerHTML = `<div class="pop-head"><strong>${tr('Upozornění')}</strong>${state.alerts.unread ? `<button class="link" type="button" data-read-all aria-label="${tr('Označit vše jako přečtené')}"><span class="pop-plne" aria-hidden="true">${tr('Označit vše jako přečtené')}</span><span class="pop-kratke" aria-hidden="true">${tr('Označit vše')}</span></button>` : ''}</div>
     <ul class="pop-list">${items.length
       ? items.map((a) => `<li><a class="pop-item level-${esc(a.level)}${a.read ? '' : ' is-unread'}" href="${esc(alertHref(a))}" data-alert-id="${esc(a.id)}"${a.kind === 'novy-nastroj' ? ' data-moje-nastroje' : ''}>
           <span class="pop-icon">${alertIcon(a)}</span>
@@ -569,7 +571,19 @@ function renderPopover({ vynutit = false } = {}) {
       : `<li class="pop-empty">${tr('Zatím žádná upozornění.')}</li>`}</ul>
     <a class="pop-foot" href="#/upozorneni">${tr('Zobrazit všechna upozornění')}</a>`;
   const seznam = pop.querySelector('.pop-list');
-  if (seznam) seznam.scrollTop = rolovani;
+  if (seznam) {
+    seznam.scrollTop = rolovani;
+    seznam.addEventListener('scroll', () => stinySeznamu(seznam), { passive: true });
+    stinySeznamu(seznam);
+  }
+}
+
+// Přechod do ztracena dole jen tam, kde seznam pokračuje, nahoře jen po odrolování – poslední
+// upozornění na konci seznamu se nikdy nezamlží.
+function stinySeznamu(seznam) {
+  const zbyva = seznam.scrollHeight - seznam.clientHeight - seznam.scrollTop;
+  seznam.classList.toggle('ma-dalsi', zbyva > 2);
+  seznam.classList.toggle('ma-predchozi', seznam.scrollTop > 2);
 }
 
 function openPopover() {
@@ -577,6 +591,9 @@ function openPopover() {
   skocNa(scrollY);
   renderPopover({ vynutit: true });
   pop.hidden = false;
+  // Rozměr seznamu je známý až u viditelného okna.
+  const seznam = pop.querySelector('.pop-list');
+  if (seznam) stinySeznamu(seznam);
   document.documentElement.classList.add('notif-open');
   bell.setAttribute('aria-expanded', 'true');
 }

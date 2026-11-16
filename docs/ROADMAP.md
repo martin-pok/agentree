@@ -68,9 +68,21 @@ Veřejná verze stále 0.46.55; nové obrázky a popis nejsou v obchodě. Upload
 
 ## Právě teď — 0.46.89 Preview vydané, dál spolehlivost detekce
 
-**Kandidát v0.46.100 Preview:** rozšíření se připojí i bez procesu na pozadí; kapsle „Další N agentů“ na jednom řádku; plynulejší seznam 50 agentů.
+**Kandidát v0.47.6 Preview:** webový chat se změněným ID nezůstane viset; plynulá prohlídka; řazení agentů; okno upozornění.
 
-**v0.46.99 Preview (zveřejněno 14. 11. 2026, build 43584885360):** Klíčenka jen se svolením; audit všech systémových oprávnění.
+**v0.47.5 Preview (zveřejněno 15. 11. 2026, build 43692130052, 8 příloh se SHA-256 ověřením):** účet Claude v detailu agenta při víc licencích; agent druhého profilu se nepřipíše cizímu účtu.
+
+**v0.47.4 Preview (zveřejněno 15. 11. 2026, build 43664006422, 8 příloh se SHA-256 ověřením):** přesné upozornění u vzdáleného agenta, který skončil chybou.
+
+**v0.47.3 Preview (zveřejněno 14. 11. 2026, build 43641628185, 8 příloh se SHA-256 ověřením):** prohlídka aplikace nad skutečným rozhraním.
+
+**v0.47.2 Preview (zveřejněno 14. 11. 2026, 8 příloh se SHA-256 ověřením):** Pomocník bez jazykového modelu.
+
+**v0.47.1 Preview (zveřejněno 14. 11. 2026, build 43614827119, 8 příloh se SHA-256 ověřením):** šablony podkladů v jedné nabídce, nízké karty projektu.
+
+**v0.47.0 Preview (zveřejněno 14. 11. 2026, build 43609196227, 8 příloh se SHA-256 ověřením):** k čekajícímu agentovi jedním klikem, úplné Dovednosti, chytřejší Pomocník, layout projektu.
+
+**v0.46.99 Preview (zveřejněno 14. 11. 2026, build 43584885360, 8 příloh se SHA-256 ověřením):** Klíčenka jen se svolením; audit všech systémových oprávnění.
 
 **v0.46.98 Preview (zveřejněno 12. 11. 2026, build 43325382057, 8 příloh se SHA-256 ověřením):** obnova do 1 s; žádné dotazy macOS na Stažené soubory, Dokumenty ani Plochu.
 

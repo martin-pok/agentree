@@ -26,8 +26,7 @@ import { createClaudeCodeConnector, korenyClaudeCode, STATUS_WINDOWS } from './c
 import { createCodexConnector, domovyCodexu } from './connectors/codex.js';
 import { createCodexAppThreadsConnector } from './connectors/codex-app-threads.js';
 import { createCodexCloudConnector } from './connectors/codex-cloud.js';
-import { najdiKonverzace, vetaOdpovedi, formulujLokalne, vyberLokalniModel } from './pomocnik.js';
-import { createPomocnikAi } from './pomocnik-ai.js';
+import { najdiKonverzace, vetaOdpovedi } from './pomocnik.js';
 import { createCursorConnector } from './connectors/cursor.js';
 import { createGeminiFamilyConnector } from './connectors/gemini-family.js';
 import { createCopilotCliConnector, createVsCodeCopilotConnector } from './connectors/copilot.js';
@@ -220,43 +219,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
       ...domovyCodexu({ home: config.sourceHome, codexHome: config.codexHome }).map((d) => ({ cesta: path.join(d, 'sessions'), app: 'Codex' })),
     ];
     const v = await najdiKonverzace({ dotaz: text, sessions: store.list(), koreny, smiPrepisy });
-    let lokalne = null;
-    let modelMimoPocitac = false;
-    // Úryvky konverzací smí dostat jen model na tomto počítači (vyberLokalniModel): Ollama na
-    // loopback adrese, bez cloudových a embeddingových modelů. Jiná adresa se odmítne a řekne se to.
-    if (smiPrepisy && v.vysledky.length && datastore.data.settings.pomocnik?.model !== false) {
-      const { model, duvod } = await vyberLokalniModel({ ollama });
-      modelMimoPocitac = duvod === 'mimo-pocitac';
-      if (model) {
-        // Optional wording must not hold the assistant response hostage for 25 seconds.
-        const odpoved = await formulujLokalne({ ollama, model, dotaz: text, vysledky: v.vysledky, jazyk: datastore.data.settings.language, casMs: 4500 });
-        if (odpoved) lokalne = { text: odpoved, model };
-      }
-    }
-    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno, lokalne, modelMimoPocitac };
-  }
-
-  // Pomocník jako AI (src/pomocnik-ai.js): lokální Ollama, jinak Claude Code na předplatné uživatele.
-  // Hooky dotazu pomocníka se zahodí, aby se neukázal jako další agent.
-  const pomocnikSessions = new Set();
-  const pomocnikAi = createPomocnikAi({
-    ollama,
-    claudeBin: () => launchEnv.bins?.claude || null,
-    ignoruj: (id) => { pomocnikSessions.add(id); setTimeout(() => pomocnikSessions.delete(id), 10 * 60e3).unref?.(); },
-  });
-  async function pomocnikOdpoved({ dotaz, historie, stranka, znalosti, zTohotoPocitace }) {
-    const text = String(dotaz || '').trim().slice(0, 500);
-    if (!text) return { status: 400, error: ui('Napiš, co hledáš.') };
-    if (datastore.data.settings.pomocnik?.ai !== true) return { engine: null, vypnuto: true };
-    // Claude Code smí spustit jen dotaz z tohoto počítače – telefon ho na předplatné nespustí.
-    return pomocnikAi.odpovez({
-      dotaz: text,
-      historie: Array.isArray(historie) ? historie.slice(-6) : [],
-      stranka: String(stranka || ''),
-      znalosti: Array.isArray(znalosti) ? znalosti.slice(0, 80).map(String) : [],
-      jazyk: datastore.data.settings.language === 'en' ? 'en' : 'cs',
-      smiCloud: Boolean(zTohotoPocitace),
-    });
+    return { zamer: v.rozbor.zamer, rozbor: { slova: v.rozbor.slova, vzory: v.rozbor.vzory, aplikace: v.rozbor.aplikace, okno: v.rozbor.okno }, veta: vetaOdpovedi(v), vysledky: v.vysledky, prohledano: v.prohledano, nedokonceno: v.nedokonceno };
   }
 
   const runs = new RunManager({
@@ -296,6 +259,11 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     if (run.projectId && projects().assignments[s.id] === undefined) assignToProject([s.id], run.projectId);
   }
   const projects = () => datastore.data.projects;
+  // Složky, ve kterých se pracuje (konverzace, projekty, repozitáře) – pro dovednosti uložené v projektu.
+  const slozkyProjektu = () => [
+    ...store.list().map((s) => s.cwd),
+    ...(datastore.data.projects?.items || []).flatMap((p) => [...(p.folders || []), p.settings?.repo]),
+  ].filter(Boolean);
   const worktreeRoot = path.join(config.dataDir, 'worktrees');
   const mediaRoot = path.join(config.dataDir, 'media');
 
@@ -556,12 +524,21 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
         evidence: item.plan?.evidence || '', since: item.plan?.since || null }])).values()];
     // An account is bound only where authenticated CLI profile and transcript root agree.
     // Never assign all agents to the currently signed-in global account.
+    // Výchozí profil (~/.claude.json) vlastní jen své kořeny (~/.claude, ~/.config/claude), nikdy
+    // kořen CLAUDE_CONFIG_DIR: ten má vlastní přihlášení. Dřív si ho výchozí účet přivlastnil, a když
+    // druhý profil nešel ověřit, agenti druhé licence se hlásili k té první. Kořen, na který si dělají
+    // nárok dva různé účty, zůstane bez účtu – raději „nevím“ než špatná licence.
     const observedAt = Date.now();
-    const roots = authenticatedClaudeProfiles.flatMap(({ home, accountId }) =>
-      home === config.sourceHome
-        ? [...new Set(korenyClaudeCode({ home: config.sourceHome, configDir: config.claudeConfigDir }))]
-          .map((root) => ({ root, accountId, observedAt }))
-        : [{ root: path.join(home, 'projects'), accountId, observedAt }]);
+    const vlastnik = new Map(); // kořen → accountId | null (spor)
+    const prirad = (root, accountId) => {
+      const r = path.resolve(root);
+      vlastnik.set(r, vlastnik.has(r) && vlastnik.get(r) !== accountId ? null : accountId);
+    };
+    for (const { home, accountId } of authenticatedClaudeProfiles) {
+      if (home === config.sourceHome) for (const root of korenyClaudeCode({ home: config.sourceHome })) prirad(root, accountId);
+      else prirad(path.join(home, 'projects'), accountId);
+    }
+    const roots = [...vlastnik].filter(([, accountId]) => accountId).map(([root, accountId]) => ({ root, accountId, observedAt }));
     connectors['claude-code'].bindProfileAccounts(roots);
     codexAccounts = [...new Map(codexResults.filter((item) => item?.id).map((item) => [item.id, item])).values()];
     connectors.codex.bindAccounts?.(codexHomes.map((home, i) => ({ home, accountId: codexResults[i]?.id || null })));
@@ -1928,7 +1905,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     dokonceno: () => { prvniStav(); return dokonceniStartu; },
     config, host, datastore, store, alerts, secrets, notifier, connectors, runs, localChat, detekce, rozhodnuti,
     installInfo: () => ({ bin: BIN_PATH, root: ROOT_DIR, dataDir: config.dataDir }),
-    connectorList, obnovVse, povolKlicenkuClaude, stavKlicenky, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
+    connectorList, obnovVse, povolKlicenkuClaude, stavKlicenky, slozkyProjektu, spendPayload, exportSpend, rateFeed, refreshSubscriptions, spendChanged, integrations, zaznamenejHooky, state, start, stop, openSession, createExtensionPairCode, pairExtension, pozadatOSparovani, extensionInstallation, otevriObchod, takeWebHandoff, extensionSeen, extensionStatus,
     licenseStatus, activateLicense, removeLicense, ucet, ucetStav, cloudSync, vratOkno, napojeni, objev,
     createProject, updateProject, reorderProjectList, removeProject, assignToProject, exportProject, projectsPayload: () => projectsPayload(projects()),
     setProjectMedia, removeProjectMedia, readProjectMedia, projectGit, launchTeam, projectWorkAction, checkProjectBudgets, projectMonthTokens,
@@ -1936,7 +1913,7 @@ export async function createApp(config = loadConfig(), { licensePublicKey, distD
     // Dotaz rozhraní přepočítá dny v okně z živých konverzací, aby dnešek nebyl o minuty pozadu.
     historie: () => { historie.aktualizuj(store.list()); return historie.snapshot(); },
     planUsageHistory: (opts) => connectors['claude-desktop-usage']?.series(opts) ?? null,
-    lan, push, pomocnik, pomocnikOdpoved, jePomocnikSession: (id) => pomocnikSessions.has(String(id || '')), odpovedet, muzeOdpovedet, sledujDetail, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
+    lan, push, pomocnik, odpovedet, muzeOdpovedet, sledujDetail, setLanAccess, setTailscaleAccess, bindLan, restoreRemoteAccess, focusRuntime, refreshTunnels, tunnelsPayload,
     runtimeFocusable: (id) => Boolean(RUNTIME_APPS[id]),
     customAgentsPayload, addCustomAgent, removeCustomAgent, probeCustomAgents, customAgentTypes: () => Object.entries(AGENT_TYPES).map(([id, t]) => ({ id, label: t.label })),
   };

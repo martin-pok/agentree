@@ -243,7 +243,9 @@ function applyReportedStatus(s, metadata, observedAt, now) {
   s.runningAt = hlasenoAt;
   s.activity = '';
   if (hlaseno === 'failed') {
-    s.failure = { at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') };
+    // Vzdálená relace se spustila a skončila chybou až při práci – upozornění „skončil chybou“,
+    // ne „spuštění selhalo“ (vlastník 14. 11. 2026 viděl „start failed“ u běžících relací).
+    s.failure = { kind: 'chyba', at: updated, observedAt: hlasenoAt, text: ui('Vzdálený agent skončil chybou. Podrobnosti jsou v příslušném chatu v Claude.') };
   } else if (hlaseno === 'needs_input') {
     const otazka = metadata.post_turn_summary?.needs_action;
     s.pending = { kind: 'question', at: updated, observedAt: hlasenoAt, text: typeof otazka === 'string' && otazka.trim() ? clip(otazka.trim(), 200) : ui('Vzdálený agent potřebuje rozhodnutí. Otevři Claude.'), source: 'desktop-cache' };
@@ -428,6 +430,10 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
     tok.duvod = r.duvod;
     return r.p;
   });
+  // Bez přihlášení se řekne přesně proč – svolení, „nenalezeno“ a odepřený přístup se řeší jinak.
+  const zpravaChyby = (e) => (e.bezUctu && tok.duvod === 'souhlas' ? DUVOD_SOUHLAS
+    : e.bezUctu && tok.duvod === 'pristup' ? DUVOD_PRISTUP
+    : e.bezUctu && tok.duvod === 'nenalezeno' ? DUVOD_NENALEZENO : e.message);
   const prihlaseni = async () => {
     if (tok.p && !(tok.p.expiresAt && tok.p.expiresAt <= Date.now())) return tok.p;
     if (tok.chybaAt && Date.now() - tok.chybaAt < 10 * MIN) return null;
@@ -565,9 +571,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
       } catch (e) {
         api.bezUctu = Boolean(e.bezUctu);
         // Bez přihlášení se řekne přesně proč – „nenalezeno“ a „odepřený přístup“ se řeší jinak.
-        api.error = e.bezUctu && tok.duvod === 'souhlas' ? DUVOD_SOUHLAS
-          : e.bezUctu && tok.duvod === 'pristup' ? DUVOD_PRISTUP
-          : e.bezUctu && tok.duvod === 'nenalezeno' ? DUVOD_NENALEZENO : e.message;
+        api.error = zpravaChyby(e);
         api.pauzaMs = e.pauzaMs || 0;
         if (e.prihlaseni) { tok.p = null; tok.chybaAt ||= Date.now(); }
       }
@@ -617,7 +621,7 @@ export function createClaudeDesktopCodeConnector({ config, store, claudeCloud = 
         const z = events.value;
         if (z?.messages.length) { prepisyZUctu.set(localId, z); prepisChyby.delete(localId); }
         else prepisChyby.set(localId, ui('Účet Claude pro tuto relaci nevrátil zprávy. Načtení se zopakuje; může jít o jiný přihlášený účet.'));
-      } catch (e) { prepisChyby.set(localId, e.message); }
+      } catch (e) { prepisChyby.set(localId, zpravaChyby(e)); }
       zpracuj();
     })();
     await Promise.race([nacti, new Promise((r) => setTimeout(r, 2500).unref?.())]);

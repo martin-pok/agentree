@@ -91,7 +91,11 @@ test('okno upozornění: dlaždice s obrysem, bez hnědé, patička vždy vidět
   assert.match(css, /\.pop-item \{[^}]*box-shadow: inset 0 0 0 1px var\(--line-2\);/, 'každé upozornění má obrys');
   assert.match(css, /\.pop-item\.is-unread \{ background: linear-gradient\(90deg, color-mix\(in srgb, var\(--uroven\) 12%/, 'nepřečtené má nádech úrovně');
   assert.doesNotMatch(css.match(/\.pop-item[^{]*\{[^}]*\}/g).join('\n'), /brass/, 'v okně upozornění žádná hnědá');
-  assert.match(css, /\.pop-foot \{[^}]*height: 44px;[^}]*border-radius: var\(--r-full\);[^}]*box-shadow: inset 0 0 0 1px var\(--line\);/, 'patička je viditelné tlačítko');
+  // Vlastník 15. 11. 2026: patička s nádechem značky a seznam se k ní rozplyne, žádný ostrý řez.
+  assert.match(css, /\.pop-foot \{[^}]*height: 44px;[^}]*border-radius: var\(--r-full\);[^}]*background: color-mix\(in srgb, var\(--brand\) 12%, var\(--card\)\);[^}]*box-shadow: inset 0 0 0 1px color-mix\(in srgb, var\(--brand\) 34%, transparent\);/, 'patička je viditelné tlačítko v barvě značky');
+  assert.doesNotMatch(css, /\.notif-pop > \.pop-list \{[^}]*border-bottom/, 'žádná ostrá linka nad patičkou');
+  assert.match(css, /\.notif-pop > \.pop-list\.ma-dalsi \{ --pop-dole: 56px; \}/, 'seznam se dole plynule rozplyne, jen když pokračuje');
+  assert.match(await zdroj('public/js/app.js'), /seznam\.classList\.toggle\('ma-dalsi', zbyva > 2\);/);
   assert.match(css, /\.notif-pop \{ max-height: calc\(100dvh - 120px\); \}/, 'okno se vejde do výšky, patička nezajede pod okraj');
   assert.match(css, /html\.notif-open \.pomocnik \{ opacity: 0; pointer-events: none; \}/);
 });

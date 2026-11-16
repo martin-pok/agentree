@@ -4,11 +4,12 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { normalizeProjects, validateProject, resolveProject, assignSessions, deleteProject, projectCsv, snapshotOf, PROJECT_COLORS, NO_PROJECT } from '../src/projects.js';
 
-test('starý projektový snímek vzdáleného Claude neotevře odhadnutý webový chat', () => {
+test('projektový snímek vzdáleného Claude vede přesně na claude.ai/code/<id>, ne na odhadnutou adresu', () => {
   const id = 'claude-desktop-code:session_01FixtureRemoteAgent123';
   const url = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
   const old = { id, connector: 'claude-desktop-code', source: 'desktop-cache', url };
-  assert.equal(snapshotOf(old).url, '');
+  assert.equal(snapshotOf(old).url, url, 'odkaz složený z ověřeného ID');
+  assert.equal(snapshotOf({ ...old, url: 'https://evil.example/x' }).url, url, 'cizí uložená adresa se nepoužije');
   const verified = snapshotOf({ ...old, exactUrl: url });
   assert.equal(verified.url, url);
   assert.equal(snapshotOf(verified).url, url, 'ověřený odkaz přežije opětovné načtení projektu');

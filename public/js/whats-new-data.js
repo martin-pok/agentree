@@ -4,16 +4,50 @@
 // rozhraní se ukazuje místo češtiny (public/js/whats-new.js).
 export const RELEASES = [
   {
-    version: '0.46.100', date: '2026-11-14', title: 'Rozšíření se nezasekne',
+    version: '0.47.6', date: '2026-11-15', title: 'Chat, který nezůstane viset',
+    items: ['Nový chat v ChatGPT se po první odpovědi správně přejmenuje a dál aktualizuje.', 'Prohlídka aplikace je plynulá a nikdy nezakryje, o čem mluví.', 'Agenty si seřadíš – třeba od nejnovější aktivity.'],
+    en: { title: 'Chats that don’t get stuck', items: ['A new ChatGPT chat now picks up its new name after the first reply and keeps updating.', 'The app tour moves smoothly and never covers what it is pointing at.', 'Sort your agents – for example by latest activity.'] },
+  },
+  {
+    version: '0.47.5', date: '2026-11-15', title: 'Který účet Claude agent používá',
+    items: ['Máš-li víc účtů Claude, detail agenta ukáže, pod kterým plánem a účtem běží. Agent druhého účtu se už nepřipíše tomu prvnímu.'],
+    en: { title: 'Which Claude account an agent uses', items: ['With more than one Claude account, the agent detail shows which plan and account it runs on. An agent on your second account is no longer attributed to the first.'] },
+  },
+  {
+    version: '0.47.4', date: '2026-11-15', title: 'Přesné upozornění u vzdáleného agenta',
+    items: ['Když vzdálený agent Claude skončí chybou, upozornění to tak i řekne – už ne „spuštění selhalo“.'],
+    en: { title: 'Accurate alert for remote agents', items: ['When a remote Claude agent ends with an error, the alert now says so – no more “start failed”.'] },
+  },
+  {
+    version: '0.47.3', date: '2026-11-14', title: 'Prohlídka aplikace',
+    items: ['Krátká prohlídka ti ukáže hlavní místa přímo v aplikaci. Znovu ji spustíš v Pomocníkovi nebo v Nastavení → Nápověda.'],
+    en: { title: 'App tour', items: ['A short tour shows you the main places right in the app. Run it again from the Assistant or Settings → Help.'] },
+  },
+  {
+    version: '0.47.2', date: '2026-11-14', title: 'Pomocník bez zátěže',
+    items: ['Pomocník odpovídá okamžitě a nikdy nespouští jazykový model, takže počítač nezatěžuje.'],
+    en: { title: 'A lightweight Assistant', items: ['The Assistant answers instantly and never runs a language model, so it doesn’t load your computer.'] },
+  },
+  {
+    version: '0.47.1', date: '2026-11-14', title: 'Nízké karty projektu',
+    items: ['Šablony podkladů jsou v jedné nabídce, takže karty v detailu projektu zůstanou nízké.'],
+    en: { title: 'Compact project cards', items: ['Brief templates now sit in one menu, so the cards in the project detail stay compact.'] },
+  },
+  {
+    version: '0.47.0', date: '2026-11-14', title: 'K čekajícímu agentovi jedním klikem',
     items: [
-      'Rozšíření pro Chrome se připojí, i když se jeho proces na pozadí neozve – žádné „Neověřeno“, dokud ho nepřenačteš. Když spojení přesto selže, řekne proč.',
-      'Kapsle „Další N agentů v sekci Agenti“ je zase na jednom řádku a seznam agentů je při 50 agentech plynulejší.',
+      'Vzdálený agent Claude má v detailu vždy tlačítko „Otevřít konverzaci“ – i když ho Agenteeq zná jen z Claude Desktopu.',
+      'Dovednosti ukážou i tvoje vlastní příkazy a subagenty, příkazy Codexu a Gemini a dovednosti uložené v projektech.',
+      'Pomocník rozumí víc otázkám – účtu Claude, obnově, exportu, selhaným agentům – a na „kdo na mě čeká“ dá odkazy rovnou na agenty.',
+      'Karty v detailu projektu vyplní celou šířku a robot už nemává pořád dokola.',
     ],
     en: {
-      title: 'The extension no longer gets stuck',
+      title: 'One click to the agent that needs you',
       items: [
-        'The Chrome extension connects even when its background process does not answer – no more “Not verified” until you reload it. If the connection still fails, it tells you why.',
-        'The “N more agents in Agents” capsule is on one line again, and the agent list stays smooth with 50 agents.',
+        'A remote Claude agent always has an “Open conversation” button in its detail – even when Agenteeq only knows it from Claude Desktop.',
+        'Skills now also show your own commands and subagents, Codex and Gemini commands and skills stored in projects.',
+        'The Assistant understands more – the Claude account, refresh, export, failed agents – and “who is waiting for me” links straight to the agents.',
+        'Cards in the project detail fill the full width and the robot no longer waves non-stop.',
       ],
     },
   },

@@ -161,9 +161,32 @@ test('rozšíření: konverzace, která dostala ID, nahlásí zástupné ID kart
   r.stranka.zpravy.push({ role: 'assistant', text: 'b' });
   await r.pruchod();
   assert.equal(r.odeslano.at(-1).nahrazuje, undefined, 'po potvrzení už se neposílá');
-  // Přechod mezi dvěma skutečnými konverzacemi nic nenahrazuje – obě jsou skutečné.
+  // Přechod do jiné skutečné konverzace (jiný obsah) nic nenahrazuje – obě jsou skutečné.
   r.stranka.id = 'jina-konverzace';
+  r.stranka.zpravy = [{ role: 'user', text: 'úplně jiný chat' }, { role: 'assistant', text: 'c' }];
   await r.pruchod();
   assert.equal(r.odeslano.at(-1).conversationId, 'jina-konverzace');
   assert.equal(r.odeslano.at(-1).nahrazuje, undefined);
+});
+
+// Vlastník 15. 11. 2026: ChatGPT po první zprávě změnil ID v adrese (dočasné → /c/<uuid>) a
+// Agenteeq zůstal viset na starém záznamu s „l“. Pokračující konverzace pod novým ID nahlásí,
+// které ID nahrazuje; skok do jiné konverzace (jiný začátek) ne.
+test('rozšíření: služba sama změní ID konverzace – nové hlášení řekne, co nahrazuje', async () => {
+  const r = spust(() => ({ ok: true }));
+  r.stranka.id = 'local-chatgpt';
+  r.stranka.zpravy = [{ role: 'user', text: 'l' }];
+  await r.pruchod(0);
+  assert.equal(r.odeslano.at(-1).conversationId, 'local-chatgpt');
+  r.stranka.id = '6af98a49-9ac8-83eb-a786-1dc914f3ccb7';
+  r.stranka.zpravy = [{ role: 'user', text: 'l' }, { role: 'assistant', text: 'Ahoj' }];
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, 'local-chatgpt');
+  r.stranka.zpravy.push({ role: 'user', text: 'Co umíš?' });
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, undefined, 'po potvrzení už se neposílá');
+  r.stranka.id = 'starsi-chat';
+  r.stranka.zpravy = [{ role: 'user', text: 'jiný začátek' }];
+  await r.pruchod();
+  assert.equal(r.odeslano.at(-1).nahrazuje, undefined, 'jiná konverzace nic nenahrazuje');
 });

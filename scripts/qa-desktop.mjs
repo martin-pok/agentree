@@ -1250,10 +1250,16 @@ for (const engine of engines) {
       if (route === 'upozorneni') {
         const row = page.locator('.alert-item').first();
         if (await row.count()) {
+          // Hover je během posouvání záměrně vypnutý (html.is-scrolling, 160 ms po posunu). Po přechodu
+          // na stránku se ještě posouvá – najet myší až po jeho konci a na změnu podkladu počkat
+          // (přechod trvá 180 ms), ne porovnávat po pevných 60 ms. V CI to jinak padalo časově.
+          await page.waitForFunction(() => !document.documentElement.classList.contains('is-scrolling'), null, { timeout: 3000 });
           const before = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
           await row.hover();
-          await page.waitForTimeout(60);
-          const after = await row.evaluate((el) => getComputedStyle(el).backgroundColor);
+          const after = await page.waitForFunction((pred) => {
+            const bg = getComputedStyle(document.querySelector('.alert-item')).backgroundColor;
+            return bg !== pred && bg;
+          }, before, { timeout: 1000 }).then((h) => h.jsonValue()).catch(() => before);
           assert.notEqual(after, before, `${engine}: řádek upozornění musí reagovat na hover`);
           await page.screenshot({ path: `dist/qa/${engine}-notification-hover.png` });
           results.push({ engine, check: 'hover upozornění mění podklad' });

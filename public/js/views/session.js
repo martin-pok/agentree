@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import { esc, fmtTok, rel, dateTime, dur, shortPath, plural, timeHM, hourTs, H } from '../format.js';
 import { glyph, pkey, ICON } from '../icons.js';
 import { miniBars, tokenBreakdown } from '../charts.js';
-import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState, sTipem } from '../ui.js';
+import { fill, statusPill, kindLabel, howToAnswer, limitGauges, openButtons, toast, vetaStavu, otazkyHtml, emptyState, sTipem, ucetAgenta } from '../ui.js';
 import { sessionTotal, chartColor } from '../data.js';
 import { projectById } from '../state.js';
 import { GRIP, applyOrder, saveOrder } from '../layout-prefs.js';
@@ -487,6 +487,7 @@ function update() {
   }
 
   const proj = s.projectId ? projectById(s.projectId) : null;
+  const ucet = ucetAgenta(s, state.spend);
   const sideBox = el.querySelector('[data-region="side"]');
   if (!v.sideDrag?.isDragging()) {
   const processDetails = s.proces
@@ -506,6 +507,7 @@ function update() {
       <section class="card side-card" data-card="details" aria-labelledby="facts-h">${GRIP}<h3 id="facts-h">${tr('Detaily')}</h3>
         <dl class="facts">
           <div><dt>${tr('Model')}</dt><dd>${esc(s.model || '–')}</dd></div>
+          ${ucet ? `<div><dt>${tr('Účet')}</dt><dd>${ucet.plan ? esc(ucet.plan) : `<span class="muted">${tr('Plán teď nejde ověřit')}</span>`}<br><span class="muted">${esc(ucet.tag)}</span></dd></div>` : ''}
           <div><dt>${tr('Větev')}</dt><dd>${esc(s.branch || '–')}${s.worktree ? `<br><span class="muted">${tr('pracovní kopie')} ${esc(s.worktree)}</span>` : ''}</dd></div>
           ${s.context ? `<div><dt>${tr('Kontext')}</dt><dd>${s.context.usedPercent} %${s.context.size ? ` ${ze(s.context.size) ? tr('ze {0}', fmtTok(s.context.size)) : tr('z {0}', fmtTok(s.context.size))}` : ''}</dd></div>` : ''}
           ${s.effort ? `<div><dt>${tr('Úroveň přemýšlení')}</dt><dd>${esc(s.effort)}</dd></div>` : ''}

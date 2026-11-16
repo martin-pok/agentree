@@ -1,12 +1,45 @@
 # Changelog
 
-## 0.46.100 – 2026-11-14 · Rozšíření se nezasekne na „Neověřeno“
+## 0.47.6 – 2026-11-15 · Chat, který nezůstane viset, a plynulá prohlídka
 
-- **Rozšíření pro Chrome se připojí i bez procesu na pozadí:** když se jeho proces na pozadí (service worker) neozval, okno rozšíření zůstalo na „Neověřeno – Aplikace běží, ale rozšíření od ní nedostalo odpověď“, dokud se rozšíření ručně nepřenačetlo. Teď se okno zeptá aplikace samo, stejným tokenem, a připojí se i s přehledem agentů. Když ani to nevyjde, ukáže konkrétní důvod (stav HTTP, neodpověď do 3 s, selhané spojení).
-- **Kapsle „Další N agentů v sekci Agenti“ na jednom řádku:** na Přehledu se od 0.46.93 zalamovala na dva řádky na všech šířkách okna.
-- **Plynulejší seznam agentů:** s 50 agenty každá živá změna zablokovala okno na 100–120 ms; nezměněné karty se teď přeskočí (zpoždění změny p50 100 → 64 ms, dlouhé úlohy 40 → 7 na 40 změn).
-- **Velký obrázek projektu:** příliš velký soubor dostane srozumitelnou hlášku místo přerušeného spojení.
-- **Souhrn obnovy v zelené:** hláška po obnově („Aktualizováno · změněné: 1“) byla v tmavém vzhledu růžovočervená se zvonkem a vypadala jako chyba. Teď je to zelené potvrzení s fajfkou. Verze v postranním panelu je zkrácená na „v0.46.100“, aby se patička nezalomila.
+- **Oprava: chat v ChatGPT visel na první zprávě:** nový chat má v ChatGPT nejdřív dočasnou adresu a po první odpovědi dostane skutečné ID (`/c/…`) i nový název. Agenteeq dřív zůstal u záznamu se starým ID – s názvem podle první zprávy („l“) a bez dalších zpráv. Rozšíření teď pozná, že konverzace pod novým ID pokračuje (všechny dosavadní zprávy uživatele jsou jejím začátkem), a Agenteeq oba záznamy spojí do jednoho s aktuálním názvem a celým přepisem. Bez takového důkazu se nic nespojuje ani nemaže – cizí konverzaci tudy smazat nejde. Platí pro všechny webové služby.
+- **Plynulá prohlídka:** zvýraznění a posun stránky jedou v týchž snímcích po jedné křivce, bez honění a překmitu („bounce“); karta se mění jen skrytá a objeví se na svém místě; nikdy nezakryje zvýrazněné místo – vysoký cíl se zkrátí na čisté hraně (pod celou řadou karet). Funguje i při živém překreslení Přehledu, změně okna a na telefonech (iPhone SE až iPad, i na šířku). Spuštění z Nastavení už nevynechá kroky.
+- **Řazení agentů:** vedle stavů výběr Podle stavu (výchozí), Nejnovější a Nejstarší aktivita, Naposledy založené, Nejvíc tokenů, Název A–Z. Volba se pamatuje.
+- **Okno upozornění:** seznam se k patičce plynule rozplyne (jen když pokračuje), místo ostrého řezu; tlačítko „Zobrazit všechna upozornění“ má nádech značky. „Označit vše jako přečtené“ zůstane na jednom řádku i na telefonu.
+
+## 0.47.5 – 2026-11-15 · Který účet Claude agent používá
+
+- **Účet v detailu agenta:** máš-li na Macu dva a víc účtů Claude (výchozí profil a CLAUDE_CONFIG_DIR), karta Detaily ukáže, pod kterým plánem agent běží („Claude Pro · účet a74e“ – stejné označení jako v Účtech nástrojů). Jen u ověřené vazby: přepis leží v profilu téhož přihlášeného účtu. S jedním účtem se řádek neukazuje, nic by nerozlišoval; u účtu, který teď nejde ověřit, stojí „Plán teď nejde ověřit“ místo vymyšleného plánu.
+- **Oprava: agent druhé licence pod cizím účtem:** výchozí profil si přivlastňoval i složku konverzací profilu CLAUDE_CONFIG_DIR. Když druhý profil nešel ověřit (třeba bez svolení ke Klíčence), jeho agenti se hlásili k prvnímu účtu a jeho limitům. Teď vlastní každý profil jen své složky; složka, na kterou si dělají nárok dva různé účty, zůstane bez účtu.
+
+## 0.47.4 – 2026-11-15 · Přesné upozornění u vzdáleného agenta
+
+- **„Skončil chybou“, ne „spuštění selhalo“:** vzdálená relace Claude (cloud i Remote Control), kterou Claude Desktop hlásí jako selhanou, se spustila v pořádku a chyba přišla až při práci. Upozornění teď říká „Claude Desktop · vzdálený Code: skončil chybou“; dřív zavádějící „spuštění selhalo“ („start failed“).
+
+## 0.47.3 – 2026-11-14 · Prohlídka aplikace
+
+- **Prohlídka v sedmi krocích:** místo AI pomocníka, který zatěžoval počítač, krátká prohlídka přímo nad skutečným rozhraním – ztmavení s „oknem“ kolem místa, o kterém je řeč, a karta s jednou větou: pole pro úkol, Vyžaduje pozornost (a v detailu Otevřít konverzaci), Právě teď, Agenti, Útrata a účty, obnova a hledání, Pomocník. Krok, jehož místo zrovna na obrazovce není, se přeskočí.
+- **Poprvé sama, pak na požádání:** spustí se po úvodním okně, když nic jiného není otevřené, a jen jednou. Znovu ji spustíš tlačítkem Prohlídka v Pomocníkovi nebo v Nastavení → Nápověda; Pomocník ji nabídne i na „Jak začít?“.
+- **Ovládání:** Další/Zpět, šipky, Enter, Escape; fokus zůstává v kartě. Na telefonu je karta přes celou šířku a sama se přesune nahoru, když krok ukazuje na spodní navigaci. Se sníženým pohybem bez animací. Světlý i tmavý vzhled, čeština i angličtina.
+
+## 0.47.2 – 2026-11-14 · Pomocník bez zátěže
+
+- **Žádný jazykový model:** Pomocník už nikdy nespouští model – ani lokální Ollamu, ani Claude Code (`claude -p`). Se zapnutým „Pomocník odpovídá jako AI“ šla každá otázka k aplikaci nejdřív do modelu, i když průvodce odpověď znal; lokální model se načetl do paměti a vytížil počítač (ventilátory, sekání). Stejně tak výchozí „Odpovědi formulovat lokálním modelem“ u hledání konverzací. Obě volby zmizely, odpovídá okamžitě vestavěný průvodce; hledání starého chatu běží dál bez modelu (nejvýš 5 s a 3 MB přepisů).
+- **„Jak začít?“:** průvodce dá čtyři první kroky (agenti se najdou sami, úkol v Přehledu, Vyžaduje pozornost → Otevřít konverzaci, rozšíření pro webové chaty).
+
+## 0.47.1 – 2026-11-14 · Nízké karty projektu
+
+- **Šablony podkladů v jedné nabídce:** tři tlačítka šablon (Agentura a klient, Vývoj, Marketing) pod sebou natahovala kartu Podklady a s ní celou řadu karet v detailu projektu. Teď je to jedno tlačítko „Šablona“ s nabídkou (šipky, Enter, Escape) a kopírování podkladů je ikonové tlačítko vedle něj. Řada karet je na 1440 px vysoká 300 px místo ~480 px.
+
+## 0.47.0 – 2026-11-14 · K čekajícímu agentovi jedním klikem
+
+- **Otevřít konverzaci vždy:** detail vzdáleného agenta Claude (cloud i Remote Control) má tlačítko „Otevřít konverzaci“ i tehdy, když relaci zná jen cache Claude Desktopu – vede přesně na claude.ai/code/<id> téže relace. Dřív tlačítko chybělo, pokud relaci nepotvrdil účet Claude nebo rozšíření, a ty jsi musel chat hledat. Adresa se skládá jen z ověřeného ID; Agenteeq nikdy neaktivuje aplikaci Claude s posledním, často cizím chatem. Stejně se otevírá z rozšíření a z projektu.
+- **Přesný důvod v přepisu:** místo obecné „přihlášení se nepodařilo přečíst“ detail řekne, jestli chybí svolení ke Klíčence, přihlášení Claude Code, nebo macOS přístup odepřel.
+- **Dovednosti – nic vlastního nechybí:** kromě SKILL.md (Claude, pluginy, plánované úlohy, Codex, sdílené) nově i vlastní příkazy a subagenti Claude Code (`~/.claude/commands`, `~/.claude/agents`), příkazy Codexu (`~/.codex/prompts`), příkazy Gemini CLI (`~/.gemini/commands`) a dovednosti uložené v projektech (`.claude/skills`, `.agents/skills` ve složkách, kde pracuješ – nikdy ze soukromých složek macOS). Dovednost z projektu nese jeho název.
+- **Pomocník rozumí víc:** 11 nových témat – účet Claude a Klíčenka, víc účtů Claude, „Nelze ověřit“, obnova, smazání historie, export, selhaný agent, zastavení, odpověď agentovi, části Přehledu, roboti, dotazy macOS na oprávnění a ChatGPT. „Jak otevřu agenta, který na mě čeká?“ odpoví seznamem čekajících s odkazy do detailu. Opraveno, že „Jak povolím účet Claude?“ vedlo na schvalování agentů, „Co znamená Nelze ověřit?“ na upozornění a „Co dělá tlačítko obnovit?“ na limity. Regresní test 40 otázek. Bez placeného API: lokální model nebo Claude Code, jsou-li na počítači, jinak vestavěný průvodce.
+- **Detail projektu:** čtyři karty pod konverzacemi (Podklady, Složky, Tokeny podle služby, Cena přes API) vyplní celou šířku jako seznam nad nimi – dřív zbýval prázdný pátý sloupec. Na užším okně dvě vedle sebe, na telefonu pod sebou.
+- **Robot nemává non-stop:** když tě agent potřebuje, mávne jednou za 12 s a po minutě přestane; zvednutá ruka zůstane.
+- **Angličtina:** v Dovednostech už není „upraveno“ a „Z pluginu“, v projektu „aktivita“ – vše přeložené; anglické rozhraní prošlo kontrolou všech stránek bez české diakritiky.
 
 ## 0.46.99 – 2026-11-14 · Oprávnění jen na tvůj pokyn
 

@@ -18,6 +18,17 @@
   // konverzace nahrazuje, a ze dvou záznamů udělá jeden – jinak by po první zprávě v přehledu zůstal
   // „duch“ nové konverzace vedle skutečné.
   let zastupne = '';
+  // Služba sama může konverzaci po prvním tahu přejmenovat v adrese (ChatGPT: dočasná adresa nového
+  // chatu → /c/<uuid>). Bez propojení by v Agenteeq zůstal záznam s první zprávou a skutečná
+  // konverzace by vypadala jako jiná (vlastník 15. 11. 2026: chat „visel“ na „l“). Pamatuje se
+  // poslední odeslané ID karty a jeho zprávy uživatele; nové ID ho nahradí, jen když konverzace
+  // prokazatelně pokračuje – dosavadní zprávy uživatele jsou začátkem nových.
+  let predchozi = null;
+  const zpravyUzivatele = (zpravy) => zpravy.filter((m) => m.role === 'user').map((m) => m.text);
+  const pokracuje = (stare, zpravy) => {
+    const nove = zpravyUzivatele(zpravy);
+    return stare.length > 0 && stare.length <= nove.length && stare.every((t, i) => t === nove[i]);
+  };
   // Délka poslední zprávy slouží jen tady k poznání, že se odpověď ještě píše. Neodesílá se.
   let posledniDelka = 0;
   // Pro ověření v okně rozšíření: viděli jsme na téhle stránce, že agent pracoval a pak skončil?
@@ -83,14 +94,19 @@
     lastSentAt = now;
     if (jeZastupne(payload.conversationId)) zastupne = payload.conversationId;
     else if (zastupne) payload.nahrazuje = zastupne;
-    const odeslaneZastupne = payload.nahrazuje || '';
+    else if (predchozi && predchozi.site === payload.site && predchozi.id !== payload.conversationId && pokracuje(predchozi.uzivatel, payload.messages)) payload.nahrazuje = predchozi.id;
+    const odeslaneZastupne = jeZastupne(payload.nahrazuje || '') ? payload.nahrazuje : '';
+    const odeslano = { id: payload.conversationId, site: payload.site, uzivatel: zpravyUzivatele(payload.messages) };
     try {
       // Nepovedené odeslání (aplikace zrovna neběží) se zopakuje při dalším průchodu, ne až při změně.
       return Promise.resolve(chrome.runtime.sendMessage({ type: 'agenteeq:update', payload }))
         .then((r) => {
           if (!r?.ok) lastSig = '';
-          // Server sloučení potvrdil – zástupné ID už nic nenahrazuje.
-          else if (odeslaneZastupne && zastupne === odeslaneZastupne) zastupne = '';
+          else {
+            // Server sloučení potvrdil – zástupné ID už nic nenahrazuje.
+            if (odeslaneZastupne && zastupne === odeslaneZastupne) zastupne = '';
+            if (!jeZastupne(odeslano.id)) predchozi = odeslano;
+          }
           return r;
         })
         .catch(() => { lastSig = ''; return { ok: false }; });

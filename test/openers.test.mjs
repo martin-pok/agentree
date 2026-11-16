@@ -84,29 +84,21 @@ test('plán bez zadané schopnosti počítá s plnou podporou — o systému roz
   assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app', 'terminal', 'folder']);
 });
 
-test('vzdálený Code z cache nesmí otevřít poslední cizí chat v Claude ani neověřenou URL', () => {
-  const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache', url: 'https://claude.ai/code/session_01FixtureRemoteAgent123' };
-  assert.equal(planOpen(s, 'app', { claude: true }), null);
-  assert.equal(planOpen(s, 'app', {}), null);
-  assert.deepEqual(openTargets(s, ALL_APPS), []);
-  const exactUrl = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
-  assert.deepEqual(planOpen({ ...s, exactUrl }, 'app', ALL_APPS).args, [exactUrl]);
-  assert.deepEqual(planOpen({ ...s, exactUrl }, 'app', ALL_APPS, BEZ_APLIKACI).args, [exactUrl]);
-  for (const wrong of ['https://claude.ai/code/session_01DifferentAgent123', 'https://evil.example/code/session_01FixtureRemoteAgent123', 'https://claude.ai/code/session_01FixtureRemoteAgent123?foo=bar']) {
-    assert.equal(planOpen({ ...s, exactUrl: wrong }, 'app', ALL_APPS), null);
-  }
-});
-
-// Vlastník 10. 11. 2026: v detailu vzdálené relace chyběl odkaz na ni. Relaci, kterou právě hlásí
-// účet Claude (server Anthropicu ID potvrdil), jde otevřít přesně přes claude.ai/code/<id>.
-// Claude Desktop nemá zdokumentovaný odkaz na konkrétní existující relaci, proto ne „open -a Claude“.
-test('vzdálená relace potvrzená účtem Claude: přesný odkaz na tutéž relaci; jen z cache ne', () => {
+// Vlastník 14. 11. 2026: k agentovi, který čeká, se musí dát dostat jedním klikem – i když relaci
+// zná jen cache Claude Desktopu. Odkaz se skládá jen z ověřeného ID (claude.ai/code/<id>), nikdy
+// „open -a Claude“ (aktivuje poslední, často cizí chat) a nikdy z adresy, která ID neodpovídá.
+test('vzdálený Code: vždy přesný odkaz claude.ai/code/<id>, nikdy poslední cizí chat ani cizí URL', () => {
   const url = 'https://claude.ai/code/session_01FixtureRemoteAgent123';
-  const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache', url, observation: { source: 'claude-account' } };
-  assert.deepEqual(planOpen(s, 'app', ALL_APPS).args, [url]);
-  assert.equal(planOpen(s, 'app', ALL_APPS).title, 'Otevřít konverzaci');
-  assert.deepEqual(openTargets(s, ALL_APPS).map((t) => t.id), ['app']);
-  assert.equal(planOpen({ ...s, observation: { source: 'desktop-cache' } }, 'app', ALL_APPS), null, 'stará cache nestačí');
-  assert.equal(planOpen({ ...s, url: 'https://claude.ai/code/session_01DifferentAgent123' }, 'app', ALL_APPS), null, 'jiná relace ne');
-  assert.equal(planOpen({ ...s, url: 'https://evil.example/code/session_01FixtureRemoteAgent123' }, 'app', ALL_APPS), null);
+  const s = { id: 'claude-desktop-code:session_01FixtureRemoteAgent123', connector: 'claude-desktop-code', source: 'desktop-cache' };
+  for (const relace of [s, { ...s, observation: { source: 'claude-account' } }, { ...s, observation: { source: 'desktop-cache' } }]) {
+    assert.deepEqual(planOpen(relace, 'app', ALL_APPS).args, [url]);
+    assert.deepEqual(planOpen(relace, 'app', {}).args, [url], 'bez aplikace Claude se otevře v prohlížeči');
+    assert.equal(planOpen(relace, 'app', ALL_APPS).title, 'Otevřít konverzaci');
+    assert.deepEqual(openTargets(relace, ALL_APPS).map((t) => t.id), ['app']);
+  }
+  assert.deepEqual(planOpen(s, 'app', ALL_APPS, BEZ_APLIKACI).args, [url]);
+  for (const wrong of ['https://claude.ai/code/session_01DifferentAgent123', 'https://evil.example/code/session_01FixtureRemoteAgent123', 'https://claude.ai/code/session_01FixtureRemoteAgent123?foo=bar']) {
+    assert.equal(planOpen({ ...s, exactUrl: wrong }, 'app', ALL_APPS), null, wrong);
+  }
+  assert.equal(planOpen({ ...s, id: 'claude-desktop-code:../../etc' }, 'app', ALL_APPS), null, 'neplatné ID');
 });

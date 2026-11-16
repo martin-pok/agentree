@@ -35,7 +35,7 @@ export function ovladani({ pocet, zdroju, puvodu }) {
 }
 
 // Pořadí od nejužitečnějšího: uživatel nejčastěji hledá to svoje.
-const PUVOD = [['own', tr('Moje')], ['anthropic', tr('Od Anthropicu')], ['openai', tr('Od OpenAI')], ['plugin', 'Z pluginu']];
+const PUVOD = [['own', tr('Moje')], ['anthropic', tr('Od Anthropicu')], ['openai', tr('Od OpenAI')], ['plugin', tr('Z pluginu')]];
 
 const RAZENI = [
   ['name', tr('Podle názvu')],
@@ -72,8 +72,8 @@ function cardHtml(s) {
       ${s.description ? `<p>${esc(s.description)}</p>` : `<p class="muted">${tr('Bez popisu v hlavičce souboru.')}</p>`}
     </div>
     <div class="skill-meta">
-      <span class="badge">${esc(s.source)}</span>${s.origin === 'own' ? `<span class="badge badge--ok">${tr('Moje')}</span>` : ''}
-      <span class="muted small">${kb(s.bytes)} · upraveno <span data-ago="${s.at}">${rel(s.at)}</span></span>
+      <span class="badge">${esc(s.source)}</span>${s.projekt ? `<span class="badge">${esc(s.projekt)}</span>` : ''}${s.origin === 'own' ? `<span class="badge badge--ok">${tr('Moje')}</span>` : ''}
+      <span class="muted small">${kb(s.bytes)} · ${tr('upraveno')} <span data-ago="${s.at}">${rel(s.at)}</span></span>
     </div>
     <code class="skill-path" title="${esc(s.dir)}">${esc(shortPath(s.dir))}</code>
     <div class="skill-actions">

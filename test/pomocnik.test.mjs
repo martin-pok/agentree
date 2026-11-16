@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
-import { rozeberDotaz, najdiKonverzace, vetaOdpovedi, vyberLokalniModel, ollamaNaTomtoPocitaci, LIMITY } from '../src/pomocnik.js';
+import { rozeberDotaz, najdiKonverzace, vetaOdpovedi, LIMITY } from '../src/pomocnik.js';
 import { createOllamaClient } from '../src/ollama.js';
 import { remoteScope } from '../src/remote-scope.js';
 import { startTestServer, api, tempDir, writeJsonl } from './helpers.mjs';
@@ -112,7 +112,7 @@ test('HTTP: /api/pomocnik hledá na Macu v přepisech, telefonu přepisy nevydá
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.zamer, 'hledat');
   assert.ok(r.body.vysledky.some((x) => /Fakturace|faktur/.test(x.ukazka)), JSON.stringify(r.body.vysledky));
-  assert.equal(r.body.lokalne, null, 'bez Ollamy žádná formulace modelem');
+  assert.equal('lokalne' in r.body, false, 'pomocník nikdy nespouští jazykový model');
   assert.equal((await api(s.url).send('POST', '/api/pomocnik', { dotaz: '' })).status, 400);
 
   assert.equal(remoteScope('POST', '/api/pomocnik').ok, true);
@@ -259,76 +259,6 @@ function falesnaOllama(baseUrl, { tags = [], ps = [], show = {} } = {}) {
   return { ollama: createOllamaClient({ baseUrl, fetchImpl }), volani };
 }
 
-test('pomocník: lokální model jen z Ollamy na tomto počítači, bez cloudových a embeddingových modelů, předvídatelně', async () => {
-  for (const url of ['http://127.0.0.1:11434', 'http://localhost:11434', 'http://[::1]:11434', 'http://127.0.0.2:8080']) assert.equal(ollamaNaTomtoPocitaci(url), true, url);
-  for (const url of ['http://192.168.1.5:11434', 'https://ollama.com', 'http://0.0.0.0:11434', 'http://127.0.0.1.nip.io:11434', 'nesmysl', 'file:///tmp/x']) assert.equal(ollamaNaTomtoPocitaci(url), false, url);
-
-  const vzdalena = falesnaOllama('http://192.168.1.5:11434', { tags: [{ name: 'llama3.2:3b' }] });
-  assert.deepEqual(await vyberLokalniModel({ ollama: vzdalena.ollama }), { model: null, duvod: 'mimo-pocitac' });
-  assert.deepEqual(vzdalena.volani, [], 'na adresu mimo počítač nejde ani dotaz na seznam modelů');
-
-  const tags = [
-    { name: 'gpt-oss:120b-cloud', remote_host: 'https://ollama.com:443', remote_model: 'gpt-oss:120b' },
-    { name: 'glm-4.6:cloud', size: 1 },
-    { name: 'nomic-embed-text:latest', size: 2, details: { family: 'nomic-bert' } },
-    { name: 'qwen3-embedding:0.6b', size: 3, capabilities: ['embedding'] },
-    { name: 'qwen2.5:14b', size: 9e9, capabilities: ['completion', 'tools'] },
-    { name: 'llama3.2:3b', size: 2e9 },
-  ];
-  const nic = falesnaOllama('http://127.0.0.1:11434', { tags, show: { 'llama3.2:3b': { capabilities: ['completion'] } } });
-  assert.deepEqual(await vyberLokalniModel({ ollama: nic.ollama }), { model: 'llama3.2:3b' }, 'nic načteného → nejmenší vhodný');
-  const nacteny = falesnaOllama('http://127.0.0.1:11434', { tags, ps: ['gpt-oss:120b-cloud', 'qwen2.5:14b'] });
-  assert.deepEqual(await vyberLokalniModel({ ollama: nacteny.ollama }), { model: 'qwen2.5:14b' }, 'načtený lokální model má přednost, cloudový nikdy');
-
-  const jenCloud = falesnaOllama('http://127.0.0.1:11434', { tags: tags.slice(0, 4) });
-  assert.deepEqual(await vyberLokalniModel({ ollama: jenCloud.ollama }), { model: null, duvod: 'zadny-model' });
-
-  // Bez schopností v /api/tags (starší Ollama) se kandidát ověří přes /api/show.
-  const show = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'tajemny:1b', size: 1 }, { name: 'mistral:7b', size: 4e9 }], show: { 'tajemny:1b': { capabilities: ['embedding'] }, 'mistral:7b': { capabilities: ['completion'] } } });
-  assert.deepEqual(await vyberLokalniModel({ ollama: show.ollama }), { model: 'mistral:7b' });
-  const neoveritelny = falesnaOllama('http://127.0.0.1:11434', { tags: [{ name: 'unknown:1b', size: 1 }] });
-  assert.deepEqual(await vyberLokalniModel({ ollama: neoveritelny.ollama }), { model: null, duvod: 'zadny-model' }, 'neověřený model se nesmí automaticky považovat za lokální');
-
-});
-
-test('HTTP: /api/pomocnik formuluje jen lokálním modelem; Ollama mimo počítač se odmítne a řekne se to', async (t) => {
-  const { home } = await prepisy();
-  const chaty = [];
-  const ollama = http.createServer((req, res) => {
-    let body = '';
-    req.on('data', (c) => { body += c; });
-    req.on('end', () => {
-      res.setHeader('Content-Type', 'application/json');
-      if (req.url === '/api/tags') return res.end(JSON.stringify({ models: [{ name: 'deepseek-v3.1:671b-cloud', remote_host: 'https://ollama.com:443' }, { name: 'llama3.2:3b', size: 2e9 }] }));
-      if (req.url === '/api/ps') return res.end(JSON.stringify({ models: [] }));
-      if (req.url === '/api/show') return res.end(JSON.stringify({ capabilities: ['completion'] }));
-      if (req.url === '/api/chat') {
-        chaty.push(JSON.parse(body).model);
-        return res.end(`${JSON.stringify({ message: { content: 'Jednička sedí.' } })}\n${JSON.stringify({ done: true })}\n`);
-      }
-      res.statusCode = 404;
-      return res.end('{}');
-    });
-  });
-  await new Promise((r) => ollama.listen(0, '127.0.0.1', r));
-  t.after(() => ollama.close());
-  const s = await startTestServer({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_OLLAMA_URL: `http://127.0.0.1:${ollama.address().port}` });
-  t.after(() => s.close());
-  const r = await api(s.url).send('POST', '/api/pomocnik', { dotaz: 'najdi chat o fakturaci' });
-  assert.equal(r.status, 200, JSON.stringify(r.body));
-  assert.deepEqual(chaty, ['llama3.2:3b'], 'cloudový model nikdy nedostane úryvky');
-  assert.deepEqual(r.body.lokalne, { text: 'Jednička sedí.', model: 'llama3.2:3b' });
-  assert.equal(r.body.modelMimoPocitac, false);
-  assert.ok(r.body.rozbor.vzory.length, 'klient zvýrazní podle týchž tvarů slov');
-
-  const vzdalena = await startTestServer({ AGENTEEQ_SOURCE_HOME: home, AGENTEEQ_OLLAMA_URL: 'http://192.0.2.1:11434' });
-  t.after(() => vzdalena.close());
-  const v = await api(vzdalena.url).send('POST', '/api/pomocnik', { dotaz: 'najdi chat o fakturaci' });
-  assert.equal(v.status, 200);
-  assert.equal(v.body.lokalne, null);
-  assert.equal(v.body.modelMimoPocitac, true, 'rozhraní řekne, proč model neodpověděl');
-});
-
 test('pomocník: texty bez první osoby a bez mužského rodu („Možná jsi myslel…“)', async () => {
   const zdroje = await Promise.all(['../public/js/robot-guide.js', '../src/pomocnik.js', '../src/app.js'].map((f) => fs.readFile(new URL(f, import.meta.url), 'utf8')));
   const texty = zdroje.flatMap((z) => [...z.matchAll(/\b(?:tr|ui)\('((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]))
@@ -339,25 +269,11 @@ test('pomocník: texty bez první osoby a bez mužského rodu („Možná jsi my
 });
 
 
-test('volitelný lokální model má krátký časový limit, aby neblokoval odpověď pomocníka', async () => {
-  const app = await fs.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
-  assert.match(app, /formulujLokalne\(\{[^\n]*casMs: 4500 \}\)/);
-});
 
-// Bug report 14. 10. (bod 3): žádná otevřená AI bez výslovného souhlasu. Ve výchozím stavu odpovídá
-// Pomocník z návodů a dotaz nikam neodchází; kdo si AI zapnul, tomu volba zůstane.
-test('Pomocník jako AI je ve výchozím stavu vypnutý a dotaz bez zapnutí nikam neodejde', async () => {
-  const s = await startTestServer();
-  try {
-    assert.equal((await api(s.url).get('/api/state')).body.settings.pomocnik.ai, false, 'nová instalace má AI vypnutou');
-    const vypnuto = await api(s.url).send('POST', '/api/pomocnik/ai', { dotaz: 'Kde zapnu upozornění?' });
-    assert.equal(vypnuto.status, 200);
-    assert.equal(vypnuto.body.engine, null);
-    assert.equal(vypnuto.body.vypnuto, true, 'bez zapnutí se nespustí Ollama ani Claude Code');
-
-    const zapnuto = await api(s.url).send('PUT', '/api/settings', { pomocnik: { ai: true } });
-    assert.equal(zapnuto.body.settings.pomocnik.ai, true, 'výslovné zapnutí se uloží');
-    const jinaZmena = await api(s.url).send('PUT', '/api/settings', { pomocnik: { model: false } });
-    assert.equal(jinaZmena.body.settings.pomocnik.ai, true, 'jiná změna Pomocníka volbu AI nepřepíše');
-  } finally { await s.close(); }
+test('pomocník nikdy nespouští jazykový model – ani lokální Ollamu, ani Claude Code (vlastník 14. 11. 2026)', async () => {
+  const fs2 = await import('node:fs/promises');
+  const app = await fs2.readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  const guide = await fs2.readFile(new URL('../public/js/robot-guide.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(app, /formulujLokalne|vyberLokalniModel|createPomocnikAi/);
+  assert.doesNotMatch(guide, /\/api\/pomocnik\/ai/);
 });

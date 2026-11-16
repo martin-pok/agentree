@@ -93,7 +93,9 @@ export function validateWebPayload(p) {
       limit: typeof p.limit === 'string' ? clip(p.limit, 200) : null,
       // Zástupné ID karty (extension/sites.js#tabId), pod kterým rozšíření posílalo tutéž konverzaci,
       // dokud jí služba nepřidělila ID. Jiné hodnoty se ignorují – nesmí jít smazat cizí konverzaci.
-      nahrazuje: typeof p.nahrazuje === 'string' && ZASTUPNE_ID.test(p.nahrazuje) && p.nahrazuje !== p.conversationId ? p.nahrazuje : null,
+      // Nebo předchozí ID téže karty, které služba sama změnila (ChatGPT po prvním tahu). To se
+      // přijme jen s důkazem pokračování (viz nahrazovanyZaznam).
+      nahrazuje: typeof p.nahrazuje === 'string' && /^[\w.:-]{1,200}$/.test(p.nahrazuje) && p.nahrazuje !== p.conversationId ? p.nahrazuje : null,
     },
   };
 }
@@ -197,6 +199,21 @@ export function createWebConnector(ctx) {
   const { store, extensionRecord = () => null } = ctx;
   const lastSeen = new Map();
 
+  // Záznam, který tahle zpráva smí nahradit. Zástupné ID karty vždy (patří jen té kartě). Jiné ID
+  // jen s důkazem, že jde o tutéž konverzaci pod novou adresou: stejná služba, záznam z posledních
+  // 30 minut a všechny jeho zprávy uživatele jsou začátkem nové konverzace. Cizí konverzaci tak
+  // poslaným ID smazat nejde.
+  function nahrazovanyZaznam(v, now) {
+    if (!v.nahrazuje) return null;
+    const stary = store.get(`web:${v.site}:${v.nahrazuje}`);
+    if (!stary || stary.connector !== 'web') return null;
+    if (ZASTUPNE_ID.test(v.nahrazuje)) return stary;
+    if (!(stary.lastAt >= now - 30 * MIN)) return null;
+    const stare = stary.transcript.filter((e) => e.role === 'user').map((e) => e.text);
+    const nove = v.messages.filter((m) => m.role === 'user').map((m) => m.text);
+    return stare.length > 0 && stare.length <= nove.length && stare.every((t, i) => t === nove[i]) ? stary : null;
+  }
+
   return {
     id: 'web',
     name: ui('Webové aplikace (rozšíření prohlížeče)'),
@@ -215,9 +232,10 @@ export function createWebConnector(ctx) {
       const v = res.value;
       const site = WEB_SITES[v.site];
       const id = `web:${v.site}:${v.conversationId}`;
+      const nahrazovany = nahrazovanyZaznam(v, now);
       const dvojce = store.get(dvojceClaudeCode(v.site, v.conversationId));
       if (dvojce) {
-        for (const stare of [id, v.nahrazuje && `web:${v.site}:${v.nahrazuje}`]) if (stare && store.get(stare)) store.remove(stare);
+        for (const stare of [id, nahrazovany?.id]) if (stare && store.get(stare)) store.remove(stare);
         applyKarta(dvojce, v, now);
         if (v.title && !dvojce.title) dvojce.title = v.title;
         if (!dvojce.transcript.length) applyWebTranscript(dvojce, v.messages, now);
@@ -227,7 +245,7 @@ export function createWebConnector(ctx) {
       }
       // Nová konverzace dostala ID: záznam pod zástupným ID karty se převede na skutečné ID, ať je
       // v přehledu jedna konverzace, ne dvě. Začátek konverzace a probíhající tah zůstanou.
-      const predtim = v.nahrazuje ? store.get(`web:${v.site}:${v.nahrazuje}`) : null;
+      const predtim = nahrazovany;
       const nova = !store.get(id);
       const s = store.ensure({ connector: 'web', localId: `${v.site}:${v.conversationId}`, provider: site.provider, app: site.name, source: 'web' });
       if (predtim) {

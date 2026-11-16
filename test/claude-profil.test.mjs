@@ -165,3 +165,33 @@ test('vytížení: dotaz jen na api.anthropic.com bez přesměrování; po 429 p
   t += 6 * 60e3;
   assert.equal((await p.vyuziti('')).five_hour.usedPercent, 12);
 });
+
+test('agent druhého profilu se nikdy nepřipíše výchozímu účtu, ani když druhý profil nejde ověřit', async () => {
+  const { writeJsonl } = await import('./helpers.mjs');
+  const sourceHome = await tempDir('agenteeq-claude-vazba-');
+  const druhy = await tempDir('agenteeq-claude-vazba2-');
+  const ted = Date.now();
+  const radek = (t) => [{ type: 'user', timestamp: new Date(ted - 60e3).toISOString(), message: { role: 'user', content: t } }];
+  const A = 'aaaa1111-0000-4000-8000-000000000001', B = 'bbbb2222-0000-4000-8000-000000000002';
+  await writeJsonl(path.join(sourceHome, '.claude', 'projects', 'p', `${A}.jsonl`), radek('první účet'));
+  await writeJsonl(path.join(druhy, 'projects', 'p', `${B}.jsonl`), radek('druhý účet'));
+  const start = (druhyPrihlasen) => startTestServer({ AGENTEEQ_SOURCE_HOME: sourceHome, AGENTEEQ_CLAUDE_CONFIG_DIR: druhy }, { claudeProfily: {
+    nacti: async (d) => (d === '' ? { stav: 'ok', ucet: ucetZProfilu(profil(UUID_A, 'claude_max')) }
+      : d === druhy && druhyPrihlasen ? { stav: 'ok', ucet: ucetZProfilu(profil(UUID_B, 'claude_pro')) } : { stav: 'bez-prihlaseni' }),
+    vyuziti: async () => null } });
+  // Druhý profil bez vlastního přihlášení: jeho agent je „nevím“, ne agent prvního účtu.
+  let srv = await start(false);
+  try {
+    const ucetA = srv.app.store.summary(`claude-code:${A}`).accountBinding?.accountId;
+    assert.ok(ucetA, 'agent výchozího profilu má svůj účet');
+    assert.equal(srv.app.store.summary(`claude-code:${B}`).accountBinding, null);
+  } finally { await srv.close(); }
+  // Oba profily přihlášené: každý agent svůj účet.
+  await fs.writeFile(path.join(druhy, '.claude.json'), JSON.stringify({ oauthAccount: { accountUuid: UUID_B } }));
+  srv = await start(true);
+  try {
+    const a = srv.app.store.summary(`claude-code:${A}`).accountBinding?.accountId;
+    const b = srv.app.store.summary(`claude-code:${B}`).accountBinding?.accountId;
+    assert.ok(a && b && a !== b, 'dva profily, dva různé účty');
+  } finally { await srv.close(); }
+});

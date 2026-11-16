@@ -35,12 +35,17 @@ test('Claude remote: recovers missing morning agent and reported failure without
   const state = (await api(server.url).get('/api/state')).body;
   const s = state.sessions.find((s) => s.connector === 'claude-desktop-code');
   assert.equal(s.title, 'Ranní práce na repozitáři'); assert.equal(s.status, 'failed');
+  // Vzdálená relace se spustila a skončila chybou při práci: „skončil chybou“, ne „spuštění selhalo“.
+  const alert = state.alerts.items.find((x) => x.sessionId === s.id && x.kind === 'failed');
+  if (alert) assert.match(alert.title, /skončil chybou/);
+  assert.equal(server.app.store.get(s.id)?.failure?.kind, 'chyba');
   assert.equal(s.repo, 'example/project'); assert.equal(s.cwd, ''); assert.equal(s.resume, null);
   assert.equal(s.tokens.input, 0); assert.equal(s.tokens.output, 0); assert.equal(s.observation.partial, true);
   assert.equal(s.spans.length, 1, 'one reported update, no invented whole-day working interval');
-  // Samotná cache nemá adresu ověřené karty a aktivace Claude by ukázala poslední cizí chat.
+  // Samotná cache nemá adresu ověřené karty; otevírá se přesně claude.ai/code/<id> (vlastník
+  // 14. 11. 2026: k čekajícímu agentovi jedním klikem), nikdy aktivace Claude s posledním chatem.
   assert.equal(s.exactUrl, undefined);
-  assert.equal(s.open.some((x) => x.id === 'app'), false);
+  assert.equal(s.open.some((x) => x.id === 'app'), true);
   assert.equal(JSON.stringify(s).includes('private fixture'), false);
 });
 
