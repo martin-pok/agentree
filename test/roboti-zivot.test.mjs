@@ -38,7 +38,11 @@ test('život robotů: každý agent má vlastní fázi, roboti se nehýbou v zá
 });
 
 // Zaoblené těleso: obrys hlavy a trupu zvlášť od prvků na povrchu (čelo, jádro, záda), bez bočních stěn.
-const svgMaBok = (svg) => ['robot-hlava-telo', 'robot-trup-telo', 'class="robot-celo"', 'robot-predek-trupu', 'robot-zada-hlavy', 'robot-zada-trupu', 'robot-ucho-pres'].every((c) => svg.includes(c)) && !svg.includes('robot-bok');
+// Hlava a trup jsou plná tělesa (vlastník 15. 11. 2026: „vyplněná, ne spojené placaté stěny“; „smooth
+// stínování, ne tmavý flek“): žádné boční díly; stín jsou vrstvy ve tvaru skořepiny nad obličejem.
+const svgMaBok = (svg) => ['robot-hlava-telo', 'robot-trup-telo', 'class="robot-celo"', 'robot-predek-trupu', 'robot-zada-hlavy', 'robot-zada-trupu', 'robot-ucho-pres', 'robot-paze-pres'].every((c) => svg.includes(c))
+  && (svg.match(/class="robot-stin robot-stin-[lp]"/g) || []).length === 4 && !/robot-bok|bok-plocha/.test(svg)
+  && /<g class="robot-hlava-svetlo"><rect class="robot-stin robot-stin-l"/.test(svg);
 
 test('dílna: pracující robot je zády u stolu s nástrojem, obrobek roste podle skutečného začátku úkolu', async () => {
   const { robot, ROBOT_TYPES } = await import('../public/js/robot-svg.js');
@@ -61,9 +65,45 @@ test('dílna: pracující robot je zády u stolu s nástrojem, obrobek roste pod
   assert.doesNotMatch(dilnaAtributy({ id: 'x', status: 'waiting', turnStartedAt: ted }), /data-od/, 'mimo práci se čas nevede');
   const css = await zdroj('public/refinement.css');
   assert.match(css, /:not\(\.home-robot\) \.robot :is\(\.robot-dilna, \.robot-zada, \.robot-prace\) \{ display: inline; \}/, 'hostitel u pozdravu zůstává čelem');
-  // Otočka jako zaoblené těleso: obrys √(cos² + k²sin²), prvky na povrchu |cos θ| a posun (hloubka/2)·cos α·sin θ.
-  assert.match(css, /@keyframes rz-otocka-hlava \{\n  0% \{ scale: 1\.000 1; \}[\s\S]*?50% \{ scale: 0\.620 1; \}/, 'v profilu má hlava šířku své hloubky');
-  assert.match(css, /@keyframes rz-otocka-predek \{[\s\S]*?50% \{ scale: 0\.002 1; translate: calc\(var\(--fd\) \* 1\.000\) 0; \}/, 'v profilu je obličej na okraji');
+  // Otočka jako plné zaoblené těleso (průřez superelipsa, hloubka 0,84 hlavy): obrys je průmět průřezu,
+  // v profilu přesně hloubka, a v půlce se hlava nenafukuje (dřív kvádr 1,3×).
+  const snimky = (jmeno) => [...css.match(new RegExp(`@keyframes ${jmeno} \\{[\\s\\S]*?\\n\\}`))[0].matchAll(/(\d+)% \{ scale: ([\d.]+) 1;(?: translate: calc\(var\(--\w+\) \* (-?[\d.]+)\) 0;)?/g)]
+    .map((m) => ({ pct: Number(m[1]), scale: Number(m[2]), posun: Number(m[3] || 0) }));
+  const hlava = snimky('rz-otocka-hlava');
+  assert.equal(hlava.find((x) => x.pct === 50).scale, 0.84, 'v profilu má hlava šířku své hloubky');
+  assert.ok(Math.max(...hlava.map((x) => x.scale)) <= 1.06, 'hlava se v otočce nenafukuje');
+  // Obličej a záda leží na povrchu hlavy (vlastník: „součást modelu hlavy, ne nalepená placka“): jsou v obalu
+  // se šířkou hlavy (pohyb vůči němu nepřečnívá) a v otočce oříznuté tvarem hlavy, takže na kulaté hlavě
+  // ani rohy obličeje nevyjedou ven.
+  for (const jmeno of ['rz-otocka-predek', 'rz-otocka-zada']) {
+    for (const f of snimky(jmeno)) assert.ok(Math.abs(f.posun) + f.scale * 0.835 <= 1.002, `${jmeno} ${f.pct}%: uvnitř hlavy`);
+  }
+  assert.match(css, /\.robot\[data-otocka\] :is\(\.robot-hlava-telo, \.robot-hlava-svetlo, \.robot-hlava-plocha\) \{ animation: rz-otocka-hlava/);
+  assert.match(css, /\.robot\[data-otocka\] \.robot-hlava-plocha \{ clip-path: var\(--klip\); \}/);
+  const svgS = robot('Orbit');
+  assert.match(svgS, /<g class="robot-hlava-plocha" style="--klip:url\(#rb-hlava-Orbit\)"><g class="robot-celo"/);
+  assert.ok(svgS.indexOf('robot-hlava-svetlo') > svgS.indexOf('robot-zada-hlavy'), 'světlo a hrana hlavy leží nad obličejem');
+  assert.match(await zdroj('public/js/robot-materials.js'), /klip\.id = `rb-hlava-\$\{typ\}`/);
+  // Stín se v otočce jen plynule zesílí a zeslábne: začíná i končí na nule, nikdy neskočí.
+  for (const jmeno of ['rz-stin-l', 'rz-stin-p']) {
+    const op = [...css.match(new RegExp(`@keyframes ${jmeno} \\{[\\s\\S]*?\\n\\}`))[0].matchAll(/opacity: ([\d.]+);/g)].map((m) => Number(m[1]));
+    assert.equal(op[0], 0); assert.equal(op.at(-1), 0);
+    assert.ok(op.every((v, i) => i === 0 || Math.abs(v - op[i - 1]) <= 0.35), `${jmeno}: plynule`);
+  }
+  // Uši: ucho přejede přesně na místo protějšího ucha (posun = vzdálenost středů uší, ne šířka hlavy)
+  // a na koncích otočky se plynule prolne za hranu hlavy (vlastník: „uši víc na pravém boku hlavy“).
+  for (const typ of ROBOT_TYPES) {
+    const svgU = robot(typ, { prace: false, hra: false, signal: false });
+    const ucho = [...svgU.matchAll(/<g class="robot-ucho-(?:zadni|predni)" style="--hw:([\d.]+)px"><g class="robot-ucho-tvar"><(circle|rect) class="robot-ear" (?:cx="([\d.]+)"|x="([\d.]+)" y="[\d.]+" width="([\d.]+)")/g)];
+    if (!ucho.length) continue;
+    const stred = (m) => (m[2] === 'circle' ? Number(m[3]) : Number(m[4]) + Number(m[5]) / 2);
+    const [zadni, predni] = ucho;
+    assert.ok(Math.abs(Number(predni[1]) - (stred(zadni) - stred(predni))) < 0.01, `${typ}: ucho dojede přesně na pravý bok`);
+  }
+  assert.match(css, /@keyframes rz-ucho-pred \{ 0% \{ opacity: 0; \} 12%, 88% \{ opacity: 1; \} 100% \{ opacity: 0; \} \}/);
+  // Ruce jsou vidět celou otočku; pracovní paže převezmou až na konci.
+  assert.match(css, /\.robot\[data-otocka\] \.robot-paze-pres \{ display: inline; \}/);
+  assert.doesNotMatch(css, /\.robot-arm-left \{ animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul/, 'paže v půlce otočky nezmizí');
   assert.ok(svgMaBok(robot('Scout')), 'hlava i trup mají bok');
   const js = await zdroj('public/js/mascot-motion.js');
   assert.match(js, /otoc\(svg, stav === 'working' \? 'zada' : 'predek'\)/);

@@ -4,9 +4,9 @@
 
 **Všichni AI agenti na jednom místě, v reálném čase.** Agenteeq vidí, co právě dělá Claude Code, Codex, Cursor, Copilot i webové chaty (ChatGPT, Claude.ai, Gemini, Microsoft Copilot, Perplexity, Grok, Qwen). Ukáže živý přepis a průběh úlohy. Upozorní, když agent potřebuje tvé rozhodnutí, narazí na limit nebo když útrata přeroste rozpočet.
 
-> **0.47.6** — připravované Preview (neveřejné vydání): chat v ChatGPT, kterému služba po první zprávě změní adresu, už nezůstane viset na první zprávě; plynulá prohlídka aplikace; řazení agentů; přechod do ztracena v okně upozornění.
+> **0.47.7** — připravované Preview (neveřejné vydání): roboti jako plná plastická tělesa – v otočce mají hloubku, obličej je součást hlavy, ruce a uši zůstávají vidět a stínování je plynulé.
 >
-> **0.47.5** — aktuální [veřejné Preview z 15. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.47.5): u víc účtů Claude detail agenta ukazuje, pod kterým účtem a plánem běží; agent druhého profilu se už nikdy nepřipíše účtu prvního. Stable Latest zůstává 0.46.58.
+> **0.47.6** — aktuální [veřejné Preview z 15. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.47.6): chat v ChatGPT, kterému služba po první zprávě změní adresu, už nezůstane viset na první zprávě; plynulá prohlídka aplikace; řazení agentů; přechod do ztracena v okně upozornění. Stable Latest zůstává 0.46.58.
 >
 > **0.47.2** — [veřejné Preview z 14. 11. 2026](https://github.com/martin-pok/agentree/releases/tag/v0.47.2): Pomocník nikdy nespouští jazykový model – žádné zatížení počítače. Stable Latest zůstává 0.46.58.
 >

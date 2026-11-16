@@ -612,21 +612,39 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 @keyframes rz-prvni-pul { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes rz-druha-pul { 0%, 49.9% { opacity: 0; } 50%, 100% { opacity: 1; } }
 
-/* Otočka jako zaoblené těleso (data-otocka z mascot-motion.js; vlastník: „3D, ne samolepka, ne
-   ploché stěny“). Úhel θ jde 0 → 180° s náběhem a dojezdem (smoothstep, 21 spočtených vzorků, mezi
+/* Otočka jako zaoblený kvádr (data-otocka z mascot-motion.js; vlastník 15. 11. 2026: „hlava má
+   připomínat krychli, tělo mít hloubku“; „vyplněná, ne spojené placaté stěny“). Hlava i trup
+   zůstanou jedním plným tvarem – průřez je zaoblený čtverec (superelipsa, exponent 3, hloubka k),
+   obrys má šířku jeho průmětu (rz-otocka-hlava/-trup, i oblečení), na 90° přesně k;
+   stínování: vrstva ve tvaru tělesa s plynulým přechodem od kraje odvráceného od světla, která se
+   v otočce jen zesílí a zeslábne (rz-stin-l/-p) – žádný pohyblivý flek ani hrana. Obličej, záda, jádro a panel leží na
+   zaobleném povrchu (vlastník: „obličej je součást hlavy, nesmí se odchlípnout“): jejich okraje jsou
+   průměty bodů povrchu, takže se u kraje zhustí a za obrys zajdou, nikdy přes něj (--fd = šířka/2). Starší popis eliptického průřezu níže platí pro
+   prvky na povrchu. Úhel θ jde 0 → 180° s náběhem a dojezdem (smoothstep, 21 spočtených vzorků, mezi
    nimi lineárně). Hlava a trup mají eliptický průřez: obrys má šířku √(cos²θ + k²·sin²θ) (k = hloubka
    / šířka, robot-svg.js). Obličej, oči a jádro leží na povrchu: zkrátí se na |cos θ| a posunou se
    o (hloubka/2)·cos α·sin θ (--fd), takže u okraje zhoustnou a zajdou za něj; záda přijdou z druhé
    strany stejně. Bližší ucho a paže přejdou přes tělo, vzdálenější za něj. 600 ms (2 × 300 ms). */
-.robot-ucho-pres { display: none; }
 .robot[data-otocka] .robot-ucho-pres { display: inline; }
-.robot[data-otocka] .robot-ucho-predni { display: none; }
-.robot[data-otocka] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-prace) { transform-box: view-box; transform-origin: 54px 60px; }
-.robot[data-otocka] .robot-hlava-telo { animation: rz-otocka-hlava 600ms linear both; }
-.robot[data-otocka] .robot-trup-telo { animation: rz-otocka-trup 600ms linear both; }
-.robot[data-otocka] :is(.robot-celo, .robot-predek-trupu) { animation: rz-otocka-predek 600ms linear both; }
-.robot[data-otocka] :is(.robot-zada-hlavy, .robot-zada-trupu) { animation: rz-otocka-zada 600ms linear both; }
-.robot[data-otocka] .robot-ucho-pres { animation: rz-otocka-ucho 600ms linear both; }
+/* Bližší ucho je uprostřed otočky na viditelném boku – před hlavou (ucho-pres); na začátku a na konci
+   stojí bokem a patří za hranu hlavy jako v klidu (ucho-predni). Obě kopie jedou stejně a plynule se
+   prolnou, takže ucho nikdy nepřeskočí přes hranu hlavy. */
+.robot[data-otocka] .robot-ucho-predni { animation: rz-otocka-ucho 600ms linear both, rz-ucho-za 600ms linear both; }
+.robot[data-otocka] :is(.robot-hlava-telo, .robot-trup-telo, .robot-hlava-svetlo, .robot-trup-svetlo, .robot-hlava-plocha, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-predni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-prace) { transform-box: view-box; transform-origin: 54px 60px; }
+.robot[data-otocka] :is(.robot-hlava-telo, .robot-hlava-svetlo, .robot-hlava-plocha) { animation: rz-otocka-hlava 600ms linear both; }
+/* Obličej a záda leží v obalu se šířkou hlavy, oříznutém jejím tvarem: nikdy z hlavy nevyjedou.
+   Jejich vlastní pohyb (rz-otocka-predek/-zada) je proto vůči obalu – vydělený šířkou hlavy. */
+.robot[data-otocka] .robot-hlava-plocha { clip-path: var(--klip); }
+.robot[data-otocka] :is(.robot-trup-telo, .robot-trup-svetlo) { animation: rz-otocka-trup 600ms linear both; }
+.robot[data-otocka] .robot-stin-l { animation: rz-stin-l 600ms linear both; }
+.robot[data-otocka] .robot-stin-p { animation: rz-stin-p 600ms linear both; }
+.robot[data-otocka] .robot-celo { animation: rz-otocka-predek 600ms linear both; }
+.robot[data-otocka] .robot-zada-hlavy { animation: rz-otocka-zada 600ms linear both; }
+.robot[data-otocka] .robot-predek-trupu { animation: rz-otocka-predek-t 600ms linear both; }
+.robot[data-otocka] .robot-zada-trupu { animation: rz-otocka-zada-t 600ms linear both; }
+.robot[data-otocka] .robot-ucho-pres { animation: rz-otocka-ucho 600ms linear both, rz-ucho-pred 600ms linear both; }
+@keyframes rz-ucho-pred { 0% { opacity: 0; } 12%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rz-ucho-za { 0% { opacity: 1; } 12%, 88% { opacity: 0; } 100% { opacity: 1; } }
 .robot[data-otocka] .robot-ucho-zadni { animation: rz-otocka-ucho-z 600ms linear both; }
 .robot[data-otocka] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both; }
 .robot[data-otocka] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both; }
@@ -636,97 +654,214 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 .robot[data-otocka] :is(.robot-wear--hat, .robot-wear--hood) { animation: rz-otocka-hlava 600ms linear both; }
 .robot[data-otocka] :is(.robot-wear--mid, .robot-wear--body) { animation: rz-otocka-trup 600ms linear both; }
 .robot[data-otocka] .robot-body { animation: rz-otocka-poskok 600ms both; }
-.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-wear--hat, .robot-wear--hood, .robot-wear--mid, .robot-wear--body) { animation-direction: reverse; }
+.robot[data-otocka='predek'] :is(.robot-hlava-telo, .robot-trup-telo, .robot-hlava-svetlo, .robot-trup-svetlo, .robot-hlava-plocha, .robot-stin-l, .robot-stin-p, .robot-celo, .robot-predek-trupu, .robot-zada-hlavy, .robot-zada-trupu, .robot-ucho-zadni, .robot-ucho-predni, .robot-ucho-pres, .robot-arm-left, .robot-arm-right, .robot-limbs, .robot-leg, .robot-shoe, .robot-sole, .robot-foot, .robot-tread, .robot-wheel, .robot-wear, .robot-wear--hat, .robot-wear--hood, .robot-wear--mid, .robot-wear--body) { animation-direction: reverse; }
 @keyframes rz-otocka-hlava {
   0% { scale: 1.000 1; }
-  5% { scale: 1.000 1; }
-  10% { scale: 0.998 1; }
-  15% { scale: 0.989 1; }
-  20% { scale: 0.968 1; }
-  25% { scale: 0.929 1; }
-  30% { scale: 0.870 1; }
-  35% { scale: 0.794 1; }
-  40% { scale: 0.713 1; }
-  45% { scale: 0.646 1; }
-  50% { scale: 0.620 1; }
-  55% { scale: 0.646 1; }
-  60% { scale: 0.713 1; }
-  65% { scale: 0.794 1; }
-  70% { scale: 0.870 1; }
-  75% { scale: 0.929 1; }
-  80% { scale: 0.968 1; }
-  85% { scale: 0.989 1; }
-  90% { scale: 0.998 1; }
-  95% { scale: 1.000 1; }
+  5% { scale: 1.002 1; }
+  10% { scale: 1.009 1; }
+  15% { scale: 1.024 1; }
+  20% { scale: 1.041 1; }
+  25% { scale: 1.051 1; }
+  30% { scale: 1.046 1; }
+  35% { scale: 1.019 1; }
+  40% { scale: 0.967 1; }
+  45% { scale: 0.898 1; }
+  50% { scale: 0.840 1; }
+  55% { scale: 0.898 1; }
+  60% { scale: 0.967 1; }
+  65% { scale: 1.019 1; }
+  70% { scale: 1.046 1; }
+  75% { scale: 1.051 1; }
+  80% { scale: 1.041 1; }
+  85% { scale: 1.024 1; }
+  90% { scale: 1.009 1; }
+  95% { scale: 1.002 1; }
   100% { scale: 1.000 1; }
 }
 @keyframes rz-otocka-trup {
   0% { scale: 1.000 1; }
-  5% { scale: 1.000 1; }
-  10% { scale: 0.998 1; }
-  15% { scale: 0.991 1; }
-  20% { scale: 0.973 1; }
-  25% { scale: 0.942 1; }
-  30% { scale: 0.894 1; }
-  35% { scale: 0.833 1; }
-  40% { scale: 0.770 1; }
-  45% { scale: 0.719 1; }
-  50% { scale: 0.700 1; }
-  55% { scale: 0.719 1; }
-  60% { scale: 0.770 1; }
-  65% { scale: 0.833 1; }
-  70% { scale: 0.894 1; }
-  75% { scale: 0.942 1; }
-  80% { scale: 0.973 1; }
-  85% { scale: 0.991 1; }
-  90% { scale: 0.998 1; }
-  95% { scale: 1.000 1; }
+  5% { scale: 1.001 1; }
+  10% { scale: 1.008 1; }
+  15% { scale: 1.020 1; }
+  20% { scale: 1.031 1; }
+  25% { scale: 1.034 1; }
+  30% { scale: 1.020 1; }
+  35% { scale: 0.982 1; }
+  40% { scale: 0.920 1; }
+  45% { scale: 0.842 1; }
+  50% { scale: 0.780 1; }
+  55% { scale: 0.842 1; }
+  60% { scale: 0.920 1; }
+  65% { scale: 0.982 1; }
+  70% { scale: 1.020 1; }
+  75% { scale: 1.034 1; }
+  80% { scale: 1.031 1; }
+  85% { scale: 1.020 1; }
+  90% { scale: 1.008 1; }
+  95% { scale: 1.001 1; }
   100% { scale: 1.000 1; }
+}
+/* Ucho při otočce: z profilu (zepředu) na plnou plochu (z boku) – rozšíří se kolem vlastního středu. */
+.robot[data-otocka] :is(.robot-ucho-pres, .robot-ucho-predni, .robot-ucho-zadni) .robot-ucho-tvar { transform-box: fill-box; transform-origin: center; animation: rz-ucho-natoceni 600ms linear both; }
+@keyframes rz-ucho-natoceni {
+  0% { scale: 1.000 1; }
+  5% { scale: 1.016 1; }
+  10% { scale: 1.061 1; }
+  15% { scale: 1.133 1; }
+  20% { scale: 1.225 1; }
+  25% { scale: 1.330 1; }
+  30% { scale: 1.439 1; }
+  35% { scale: 1.542 1; }
+  40% { scale: 1.626 1; }
+  45% { scale: 1.681 1; }
+  50% { scale: 1.700 1; }
+  55% { scale: 1.681 1; }
+  60% { scale: 1.626 1; }
+  65% { scale: 1.542 1; }
+  70% { scale: 1.439 1; }
+  75% { scale: 1.330 1; }
+  80% { scale: 1.225 1; }
+  85% { scale: 1.133 1; }
+  90% { scale: 1.061 1; }
+  95% { scale: 1.016 1; }
+  100% { scale: 1.000 1; }
+}
+@keyframes rz-stin-l {
+  0% { opacity: 0.000; }
+  5% { opacity: 0.309; }
+  10% { opacity: 0.588; }
+  15% { opacity: 0.809; }
+  20% { opacity: 0.951; }
+  25% { opacity: 1.000; }
+  30% { opacity: 0.951; }
+  35% { opacity: 0.809; }
+  40% { opacity: 0.588; }
+  45% { opacity: 0.309; }
+  50% { opacity: 0.000; }
+  55% { opacity: 0.000; }
+  60% { opacity: 0.000; }
+  65% { opacity: 0.000; }
+  70% { opacity: 0.000; }
+  75% { opacity: 0.000; }
+  80% { opacity: 0.000; }
+  85% { opacity: 0.000; }
+  90% { opacity: 0.000; }
+  95% { opacity: 0.000; }
+  100% { opacity: 0.000; }
+}
+@keyframes rz-stin-p {
+  0% { opacity: 0.000; }
+  5% { opacity: 0.000; }
+  10% { opacity: 0.000; }
+  15% { opacity: 0.000; }
+  20% { opacity: 0.000; }
+  25% { opacity: 0.000; }
+  30% { opacity: 0.000; }
+  35% { opacity: 0.000; }
+  40% { opacity: 0.000; }
+  45% { opacity: 0.000; }
+  50% { opacity: 0.000; }
+  55% { opacity: 0.309; }
+  60% { opacity: 0.588; }
+  65% { opacity: 0.809; }
+  70% { opacity: 0.951; }
+  75% { opacity: 1.000; }
+  80% { opacity: 0.951; }
+  85% { opacity: 0.809; }
+  90% { opacity: 0.588; }
+  95% { opacity: 0.309; }
+  100% { opacity: 0.000; }
 }
 @keyframes rz-otocka-predek {
   0% { scale: 1.000 1; translate: calc(var(--fd) * 0.000) 0; }
-  5% { scale: 1.000 1; translate: calc(var(--fd) * 0.023) 0; }
-  10% { scale: 0.996 1; translate: calc(var(--fd) * 0.088) 0; }
-  15% { scale: 0.982 1; translate: calc(var(--fd) * 0.190) 0; }
-  20% { scale: 0.947 1; translate: calc(var(--fd) * 0.321) 0; }
-  25% { scale: 0.882 1; translate: calc(var(--fd) * 0.471) 0; }
-  30% { scale: 0.778 1; translate: calc(var(--fd) * 0.628) 0; }
-  35% { scale: 0.633 1; translate: calc(var(--fd) * 0.774) 0; }
-  40% { scale: 0.448 1; translate: calc(var(--fd) * 0.894) 0; }
-  45% { scale: 0.233 1; translate: calc(var(--fd) * 0.973) 0; }
-  50% { scale: 0.002 1; translate: calc(var(--fd) * 1.000) 0; }
-  55% { scale: 0.233 1; translate: calc(var(--fd) * 0.973) 0; }
-  60% { scale: 0.448 1; translate: calc(var(--fd) * 0.894) 0; }
-  65% { scale: 0.633 1; translate: calc(var(--fd) * 0.774) 0; }
-  70% { scale: 0.778 1; translate: calc(var(--fd) * 0.628) 0; }
-  75% { scale: 0.882 1; translate: calc(var(--fd) * 0.471) 0; }
-  80% { scale: 0.947 1; translate: calc(var(--fd) * 0.321) 0; }
-  85% { scale: 0.982 1; translate: calc(var(--fd) * 0.190) 0; }
-  90% { scale: 0.996 1; translate: calc(var(--fd) * 0.088) 0; }
-  95% { scale: 1.000 1; translate: calc(var(--fd) * 0.023) 0; }
-  100% { scale: 1.000 1; translate: calc(var(--fd) * 0.000) 0; }
+  5% { scale: 0.998 1; translate: calc(var(--fd) * 0.014) 0; }
+  10% { scale: 0.987 1; translate: calc(var(--fd) * 0.055) 0; }
+  15% { scale: 0.959 1; translate: calc(var(--fd) * 0.116) 0; }
+  20% { scale: 0.910 1; translate: calc(var(--fd) * 0.194) 0; }
+  25% { scale: 0.839 1; translate: calc(var(--fd) * 0.282) 0; }
+  30% { scale: 0.744 1; translate: calc(var(--fd) * 0.377) 0; }
+  35% { scale: 0.624 1; translate: calc(var(--fd) * 0.479) 0; }
+  40% { scale: 0.483 1; translate: calc(var(--fd) * 0.597) 0; }
+  45% { scale: 0.321 1; translate: calc(var(--fd) * 0.732) 0; }
+  50% { scale: 0.151 1; translate: calc(var(--fd) * 0.874) 0; }
+  55% { scale: 0.062 1; translate: calc(var(--fd) * 0.948) 0; }
+  60% { scale: 0.019 1; translate: calc(var(--fd) * 0.984) 0; }
+  65% { scale: 0.002 1; translate: calc(var(--fd) * 0.998) 0; }
+  70% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  75% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  80% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  85% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  90% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  95% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  100% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
 }
 @keyframes rz-otocka-zada {
-  0% { scale: 1.000 1; translate: calc(var(--fd) * -0.000) 0; }
-  5% { scale: 1.000 1; translate: calc(var(--fd) * -0.023) 0; }
-  10% { scale: 0.996 1; translate: calc(var(--fd) * -0.088) 0; }
-  15% { scale: 0.982 1; translate: calc(var(--fd) * -0.190) 0; }
-  20% { scale: 0.947 1; translate: calc(var(--fd) * -0.321) 0; }
-  25% { scale: 0.882 1; translate: calc(var(--fd) * -0.471) 0; }
-  30% { scale: 0.778 1; translate: calc(var(--fd) * -0.628) 0; }
-  35% { scale: 0.633 1; translate: calc(var(--fd) * -0.774) 0; }
-  40% { scale: 0.448 1; translate: calc(var(--fd) * -0.894) 0; }
-  45% { scale: 0.233 1; translate: calc(var(--fd) * -0.973) 0; }
-  50% { scale: 0.002 1; translate: calc(var(--fd) * -1.000) 0; }
-  55% { scale: 0.233 1; translate: calc(var(--fd) * -0.973) 0; }
-  60% { scale: 0.448 1; translate: calc(var(--fd) * -0.894) 0; }
-  65% { scale: 0.633 1; translate: calc(var(--fd) * -0.774) 0; }
-  70% { scale: 0.778 1; translate: calc(var(--fd) * -0.628) 0; }
-  75% { scale: 0.882 1; translate: calc(var(--fd) * -0.471) 0; }
-  80% { scale: 0.947 1; translate: calc(var(--fd) * -0.321) 0; }
-  85% { scale: 0.982 1; translate: calc(var(--fd) * -0.190) 0; }
-  90% { scale: 0.996 1; translate: calc(var(--fd) * -0.088) 0; }
-  95% { scale: 1.000 1; translate: calc(var(--fd) * -0.023) 0; }
+  0% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  5% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  10% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  15% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  20% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  25% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  30% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  35% { scale: 0.002 1; translate: calc(var(--fd) * -0.998) 0; }
+  40% { scale: 0.019 1; translate: calc(var(--fd) * -0.984) 0; }
+  45% { scale: 0.062 1; translate: calc(var(--fd) * -0.948) 0; }
+  50% { scale: 0.151 1; translate: calc(var(--fd) * -0.874) 0; }
+  55% { scale: 0.321 1; translate: calc(var(--fd) * -0.732) 0; }
+  60% { scale: 0.483 1; translate: calc(var(--fd) * -0.597) 0; }
+  65% { scale: 0.624 1; translate: calc(var(--fd) * -0.479) 0; }
+  70% { scale: 0.744 1; translate: calc(var(--fd) * -0.377) 0; }
+  75% { scale: 0.839 1; translate: calc(var(--fd) * -0.282) 0; }
+  80% { scale: 0.910 1; translate: calc(var(--fd) * -0.194) 0; }
+  85% { scale: 0.959 1; translate: calc(var(--fd) * -0.116) 0; }
+  90% { scale: 0.987 1; translate: calc(var(--fd) * -0.055) 0; }
+  95% { scale: 0.998 1; translate: calc(var(--fd) * -0.014) 0; }
+  100% { scale: 1.000 1; translate: calc(var(--fd) * -0.000) 0; }
+}
+@keyframes rz-otocka-predek-t {
+  0% { scale: 1.000 1; translate: calc(var(--fd) * 0.000) 0; }
+  5% { scale: 1.000 1; translate: calc(var(--fd) * 0.018) 0; }
+  10% { scale: 0.996 1; translate: calc(var(--fd) * 0.068) 0; }
+  15% { scale: 0.982 1; translate: calc(var(--fd) * 0.148) 0; }
+  20% { scale: 0.947 1; translate: calc(var(--fd) * 0.250) 0; }
+  25% { scale: 0.882 1; translate: calc(var(--fd) * 0.367) 0; }
+  30% { scale: 0.778 1; translate: calc(var(--fd) * 0.489) 0; }
+  35% { scale: 0.633 1; translate: calc(var(--fd) * 0.603) 0; }
+  40% { scale: 0.448 1; translate: calc(var(--fd) * 0.696) 0; }
+  45% { scale: 0.233 1; translate: calc(var(--fd) * 0.758) 0; }
+  50% { scale: 0.003 1; translate: calc(var(--fd) * 0.780) 0; }
+  55% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  60% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  65% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  70% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  75% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  80% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  85% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  90% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  95% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  100% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+}
+@keyframes rz-otocka-zada-t {
+  0% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  5% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  10% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  15% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  20% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  25% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  30% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  35% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  40% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  45% { scale: 0.002 1; translate: calc(var(--fd) * 0.000) 0; }
+  50% { scale: 0.034 1; translate: calc(var(--fd) * -0.763) 0; }
+  55% { scale: 0.233 1; translate: calc(var(--fd) * -0.726) 0; }
+  60% { scale: 0.448 1; translate: calc(var(--fd) * -0.667) 0; }
+  65% { scale: 0.633 1; translate: calc(var(--fd) * -0.577) 0; }
+  70% { scale: 0.778 1; translate: calc(var(--fd) * -0.468) 0; }
+  75% { scale: 0.882 1; translate: calc(var(--fd) * -0.352) 0; }
+  80% { scale: 0.947 1; translate: calc(var(--fd) * -0.239) 0; }
+  85% { scale: 0.982 1; translate: calc(var(--fd) * -0.142) 0; }
+  90% { scale: 0.996 1; translate: calc(var(--fd) * -0.066) 0; }
+  95% { scale: 1.000 1; translate: calc(var(--fd) * -0.017) 0; }
   100% { scale: 1.000 1; translate: calc(var(--fd) * -0.000) 0; }
 }
 @keyframes rz-otocka-ucho {
@@ -776,50 +911,50 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
   100% { translate: calc(var(--hw) * -1.000) 0; }
 }
 @keyframes rz-otocka-paze-l {
-  0% { translate: calc(var(--tw) * 0.000) 0; }
-  5% { translate: calc(var(--tw) * 0.000) 0; }
-  10% { translate: calc(var(--tw) * 0.002) 0; }
-  15% { translate: calc(var(--tw) * 0.009) 0; }
-  20% { translate: calc(var(--tw) * 0.026) 0; }
-  25% { translate: calc(var(--tw) * 0.059) 0; }
-  30% { translate: calc(var(--tw) * 0.111) 0; }
-  35% { translate: calc(var(--tw) * 0.183) 0; }
-  40% { translate: calc(var(--tw) * 0.276) 0; }
-  45% { translate: calc(var(--tw) * 0.384) 0; }
-  50% { translate: calc(var(--tw) * 0.500) 0; }
-  55% { translate: calc(var(--tw) * 0.616) 0; }
-  60% { translate: calc(var(--tw) * 0.724) 0; }
-  65% { translate: calc(var(--tw) * 0.817) 0; }
-  70% { translate: calc(var(--tw) * 0.889) 0; }
-  75% { translate: calc(var(--tw) * 0.941) 0; }
-  80% { translate: calc(var(--tw) * 0.974) 0; }
-  85% { translate: calc(var(--tw) * 0.991) 0; }
-  90% { translate: calc(var(--tw) * 0.998) 0; }
-  95% { translate: calc(var(--tw) * 1.000) 0; }
-  100% { translate: calc(var(--tw) * 1.000) 0; }
+  0% { translate: calc(var(--tw) * 0.000) 0; scale: 1.000 1; }
+  5% { translate: calc(var(--tw) * 0.000) 0; scale: 1.000 1; }
+  10% { translate: calc(var(--tw) * 0.002) 0; scale: 0.996 1; }
+  15% { translate: calc(var(--tw) * 0.009) 0; scale: 0.982 1; }
+  20% { translate: calc(var(--tw) * 0.026) 0; scale: 0.947 1; }
+  25% { translate: calc(var(--tw) * 0.059) 0; scale: 0.882 1; }
+  30% { translate: calc(var(--tw) * 0.111) 0; scale: 0.778 1; }
+  35% { translate: calc(var(--tw) * 0.183) 0; scale: 0.633 1; }
+  40% { translate: calc(var(--tw) * 0.276) 0; scale: 0.448 1; }
+  45% { translate: calc(var(--tw) * 0.384) 0; scale: 0.300 1; }
+  50% { translate: calc(var(--tw) * 0.500) 0; scale: 0.300 1; }
+  55% { translate: calc(var(--tw) * 0.616) 0; scale: 0.300 1; }
+  60% { translate: calc(var(--tw) * 0.724) 0; scale: 0.448 1; }
+  65% { translate: calc(var(--tw) * 0.817) 0; scale: 0.633 1; }
+  70% { translate: calc(var(--tw) * 0.889) 0; scale: 0.778 1; }
+  75% { translate: calc(var(--tw) * 0.941) 0; scale: 0.882 1; }
+  80% { translate: calc(var(--tw) * 0.974) 0; scale: 0.947 1; }
+  85% { translate: calc(var(--tw) * 0.991) 0; scale: 0.982 1; }
+  90% { translate: calc(var(--tw) * 0.998) 0; scale: 0.996 1; }
+  95% { translate: calc(var(--tw) * 1.000) 0; scale: 1.000 1; }
+  100% { translate: calc(var(--tw) * 1.000) 0; scale: 1.000 1; }
 }
 @keyframes rz-otocka-paze-p {
-  0% { translate: calc(var(--tw) * -0.000) 0; }
-  5% { translate: calc(var(--tw) * -0.000) 0; }
-  10% { translate: calc(var(--tw) * -0.002) 0; }
-  15% { translate: calc(var(--tw) * -0.009) 0; }
-  20% { translate: calc(var(--tw) * -0.026) 0; }
-  25% { translate: calc(var(--tw) * -0.059) 0; }
-  30% { translate: calc(var(--tw) * -0.111) 0; }
-  35% { translate: calc(var(--tw) * -0.183) 0; }
-  40% { translate: calc(var(--tw) * -0.276) 0; }
-  45% { translate: calc(var(--tw) * -0.384) 0; }
-  50% { translate: calc(var(--tw) * -0.500) 0; }
-  55% { translate: calc(var(--tw) * -0.616) 0; }
-  60% { translate: calc(var(--tw) * -0.724) 0; }
-  65% { translate: calc(var(--tw) * -0.817) 0; }
-  70% { translate: calc(var(--tw) * -0.889) 0; }
-  75% { translate: calc(var(--tw) * -0.941) 0; }
-  80% { translate: calc(var(--tw) * -0.974) 0; }
-  85% { translate: calc(var(--tw) * -0.991) 0; }
-  90% { translate: calc(var(--tw) * -0.998) 0; }
-  95% { translate: calc(var(--tw) * -1.000) 0; }
-  100% { translate: calc(var(--tw) * -1.000) 0; }
+  0% { translate: calc(var(--tw) * -0.000) 0; scale: 1.000 1; }
+  5% { translate: calc(var(--tw) * -0.000) 0; scale: 1.000 1; }
+  10% { translate: calc(var(--tw) * -0.002) 0; scale: 0.996 1; }
+  15% { translate: calc(var(--tw) * -0.009) 0; scale: 0.982 1; }
+  20% { translate: calc(var(--tw) * -0.026) 0; scale: 0.947 1; }
+  25% { translate: calc(var(--tw) * -0.059) 0; scale: 0.882 1; }
+  30% { translate: calc(var(--tw) * -0.111) 0; scale: 0.778 1; }
+  35% { translate: calc(var(--tw) * -0.183) 0; scale: 0.633 1; }
+  40% { translate: calc(var(--tw) * -0.276) 0; scale: 0.448 1; }
+  45% { translate: calc(var(--tw) * -0.384) 0; scale: 0.300 1; }
+  50% { translate: calc(var(--tw) * -0.500) 0; scale: 0.300 1; }
+  55% { translate: calc(var(--tw) * -0.616) 0; scale: 0.300 1; }
+  60% { translate: calc(var(--tw) * -0.724) 0; scale: 0.448 1; }
+  65% { translate: calc(var(--tw) * -0.817) 0; scale: 0.633 1; }
+  70% { translate: calc(var(--tw) * -0.889) 0; scale: 0.778 1; }
+  75% { translate: calc(var(--tw) * -0.941) 0; scale: 0.882 1; }
+  80% { translate: calc(var(--tw) * -0.974) 0; scale: 0.947 1; }
+  85% { translate: calc(var(--tw) * -0.991) 0; scale: 0.982 1; }
+  90% { translate: calc(var(--tw) * -0.998) 0; scale: 0.996 1; }
+  95% { translate: calc(var(--tw) * -1.000) 0; scale: 1.000 1; }
+  100% { translate: calc(var(--tw) * -1.000) 0; scale: 1.000 1; }
 }
 @keyframes rz-otocka-stisk {
   0% { scale: 1.000 1; }
@@ -846,18 +981,27 @@ html[data-theme='dark'] .zada-sroub { fill: color-mix(in srgb, var(--persona) 35
 }
 @keyframes rz-otocka-poskok { 0%, 100% { translate: 0 0; animation-timing-function: cubic-bezier(.16, 1, .3, 1); } 45% { translate: 0 -3px; animation-timing-function: cubic-bezier(.7, 0, .84, 0); } }
 /* Co je vidět: přední prvky do 90°, zadní od 90° (v profilu mají nulovou šířku, výměna je neviditelná).
-   Paže z čelního pohledu se při otočce zády ztratí, pracovní paže s nástrojem se objeví až v zádech. */
+   Paže viz níže – jsou vidět po celou otočku. */
 .robot[data-otocka] :is(.robot-dilna, .robot-zada, .robot-prace, .robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-arm-left, .robot-arm-right, .robot-wear--face, .wp, .wpr, .wpz) { display: inline !important; }
 .robot[data-otocka='zada'] :is(.robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr),
 .robot[data-otocka='predek'] :is(.robot-zada, .wpz) { opacity: 1; animation: rz-prvni-pul 600ms both; }
 .robot[data-otocka='zada'] :is(.robot-zada, .wpz),
 .robot[data-otocka='predek'] :is(.robot-face, .robot-face-well, .robot-face-glass, .robot-face-glint, .robot-gaze, .robot-cheek, .robot-core, .robot-wear--face, .wp, .wpr) { animation: rz-druha-pul 600ms both; }
-.robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-prvni-pul 600ms both; }
-.robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-prvni-pul 600ms both; }
-.robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-druha-pul 600ms both; }
-.robot[data-otocka='predek'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear reverse both, rz-druha-pul 600ms both; }
-.robot[data-otocka='zada'] .robot-prace { animation: rz-otocka-stisk 600ms linear both, rz-druha-pul 600ms both; }
-.robot[data-otocka='predek'] .robot-prace { animation: rz-otocka-stisk 600ms linear reverse both, rz-prvni-pul 600ms both; }
+/* Paže jsou vidět celou otočku (vlastník 15. 11. 2026: „proč při otáčení zmizí ruce?“): bližší jede
+   přes trup (robot-paze-pres), vzdálenější za ním, z boku se zkrátí do profilu a visí podél těla
+   (scale kolem ramene). Pracovní paže s nástrojem je převezmou plynule až na konci otočky. */
+.robot[data-otocka] .robot-paze-pres { display: inline; }
+.robot[data-otocka] .robot-body > .robot-arm-left { visibility: hidden; }
+.robot[data-otocka='zada'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear both, rz-paze-odchod 600ms both; }
+.robot[data-otocka='zada'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear both, rz-paze-odchod 600ms both; }
+.robot[data-otocka='predek'] .robot-arm-left { animation: rz-otocka-paze-l 600ms linear reverse both, rz-paze-prichod 600ms both; }
+.robot[data-otocka='predek'] .robot-arm-right { animation: rz-otocka-paze-p 600ms linear reverse both, rz-paze-prichod 600ms both; }
+.robot[data-otocka='zada'] .robot-prace { animation: rz-otocka-stisk 600ms linear both, rz-paze-prichod-konec 600ms both; }
+.robot[data-otocka='predek'] .robot-prace { animation: rz-otocka-stisk 600ms linear reverse both, rz-paze-odchod-zacatek 600ms both; }
+@keyframes rz-paze-odchod { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes rz-paze-prichod { 0% { opacity: 0; } 20%, 100% { opacity: 1; } }
+@keyframes rz-paze-prichod-konec { 0%, 80% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes rz-paze-odchod-zacatek { 0% { opacity: 1; } 20%, 100% { opacity: 0; } }
 .robot[data-otocka='zada'] .robot-dilna { animation: rz-dilna-sem 600ms both; }
 .robot[data-otocka='predek'] .robot-dilna { animation: rz-dilna-pryc 600ms both; }
 @keyframes rz-prvni-pul { 0%, 49.9% { opacity: 1; } 50%, 100% { opacity: 0; } }

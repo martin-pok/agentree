@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.47.7 – 2026-11-15 · Plastičtí roboti
+
+- **Plné těleso, ne placka:** hlava i trup jsou v otočce jedním vyplněným tvarem se zaobleným průřezem blízkým krychli. Na 90° je vidět celá hloubka a hlava se v půlce otočky nenafukuje. Žádné slepené stěny.
+- **Obličej je součást hlavy:** obličej i záda leží na zaobleném povrchu – jejich okraje jsou průměty bodů povrchu, v otočce je ořízne přesný tvar hlavy (na kulaté hlavě se obličej obtočí po kouli) a světlo i hrana hlavy leží nad nimi, takže obličej zajede pod hranu hlavy a tmavne s ní.
+- **Plynulé stínování:** místo pohyblivého tmavého fleku vrstva přesně ve tvaru tělesa, tmavší od kraje odvráceného od světla; v otočce se jen plynule zesílí a zeslábne.
+- **Uši a ruce:** uši mají objem a materiál hlavy, v otočce se natočí plnou plochou a dojedou přesně na protější bok; na koncích plynule zajdou za hranu hlavy. Ruce jsou vidět celou otočku (bližší přes trup), z boku visí podél těla a pracovní ruce s nástrojem převezmou až na konci.
+
 ## 0.47.6 – 2026-11-15 · Chat, který nezůstane viset, a plynulá prohlídka
 
 - **Oprava: chat v ChatGPT visel na první zprávě:** nový chat má v ChatGPT nejdřív dočasnou adresu a po první odpovědi dostane skutečné ID (`/c/…`) i nový název. Agenteeq dřív zůstal u záznamu se starým ID – s názvem podle první zprávy („l“) a bez dalších zpráv. Rozšíření teď pozná, že konverzace pod novým ID pokračuje (všechny dosavadní zprávy uživatele jsou jejím začátkem), a Agenteeq oba záznamy spojí do jednoho s aktuálním názvem a celým přepisem. Bez takového důkazu se nic nespojuje ani nemaže – cizí konverzaci tudy smazat nejde. Platí pro všechny webové služby.

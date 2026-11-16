@@ -4,7 +4,10 @@
 .robot-shell { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
 .robot-torso { stroke: color-mix(in srgb, var(--persona) 44%, var(--card)); stroke-width: .8; }
 .robot-face { fill: #242632; }
-.robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); }
+.robot-ear { fill: color-mix(in srgb, var(--persona) 50%, var(--card)); stroke: color-mix(in srgb, var(--persona) 62%, var(--card)); stroke-width: .8; }
+/* Ucho má objem jako skořepina hlavy – je to část tělesa, ne samolepka. */
+.robot-ear-objem { fill: url(#rb-objem) none; pointer-events: none; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-ear-objem { opacity: .84; }
 .robot-aerial, .robot-limbs { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; }
 .robot-core { fill: currentColor; }
 :is(html[data-theme='dark'], html[data-site-robots]) .robot-shell, :is(html[data-theme='dark'], html[data-site-robots]) .robot-torso { fill: color-mix(in srgb, var(--persona) 42%, var(--card)); }
@@ -29,3 +32,17 @@
 .robot-aerial .robot-aerial-zare { fill: color-mix(in srgb, var(--persona) 22%, transparent); stroke: none; }
 .robot-eyes { fill: #ecf7f6; transform-box: fill-box; transform-origin: center; animation: robot-blink 6s infinite; animation-delay: var(--robot-delay, 0s); }
 .robot-eyes .robot-eye-arc { fill: none; stroke: #ecf7f6; stroke-linecap: round; }
+/* Stínování v otočce (refinement.css, rz-stin-l/-p): vrstvy ve tvaru skořepiny s plynulým přechodem,
+   mimo otočku neviditelné. Žádné vlastní okraje – nic nepůsobí jako flek. */
+.robot-stin { opacity: 0; pointer-events: none; fill-opacity: .72; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-stin { fill-opacity: 1; }
+.robot-stin-l { fill: url(#rb-stin-l) none; }
+.robot-stin-p { fill: url(#rb-stin-p) none; }
+/* Hrana tělesa nad obličejem a zády – tatáž barva jako obrys skořepiny, v klidu s ním splývá. */
+.robot-obrys { fill: none; pointer-events: none; }
+.robot-obrys-hlavy { stroke: color-mix(in srgb, var(--persona) 42%, var(--card)); stroke-width: 1; }
+.robot-obrys-trupu { stroke: color-mix(in srgb, var(--persona) 44%, var(--card)); stroke-width: .8; }
+:is(html[data-theme='dark'], html[data-site-robots]) .robot-obrys-hlavy { stroke: color-mix(in srgb, var(--persona) 60%, var(--card)); }
+/* Kopie bližšího ucha a paže, které se kreslí přes hlavu a trup jen v otočce (refinement.css). Skryté
+   ve sdílených stylech, aby je neukazoval ani web, který otočku nemá. */
+.robot-ucho-pres, .robot-paze-pres { display: none; }
